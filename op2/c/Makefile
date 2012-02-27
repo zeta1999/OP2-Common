@@ -63,7 +63,7 @@ HDF5_LIB = -L$(HDF5_INSTALL_PATH)/lib -lhdf5 -lz
 
 .PHONY: clean mklib
 
-all: clean core hdf5 seq openmp cuda mpi_seq mpi_cuda
+all: clean core hdf5 seq openmp cuda mpi_seq mpi_cuda checkpointing
 
 mklib:
 	@mkdir -p $(LIB) $(OBJ)
@@ -171,6 +171,14 @@ mpi_cuda: mklib $(SRC)/mpi/op_mpi_part_core.c \
 	$(OBJ)/op_util.o \
 	$(OBJ)/op_mpi_hdf5.o \
 	$(OBJ)/op_mpi_cuda_kernels.o
+
+checkpointing: $(SRC)/externlib/op_checkpointing.c $(INC)/op_checkpointing.h
+	$(MPICPP) $(CPPFLAGS) -I$(INC) $(HDF5_INC) -c $(SRC)/externlib/op_checkpointing.c \
+	$(HDF5_LIB) -lhdf5_hl -o $(OBJ)/externlib/op_checkpointing.o
+
+	ar -r $(LIB)/libop2_checkpointing.a $(OBJ)/externlib/op_checkpointing.o
+
+
 
 clean:
 	-rm -if $(OBJ)/*.o

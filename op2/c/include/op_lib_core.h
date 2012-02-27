@@ -83,6 +83,11 @@ typedef enum { OP_READ, OP_WRITE, OP_RW, OP_INC, OP_MIN, OP_MAX } op_access;
 typedef enum { OP_ARG_GBL, OP_ARG_DAT } op_arg_type;
 
 /*
+ * enum list for checkpointing
+ */
+typedef enum { OP_NOT_SAVED, OP_SAVED, OP_UNDECIDED } op_checkpoint_types;
+
+/*
  * structures
  */
 
@@ -123,6 +128,8 @@ typedef struct
              *name;   /* name of dataset */
   char*      buffer_d; /* buffer for MPI halo sends on the devidce */
   int        dirtybit; /* flag to indicate MPI halo exchange is needed*/
+  bool     ever_written; /* Checkpointing: flag to indicate whether the given dataset had been written to by OP2 */
+  op_checkpoint_types status; /* Checkpointing: flag to indicate the status in the backup process */
 } op_dat_core;
 
 typedef op_dat_core * op_dat;

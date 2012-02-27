@@ -237,6 +237,8 @@ op_decl_dat_core ( op_set set, int dim, char const * type, int size, char * data
   dat->name = copy_str( name );
   dat->type = copy_str( type );
   dat->size = dim * size;
+  dat->ever_written = false;
+  dat->status = OP_UNDECIDED;
 
   OP_dat_list[OP_dat_index++] = dat;
 
@@ -404,13 +406,13 @@ op_arg_gbl_core ( char * data, int dim, const char * typ, int size, op_access ac
   arg.map = NULL;
   arg.dim = dim;
   arg.idx = -1;
-  arg.size = dim*size;
+  arg.size = dim*size; //can this be anything else than zero??
   arg.data = data;
   arg.type = typ;
   arg.acc = acc;
 
   /* setting default values for remaining fields */
-  arg.index = -1;
+  arg.index = -1; //this is now used by checkpointing
   arg.data_d = NULL;
 
   /*not used in global args*/

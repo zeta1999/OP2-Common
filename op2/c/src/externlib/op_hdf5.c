@@ -52,6 +52,10 @@
 
 #include <op_util.h> //just to include xmalloc routine
 
+void store_gbl(op_arg *arg) {
+  printf("a");
+}
+
 /*******************************************************************************
 * Routine to write an op_set to an already open hdf5 file
 *******************************************************************************/

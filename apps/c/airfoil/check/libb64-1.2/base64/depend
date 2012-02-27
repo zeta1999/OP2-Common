@@ -1,0 +1,21 @@
+# DO NOT DELETE
+
+edanticbase64.o: ../include/b64/encode.h ../include/b64/cencode.h
+edanticbase64.o: ../include/b64/decode.h ../include/b64/cdecode.h
+edanticbase64.o: /usr/include/stdlib.h /usr/include/Availability.h
+edanticbase64.o: /usr/include/AvailabilityInternal.h /usr/include/_types.h
+edanticbase64.o: /usr/include/sys/_types.h /usr/include/sys/cdefs.h
+edanticbase64.o: /usr/include/sys/_symbol_aliasing.h
+edanticbase64.o: /usr/include/sys/_posix_availability.h
+edanticbase64.o: /usr/include/machine/_types.h /usr/include/i386/_types.h
+edanticbase64.o: /usr/include/sys/wait.h /usr/include/sys/signal.h
+edanticbase64.o: /usr/include/sys/appleapiopts.h
+edanticbase64.o: /usr/include/machine/signal.h /usr/include/i386/signal.h
+edanticbase64.o: /usr/include/i386/_structs.h /usr/include/sys/_structs.h
+edanticbase64.o: /usr/include/machine/_structs.h /usr/include/sys/resource.h
+edanticbase64.o: /usr/include/machine/endian.h /usr/include/i386/endian.h
+edanticbase64.o: /usr/include/sys/_endian.h
+edanticbase64.o: /usr/include/libkern/_OSByteOrder.h
+edanticbase64.o: /usr/include/libkern/i386/_OSByteOrder.h
+edanticbase64.o: /usr/include/alloca.h /usr/include/machine/types.h
+edanticbase64.o: /usr/include/i386/types.h
