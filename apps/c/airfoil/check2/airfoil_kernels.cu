@@ -6,7 +6,7 @@
 
 #include "op_lib_cpp.h"
 #include "op_cuda_rt_support.h"
-
+#include "op_checkpointing.h"
 #include "op_cuda_reduction.h"
 
 // global constants

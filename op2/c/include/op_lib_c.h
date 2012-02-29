@@ -92,6 +92,8 @@ void op_exit (  );
 
 void op_timing_output();
 
+void op_commit_data ( op_dat );
+
 int op_get_size(op_set set);
 
 void op_printf(const char* format, ...);

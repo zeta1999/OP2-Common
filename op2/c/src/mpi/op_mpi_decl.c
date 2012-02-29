@@ -68,6 +68,11 @@ void op_fetch_data ( op_dat dat )
   (void)dat;
 }
 
+void op_commit_data ( op_dat dat )
+{
+  (void)dat;
+}
+
 /*
  * No specific action is required for constants in OpenMP
  */

@@ -87,6 +87,9 @@ void op_fetch_data ( op_dat a ) {
   (void)a;
 }
 
+void op_commit_data ( op_dat a ) {
+  (void)a;
+}
 
 int op_get_size(op_set set)
 {

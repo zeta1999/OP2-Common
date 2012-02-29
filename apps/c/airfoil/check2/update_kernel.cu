@@ -101,6 +101,11 @@ void op_par_loop_update(char const *name, op_set set,
     printf(" kernel routine w/o indirection:  update \n");
   }
 
+  int    nargs   = 5;
+  op_arg args[5] = {arg0,arg1,arg2,arg3,arg4};
+
+  if (op_checkpointing_before(args,nargs)) {
+
   // initialise timers
 
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
@@ -181,5 +186,7 @@ void op_par_loop_update(char const *name, op_set set,
   OP_kernels[4].transfer += (float)set->size * arg1.size;
   OP_kernels[4].transfer += (float)set->size * arg2.size * 2.0f;
   OP_kernels[4].transfer += (float)set->size * arg3.size;
+}
+op_checkpointing_after(args, nargs, 4);
 }
 

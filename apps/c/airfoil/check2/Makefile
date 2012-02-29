@@ -68,7 +68,7 @@ HDF5_LIB = -L$(HDF5_INSTALL_PATH)/lib -lhdf5_hl -lhdf5 -lz
 # master to make all versions
 #
 
-all: clean airfoil_openmp
+all: clean airfoil_openmp airfoil_cuda
 
 #
 # simple sequential version
@@ -96,8 +96,8 @@ airfoil_openmp:	airfoil_op.cpp airfoil_kernels.cpp \
 #
 
 airfoil_cuda:	airfoil_op.cpp airfoil_kernels_cu.o Makefile
-		$(CPP) $(VAR) $(CPPFLAGS) $(CUDA_INC) $(OP2_INC) $(OP2_LIB) $(CUDA_LIB) \
-		airfoil_op.cpp airfoil_kernels_cu.o -lcudart -lop2_cuda -o airfoil_cuda
+		$(MPICPP) $(VAR) $(CPPFLAGS) $(CUDA_INC) $(OP2_INC) $(OP2_LIB) $(CUDA_LIB) $(HDF5_INC) \
+		airfoil_op.cpp airfoil_kernels_cu.o -lcudart -lop2_cuda -lop2_checkpointing $(HDF5_LIB) -o airfoil_cuda
 
 airfoil_kernels_cu.o:	airfoil_kernels.cu      \
 		save_soln_kernel.cu save_soln.h \

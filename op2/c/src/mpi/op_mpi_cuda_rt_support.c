@@ -212,3 +212,12 @@ void op_partition(const char* lib_name, const char* lib_routine,
 
 }
 
+void
+op_commit_data ( op_dat dat )
+{
+  cutilSafeCall ( cudaMemcpy ( dat->data_d, dat->data,
+                               dat->size * dat->set->size,
+                               cudaMemcpyHostToDevice ) );
+  cutilSafeCall ( cudaThreadSynchronize (  ) );
+}
+

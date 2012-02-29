@@ -59,7 +59,7 @@ PTSCOTCH_INC = -I$(PTSCOTCH_INCLUDE_PATH) -DHAVE_PTSCOTCH
 PTSCOTCH_LIB = -L$(PTSCOTCH_LIB_PATH) -lptscotch -lptscotcherr
 
 HDF5_INC = -I$(HDF5_INSTALL_PATH)/include
-HDF5_LIB = -L$(HDF5_INSTALL_PATH)/lib -lhdf5 -lz
+HDF5_LIB = -L$(HDF5_INSTALL_PATH)/lib -lhdf5_hl -lhdf5 -lz
 
 .PHONY: clean mklib
 
@@ -174,7 +174,7 @@ mpi_cuda: mklib $(SRC)/mpi/op_mpi_part_core.c \
 
 checkpointing: $(SRC)/externlib/op_checkpointing.c $(INC)/op_checkpointing.h
 	$(MPICPP) $(CPPFLAGS) -I$(INC) $(HDF5_INC) -c $(SRC)/externlib/op_checkpointing.c \
-	$(HDF5_LIB) -lhdf5_hl -o $(OBJ)/externlib/op_checkpointing.o
+	$(HDF5_LIB) -o $(OBJ)/externlib/op_checkpointing.o
 
 	ar -r $(LIB)/libop2_checkpointing.a $(OBJ)/externlib/op_checkpointing.o
 

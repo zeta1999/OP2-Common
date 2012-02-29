@@ -167,6 +167,7 @@ void op_par_loop_bres_calc(char const *name, op_set set,
     printf(" kernel routine with indirection: bres_calc \n");
   }
 
+  if (op_checkpointing_before(args,nargs)) {
   // get plan
 
   #ifdef OP_PART_SIZE_3
@@ -232,5 +233,7 @@ void op_par_loop_bres_calc(char const *name, op_set set,
   OP_kernels[3].time     += wall_t2 - wall_t1;
   OP_kernels[3].transfer  += Plan->transfer;
   OP_kernels[3].transfer2 += Plan->transfer2;
+}
+op_checkpointing_after(args, nargs, 4);
 }
 

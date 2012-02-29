@@ -81,12 +81,12 @@ void __check_hdf5_error(herr_t err, const char *file, const int line) {
 
 bool file_exists(const char * file_name)
 {
-    if (FILE * file = fopen(file_name, "r"))
-    {
-        fclose(file);
-        return true;
-    }
-    return false;
+  if (FILE * file = fopen(file_name, "r"))
+  {
+    fclose(file);
+    return true;
+  }
+  return false;
 }
 
 void store_gbl(op_arg *arg) {
@@ -162,6 +162,7 @@ bool op_checkpointing_init(const char *file_name) {
           printf("Unsupported data type in op_arg_dat() %s\n",  OP_dat_list[i]->name);
           exit(-1);
         }
+        op_commit_data(OP_dat_list[i]);
       }
     }
     //restore control vars
@@ -292,6 +293,7 @@ bool op_checkpointing_before(op_arg *args, int nargs) {
         //write it to disk
         args[i].dat->status = OP_SAVED;
         hsize_t dims[1];
+        op_fetch_data(args[i].dat);
         dims[0] = args[i].dat->dim * args[i].dat->set->size;
         if (strcmp(args[i].type,"int")==0) {
           check_hdf5_error(H5LTmake_dataset(file, args[i].dat->name, 1, dims, H5T_NATIVE_INT, args[i].dat->data));
@@ -330,6 +332,7 @@ bool op_checkpointing_before(op_arg *args, int nargs) {
         //write it to disk
         args[i].dat->status = OP_SAVED;
         hsize_t dims[1];
+        op_fetch_data(args[i].dat);
         dims[0] = args[i].dat->dim * args[i].dat->set->size;
         if (strcmp(args[i].type,"int")==0) {
           check_hdf5_error(H5LTmake_dataset(file, args[i].dat->name, 1, dims, H5T_NATIVE_INT, args[i].dat->data));
@@ -366,6 +369,7 @@ bool op_checkpointing_before(op_arg *args, int nargs) {
         OP_dat_list[i]->status = OP_SAVED;
         hsize_t dims[1];
         dims[0] = OP_dat_list[i]->dim * OP_dat_list[i]->set->size;
+        op_fetch_data(OP_dat_list[i]);
         if (strcmp(OP_dat_list[i]->type,"int")==0) {
           check_hdf5_error(H5LTmake_dataset(file, OP_dat_list[i]->name, 1, dims, H5T_NATIVE_INT, OP_dat_list[i]->data));
         } else if (strcmp(OP_dat_list[i]->type,"float")==0) {

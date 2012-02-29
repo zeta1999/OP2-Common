@@ -103,6 +103,7 @@ void op_par_loop_adt_calc(char const *name, op_set set,
     printf(" kernel routine with indirection: adt_calc \n");
   }
 
+  if (op_checkpointing_before(args,nargs)) {
   // get plan
 
   #ifdef OP_PART_SIZE_1
@@ -165,5 +166,7 @@ void op_par_loop_adt_calc(char const *name, op_set set,
   OP_kernels[1].time     += wall_t2 - wall_t1;
   OP_kernels[1].transfer  += Plan->transfer;
   OP_kernels[1].transfer2 += Plan->transfer2;
+}
+op_checkpointing_after(args, nargs, 4);
 }
 

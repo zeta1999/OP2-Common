@@ -146,6 +146,14 @@ void op_fetch_data ( op_dat dat )
   cutilSafeCall ( cudaThreadSynchronize (  ) );
 }
 
+void
+op_commit_data ( op_dat dat )
+{
+  cutilSafeCall ( cudaMemcpy ( dat->data_d, dat->data,
+                               dat->size * dat->set->size,
+                               cudaMemcpyHostToDevice ) );
+  cutilSafeCall ( cudaThreadSynchronize (  ) );
+}
 
 
 op_plan * op_plan_get ( char const * name, op_set set, int part_size,
