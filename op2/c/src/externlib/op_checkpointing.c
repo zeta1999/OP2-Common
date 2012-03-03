@@ -309,6 +309,7 @@ bool op_checkpointing_before(op_arg *args, int nargs) {
       } else if (args[i].argtype == OP_ARG_DAT &&
              args[i].dat->status == OP_UNDECIDED &&
              args[i].acc == OP_WRITE) { //SHOULD ACCOUNT FOR PARTIAL WRITES OF INDIRECT SETS!!
+//account for scenarion when not accessing all dimensions of it, and when only accessing part of it (e.g. bres)
         //if it is written to then we don't have to back it up
         args[i].dat->status = OP_NOT_SAVED;
         printf("Discarding %s\n", args[i].dat->name);
