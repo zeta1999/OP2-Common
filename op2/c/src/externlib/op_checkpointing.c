@@ -64,6 +64,8 @@ char **gbl_storage=NULL; //where the data is stored
 int loop_max = 0;
 int *loop_gbl_max=NULL;
 int **loop_gbl_args=NULL;
+int call_counter = 0;
+int backup_point = -1;
 
 op_backup_state backup_state = OP_BACKUP_GATHER;
 const char* filename;
@@ -89,6 +91,72 @@ bool file_exists(const char * file_name)
   return false;
 }
 
+/**
+* check if the dataset in argument args[number] is fully written to
+* IMPORTANT:
+* this decision is not bulletproof - since we cannot se into the user's kernel, it might happen that not all dimensions of a multidimensional dataset
+* are written to, in which case this decision is wrong. But we do what we can.
+*/
+bool fully_written(op_arg *args, int nargs, int number) {
+  //if it is directly accessed then it is (hopefully) fully written
+  if (args[number].map == OP_ID) return true;
+
+  //if the mapping only maps to a part of the target dataset (e.g. loop on the boundary edges, writing boundary nodes won't write all nodes)
+  //this line right below is not a very good estimate, so we have to actually iterate through the whole map
+  //if (args[number].map->from->size * args[number].map->dim < args[number].map->to->size) return false;
+  bool *touched = (bool *)malloc(args[number].map->to->size * sizeof(bool));
+  memset(touched, 0, args[number].map->to->size * sizeof(bool));
+  for (int i = 0; i<args[number].map->from->size; i++) {
+    for (int j = 0; j< args[number].map->dim; j++) {
+      touched[args[number].map->map[i*args[number].map->dim + j]] = true;
+    }
+  }
+  for (int i = 0; i<args[number].map->to->size;i++) if (touched[i]==false) return false;
+  //it might be wise to set this as a property of the mapping if we don't want to do this over and over again.
+  //In that case, this should probably be moved to op_plan_core
+  free(touched);
+
+  //check to see if all the indices in the map are accessed (i.e. OP_ALL or 0..max_dim, currently only the latter)
+  //if (args[number].idx == OP_ALL) return true;
+  int *written = (int *)malloc(args[number].map->dim*sizeof(int));
+  memset(written,0, args[number].map->dim*sizeof(int));
+  for (int i = 0; i<nargs; i++) {
+    if (args[i].dat == args[number].dat) written[args[number].idx] = 1;
+  }
+  int counter = args[number].map->dim;
+  for (int i = 0; i<nargs; i++) {
+    if (args[i].dat == args[number].dat && written[args[number].idx]) counter--;
+  }
+  free(written);
+
+  if (counter > 0) return false;
+  return true;
+}
+
+/**
+* save an op_dat to the currently open HDF5 file
+*/
+void save_dat(op_dat dat) {
+  dat->status = OP_SAVED;
+  hsize_t dims[1];
+  op_fetch_data(dat);
+  dims[0] = dat->dim * dat->set->size;
+  if (strcmp(dat->type,"int")==0) {
+    check_hdf5_error(H5LTmake_dataset(file, dat->name, 1, dims, H5T_NATIVE_INT, dat->data));
+  } else if (strcmp(dat->type,"float")==0) {
+    check_hdf5_error(H5LTmake_dataset(file, dat->name, 1, dims, H5T_NATIVE_FLOAT, dat->data));
+  } else if (strcmp(dat->type,"double")==0) {
+    check_hdf5_error(H5LTmake_dataset(file, dat->name, 1, dims, H5T_NATIVE_DOUBLE, dat->data));
+  } else {
+    printf("Unsupported data type in op_arg_dat() %s\n", dat->name);
+    exit(-1);
+  }
+  printf("Backed up %s\n", dat->name);
+}
+
+/**
+* Store the value of an op_arg_gbl
+*/
 void store_gbl(op_arg *arg) {
   if (arg->index == -1) { //if it has not been seen before
     if (gbl_backup_index == gbl_max) { //allocate some more space if we have ran out of it
@@ -118,6 +186,9 @@ void store_gbl(op_arg *arg) {
   gbl_counter[arg->index]+=arg->size;
 }
 
+/**
+* Restore the value of an op_arg_gbl
+*/
 void restore_gbl(op_arg *arg) {
   if (arg->index == -1) { //if it has not been seen before
     arg->index = gbl_restore_index;
@@ -136,6 +207,9 @@ void restore_gbl(op_arg *arg) {
   gbl_counter[arg->index]+=arg->size;
 }
 
+/**
+* Initialises checkpointing using the given filename. Reads in all the backed up data and replaces existing datasets
+*/
 bool op_checkpointing_init(const char *file_name) {
   filename = file_name;
   if (!file_exists(filename)) {
@@ -149,6 +223,10 @@ bool op_checkpointing_init(const char *file_name) {
     file = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
     backup_state = OP_BACKUP_LEADIN;
     printf("//\n// Restore mode\n//\n");
+
+    //read backup point
+    check_hdf5_error(H5LTread_dataset (file,  "backup_point", H5T_NATIVE_INT, &backup_point));
+
     //load everyting here, and set dat->status
     for (int i = 0; i < OP_dat_index; i++) {
       if (H5LTfind_dataset(file, OP_dat_list[i]->name)) {
@@ -165,6 +243,7 @@ bool op_checkpointing_init(const char *file_name) {
         op_commit_data(OP_dat_list[i]);
       }
     }
+
     //restore control vars
     check_hdf5_error(H5LTread_dataset (file,  "gbl_backup_index", H5T_NATIVE_INT, &gbl_backup_index));
     gbl_restore_index = 0;
@@ -212,6 +291,9 @@ bool op_checkpointing_init(const char *file_name) {
   }
 }
 
+/**
+* Checkpointing utility function called after executing the parallel loop itself. Saves the value of op_arg_gbls if they are not OP_READ
+*/
 void op_checkpointing_after(op_arg *args, int nargs, int loop_id) {
   if (loop_id >= loop_max) { //if we ran out of space for storing per loop data, allocate some more
     printf("Allocing more storage for loops: loop_max = %d\n",loop_max);
@@ -237,7 +319,7 @@ void op_checkpointing_after(op_arg *args, int nargs, int loop_id) {
     for (int i = 0; i < ctr; i++) loop_gbl_args[loop_id][i] = -1;
     printf("New par_loop with op_arg_gbls (%d)\n", ctr);
   }
-  if (backup_state == OP_BACKUP_GATHER) { //save control variables (op_arg_gbls)
+  if (backup_state == OP_BACKUP_GATHER || backup_state == OP_BACKUP_IN_PROCESS) { //save control variables (op_arg_gbls)
     ctr = 0;
     for (int i = 0; i < nargs; i++) {
       if (args[i].argtype == OP_ARG_GBL &&
@@ -264,10 +346,16 @@ void op_checkpointing_after(op_arg *args, int nargs, int loop_id) {
   }
 }
 
+/**
+* Checkpointing utility function called right before the execution of the parallel loop itself. Main logic is here.
+*/
 bool op_checkpointing_before(op_arg *args, int nargs) {
+    call_counter++;
   for (int i = 0; i < nargs; i++) { //flag variables that are touched (we do this everytime it is called, may be a little redundant)
     if (args[i].argtype == OP_ARG_DAT && args[i].argtype != OP_READ) args[i].dat->ever_written = true;
   }
+
+  if (call_counter == backup_point && backup_state == OP_BACKUP_LEADIN) backup_state = OP_BACKUP_RESTORE;
 
   if (backup_state == OP_BACKUP_GATHER) {
     //do something clever here, like gathering statistics. Backup of control variables (i.e. gbls) happens after the loop
@@ -281,6 +369,7 @@ bool op_checkpointing_before(op_arg *args, int nargs) {
       OP_dat_list[i]->status = OP_UNDECIDED;
     }
   } else  if (backup_state == OP_BACKUP_BEGIN) {
+    backup_point = call_counter;
     //where we start backing up stuff
     printf("Creating hdf5 file %s\n", filename);
     file = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
@@ -291,103 +380,23 @@ bool op_checkpointing_before(op_arg *args, int nargs) {
         args[i].dat->status == OP_UNDECIDED &&
         args[i].acc != OP_WRITE) {
         //write it to disk
-        args[i].dat->status = OP_SAVED;
-        hsize_t dims[1];
-        op_fetch_data(args[i].dat);
-        dims[0] = args[i].dat->dim * args[i].dat->set->size;
-        if (strcmp(args[i].type,"int")==0) {
-          check_hdf5_error(H5LTmake_dataset(file, args[i].dat->name, 1, dims, H5T_NATIVE_INT, args[i].dat->data));
-        } else if (strcmp(args[i].type,"float")==0) {
-          check_hdf5_error(H5LTmake_dataset(file, args[i].dat->name, 1, dims, H5T_NATIVE_FLOAT, args[i].dat->data));
-        } else if (strcmp(args[i].type,"double")==0) {
-          check_hdf5_error(H5LTmake_dataset(file, args[i].dat->name, 1, dims, H5T_NATIVE_DOUBLE, args[i].dat->data));
-        } else {
-          printf("Unsupported data type in op_arg_dat() %s\n", args[i].dat->name);
-          exit(-1);
-        }
-        printf("Backed up %s\n", args[i].dat->name);
+        save_dat(args[i].dat);
       } else if (args[i].argtype == OP_ARG_DAT &&
              args[i].dat->status == OP_UNDECIDED &&
-             args[i].acc == OP_WRITE) { //SHOULD ACCOUNT FOR PARTIAL WRITES OF INDIRECT SETS!!
-//account for scenarion when not accessing all dimensions of it, and when only accessing part of it (e.g. bres)
-        //if it is written to then we don't have to back it up
-        args[i].dat->status = OP_NOT_SAVED;
-        printf("Discarding %s\n", args[i].dat->name);
+             args[i].acc == OP_WRITE) {
+          if (fully_written(args,nargs,i)) {
+            //if it is written to then we don't have to back it up
+            args[i].dat->status = OP_NOT_SAVED;
+            printf("Discarding %s\n", args[i].dat->name);
+          } else {
+            save_dat(args[i].dat);
+          }
       }
     }
-    backup_state = OP_BACKUP_IN_PROCESS;
-    bool done = true;
-    for (int i = 0; i < OP_dat_index; i++) {
-      if (OP_dat_list[i]->status == OP_UNDECIDED && OP_dat_list[i]->ever_written) {
-        done = false;
-      }
-    }
-    if (done) backup_state = OP_BACKUP_END;
-  } else  if (backup_state == OP_BACKUP_IN_PROCESS) {
-    //when we have already begun backing up, but there are a few datasets that are undecided (whether or not they should be backed up)
-    for (int i = 0; i < nargs; i++) {
-      if (args[i].argtype == OP_ARG_DAT &&
-        args[i].dat->ever_written &&
-        args[i].dat->status == OP_UNDECIDED &&
-        args[i].acc != OP_WRITE) {
-        //write it to disk
-        args[i].dat->status = OP_SAVED;
-        hsize_t dims[1];
-        op_fetch_data(args[i].dat);
-        dims[0] = args[i].dat->dim * args[i].dat->set->size;
-        if (strcmp(args[i].type,"int")==0) {
-          check_hdf5_error(H5LTmake_dataset(file, args[i].dat->name, 1, dims, H5T_NATIVE_INT, args[i].dat->data));
-        } else if (strcmp(args[i].type,"float")==0) {
-          check_hdf5_error(H5LTmake_dataset(file, args[i].dat->name, 1, dims, H5T_NATIVE_FLOAT, args[i].dat->data));
-        } else if (strcmp(args[i].type,"double")==0) {
-          check_hdf5_error(H5LTmake_dataset(file, args[i].dat->name, 1, dims, H5T_NATIVE_DOUBLE, args[i].dat->data));
-        } else {
-          printf("Unsupported data type in op_arg_dat() %s\n", args[i].dat->name);
-          exit(-1);
-        }
-        printf("Backing up %s, delayed\n", args[i].dat->name);
-      } else if (args[i].argtype == OP_ARG_DAT &&
-             args[i].dat->status == OP_UNDECIDED &&
-               args[i].acc == OP_WRITE) { //SHOULD ACCOUNT FOR PARTIAL WRITES OF INDIRECT SETS!!
-        //if it is written to then we don't have to back it up
-        args[i].dat->status = OP_NOT_SAVED;
-        printf("Discarding %s, delayed\n", args[i].dat->name);
-      }
-    }
-    bool done = true;
-    for (int i = 0; i < OP_dat_index; i++) {
-      if (OP_dat_list[i]->status == OP_UNDECIDED && OP_dat_list[i]->ever_written) {
-        done = false;
-      }
-    }
-    if (done) backup_state = OP_BACKUP_END;
-  }
-
-  if (backup_state == OP_BACKUP_END) {
-    //either timed out or ended, if it's the former, back up everything left
-    for (int i = 0; i < OP_dat_index; i++) {
-      if (OP_dat_list[i]->status == OP_UNDECIDED && OP_dat_list[i]->ever_written) {
-        OP_dat_list[i]->status = OP_SAVED;
-        hsize_t dims[1];
-        dims[0] = OP_dat_list[i]->dim * OP_dat_list[i]->set->size;
-        op_fetch_data(OP_dat_list[i]);
-        if (strcmp(OP_dat_list[i]->type,"int")==0) {
-          check_hdf5_error(H5LTmake_dataset(file, OP_dat_list[i]->name, 1, dims, H5T_NATIVE_INT, OP_dat_list[i]->data));
-        } else if (strcmp(OP_dat_list[i]->type,"float")==0) {
-          check_hdf5_error(H5LTmake_dataset(file, OP_dat_list[i]->name, 1, dims, H5T_NATIVE_FLOAT, OP_dat_list[i]->data));
-        } else if (strcmp(OP_dat_list[i]->type,"double")==0) {
-          check_hdf5_error(H5LTmake_dataset(file, OP_dat_list[i]->name, 1, dims, H5T_NATIVE_DOUBLE, OP_dat_list[i]->data));
-        } else {
-          printf("Unsupported data type in op_dat %s\n", OP_dat_list[i]->name);
-          exit(-1);
-        }
-        printf("Timeout, force saving %s\n", args[i].dat->name);
-      }
-    }
-
     //write control variables
     hsize_t dims[1];
     dims[0] = 1;
+    check_hdf5_error(H5LTmake_dataset(file, "backup_point", 1, dims, H5T_NATIVE_INT, &backup_point));
     check_hdf5_error(H5LTmake_dataset(file, "gbl_backup_index", 1, dims, H5T_NATIVE_INT, &gbl_backup_index));
     dims[0] = gbl_backup_index;
     check_hdf5_error(H5LTmake_dataset(file, "gbl_counter", 1, dims, H5T_NATIVE_INT, gbl_counter));
@@ -414,6 +423,54 @@ bool op_checkpointing_before(op_arg *args, int nargs) {
       }
     }
     printf("Saved control variables\n");
+
+    backup_state = OP_BACKUP_IN_PROCESS;
+    bool done = true;
+    for (int i = 0; i < OP_dat_index; i++) {
+      if (OP_dat_list[i]->status == OP_UNDECIDED && OP_dat_list[i]->ever_written) {
+        done = false;
+      }
+    }
+    if (done) backup_state = OP_BACKUP_END;
+  } else  if (backup_state == OP_BACKUP_IN_PROCESS) {
+    //when we have already begun backing up, but there are a few datasets that are undecided (whether or not they should be backed up)
+    for (int i = 0; i < nargs; i++) {
+      if (args[i].argtype == OP_ARG_DAT &&
+        args[i].dat->ever_written &&
+        args[i].dat->status == OP_UNDECIDED &&
+        args[i].acc != OP_WRITE) {
+          save_dat(args[i].dat);
+      } else if (args[i].argtype == OP_ARG_DAT &&
+             args[i].dat->status == OP_UNDECIDED &&
+               args[i].acc == OP_WRITE) { //SHOULD ACCOUNT FOR PARTIAL WRITES OF INDIRECT SETS!!
+            if (fully_written(args,nargs,i)) {
+              //if it is written to then we don't have to back it up
+              args[i].dat->status = OP_NOT_SAVED;
+              printf("Discarding %s\n", args[i].dat->name);
+            } else {
+              save_dat(args[i].dat);
+            }
+      }
+    }
+    bool done = true;
+    for (int i = 0; i < OP_dat_index; i++) {
+      if (OP_dat_list[i]->status == OP_UNDECIDED && OP_dat_list[i]->ever_written) {
+        done = false;
+      }
+    }
+    //WE SHOULD CHECK FOR THE TIMEOUT HERE
+    if (done) backup_state = OP_BACKUP_END;
+  }
+
+  if (backup_state == OP_BACKUP_END) {
+    //either timed out or ended, if it's the former, back up everything left
+    for (int i = 0; i < OP_dat_index; i++) {
+      if (OP_dat_list[i]->status == OP_UNDECIDED && OP_dat_list[i]->ever_written) {
+        save_dat(OP_dat_list[i]);
+        printf("Timeout, force saving %s\n", args[i].dat->name);
+      }
+    }
+
     check_hdf5_error(H5Fclose(file));
     printf("Done backing up\n");
     //finished backing up, reset everything, prepare to be backed up at a later point
