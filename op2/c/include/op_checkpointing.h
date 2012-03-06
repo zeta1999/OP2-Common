@@ -37,7 +37,9 @@
 
 #ifndef __OP_CHECKPOINTING_H
 #define __OP_CHECKPOINTING_H
-
+#ifndef CHECKPOINTING
+#define CHECKPOINTING
+#endif
 typedef enum {OP_BACKUP_GATHER, OP_BACKUP_LEADIN, OP_BACKUP_RESTORE, OP_BACKUP_BEGIN, OP_BACKUP_IN_PROCESS, OP_BACKUP_END} op_backup_state;
 
 #ifdef __cplusplus
@@ -45,7 +47,7 @@ extern "C" {
 #endif
 
 extern op_backup_state backup_state;
-bool op_checkpointing_init(const char *filename);
+bool op_checkpointing_init(const char *filename, double interval);
 bool op_checkpointing_before(op_arg *args, int nargs);
 void op_checkpointing_after(op_arg *args, int nargs, int loop_id);
 

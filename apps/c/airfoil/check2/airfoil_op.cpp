@@ -240,7 +240,7 @@ int main(int argc, char **argv){
   op_decl_const2("qinf",4,"double",qinf  );
 
   op_diagnostic_output();
-  bool restoring = op_checkpointing_init("airfoil_backup.h5");
+  bool restoring = op_checkpointing_init("airfoil_backup.h5", 30.0);
   //initialise timers for total execution wall time
   op_timers(&cpu_t1, &wall_t1);
 
@@ -251,7 +251,6 @@ int main(int argc, char **argv){
   for(int iter=1; iter<=niter; iter++) {
 
 //  save old flow solution
-  if ((iter%100 == 0) && backup_state != OP_BACKUP_LEADIN) backup_state = OP_BACKUP_BEGIN;
     op_par_loop_save_soln("save_soln",cells,
                op_arg_dat(p_q,-1,OP_ID,4,"double",OP_READ),
                op_arg_dat(p_qold,-1,OP_ID,4,"double",OP_WRITE));

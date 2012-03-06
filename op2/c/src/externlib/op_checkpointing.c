@@ -67,6 +67,9 @@ int **loop_gbl_args=NULL;
 int call_counter = 0;
 int backup_point = -1;
 
+double checkpoint_interval = -1;
+double last_checkpoint = -1;
+
 op_backup_state backup_state = OP_BACKUP_GATHER;
 const char* filename;
 hid_t file;
@@ -210,7 +213,11 @@ void restore_gbl(op_arg *arg) {
 /**
 * Initialises checkpointing using the given filename. Reads in all the backed up data and replaces existing datasets
 */
-bool op_checkpointing_init(const char *file_name) {
+bool op_checkpointing_init(const char *file_name, double interval) {
+  checkpoint_interval = interval;
+  if (interval < 10) interval = 10; //WHAT SHOULD THIS BE? - the time it takes to back up everything
+  double cpu;
+  op_timers(&cpu, &last_checkpoint);
   filename = file_name;
   if (!file_exists(filename)) {
     backup_state = OP_BACKUP_GATHER;
@@ -359,16 +366,28 @@ bool op_checkpointing_before(op_arg *args, int nargs) {
 
   if (backup_state == OP_BACKUP_GATHER) {
     //do something clever here, like gathering statistics. Backup of control variables (i.e. gbls) happens after the loop
+    double cpu, now;
+    op_timers(&cpu, &now);
+    if (now-last_checkpoint > checkpoint_interval) {
+      backup_state = OP_BACKUP_BEGIN;
+      last_checkpoint = now;
+      printf("Triggered checkpointing...\n");
+    }
   } else  if (backup_state == OP_BACKUP_LEADIN) {
     //??, but restoring control variables (op_arg_gbls) happens after the loop
     return false;
   } else if (backup_state == OP_BACKUP_RESTORE) {
     //this is the point where we do the switch from restore mode to computation mode
     backup_state = OP_BACKUP_GATHER;
+    double cpu, now;
+    op_timers(&cpu, &now);
+    last_checkpoint = now;
     for (int i = 0; i < OP_dat_index; i++) {
       OP_dat_list[i]->status = OP_UNDECIDED;
     }
-  } else  if (backup_state == OP_BACKUP_BEGIN) {
+  }
+
+  if (backup_state == OP_BACKUP_BEGIN) {
     backup_point = call_counter;
     //where we start backing up stuff
     printf("Creating hdf5 file %s\n", filename);
@@ -458,8 +477,10 @@ bool op_checkpointing_before(op_arg *args, int nargs) {
         done = false;
       }
     }
-    //WE SHOULD CHECK FOR THE TIMEOUT HERE
-    if (done) backup_state = OP_BACKUP_END;
+    double cpu, now;
+    op_timers(&cpu, &now);
+    //if there are no undiceded datasets left, or we hit the timeout trying to decide upon some, lets finish up
+    if (done || (now-last_checkpoint > 5)) backup_state = OP_BACKUP_END;
   }
 
   if (backup_state == OP_BACKUP_END) {
