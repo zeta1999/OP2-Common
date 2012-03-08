@@ -55,7 +55,7 @@ double gam, gm1, cfl, eps, mach, alpha, qinf[4];
 #include "op_seq.h"
 
 #include "op_rt_support.h" //only included for the timer
-#include <op_checkpointing.h>
+//#include <op_checkpointing.h>
 //
 // kernel routines for parallel loops
 //
@@ -196,7 +196,7 @@ int main(int argc, char **argv){
 
   op_diagnostic_output();
 
-  bool restoring = op_checkpointing_init("airfoil_backup.h5");
+  //bool restoring = op_checkpointing_init("airfoil_backup.h5", 30.0);
 
   //initialise timers for total execution wall time
   op_timers(&cpu_t1, &wall_t1);

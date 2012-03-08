@@ -42,6 +42,7 @@ http://www.opensource.org/licenses/bsd-license.php
 #include "hdf5.h"
 #include "hdf5_hl.h"
 #include "op_checkpoint_decision.h"
+#include "op_util.c"
 
 #ifndef backupSize
 #define backupSize 1000
@@ -305,6 +306,13 @@ bool op_checkpointing_init(const char *file_name, double interval) {
   }
 }
 
+bool op_checkpointing_name_before(op_arg *args, int nargs, const char *s) {
+  return op_checkpointing_before(args, nargs, (int)op2_hash(s));
+}
+void op_checkpointing_name_after(op_arg *args, int nargs, const char *s) {
+  return op_checkpointing_after(args, nargs, (int)op2_hash(s));
+}
+
 /**
 * Checkpointing utility function called after executing the parallel loop itself. Saves the value of op_arg_gbls if they are not OP_READ
 */
@@ -378,8 +386,7 @@ bool op_checkpointing_before(op_arg *args, int nargs, int loop_id) {
     if (now-last_checkpoint > checkpoint_interval) {
       last_checkpoint = now;
       pre_backup = true;
-      printf("Triggered checkpointing...\n");
-      fflush(stdout);
+      printf("It's time to checkpoint...\n");
     }
     if (pre_backup && should_backup(loop_id, last_checkpoint+checkpoint_interval-now, checkpoint_interval)) {
       backup_state = OP_BACKUP_BEGIN;

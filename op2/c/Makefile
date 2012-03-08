@@ -181,7 +181,7 @@ checkpointing: $(SRC)/externlib/op_checkpointing.c $(SRC)/externlib/op_checkpoin
 	$(MPICPP) $(CPPFLAGS) -I$(INC) $(HDF5_INC) -c $(SRC)/externlib/op_checkpointing.c \
 	$(HDF5_LIB) -o $(OBJ)/externlib/op_checkpointing.o
 
-	ar -r $(LIB)/libop2_checkpointing.a $(OBJ)/externlib/op_checkpointing_decision.o $(OBJ)/externlib/op_checkpointing.o
+	ar -r $(LIB)/libop2_checkpointing.a $(OBJ)/externlib/op_checkpointing_decision.o $(OBJ)/externlib/op_util.o $(OBJ)/externlib/op_checkpointing.o
 
 
 

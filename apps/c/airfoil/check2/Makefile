@@ -29,7 +29,7 @@ ifeq ($(OP2_COMPILER),gnu)
 else
 ifeq ($(OP2_COMPILER),intel)
   CPP		= icpc
-  CCFLAGS	= -g -O2 -vec-report -xSSE4.1 -parallel #-g #-DCOMM_PERF #-DDEBUG
+  CCFLAGS	= -g -O0 -vec-report -xSSE4.1 -parallel #-g #-DCOMM_PERF #-DDEBUG
   CPPFLAGS 	= $(CCFLAGS)
   OMPFLAGS	= -openmp -openmp-report2
   MPICPP	= mpiCC
@@ -68,7 +68,7 @@ HDF5_LIB = -L$(HDF5_INSTALL_PATH)/lib -lhdf5_hl -lhdf5 -lz
 # master to make all versions
 #
 
-all: clean airfoil_openmp airfoil_cuda
+all: clean airfoil_seq airfoil_openmp airfoil_cuda
 
 #
 # simple sequential version

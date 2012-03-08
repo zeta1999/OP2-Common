@@ -50,6 +50,8 @@ extern op_backup_state backup_state;
 bool op_checkpointing_init(const char *filename, double interval);
 bool op_checkpointing_before(op_arg *args, int nargs, int loop_id);
 void op_checkpointing_after(op_arg *args, int nargs, int loop_id);
+bool op_checkpointing_name_before(op_arg *args, int nargs, const char *s);
+void op_checkpointing_name_after(op_arg *args, int nargs, const char *s);
 
 #ifdef __cplusplus
 }
