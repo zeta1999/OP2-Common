@@ -180,7 +180,7 @@ void op_par_loop_res_calc(char const *name, op_set set,
   }
 
 
-  if (op_checkpointing_before(args,nargs)) {
+  if (op_checkpointing_before(args,nargs,2)) {
 
   // get plan
 
@@ -250,6 +250,6 @@ void op_par_loop_res_calc(char const *name, op_set set,
   OP_kernels[2].transfer  += Plan->transfer;
   OP_kernels[2].transfer2 += Plan->transfer2;
 }
-op_checkpointing_after(args, nargs, 4);
+op_checkpointing_after(args, nargs, 2);
 }
 

@@ -30,29 +30,25 @@
 /*
  * op_checkpointing.h
  *
- * Header file for checkpointing functions in op_checkpointing.c
+ * HInterface to checkpoint triggering decision algorithms
  *
- * written by: Istvan Reguly, (Started 02-27-2012)
+ * written by: Istvan Reguly, (Started 03-04-2012)
  */
 
-#ifndef __OP_CHECKPOINTING_H
-#define __OP_CHECKPOINTING_H
-#ifndef CHECKPOINTING
-#define CHECKPOINTING
-#endif
-typedef enum {OP_BACKUP_GATHER, OP_BACKUP_LEADIN, OP_BACKUP_RESTORE, OP_BACKUP_BEGIN, OP_BACKUP_IN_PROCESS, OP_BACKUP_END} op_backup_state;
+#ifndef __OP_CHECKPOINT_DECISION_H
+#define __OP_CHECKPOINT_DECISION_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern op_backup_state backup_state;
-bool op_checkpointing_init(const char *filename, double interval);
-bool op_checkpointing_before(op_arg *args, int nargs, int loop_id);
-void op_checkpointing_after(op_arg *args, int nargs, int loop_id);
+void gather_statistics(op_arg *args, int nargs, int loop_id);
+bool should_backup(int loop_id, double time_left, double timeout);
+void decision_init();
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __OP_CHECKPOINTING_H */
+
+#endif /* __OP_CHECKPOINT_DECISION_H */

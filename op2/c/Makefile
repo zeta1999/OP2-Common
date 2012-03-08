@@ -172,11 +172,16 @@ mpi_cuda: mklib $(SRC)/mpi/op_mpi_part_core.c \
 	$(OBJ)/op_mpi_hdf5.o \
 	$(OBJ)/op_mpi_cuda_kernels.o
 
-checkpointing: $(SRC)/externlib/op_checkpointing.c $(INC)/op_checkpointing.h
+checkpointing: $(SRC)/externlib/op_checkpointing.c $(SRC)/externlib/op_checkpoint_decision_simple.c \
+	$(SRC)/externlib/op_checkpoint_decision.h $(INC)/op_checkpointing.h
+
+	$(MPICPP) $(CPPFLAGS) -I$(INC) -c $(SRC)/externlib/op_checkpoint_decision_simple.c \
+	-o $(OBJ)/externlib/op_checkpointing_decision.o
+
 	$(MPICPP) $(CPPFLAGS) -I$(INC) $(HDF5_INC) -c $(SRC)/externlib/op_checkpointing.c \
 	$(HDF5_LIB) -o $(OBJ)/externlib/op_checkpointing.o
 
-	ar -r $(LIB)/libop2_checkpointing.a $(OBJ)/externlib/op_checkpointing.o
+	ar -r $(LIB)/libop2_checkpointing.a $(OBJ)/externlib/op_checkpointing_decision.o $(OBJ)/externlib/op_checkpointing.o
 
 
 

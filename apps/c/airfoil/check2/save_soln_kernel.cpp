@@ -41,7 +41,7 @@ void op_par_loop_save_soln(char const *name, op_set set,
   int    nargs   = 2;
   op_arg args[2] = {arg0,arg1};
 
-  if (op_checkpointing_before(args,nargs)) {
+  if (op_checkpointing_before(args,nargs,0)) {
 
   // initialise timers
 

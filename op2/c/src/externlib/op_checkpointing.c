@@ -41,9 +41,14 @@ http://www.opensource.org/licenses/bsd-license.php
 #include <op_checkpointing.h>
 #include "hdf5.h"
 #include "hdf5_hl.h"
+#include "op_checkpoint_decision.h"
 
 #ifndef backupSize
 #define backupSize 1000
+#endif
+
+#ifndef defaultTimeout
+#define defaultTimeout 10.0
 #endif
 
 // How backing up op_arg_gbls works:
@@ -69,6 +74,7 @@ int backup_point = -1;
 
 double checkpoint_interval = -1;
 double last_checkpoint = -1;
+bool pre_backup = false;
 
 op_backup_state backup_state = OP_BACKUP_GATHER;
 const char* filename;
@@ -215,10 +221,11 @@ void restore_gbl(op_arg *arg) {
 */
 bool op_checkpointing_init(const char *file_name, double interval) {
   checkpoint_interval = interval;
-  if (interval < 10) interval = 10; //WHAT SHOULD THIS BE? - the time it takes to back up everything
+  if (interval < defaultTimeout*2.0) interval = defaultTimeout*2.0; //WHAT SHOULD THIS BE? - the time it takes to back up everything
   double cpu;
   op_timers(&cpu, &last_checkpoint);
   filename = file_name;
+  decision_init();
   if (!file_exists(filename)) {
     backup_state = OP_BACKUP_GATHER;
     printf("//\n// Backup mode\n//\n");
@@ -356,7 +363,7 @@ void op_checkpointing_after(op_arg *args, int nargs, int loop_id) {
 /**
 * Checkpointing utility function called right before the execution of the parallel loop itself. Main logic is here.
 */
-bool op_checkpointing_before(op_arg *args, int nargs) {
+bool op_checkpointing_before(op_arg *args, int nargs, int loop_id) {
     call_counter++;
   for (int i = 0; i < nargs; i++) { //flag variables that are touched (we do this everytime it is called, may be a little redundant)
     if (args[i].argtype == OP_ARG_DAT && args[i].argtype != OP_READ) args[i].dat->ever_written = true;
@@ -365,13 +372,18 @@ bool op_checkpointing_before(op_arg *args, int nargs) {
   if (call_counter == backup_point && backup_state == OP_BACKUP_LEADIN) backup_state = OP_BACKUP_RESTORE;
 
   if (backup_state == OP_BACKUP_GATHER) {
-    //do something clever here, like gathering statistics. Backup of control variables (i.e. gbls) happens after the loop
+    gather_statistics(args, nargs, loop_id);
     double cpu, now;
     op_timers(&cpu, &now);
     if (now-last_checkpoint > checkpoint_interval) {
-      backup_state = OP_BACKUP_BEGIN;
       last_checkpoint = now;
+      pre_backup = true;
       printf("Triggered checkpointing...\n");
+      fflush(stdout);
+    }
+    if (pre_backup && should_backup(loop_id, last_checkpoint+checkpoint_interval-now, checkpoint_interval)) {
+      backup_state = OP_BACKUP_BEGIN;
+      pre_backup = false;
     }
   } else  if (backup_state == OP_BACKUP_LEADIN) {
     //??, but restoring control variables (op_arg_gbls) happens after the loop
@@ -480,7 +492,7 @@ bool op_checkpointing_before(op_arg *args, int nargs) {
     double cpu, now;
     op_timers(&cpu, &now);
     //if there are no undiceded datasets left, or we hit the timeout trying to decide upon some, lets finish up
-    if (done || (now-last_checkpoint > 5)) backup_state = OP_BACKUP_END;
+    if (done || (now-last_checkpoint > defaultTimeout)) backup_state = OP_BACKUP_END;
   }
 
   if (backup_state == OP_BACKUP_END) {

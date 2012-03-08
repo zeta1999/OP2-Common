@@ -148,7 +148,7 @@ void op_par_loop_bres_calc(char const *name, op_set set,
   if (OP_diags>2) {
     printf(" kernel routine with indirection: bres_calc \n");
   }
-  if (op_checkpointing_before(args,nargs)) {
+  if (op_checkpointing_before(args,nargs,3)) {
   // get plan
 
   #ifdef OP_PART_SIZE_3

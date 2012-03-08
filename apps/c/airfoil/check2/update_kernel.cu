@@ -104,7 +104,7 @@ void op_par_loop_update(char const *name, op_set set,
   int    nargs   = 5;
   op_arg args[5] = {arg0,arg1,arg2,arg3,arg4};
 
-  if (op_checkpointing_before(args,nargs)) {
+  if (op_checkpointing_before(args,nargs,4)) {
 
   // initialise timers
 

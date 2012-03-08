@@ -97,7 +97,7 @@ void op_par_loop_adt_calc(char const *name, op_set set,
     printf(" kernel routine with indirection: adt_calc \n");
   }
 
-  if (op_checkpointing_before(args,nargs)) {
+  if (op_checkpointing_before(args,nargs,1)) {
 
   // get plan
 

@@ -161,7 +161,7 @@ void op_par_loop_res_calc(char const *name, op_set set,
   if (OP_diags>2) {
     printf(" kernel routine with indirection: res_calc \n");
   }
-  if (op_checkpointing_before(args,nargs)) {
+  if (op_checkpointing_before(args,nargs,2)) {
   // get plan
   #ifdef OP_PART_SIZE_2
     int part_size = OP_PART_SIZE_2;
