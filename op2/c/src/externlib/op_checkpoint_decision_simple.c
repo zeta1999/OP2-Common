@@ -66,19 +66,20 @@ bool is_fully_written(op_arg *args, int nargs, int number) {
   free(touched);
 
   //check to see if all the indices in the map are accessed (i.e. OP_ALL or 0..max_dim, currently only the latter)
+  //it might happen that two maps are used to access the same dataset
+  //but it the user shouldnt access the same dat with the same map and index (I don't check for that)
   //if (args[number].idx == OP_ALL) return true;
-  int *written = (int *)malloc(args[number].map->dim*sizeof(int));
-  memset(written,0, args[number].map->dim*sizeof(int));
-  for (int i = 0; i<nargs; i++) {
-    if (args[i].dat == args[number].dat) written[args[number].idx] = 1;
-  }
   int counter = args[number].map->dim;
   for (int i = 0; i<nargs; i++) {
-    if (args[i].dat == args[number].dat && written[args[number].idx]) counter--;
+    if (args[i].dat == args[number].dat) {
+      counter--;
+      if (args[i].map != args[number].map) {
+        return false;
+      }
+    }
   }
-  free(written);
-
   if (counter > 0) return false;
+
   return true;
 }
 

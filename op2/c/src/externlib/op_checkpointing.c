@@ -62,28 +62,35 @@ http://www.opensource.org/licenses/bsd-license.php
 // unique index and use that to access a loop index independent storage
 // We do the latter.
 
+//per op_arg_gbl information storage
 int gbl_backup_index = 0, gbl_restore_index = 0, gbl_max = 0;
 int *gbl_counter=NULL; //amount of data stored per backed up op_arg_gbl
 int *gbl_storage_max=NULL; //max amount of data stored per backed up op_arg_gbl
 char **gbl_storage=NULL; //where the data is stored
 
+//per loop information storage
 int loop_max = 0;
 int *loop_gbl_max=NULL;
 int **loop_gbl_args=NULL;
+int *hashmap = NULL;
+
+//checkpoint and execution progress information
 int call_counter = 0;
 int backup_point = -1;
-
 double checkpoint_interval = -1;
 double last_checkpoint = -1;
 bool pre_backup = false;
-
 op_backup_state backup_state = OP_BACKUP_GATHER;
+
+//file managment
 const char* filename;
 hid_t file;
 herr_t status;
 
+//
+//helper functions
+//
 #define check_hdf5_error(err)           __check_hdf5_error      (err, __FILE__, __LINE__)
-
 void __check_hdf5_error(herr_t err, const char *file, const int line) {
   if (err < 0) {
     printf("%s(%i) : OP2_HDF5_error() Runtime API error %d.\n", file, line, (int)err);
@@ -91,14 +98,12 @@ void __check_hdf5_error(herr_t err, const char *file, const int line) {
   }
 }
 
-bool file_exists(const char * file_name)
-{
-  if (FILE * file = fopen(file_name, "r"))
-  {
-    fclose(file);
-    return true;
-  }
-  return false;
+bool file_exists(const char * file_name) {
+    if (FILE * file = fopen(file_name, "r")) {
+        fclose(file);
+        return true;
+    }
+    return false;
 }
 
 /**
@@ -127,19 +132,20 @@ bool fully_written(op_arg *args, int nargs, int number) {
   free(touched);
 
   //check to see if all the indices in the map are accessed (i.e. OP_ALL or 0..max_dim, currently only the latter)
+  //it might happen that two maps are used to access the same dataset
+  //but it the user shouldnt access the same dat with the same map and index (I don't check for that)
   //if (args[number].idx == OP_ALL) return true;
-  int *written = (int *)malloc(args[number].map->dim*sizeof(int));
-  memset(written,0, args[number].map->dim*sizeof(int));
-  for (int i = 0; i<nargs; i++) {
-    if (args[i].dat == args[number].dat) written[args[number].idx] = 1;
-  }
   int counter = args[number].map->dim;
   for (int i = 0; i<nargs; i++) {
-    if (args[i].dat == args[number].dat && written[args[number].idx]) counter--;
+    if (args[i].dat == args[number].dat) {
+      counter--;
+      if (args[i].map != args[number].map) {
+        return false;
+      }
+    }
   }
-  free(written);
-
   if (counter > 0) return false;
+
   return true;
 }
 
@@ -227,6 +233,7 @@ bool op_checkpointing_init(const char *file_name, double interval) {
   op_timers(&cpu, &last_checkpoint);
   filename = file_name;
   decision_init();
+
   if (!file_exists(filename)) {
     backup_state = OP_BACKUP_GATHER;
     printf("//\n// Backup mode\n//\n");
@@ -285,16 +292,18 @@ bool op_checkpointing_init(const char *file_name, double interval) {
     check_hdf5_error(H5LTread_dataset (file,  "loop_max", H5T_NATIVE_INT, &loop_max));
     loop_gbl_args = (int **)malloc(loop_max*sizeof(int *));
     loop_gbl_max = (int *)malloc(loop_max*sizeof(int));
+    hashmap = (int *)malloc(loop_max*sizeof(int));
     for (int i = 0; i < loop_max; i++) {
       loop_gbl_args[i] = NULL;
       loop_gbl_max[i] = 0;
+      hashmap[i] = -1;
     }
 
     printf("restoring %d loops\n", loop_max);
     check_hdf5_error(H5LTread_dataset (file,  "loop_gbl_max", H5T_NATIVE_INT, loop_gbl_max));
     memset(buffer,0,16); if (loop_max > 1000) {printf("too many loops... correct me in op_checkpointing.c\n"); exit(-1);}
     for (int i = 0; i < loop_max; i++) {
-      if (loop_gbl_max[i] !=0) {
+      if (loop_gbl_max[i] !=0 && loop_gbl_max[i] != -1) {
         sprintf(buffer, "loop_gbl_args%d",i);
         loop_gbl_args[i] = (int *)malloc(loop_gbl_max[i] * sizeof(int));
         check_hdf5_error(H5LTread_dataset (file,  buffer, H5T_NATIVE_INT, loop_gbl_args[i]));
@@ -307,10 +316,38 @@ bool op_checkpointing_init(const char *file_name, double interval) {
 }
 
 bool op_checkpointing_name_before(op_arg *args, int nargs, const char *s) {
-  return op_checkpointing_before(args, nargs, (int)op2_hash(s));
+  int loop_id = 0;
+  int hash = (int)op2_hash(s);
+  for (; loop_id < loop_max; loop_id++) {
+    if (hashmap[loop_id] == hash || hashmap[loop_id] == -1) break;
+  }
+  if (hashmap != NULL && hashmap[loop_id] != -1 && hashmap[loop_id] != hash) loop_id++;
+
+  if (hashmap == NULL || loop_id >= loop_max) { //if we ran out of space for storing per loop data, allocate some more
+    printf("Allocing more storage for loops: loop_max = %d\n",loop_max);
+    loop_max += 10;
+    loop_gbl_args = (int **)realloc(loop_gbl_args, loop_max*sizeof(int *));
+    loop_gbl_max = (int *)realloc(loop_gbl_max, loop_max*sizeof(int));
+    hashmap = (int *)realloc(hashmap, loop_max*sizeof(int));
+    for (int i = loop_max-10; i < loop_max; i++) {
+      loop_gbl_args[i] = NULL;
+      loop_gbl_max[i] = 0;
+      hashmap[i] = -1;
+    }
+  }
+  hashmap[loop_id] = hash;
+
+  return op_checkpointing_before(args, nargs, loop_id);
 }
+
 void op_checkpointing_name_after(op_arg *args, int nargs, const char *s) {
-  return op_checkpointing_after(args, nargs, (int)op2_hash(s));
+  int loop_id = 0;
+  int hash = (int)op2_hash(s);
+  for (loop_id = 0; loop_id < loop_max; loop_id++) {
+    if (hashmap[loop_id] == hash || hashmap[loop_id] == -1) break;
+  }
+  if (hashmap[loop_id] != hash) {printf("Checkpointing hashmap error\n"); exit(-1);}
+  op_checkpointing_after(args, nargs, loop_id);
 }
 
 /**
@@ -322,27 +359,36 @@ void op_checkpointing_after(op_arg *args, int nargs, int loop_id) {
     loop_max += 10;
     loop_gbl_args = (int **)realloc(loop_gbl_args, loop_max*sizeof(int *));
     loop_gbl_max = (int *)realloc(loop_gbl_max, loop_max*sizeof(int));
+    hashmap = (int *)realloc(hashmap, loop_max*sizeof(int));
     for (int i = loop_max-10; i < loop_max; i++) {
       loop_gbl_args[i] = NULL;
       loop_gbl_max[i] = 0;
+      hashmap[i] = -1;
     }
   }
-  int ctr = 0;
-  for (int i = 0; i < nargs; i++) { //count the number of op_arg_gbls to be backed up
-    if (args[i].argtype == OP_ARG_GBL &&
-      args[i].acc != OP_READ) {
-      ctr++;
-    }
-  }
-  if (ctr == 0) return;
+
+  //if there are no op_arg_gbls, return
+  if (loop_gbl_max[loop_id] == -1) return;
   else if (loop_gbl_args[loop_id] == NULL) { //if we haven't encountered this loop before, allocate memory to store indices and set them to -1
+    int ctr = 0;
+    for (int i = 0; i < nargs; i++) { //count the number of op_arg_gbls to be backed up
+      if (args[i].argtype == OP_ARG_GBL &&
+        args[i].acc != OP_READ) {
+        ctr++;
+      }
+    }
+    if (ctr == 0) {
+      loop_gbl_max[loop_id] = -1; //there are none, don't even check anymore
+      return;
+    }
     loop_gbl_max[loop_id] = ctr;
     loop_gbl_args[loop_id] = (int *)malloc(ctr*sizeof(int));
     for (int i = 0; i < ctr; i++) loop_gbl_args[loop_id][i] = -1;
     printf("New par_loop with op_arg_gbls (%d)\n", ctr);
   }
+
   if (backup_state == OP_BACKUP_GATHER || backup_state == OP_BACKUP_IN_PROCESS) { //save control variables (op_arg_gbls)
-    ctr = 0;
+    int ctr = 0;
     for (int i = 0; i < nargs; i++) {
       if (args[i].argtype == OP_ARG_GBL &&
         args[i].acc != OP_READ) {
@@ -354,7 +400,7 @@ void op_checkpointing_after(op_arg *args, int nargs, int loop_id) {
       }
     }
   } else if (backup_state == OP_BACKUP_LEADIN) { //restore control variables (op_arg_gbls)
-    ctr = 0;
+    int ctr = 0;
     for (int i = 0; i < nargs; i++) {
       if (args[i].argtype == OP_ARG_GBL &&
       args[i].acc != OP_READ) {
@@ -373,7 +419,7 @@ void op_checkpointing_after(op_arg *args, int nargs, int loop_id) {
 */
 bool op_checkpointing_before(op_arg *args, int nargs, int loop_id) {
     call_counter++;
-  for (int i = 0; i < nargs; i++) { //flag variables that are touched (we do this everytime it is called, may be a little redundant)
+  for (int i = 0; i < nargs; i++) { //flag variables that are touched (we do this everytime it is called, may be a little redundant), should make a loop_id filter
     if (args[i].argtype == OP_ARG_DAT && args[i].argtype != OP_READ) args[i].dat->ever_written = true;
   }
 
@@ -454,7 +500,7 @@ bool op_checkpointing_before(op_arg *args, int nargs, int loop_id) {
 
     memset(buffer,0,16); if (loop_max > 1000) {printf("too many loops... correct me in op_checkpointing.c\n"); exit(-1);}
     for (int i = 0; i < loop_max; i++) {
-      if (loop_gbl_max[i] != 0) {
+      if (loop_gbl_max[i] != 0 && loop_gbl_max[i] != -1) {
         dims[0] = loop_gbl_max[i];
         sprintf(buffer, "loop_gbl_args%d",i);
         check_hdf5_error(H5LTmake_dataset(file, buffer, 1, dims, H5T_NATIVE_INT, loop_gbl_args[i]));

@@ -30,7 +30,7 @@
 /*
  * op_checkpointing.h
  *
- * HInterface to checkpoint triggering decision algorithms
+ * Interface to checkpoint triggering decision algorithms
  *
  * written by: Istvan Reguly, (Started 03-04-2012)
  */
