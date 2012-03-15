@@ -49,7 +49,7 @@ http://www.opensource.org/licenses/bsd-license.php
 #endif
 
 #ifndef defaultTimeout
-#define defaultTimeout 10.0
+#define defaultTimeout 3.0
 #endif
 
 // How backing up op_arg_gbls works:

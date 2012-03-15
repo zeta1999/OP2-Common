@@ -240,7 +240,7 @@ int main(int argc, char **argv){
   op_decl_const2("qinf",4,"double",qinf  );
 
   op_diagnostic_output();
-  bool restoring = op_checkpointing_init("airfoil_backup.h5", 30.0);
+  bool restoring = op_checkpointing_init("airfoil_backup.h5", 10.0);
   //initialise timers for total execution wall time
   op_timers(&cpu_t1, &wall_t1);
 
