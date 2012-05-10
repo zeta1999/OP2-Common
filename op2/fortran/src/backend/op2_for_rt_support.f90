@@ -16,7 +16,6 @@ module OP2_Fortran_RT_Support
     integer(kind=c_int) :: nargs, ninds, part_size
     type(c_ptr) ::         in_maps
     type(c_ptr) ::         dats
-
     type(c_ptr) ::         idxs
     type(c_ptr) ::         accs
 
@@ -24,7 +23,6 @@ module OP2_Fortran_RT_Support
     type(c_ptr) ::         nthrcol ! number of thread colors for each block
     type(c_ptr) ::         thrcol ! thread colors
     type(c_ptr) ::         offset ! offset for primary set
-    integer(kind=c_int) :: set_offset ! offset inside set (for MPI back-ends)
     type(c_ptr) ::         ind_maps ! pointers for indirect datasets
     type(c_ptr) ::         ind_offs ! offsets for indirect datasets
     type(c_ptr) ::         ind_sizes ! offsets for indirect datasets
@@ -32,6 +30,7 @@ module OP2_Fortran_RT_Support
     type(c_ptr) ::         maps ! regular pointers, renumbered as needed
     integer(kind=c_int) :: nblocks ! number of blocks (for Fortran)
     type(c_ptr) ::         nelems ! number of elements in each block
+    integer(kind=c_int) :: ncolors_core ! mumber of core colors in MPI
     integer(kind=c_int) :: ncolors ! number of block colors
     type(c_ptr) ::         ncolblk  ! number of blocks for each color
     type(c_ptr) ::         blkmap ! block mapping
