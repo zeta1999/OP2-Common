@@ -19,7 +19,6 @@ module Plan_CUDA
     integer(kind=c_int) ::                    nargs, ninds, part_size
     type(c_ptr) ::                            in_maps
     type(c_ptr) ::                            dats
-
     type(c_ptr) ::                            idxs
     type(c_ptr) ::                            accs
 
@@ -27,7 +26,6 @@ module Plan_CUDA
     type(c_devptr) ::                         nthrcol ! number of thread colors for each block
     type(c_devptr) ::                         thrcol ! thread colors
     type(c_devptr) ::                         offset ! offset for primary set
-    integer(kind=c_int) ::                    set_offset ! offset in set (for MPI backends)
     type(c_ptr) ::                            ind_maps ! pointers for indirect datasets
     type(c_devptr) ::                         ind_offs ! offsets for indirect datasets
     type(c_devptr) ::                         ind_sizes ! offsets for indirect datasets
@@ -35,6 +33,7 @@ module Plan_CUDA
     type(c_ptr) ::                            maps ! regular pointers, renumbered as needed
     integer(kind=c_int) ::                    nblocks ! number of blocks (for Fortran)
     type(c_devptr) ::                         nelems ! number of elements in each block
+    integer(kind=c_int) ::                    ncolors_core ! mumber of core colors in MPI
     integer(kind=c_int) ::                    ncolors ! number of block colors
     type(c_ptr) ::                            ncolblk  ! number of blocks for each color
     type(c_devptr) ::                         blkmap ! block mapping
