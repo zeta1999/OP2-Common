@@ -93,7 +93,7 @@ int get_associated_set_size (op_dat_core * dat)
  * For now implementation only for OpenMP
  * We will then need to fix it in the C branch of the lib
 */
-void op_get_dat ( op_dat_core * opdat )
+/*void op_get_dat ( op_dat_core * opdat )
 {
   (void)opdat;
 }
@@ -102,6 +102,7 @@ void op_put_dat ( op_dat_core * opdat )
 {
   (void)opdat;
 }
+*/
 
 void dumpOpDat (op_dat_core * data, const char * fileName)
 {
