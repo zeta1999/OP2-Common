@@ -208,7 +208,7 @@ module OP2_Fortran_Declarations
 
     end function
 
-    subroutine op_get_dat ( opdat ) BIND(C,name='op_get_dat')
+    subroutine op_get_dat_c ( opdat ) BIND(C,name='op_get_dat')
 
       import :: op_dat_core
 
@@ -216,7 +216,7 @@ module OP2_Fortran_Declarations
 
     end subroutine
 
-    subroutine op_put_dat ( opdat ) BIND(C,name='op_put_dat')
+    subroutine op_put_dat_c ( opdat ) BIND(C,name='op_put_dat')
 
       import :: op_dat_core
 
@@ -562,6 +562,22 @@ contains
     call op_fetch_data_f ( opdat%dataPtr)
 
   end subroutine op_fetch_data
+
+  subroutine op_get_dat ( opdat )
+
+    type(op_dat) :: opdat
+
+    call op_get_dat_c ( opdat%dataPtr)
+
+  end subroutine op_get_dat
+
+  subroutine op_put_dat ( opdat )
+
+    type(op_dat) :: opdat
+
+    call op_put_dat_c ( opdat%dataPtr)
+
+  end subroutine op_put_dat
 
   subroutine op_timers ( et )
 
