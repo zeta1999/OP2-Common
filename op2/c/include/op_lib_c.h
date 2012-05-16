@@ -109,7 +109,7 @@ void op_print_dat_to_binfile(op_dat dat, const char *file_name);
 
 void op_print_dat_to_txtfile(op_dat dat, const char *file_name);
 
-void op_local_renumbering_metiskway(int num_part);
+void op_local_renumbering(int num_part);
 
 #ifdef __cplusplus
 }
