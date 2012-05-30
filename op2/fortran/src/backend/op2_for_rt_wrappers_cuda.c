@@ -53,3 +53,19 @@ op_plan * FortranPlanCallerCUDA ( char name[],
   return generatedPlan;
 }
 
+
+void
+op_get_dat (op_dat dat) {
+  cutilSafeCall ( cudaMemcpy ( dat->data, dat->data_d,
+                               dat->size * dat->set->size,
+                               cudaMemcpyDeviceToHost ) );
+  cutilSafeCall ( cudaThreadSynchronize (  ) );
+}
+
+void
+op_put_dat (op_dat dat) {
+  cutilSafeCall ( cudaMemcpy ( dat->data_d, dat->data,
+                               dat->size * dat->set->size,
+                               cudaMemcpyHostToDevice ) );
+  cutilSafeCall ( cudaThreadSynchronize (  ) );
+}

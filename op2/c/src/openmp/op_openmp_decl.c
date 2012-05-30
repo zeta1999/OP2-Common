@@ -56,22 +56,6 @@ op_decl_dat ( op_set set, int dim, char const * type, int size, char * data, cha
   return op_decl_dat_core ( set, dim, type, size, data, name );
 }
 
-void
-op_fetch_data ( op_dat dat )
-{
-  (void)dat;
-}
-
-void
-op_get_dat (op_dat dat) {
-  (void) dat;
-}
-
-void
-op_put_dat (op_dat dat) {
-  (void) dat;
-}
-
 /*
  * No specific action is required for constants in OpenMP
  */
@@ -88,7 +72,7 @@ op_decl_const_char ( int dim, char const * type, int typeSize, char * data, char
 
 op_plan *
 op_plan_get ( char const * name, op_set set, int part_size,
-              int nargs, op_arg * args, int ninds, int *inds )
+              int nargs, op_arg args, int ninds, int *inds )
 {
   return op_plan_core ( name, set, part_size, nargs, args, ninds, inds );
 }
