@@ -80,7 +80,20 @@ op_arg op_arg_dat ( op_dat dat, int idx, op_map map, int dim, char const * type,
 
 op_arg op_arg_gbl ( char * data, int dim, const char * type, op_access acc )
 {
-  return op_arg_gbl ( data, dim, type, acc );
+  int size = -1;
+
+  if ( strncmp (type, "double", 6) == 0 )
+    size = dim * 8;
+  else if ( strncmp (type, "float", 5) == 0 )
+    size = dim * 4;
+  else if ( strncmp (type, "int", 5) == 0 )
+    size = dim * 4;
+  else {
+    printf ("Unsupported type for global\n");
+    exit (0);
+  }
+
+  return op_arg_gbl_core ( data, dim, type, size, acc );
 }
 
 void op_fetch_data ( op_dat a ) {

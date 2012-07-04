@@ -80,10 +80,10 @@ extern "C" {
 op_plan * op_plan_old_core ( char const *, op_set, int, int, op_dat *,
                              int *, op_map *, int *, char const **, op_access *, int, int * );
 
-op_plan * op_plan_core ( char const *, op_set, int, int, op_arg, int, int * );
+op_plan * op_plan_core ( char const *, op_set, int, int, op_arg *, int, int * );
 
 op_plan * op_plan_get ( char const * name, op_set set, int part_size,
-                        int nargs, op_arg args, int ninds, int * inds );
+                        int nargs, op_arg * args, int ninds, int * inds );
 
 void op_plan_check ( op_plan OP_plan, int ninds, int * inds );
 

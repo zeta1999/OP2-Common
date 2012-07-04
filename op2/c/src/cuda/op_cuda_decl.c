@@ -90,6 +90,7 @@ op_decl_dat ( op_set set, int dim, char const *type, int size,
 op_set
 op_decl_set ( int size, char const * name )
 {
+  printf ("In the CUDA backend, set size = %d, name = %s\n", size, name);
   return op_decl_set_core ( size, name );
 }
 
@@ -107,9 +108,10 @@ op_arg_dat ( op_dat dat, int idx, op_map map, int dim, char const * type,
 }
 
 op_arg
-op_arg_gbl ( char * data, int dim, const char *type, op_access acc )
+op_arg_gbl ( char * data, int dim, const char *type, int size, op_access acc )
 {
-  return op_arg_gbl ( data, dim, type, acc );
+  
+  return op_arg_gbl_core ( data, dim, type, size, acc );
 }
 
 //

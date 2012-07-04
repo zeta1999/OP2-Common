@@ -91,8 +91,6 @@ void op_par_loop(void (*kernel)( T0* ),
   int k_i = op_mpi_perf_time(name, wall_t2 - wall_t1);
   op_mpi_perf_comms(k_i, 1, args);
   #endif
-
-
 }
 
 
