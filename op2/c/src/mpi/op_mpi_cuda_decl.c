@@ -89,12 +89,9 @@ op_init ( int argc, char ** argv, int diags)
 op_dat op_decl_dat( op_set set, int dim, char const *type, int size,
               char * data, char const * name )
 {
-  op_dat dat = op_decl_dat_core ( set, dim, type, size, data, name );
-
-  //op_cpHostToDevice ( ( void ** ) &( dat->data_d ),
-  //                    ( void ** ) &( dat->data ), dat->size * set->size );
-
-  return dat;
+  char* d = (char*) malloc(set->size*dim*size);
+  memcpy(d, data, set->size*dim*size*sizeof(char));
+  return op_decl_dat_core ( set, dim, type, size, d, name );
 }
 
 void op_mv_halo_device(op_set set, op_dat dat)
@@ -140,7 +137,10 @@ op_set op_decl_set(int size, char const * name )
 
 op_map op_decl_map(op_set from, op_set to, int dim, int * imap, char const * name )
 {
-  return op_decl_map_core ( from, to, dim, imap, name );
+  int* m = (int*) malloc(from->size*dim*sizeof(int));
+  memcpy(m, imap, from->size*dim*sizeof(int));
+  return op_decl_map_core ( from, to, dim, m, name );
+  //return op_decl_map_core ( from, to, dim, imap, name );
 }
 
 op_arg
@@ -153,7 +153,20 @@ op_arg_dat ( op_dat dat, int idx, op_map map, int dim, char const * type,
 op_arg
 op_arg_gbl ( char * data, int dim, const char *type, op_access acc )
 {
-  return op_arg_gbl ( data, dim, type, acc );
+  int size = -1;
+
+  if ( strncmp (type, "double", 6) == 0 )
+    size = dim * 8;
+  else if ( strncmp (type, "float", 5) == 0 )
+    size = dim * 4;
+  else if ( strncmp (type, "int", 5) == 0 )
+    size = dim * 4;
+  else {
+    printf ("Unsupported type for global\n");
+    exit (0);
+  }
+
+  return op_arg_gbl_core (data, dim, type, size, acc);
 }
 
 void op_printf(const char* format, ...)
@@ -209,3 +222,17 @@ void op_timing_output()
 {
   op_timing_output_core();
 }
+
+
+void op_print_dat_to_binfile(op_dat dat, const char *file_name)
+{
+  //need to get data from GPU
+  op_fetch_data (dat );
+
+  //rearrange data backe to original order in mpi
+  op_dat temp = op_mpi_get_data(dat);
+  print_dat_to_binfile_mpi(temp, file_name);
+
+  free(temp->data);
+}
+

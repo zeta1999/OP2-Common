@@ -60,7 +60,14 @@ void op_init ( int argc, char ** argv, int diags )
 
 op_dat op_decl_dat ( op_set set, int dim, char const * type, int size, char * data, char const *name )
 {
-  return op_decl_dat_core ( set, dim, type, size, data, name );
+  char* d = (char*) malloc(set->size*dim*size);
+  memcpy(d, data, set->size*dim*size*sizeof(char));
+  //return op_decl_dat_core ( set, dim, type, size, data, name );
+  op_dat out_dat = op_decl_dat_core ( set, dim, type, size, d, name );
+  out_dat-> user_managed = 0;
+  return out_dat;
+
+
 }
 
 void op_fetch_data ( op_dat dat )
@@ -69,7 +76,7 @@ void op_fetch_data ( op_dat dat )
 }
 
 /*
- * No specific action is required for constants in OpenMP
+ * No specific action is required for constants in MPI
  */
 
 void op_decl_const_char ( int dim, char const * type, int typeSize, char * data, char const * name )
@@ -124,18 +131,36 @@ op_set op_decl_set(int size, char const *name )
 
 op_map op_decl_map(op_set from, op_set to, int dim, int * imap, char const * name )
 {
-  return op_decl_map_core ( from, to, dim, imap, name );
+  int* m = (int*) malloc(from->size*dim*sizeof(int));
+  memcpy(m, imap, from->size*dim*sizeof(int));
+
+  op_map out_map= op_decl_map_core ( from, to, dim, m, name );
+  out_map-> user_managed = 0;
+  return out_map;
+  //return op_decl_map_core ( from, to, dim, imap, name );
 }
 
-op_arg op_arg_dat (op_dat dat, int idx, op_map map, int dim, char const * type, op_access acc )
+op_arg op_arg_dat( op_dat dat, int idx, op_map map, int dim, char const * type, op_access acc )
 {
   return op_arg_dat_core ( dat, idx, map, dim, type, acc );
 }
 
-op_arg op_arg_gbl ( char * data, int dim, const char *type, int size, op_access acc )
+op_arg op_arg_gbl( char * data, int dim, const char * type, op_access acc )
 {
-  
-  return op_arg_gbl_core ( data, dim, type, size, acc );
+  int size = -1;
+
+  if ( strncmp (type, "double", 6) == 0 )
+    size = dim * 8;
+  else if ( strncmp (type, "float", 5) == 0 )
+    size = dim * 4;
+  else if ( strncmp (type, "int", 5) == 0 )
+    size = dim * 4;
+  else {
+    printf ("Unsupported type for global\n");
+    exit (0);
+  }
+
+  return op_arg_gbl_core (data, dim, type, size, acc);
 }
 
 void op_timers(double * cpu, double * et)

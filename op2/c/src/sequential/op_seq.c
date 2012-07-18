@@ -73,13 +73,11 @@ void op_decl_const_char ( int dim, char const * type, int typeSize, char * data,
   (void)name;
 }
 
-op_arg op_arg_dat ( op_dat dat, int idx, op_map map, int dim, char const * type, op_access acc )
-{
+op_arg op_arg_dat (op_dat dat, int idx, op_map map, int dim, char const * type, op_access acc) {
   return op_arg_dat_core ( dat, idx, map, dim, type, acc );
 }
 
-op_arg op_arg_gbl ( char * data, int dim, const char * type, op_access acc )
-{
+op_arg op_arg_gbl (char * data, int dim, const char * type, op_access acc) {
   int size = -1;
 
   if ( strncmp (type, "double", 6) == 0 )
@@ -93,7 +91,7 @@ op_arg op_arg_gbl ( char * data, int dim, const char * type, op_access acc )
     exit (0);
   }
 
-  return op_arg_gbl_core ( data, dim, type, size, acc );
+  return op_arg_gbl_core (data, dim, type, size, acc);
 }
 
 void op_fetch_data ( op_dat a ) {

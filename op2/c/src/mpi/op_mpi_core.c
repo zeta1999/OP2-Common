@@ -75,12 +75,6 @@ halo_list *OP_export_nonexec_list;//ENH list
 
 op_mpi_buffer *OP_mpi_buffer_list;
 
-//
-// define external functions (in op_mpi_(cuda)_rt_support.c)
-//
-void exchange_halo(op_arg* arg);
-void wait_all(op_arg* arg);
-
 /*table holding MPI performance of each loop
   (accessed via a hash of loop name) */
 
@@ -359,13 +353,14 @@ int is_onto_map(op_map map)
   MPI_Comm_dup(MPI_COMM_WORLD, &OP_CHECK_WORLD);
   MPI_Comm_rank(OP_CHECK_WORLD, &my_rank);
   MPI_Comm_size(OP_CHECK_WORLD, &comm_size);
-
+  
   // Compute global partition range information for each set
   int** part_range = (int **)xmalloc(OP_set_index*sizeof(int*));
   get_part_range(part_range,my_rank,comm_size, OP_CHECK_WORLD);
 
   //mak a copy of the to-set elements of the map
   int* to_elem_copy = (int *)xmalloc(map->from->size*map->dim*sizeof(int));
+
   memcpy(to_elem_copy,(void *)map->map,map->from->size*map->dim*sizeof(int));
 
   //sort and remove duplicates from to_elem_copy
@@ -1943,7 +1938,7 @@ void op_mpi_put_data(op_dat dat)
  * Debug/Diagnostics Routine to initialise import halo data to NaN
  *******************************************************************************/
 
-static void reset_halo(op_arg* arg)
+static void op_reset_halo(op_arg* arg)
 {
   op_dat dat = arg->dat;
 
@@ -1991,23 +1986,19 @@ void mpi_timing_output()
 
   if(tot_count > 0)
   {
-#ifdef COMM_PERF
     double tot_time;
     double avg_time;
 
-    printf("\n\n___________________________________\n");
+    printf("___________________________________________________\n");
     printf("Performance information on rank %d\n", my_rank);
-
+    printf("Kernel        Count  total time(sec)  Avg time(sec)  \n");
     for (int n=0; n<HASHSIZE; n++) {
-      if (op_mpi_kernel_tab[n].count>0) {
-        printf("-----------------------------------\n");
-        printf("Kernel        :  %10s\n",op_mpi_kernel_tab[n].name);
-        printf("Count         :  %10.4d  \n", op_mpi_kernel_tab[n].count);
-        printf("tot_time(sec) :  %10.4f  \n", op_mpi_kernel_tab[n].time);
-        printf("avg_time(sec) :  %10.4f  \n",
-            op_mpi_kernel_tab[n].time/op_mpi_kernel_tab[n].count );
+    if (op_mpi_kernel_tab[n].count>0) {
+        printf("%-10s  %6d       %10.4f      %10.4f    \n",
+          op_mpi_kernel_tab[n].name,op_mpi_kernel_tab[n].count,
+          op_mpi_kernel_tab[n].time,op_mpi_kernel_tab[n].time/op_mpi_kernel_tab[n].count);
 
-
+#ifdef COMM_PERF
         if(op_mpi_kernel_tab[n].num_indices>0)
         {
           printf("halo exchanges:  ");
@@ -2029,12 +2020,16 @@ void mpi_timing_output()
         {
           printf("halo exchanges:  %10s\n","NONE");
         }
+        printf("---------------------------------------------------\n");
+#endif
+
       }
     }
-    printf("___________________________________\n");
+    printf("___________________________________________________\n");
 
     if(my_rank == MPI_ROOT)
     {
+      printf("___________________________________________________\n");
       printf("\nKernel        Count   Max time(sec)   Avg time(sec)  \n");
     }
     for (int n=0; n<HASHSIZE; n++) {
@@ -2052,12 +2047,10 @@ void mpi_timing_output()
       }
       tot_time = avg_time = 0.0;
     }
-#endif
   }
   MPI_Comm_free(&OP_MPI_IO_WORLD);
 }
 
-#ifdef COMM_PERF
 /*******************************************************************************
  * Routine to measure timing for an op_par_loop / kernel
  *******************************************************************************/
@@ -2078,6 +2071,7 @@ int op_mpi_perf_time(const char* name, double time)
   return kernel_index;
 }
 
+#ifdef COMM_PERF
 /*******************************************************************************
  * Routine to measure MPI message sizes exchanged in an op_par_loop / kernel
  *******************************************************************************/
@@ -2173,7 +2167,7 @@ int op_mpi_halo_exchanges(op_set set, int nargs, op_arg *args) {
   for (int n=0; n<nargs; n++) {
     if(args[n].argtype == OP_ARG_DAT)
     {
-      exchange_halo(&args[n]);
+      op_exchange_halo(&args[n]);
       //set_dirtybit(&args[n]);
     }
     if(args[n].idx != -1 && args[n].acc != OP_READ) size = set->size + set->exec_size;
@@ -2193,13 +2187,13 @@ void op_mpi_set_dirtybit(int nargs, op_arg *args) {
 
 void op_mpi_wait_all(int nargs, op_arg *args) {
   for (int n=0; n<nargs; n++) {
-    wait_all(&args[n]);
+    op_wait_all(&args[n]);
   }
 }
 
 void op_mpi_reset_halos(int nargs, op_arg *args) {
   for (int n=0; n<nargs; n++) {
-    reset_halo(&args[n]);
+    op_reset_halo(&args[n]);
   }
 }
 
@@ -2646,6 +2640,220 @@ void print_dat_tobinfile(op_dat dat, const char *file_name)
 
   MPI_Comm_free(&OP_MPI_IO_WORLD);
 }
+
+
+
+void print_dat_to_binfile_mpi(op_dat dat, const char *file_name)
+{
+  //create new communicator for output
+  int rank, comm_size;
+  MPI_Comm OP_MPI_IO_WORLD;
+  MPI_Comm_dup(MPI_COMM_WORLD, &OP_MPI_IO_WORLD);
+  MPI_Comm_rank(OP_MPI_IO_WORLD, &rank);
+  MPI_Comm_size(OP_MPI_IO_WORLD, &comm_size);
+
+  //compute local number of elements in dat
+  int count = dat->set->size;
+
+  if(strcmp(dat->type,"double") == 0)
+  {
+    double *l_array  = (double *) xmalloc(dat->dim*(count)*sizeof(double));
+    memcpy(l_array, (void *)&(dat->data[0]),
+        dat->size*count);
+
+    int l_size = count;
+    size_t elem_size = dat->dim;
+    int* recevcnts = (int *) xmalloc(comm_size*sizeof(int));
+    int* displs = (int *) xmalloc(comm_size*sizeof(int));
+    int disp = 0;
+    double *g_array = 0;
+
+    MPI_Allgather(&l_size, 1, MPI_INT, recevcnts, 1, MPI_INT, OP_MPI_IO_WORLD);
+
+    int g_size = 0;
+    for(int i = 0; i<comm_size; i++)
+    {
+      g_size += recevcnts[i];
+      recevcnts[i] =   elem_size*recevcnts[i];
+    }
+    for(int i = 0; i<comm_size; i++)
+    {
+      displs[i] =   disp;
+      disp = disp + recevcnts[i];
+    }
+    if(rank==MPI_ROOT) g_array  = (double *) xmalloc(elem_size*g_size*sizeof(double));
+    MPI_Gatherv(l_array, l_size*elem_size, MPI_DOUBLE, g_array, recevcnts,
+        displs, MPI_DOUBLE, MPI_ROOT, OP_MPI_IO_WORLD);
+
+
+    if(rank==MPI_ROOT)
+    {
+      FILE *fp;
+
+      printf ("Rank %d, going into wb\n", rank);
+
+      if ( (fp = fopen(file_name,"wb")) == NULL) {
+        printf("can't open file %s\n",file_name);
+        MPI_Abort(OP_MPI_IO_WORLD, -1);
+      }
+
+      if (fwrite(&g_size, sizeof(int),1, fp)<1)
+      {
+        printf("error writing to %s",file_name);
+        MPI_Abort(OP_MPI_IO_WORLD, -1);
+      }
+      if (fwrite(&elem_size, sizeof(int),1, fp)<1)
+      {
+        printf("error writing to %s\n",file_name);
+        MPI_Abort(OP_MPI_IO_WORLD, -1);
+      }
+
+      for(int i = 0; i< g_size; i++)
+      {
+        if (fwrite( &g_array[i*elem_size], sizeof(double), elem_size, fp ) < elem_size)
+        {
+          printf("error writing to %s\n",file_name);
+          MPI_Abort(OP_MPI_IO_WORLD, -1);
+        }
+      }
+      fclose(fp);
+      free(g_array);
+    }
+    free(l_array);free(recevcnts);free(displs);
+  }
+  else if(strcmp(dat->type,"float") == 0)
+  {
+    float *l_array  = (float *) xmalloc(dat->dim*(count)*sizeof(float));
+    memcpy(l_array, (void *)&(dat->data[0]),
+        dat->size*count);
+
+    int l_size = count;
+    size_t elem_size = dat->dim;
+    int* recevcnts = (int *) xmalloc(comm_size*sizeof(int));
+    int* displs = (int *) xmalloc(comm_size*sizeof(int));
+    int disp = 0;
+    float *g_array = 0;
+
+    MPI_Allgather(&l_size, 1, MPI_INT, recevcnts, 1, MPI_INT, OP_MPI_IO_WORLD);
+
+    int g_size = 0;
+    for(int i = 0; i<comm_size; i++)
+    {
+      g_size += recevcnts[i];
+      recevcnts[i] =   elem_size*recevcnts[i];
+    }
+    for(int i = 0; i<comm_size; i++)
+    {
+      displs[i] =   disp;
+      disp = disp + recevcnts[i];
+    }
+    if(rank==MPI_ROOT) g_array  = (float *) xmalloc(elem_size*g_size*sizeof(float));
+    MPI_Gatherv(l_array, l_size*elem_size, MPI_FLOAT, g_array, recevcnts,
+        displs, MPI_FLOAT, MPI_ROOT, OP_MPI_IO_WORLD);
+
+
+    if(rank==MPI_ROOT)
+    {
+      FILE *fp;
+      if ( (fp = fopen(file_name,"wb")) == NULL) {
+        printf("can't open file %s\n",file_name);
+        MPI_Abort(OP_MPI_IO_WORLD, -1);
+      }
+
+      if (fwrite(&g_size, sizeof(int),1, fp)<1)
+      {
+        printf("error writing to %s",file_name);
+        MPI_Abort(OP_MPI_IO_WORLD, -1);
+      }
+      if (fwrite(&elem_size, sizeof(int),1, fp)<1)
+      {
+        printf("error writing to %s\n",file_name);
+        MPI_Abort(OP_MPI_IO_WORLD, -1);
+      }
+
+      for(int i = 0; i< g_size; i++)
+      {
+        if (fwrite( &g_array[i*elem_size], sizeof(float), elem_size, fp ) < elem_size)
+        {
+          printf("error writing to %s\n",file_name);
+          MPI_Abort(OP_MPI_IO_WORLD, -1);
+        }
+      }
+      fclose(fp);
+      free(g_array);
+    }
+    free(l_array);free(recevcnts);free(displs);
+  }
+  else if(strcmp(dat->type,"int") == 0)
+  {
+    int *l_array  = (int *) xmalloc(dat->dim*(count)*sizeof(int));
+    memcpy(l_array, (void *)&(dat->data[0]),
+        dat->size*count);
+
+    int l_size = count;
+    size_t elem_size = dat->dim;
+    int* recevcnts = (int *) xmalloc(comm_size*sizeof(int));
+    int* displs = (int *) xmalloc(comm_size*sizeof(int));
+    int disp = 0;
+    int *g_array = 0;
+
+    MPI_Allgather(&l_size, 1, MPI_INT, recevcnts, 1, MPI_INT, OP_MPI_IO_WORLD);
+
+    int g_size = 0;
+    for(int i = 0; i<comm_size; i++)
+    {
+      g_size += recevcnts[i];
+      recevcnts[i] =   elem_size*recevcnts[i];
+    }
+    for(int i = 0; i<comm_size; i++)
+    {
+      displs[i] =   disp;
+      disp = disp + recevcnts[i];
+    }
+    if(rank==MPI_ROOT) g_array  = (int *) xmalloc(elem_size*g_size*sizeof(int));
+    MPI_Gatherv(l_array, l_size*elem_size, MPI_INT, g_array, recevcnts,
+        displs, MPI_INT, MPI_ROOT, OP_MPI_IO_WORLD);
+
+    if(rank==MPI_ROOT)
+    {
+      FILE *fp;
+      if ( (fp = fopen(file_name,"wb")) == NULL) {
+        printf("can't open file %s\n",file_name);
+        MPI_Abort(OP_MPI_IO_WORLD, -1);
+      }
+
+      if (fwrite(&g_size, sizeof(int),1, fp)<1)
+      {
+        printf("error writing to %s",file_name);
+        MPI_Abort(OP_MPI_IO_WORLD, -1);
+      }
+      if (fwrite(&elem_size, sizeof(int),1, fp)<1)
+      {
+        printf("error writing to %s\n",file_name);
+        MPI_Abort(OP_MPI_IO_WORLD, -1);
+      }
+
+      for(int i = 0; i< g_size; i++)
+      {
+        if (fwrite( &g_array[i*elem_size], sizeof(int), elem_size, fp ) < elem_size)
+        {
+          printf("error writing to %s\n",file_name);
+          MPI_Abort(OP_MPI_IO_WORLD, -1);
+        }
+      }
+      fclose(fp);
+      free(g_array);
+    }
+    free(l_array);free(recevcnts);free(displs);
+  }
+  else
+  {
+    printf("Unknown type %s, cannot be written to file %s\n",dat->type,file_name);
+  }
+
+  MPI_Comm_free(&OP_MPI_IO_WORLD);
+}
+
 
 /*******************************************************************************
  * Get the global size of a set

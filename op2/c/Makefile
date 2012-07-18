@@ -29,7 +29,7 @@ ifeq ($(OP2_COMPILER),gnu)
 	CC       := gcc
 	CCFLAGS  := -std=c99 -fPIC -DUNIX -Wall #-g
 	CXX      := g++
-	CXXFLAGS := -fPIC -DUNIX -Wall #-g -Wextra
+	CXXFLAGS := -std=c99 -fPIC -DUNIX -Wall #-g -Wextra
 	MPICXX   := /usr/bin/mpiCC
 	MPIFLAGS := $(CXXFLAGS)
 else
@@ -38,7 +38,7 @@ ifeq ($(OP2_COMPILER),intel)
 	CCFLAGS  := -O3 -vec-report -xSSE4.2 #-DCOMM_PERF #-DDEBUG -g
 	CXX      := icpc
 	CXXFLAGS := $(CCFLAGS)
-	MPICXX   := mpicc
+	MPICXX   := mpiCC
 	MPIFLAGS := $(CXXFLAGS)
 else
 print:

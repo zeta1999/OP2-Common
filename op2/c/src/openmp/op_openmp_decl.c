@@ -56,6 +56,13 @@ op_decl_dat ( op_set set, int dim, char const * type, int size, char * data, cha
   return op_decl_dat_core ( set, dim, type, size, data, name );
 }
 
+void
+op_fetch_data ( op_dat dat )
+{
+  (void)dat;
+}
+
+
 /*
  * No specific action is required for constants in OpenMP
  */

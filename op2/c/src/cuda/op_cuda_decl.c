@@ -81,8 +81,24 @@ op_decl_dat ( op_set set, int dim, char const *type, int size,
 {
   op_dat dat = op_decl_dat_core ( set, dim, type, size, data, name );
 
-  op_cpHostToDevice ( ( void ** ) &( dat->data_d ),
-                      ( void ** ) &( dat->data ), dat->size * set->size );
+  //transpose data
+  if (strstr( type, ":soa")!= NULL) {
+    char *temp_data = (char *)malloc(dat->size*set->size*sizeof(char));
+    int element_size = dat->size/dat->dim;
+    for (int i = 0; i < dat->dim; i++) {
+      for (int j = 0; j < set->size; j++) {
+        for (int c = 0; c < element_size; c++) {
+          temp_data[element_size*i*set->size + element_size*j + c] = data[dat->size*j+element_size*i+c];
+        }
+      }
+    }
+    op_cpHostToDevice ( ( void ** ) &( dat->data_d ),
+                          ( void ** ) &( temp_data ), dat->size * set->size );
+    free(temp_data);
+  } else {
+    op_cpHostToDevice ( ( void ** ) &( dat->data_d ),
+                        ( void ** ) &( dat->data ), dat->size * set->size );
+  }
 
   return dat;
 }
@@ -90,7 +106,6 @@ op_decl_dat ( op_set set, int dim, char const *type, int size,
 op_set
 op_decl_set ( int size, char const * name )
 {
-  printf ("In the CUDA backend, set size = %d, name = %s\n", size, name);
   return op_decl_set_core ( size, name );
 }
 
@@ -108,10 +123,22 @@ op_arg_dat ( op_dat dat, int idx, op_map map, int dim, char const * type,
 }
 
 op_arg
-op_arg_gbl ( char * data, int dim, const char *type, int size, op_access acc )
+op_arg_gbl ( char * data, int dim, const char *type, op_access acc )
 {
-  
-  return op_arg_gbl_core ( data, dim, type, size, acc );
+  int size = -1;
+
+  if ( strncmp (type, "double", 6) == 0 )
+    size = dim * 8;
+  else if ( strncmp (type, "float", 5) == 0 )
+    size = dim * 4;
+  else if ( strncmp (type, "int", 5) == 0 )
+    size = dim * 4;
+  else {
+    printf ("Unsupported type for global\n");
+    exit (0);
+  }
+
+  return op_arg_gbl_core (data, dim, type, size, acc);
 }
 
 //
@@ -158,4 +185,11 @@ void op_exit()
 void op_timing_output()
 {
   op_timing_output_core();
+}
+
+void op_print_dat_to_binfile(op_dat dat, const char *file_name)
+{
+  //need to get data from GPU
+  op_fetch_data (dat);
+  op_print_dat_to_binfile_core(dat, file_name);
 }

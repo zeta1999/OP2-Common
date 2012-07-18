@@ -196,6 +196,7 @@ op_decl_map_core ( op_set from, op_set to, int dim, int * imap, char const * nam
   map->dim = dim;
   map->map = imap;
   map->name = copy_str( name );
+  map->user_managed = 1;
 
   OP_map_list[OP_map_index++] = map;
 
@@ -237,7 +238,7 @@ op_decl_dat_core ( op_set set, int dim, char const * type, int size, char * data
   dat->name = copy_str( name );
   dat->type = copy_str( type );
   dat->size = dim * size;
-
+  dat->user_managed = 1;
   OP_dat_list[OP_dat_index++] = dat;
 
   return dat;
@@ -267,7 +268,8 @@ op_exit_core (  )
 
   for ( int i = 0; i < OP_map_index; i++ )
   {
-    free ( OP_map_list[i]->map );
+    if (!OP_map_list[i]->user_managed)
+      free ( OP_map_list[i]->map );
     free ( (char*)OP_map_list[i]->name );
     free ( OP_map_list[i] );
   }
@@ -275,7 +277,8 @@ op_exit_core (  )
 
   for ( int i = 0; i < OP_dat_index; i++ )
   {
-    free ( OP_dat_list[i]->data );
+    if (!OP_dat_list[i]->user_managed)
+      free ( OP_dat_list[i]->data );
     free ( (char*)OP_dat_list[i]->name );
     free ( (char*)OP_dat_list[i]->type );
     free ( OP_dat_list[i] );
@@ -319,14 +322,17 @@ op_arg_check ( op_set set, int m, op_arg arg, int * ninds, const char * name )
     if ( set == NULL )
       op_err_print ( "invalid set", m, name );
 
+    if ( arg.map != NULL && strstr( arg.type, ":soa")!= NULL)
+      op_err_print( "SoA dataset accessed indirectly", m, name );
+
     if ( arg.map == NULL && arg.dat->set != set )
       op_err_print ( "dataset set does not match loop set", m, name );
 
     if ( arg.map != NULL && ( arg.map->from != set || arg.map->to != arg.dat->set ) )
       op_err_print ( "mapping error", m, name );
 
-    if ( ( arg.map == NULL && arg.idx != -1 ) ||
-         ( arg.map != NULL && ( arg.idx < 0 || arg.idx >= arg.map->dim ) ) )
+    if ( ( arg.map == NULL && arg.idx != -1 ) || ( arg.map != NULL &&
+       ( arg.idx >= arg.map->dim || arg.idx < -1*arg.map->dim ) ) )
       op_err_print ( "invalid index", m, name );
 
     if ( arg.dat->dim != arg.dim )
@@ -382,7 +388,6 @@ op_arg_dat_core ( op_dat dat, int idx, op_map map, int dim, const char * typ, op
     arg.data = NULL;
     arg.data_d = NULL;
   }
-
 
   arg.type = typ;
   arg.acc = acc;
@@ -478,8 +483,7 @@ void op_timing_output_core()
                    OP_kernels[n].count,
                    OP_kernels[n].time,
                    OP_kernels[n].transfer / ( 1e9f * OP_kernels[n].time ),
-                   OP_kernels[n].transfer2 / ( 1e9f * OP_kernels[n].time ),
-                   OP_kernels[n].name );
+                   OP_kernels[n].transfer2 / ( 1e9f * OP_kernels[n].time ), OP_kernels[n].name );
       }
     }
   }
@@ -573,7 +577,7 @@ op_dump_dat ( op_dat data )
   fflush (stdout);
 
   if ( data != NULL ) {
-    if ( strncmp ( "double", data->type, 6 ) == 0 ) {
+    if ( strncmp ( "real", data->type, 4 ) == 0 ) {
       for ( int i = 0; i < data->dim * data->set->size; i++ )
         printf ( "%lf\n", ((double *) data->data)[i] );
     } else if ( strncmp ( "integer", data->type, 7 ) == 0 ) {
@@ -588,3 +592,119 @@ op_dump_dat ( op_dat data )
   fflush (stdout);
 }
 
+void op_print_dat_to_binfile_core(op_dat dat, const char *file_name)
+{
+  if(strcmp(dat->type,"double") == 0)
+  {
+    size_t elem_size = dat->dim;
+    int count = dat->set->size;
+
+    double* array  = (double *)malloc(dat->dim*(count)*sizeof(double));
+    memcpy(array, (void *)&(dat->data[0]), dat->size*count);
+
+    FILE *fp;
+    if ( (fp = fopen(file_name,"wb")) == NULL) {
+      printf("can't open file %s\n",file_name);
+      exit(2);
+    }
+
+    if (fwrite(&count, sizeof(int),1, fp)<1)
+    {
+      printf("error writing to %s",file_name);
+      exit(2);
+    }
+    if (fwrite(&elem_size, sizeof(int),1, fp)<1)
+    {
+      printf("error writing to %s\n",file_name);
+      exit(2);
+    }
+
+    for(int i = 0; i< count; i++)
+    {
+      if (fwrite(&array[i*elem_size], sizeof(double), elem_size, fp ) < elem_size)
+      {
+        printf("error writing to %s\n",file_name);
+        exit(2);
+      }
+    }
+    fclose(fp);
+    free(array);
+
+  }
+  else if(strcmp(dat->type,"float") == 0)
+  {
+    size_t elem_size = dat->dim;
+    int count = dat->set->size;
+
+    float* array  = (float *)malloc(dat->dim*(count)*sizeof(float));
+    memcpy(array, (void *)&(dat->data[0]), dat->size*count);
+
+    FILE *fp;
+    if ( (fp = fopen(file_name,"wb")) == NULL) {
+      printf("can't open file %s\n",file_name);
+      exit(2);
+    }
+
+    if (fwrite(&count, sizeof(int),1, fp)<1)
+    {
+      printf("error writing to %s",file_name);
+      exit(2);
+    }
+    if (fwrite(&elem_size, sizeof(int),1, fp)<1)
+    {
+      printf("error writing to %s\n",file_name);
+      exit(2);
+    }
+
+    for(int i = 0; i< count; i++)
+    {
+      if (fwrite(&array[i*elem_size], sizeof(float), elem_size, fp ) < elem_size)
+      {
+        printf("error writing to %s\n",file_name);
+        exit(2);
+      }
+    }
+    fclose(fp);
+    free(array);
+  }
+  else if(strcmp(dat->type,"int") == 0)
+  {
+    size_t elem_size = dat->dim;
+    int count = dat->set->size;
+
+    int* array  = (int *)malloc(dat->dim*(count)*sizeof(int));
+    memcpy(array, (void *)&(dat->data[0]), dat->size*count);
+
+    FILE *fp;
+    if ( (fp = fopen(file_name,"wb")) == NULL) {
+      printf("can't open file %s\n",file_name);
+      exit(2);
+    }
+
+    if (fwrite(&count, sizeof(int),1, fp)<1)
+    {
+      printf("error writing to %s",file_name);
+      exit(2);
+    }
+    if (fwrite(&elem_size, sizeof(int),1, fp)<1)
+    {
+      printf("error writing to %s\n",file_name);
+      exit(2);
+    }
+
+    for(int i = 0; i< count; i++)
+    {
+      if (fwrite(&array[i*elem_size], sizeof(int), elem_size, fp ) < elem_size)
+      {
+        printf("error writing to %s\n",file_name);
+        exit(2);
+      }
+    }
+    fclose(fp);
+    free(array);
+  }
+   else
+  {
+    printf("Unknown type %s, cannot be written to file %s\n",dat->type,file_name);
+  }
+}
