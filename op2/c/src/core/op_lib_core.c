@@ -206,8 +206,6 @@ op_decl_map_core ( op_set from, op_set to, int dim, int * imap, char const * nam
 op_dat
 op_decl_dat_core ( op_set set, int dim, char const * type, int size, char * data, char const * name )
 {
-  printf ("dim = %d, type = %s, size = %d, name = %s\n", dim, type, size, name);
-
   if ( set == NULL )
   {
     printf ( "op_decl_dat error -- invalid set for data: %s\n", name );
@@ -319,7 +317,7 @@ op_arg_check ( op_set set, int m, op_arg arg, int * ninds, const char * name )
 {
   /* error checking for op_arg_dat */
 
-  if ( arg->argtype == OP_ARG_DAT )
+  if ( arg.argtype == OP_ARG_DAT )
   {
     if ( set == NULL )
       op_err_print ( "invalid set", m, name );
@@ -330,35 +328,34 @@ op_arg_check ( op_set set, int m, op_arg arg, int * ninds, const char * name )
     if ( arg.map == NULL && arg.dat->set != set )
       op_err_print ( "dataset set does not match loop set", m, name );
 
-    if ( arg->map != NULL && ( arg->map->from != set || arg->map->to != arg->dat->set ) )
+    if ( arg.map != NULL && ( arg.map->from != set || arg.map->to != arg.dat->set ) )
       op_err_print ( "mapping error", m, name );
-
 
     if ( ( arg.map == NULL && arg.idx != -1 ) || ( arg.map != NULL &&
        ( arg.idx >= arg.map->dim || arg.idx < -1*arg.map->dim ) ) )
       op_err_print ( "invalid index", m, name );
 
-    if ( arg->dat->dim != arg->dim )
+    if ( arg.dat->dim != arg.dim )
       op_err_print ( "dataset dim does not match declared dim", m, name );
 
-    if ( strcmp ( arg->dat->type, arg->type ) )
+    if ( strcmp ( arg.dat->type, arg.type ) )
       op_err_print ( "dataset type does not match declared type", m, name );
 
-    if ( arg->idx >= 0 )
+    if ( arg.idx >= 0 )
       ( *ninds )++;
   }
 
   /* error checking for op_arg_gbl */
 
-  if ( arg->argtype == OP_ARG_GBL )
+  if ( arg.argtype == OP_ARG_GBL )
   {
-    if ( !strcmp ( arg->type, "error" ) )
+    if ( !strcmp ( arg.type, "error" ) )
       op_err_print ( "datatype does not match declared type", m, name );
 
-    if ( arg->dim <= 0 )
+    if ( arg.dim <= 0 )
       op_err_print ( "dimension should be strictly positive", m, name );
 
-    if ( arg->data == NULL )
+    if ( arg.data == NULL )
       op_err_print ( "NULL pointer for global data", m, name );
   }
 }
@@ -366,41 +363,38 @@ op_arg_check ( op_set set, int m, op_arg arg, int * ninds, const char * name )
 op_arg
 op_arg_dat_core ( op_dat dat, int idx, op_map map, int dim, const char * typ, op_access acc )
 {
-
-  printf ("In C: dim = %d\n", dim);
-
-  op_arg_core * arg = calloc (1, sizeof (op_arg_core));
+  op_arg arg;
 
   /* index is not used for now */
-  arg->index = -1;
+  arg.index = -1;
 
-  arg->argtype = OP_ARG_DAT;
+  arg.argtype = OP_ARG_DAT;
 
-  arg->dat = dat;
-  arg->map = map;
-  arg->dim = dim;
-  arg->idx = idx;
+  arg.dat = dat;
+  arg.map = map;
+  arg.dim = dim;
+  arg.idx = idx;
 
   if ( dat != NULL )
   {
-    arg->size = dat->size;
-    arg->data = dat->data;
-    arg->data_d = dat->data_d;
+    arg.size = dat->size;
+    arg.data = dat->data;
+    arg.data_d = dat->data_d;
   }
   else
   {
     /* set default values */
-    arg->size = -1;
-    arg->data = NULL;
-    arg->data_d = NULL;
+    arg.size = -1;
+    arg.data = NULL;
+    arg.data_d = NULL;
   }
 
 
-  arg->type = typ;
-  arg->acc = acc;
+  arg.type = typ;
+  arg.acc = acc;
 
   /*initialize to 0 states no-mpi messages inflight for this arg*/
-  arg->sent = 0;
+  arg.sent = 0;
 
   return arg;
 }
@@ -408,25 +402,25 @@ op_arg_dat_core ( op_dat dat, int idx, op_map map, int dim, const char * typ, op
 op_arg
 op_arg_gbl_core ( char * data, int dim, const char * typ, int size, op_access acc )
 {
-  op_arg_core * arg = calloc (1, sizeof (op_arg_core));
+  op_arg arg;
 
-  arg->argtype = OP_ARG_GBL;
+  arg.argtype = OP_ARG_GBL;
 
-  arg->dat = NULL;
-  arg->map = NULL;
-  arg->dim = dim;
-  arg->idx = -1;
-  arg->size = dim*size;
-  arg->data = data;
-  arg->type = typ;
-  arg->acc = acc;
+  arg.dat = NULL;
+  arg.map = NULL;
+  arg.dim = dim;
+  arg.idx = -1;
+  arg.size = dim*size;
+  arg.data = data;
+  arg.type = typ;
+  arg.acc = acc;
 
   /* setting default values for remaining fields */
-  arg->index = -1;
-  arg->data_d = NULL;
+  arg.index = -1;
+  arg.data_d = NULL;
 
   /*not used in global args*/
-  arg->sent = 0;
+  arg.sent = 0;
 
   return arg;
 }
@@ -490,7 +484,8 @@ void op_timing_output_core()
                    OP_kernels[n].count,
                    OP_kernels[n].time,
                    OP_kernels[n].transfer / ( 1e9f * OP_kernels[n].time ),
-                   OP_kernels[n].transfer2 / ( 1e9f * OP_kernels[n].time ), OP_kernels[n].name );
+                   OP_kernels[n].transfer2 / ( 1e9f * OP_kernels[n].time ),
+                   OP_kernels[n].name );
       }
     }
   }
@@ -584,7 +579,7 @@ op_dump_dat ( op_dat data )
   fflush (stdout);
 
   if ( data != NULL ) {
-    if ( strncmp ( "real", data->type, 4 ) == 0 ) {
+    if ( strncmp ( "double", data->type, 6 ) == 0 ) {
       for ( int i = 0; i < data->dim * data->set->size; i++ )
         printf ( "%lf\n", ((double *) data->data)[i] );
     } else if ( strncmp ( "integer", data->type, 7 ) == 0 ) {

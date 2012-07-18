@@ -106,6 +106,7 @@ op_decl_dat_char ( op_set set, int dim, char const *type, int size,
 op_set
 op_decl_set ( int size, char const * name )
 {
+  printf ("In the CUDA backend, set size = %d, name = %s\n", size, name);
   return op_decl_set_core ( size, name );
 }
 
