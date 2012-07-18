@@ -14,18 +14,13 @@
 extern "C" {
 #endif
 
-
-void op_arg_set(int n, op_arg arg, char **p_arg);
-
-//void arg_set ( int displacement, op_dat arg, int itemSel, op_map mapIn, char ** p_arg );
-
-//..void arg_set_new (int displacement, op_arg_fortran * arg, char ** p_arg);
+void op_arg_set(int n, op_arg arg, char **p_arg, int halo);
 
 #define CHARP_LIST(N) COMMA_LIST(N,CHARP)
 #define CHARP(x) char*
 
 #define ARG_LIST(N) COMMA_LIST(N,ARGS)
-#define ARGS(x) op_arg arg##x
+#define ARGS(x) op_arg * arg##x
 
 #define OP_LOOP_DEC(N) \
   void op_par_loop_##N(void (*kernel)(CHARP_LIST(N)), op_set_core * set, ARG_LIST(N));

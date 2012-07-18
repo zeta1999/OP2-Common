@@ -5,18 +5,6 @@
 extern "C" {
 #endif
 
-op_arg_core * generatePlanInputData ( char name[],
-                                 int setId,
-                                 int argsNumber,
-                                 int args[],
-                                 int idxs[],
-                                 int maps[],
-                                 int accs[],
-                                 int indsNumber,
-                                 int inds[],
-                                 int argsType[]
-                               );
-
 op_plan * FortranPlanCallerOpenMP ( char name[],
                                     int setId,
                                     int argsNumber,

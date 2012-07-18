@@ -113,21 +113,6 @@ int get_associated_set_size (op_dat_core * dat)
 }
 
 
-/*
- * For now implementation only for OpenMP
- * We will then need to fix it in the C branch of the lib
-*/
-/*void op_get_dat ( op_dat_core * opdat )
-{
-  (void)opdat;
-}
-
-void op_put_dat ( op_dat_core * opdat )
-{
-  (void)opdat;
-}
-*/
-
 void dumpOpDat (op_dat_core * data, const char * fileName)
 {
   int i;
@@ -139,7 +124,7 @@ void dumpOpDat (op_dat_core * data, const char * fileName)
   if ( data != NULL )
     {
       // support for old and new names (real should be replaced by double)
-      if ( strncmp ( "real", data->type, 4 ) == 0 ||
+      if ( strncmp ( "double", data->type, 6 ) == 0 ||
 	   strncmp ( "double", data->type, 6 ) == 0) {
         for ( i = 0; i < data->dim * data->set->size; i++ )
           fprintf (outfile, "%.10lf\n", ((double *) data->data)[i] );
@@ -223,31 +208,4 @@ void dumpOpMap (op_map_core * map, const char * fileName)
     }
 
   fclose (outfile);
-}
-
-
-
-void
-op_get_dat (op_dat dat) {
-  (void) dat;
-}
-
-void
-op_put_dat (op_dat dat) {
-  (void) dat;
-}
-
-/*
- * This is only needed to allocate the type string
- * as we do for the op_decl_dat calls. It assumes that
- * the input type is \0 terminated
-*/
-op_arg_core * op_arg_gbl_fortran (char * dat, int dim, char * type, int acc) {
-
-  int len = strlen (type);
-  char * typeC = (char *) calloc (len, sizeof (char));
-
-  strncpy (typeC, type, len);
-
-  return op_arg_gbl (dat, dim, typeC, acc);
 }

@@ -160,9 +160,7 @@ typedef struct
   int         argtype;
   int         sent;   /* flag to indicate if this argument has
                          data in flight under non-blocking MPI comms*/
-} op_arg_core;
-
-typedef op_arg_core * op_arg;
+} op_arg;
 
 
 typedef struct

@@ -1,4 +1,4 @@
-! This module defines the Fortran interface towards C reference implementation
+! This module defikernels/flux/SRC_NOMZONE_INC.F95kernels/flux/SRC_NOMZONE_INC.F95kernels/flux/SRC_NOMZONE_INC.F95kernels/flux/SRC_NOMZONE_INC.F95nes the Fortran interface towards C reference implementation
 ! of op_par_loop functions
 
 #include "../../include/op2_reference_macros.h"
@@ -38,15 +38,6 @@ end interface
 
   contains
 
-#define CARG_LIST(N) MAP(N, CARG)
-#define CARG(x) integer(kind=c_int) :: itemSelC##x @
-
-#define CSET_LIST(N) MAP(N, CSET)
-#define CSET(x) itemSelC##x = itemSel##x - 1@
-
-#define ARG_LISTK(N) COMMA_LIST(N, ARGSK)
-#define ARGSK(x) data##x%dataPtr, itemSelC##x, map##x%mapPtr, access##x &@
-
 #define ARG_NOCORE_LIST(N) MAP(N, ARG_NOCORE)
 #define ARG_NOCORE(x) type(op_arg) :: arg##x @
 
@@ -57,8 +48,6 @@ end interface
    external kernel @\
    type(op_set) :: set @\
    ARG_NOCORE_LIST(N) @\
-   CARG_LIST(N) @\
-   print *, arg1%dim @\
    call op_par_loop_##N##_f(kernel, set%setPtr, &@\
       ARG_LIST(N) \
    ) @\
