@@ -2,6 +2,7 @@
 #include <op_rt_support.h>
 #include <op_lib_c.h>
 
+#include "../../include/op2_for_C_wrappers.h"
 #include "../../include/op2_for_rt_wrappers.h"
 
 extern op_plan * OP_plans;
@@ -12,53 +13,7 @@ extern op_plan * OP_plans;
 
 #define ERR_INDEX -1
 
-/* Access codes: must have the same values here and in op2_for_declarations.F90 file */
-#define FOP_READ 1
-#define FOP_WRITE 2
-#define FOP_INC 3
-#define FOP_RW 4
-#define FOP_MIN 5
-#define FOP_MAX 6
-
-/*
- * Small utility for transforming Fortran OP2 access codes into C OP2 access codes
- */
-
-static op_access getAccFromIntCode ( int accCode )
-{
-  switch ( accCode ) {
-  case FOP_READ:
-    return OP_READ;
-  case FOP_WRITE:
-    return OP_WRITE;
-  case FOP_RW:
-    return OP_RW;
-  case FOP_INC:
-    return OP_INC;
-  case FOP_MIN:
-    return OP_MIN;
-  case FOP_MAX:
-    return OP_MAX;
-  default:
-    return OP_READ; //default case is treated as READ
-  }
-}
-
-static op_dat find_dat_by_index(int idx)
-{
-  op_dat_entry *item;
-  for (item = TAILQ_FIRST(&OP_dat_list); item != NULL; )
-  {
-    if (item->dat->index == idx)
-    {
-      return item->dat;
-    }
-    item = TAILQ_NEXT(item, entries);
-  }
-  return NULL;
-}
-
-op_arg * generatePlanInputData ( char name[],
+op_arg_core * generatePlanInputData ( char name[],
                                  int setId,
                                  int argsNumber,
                                  int args[],
@@ -81,9 +36,9 @@ op_arg * generatePlanInputData ( char name[],
   int * planDims = calloc ( argsNumber, sizeof ( int ) );
   char ** planTypes = calloc ( argsNumber, sizeof ( char * ) );
   op_access * planAccs = calloc ( argsNumber, sizeof ( op_access ) );
-  op_arg * planArguments;
+  op_arg_core * planArguments;
 
-  planArguments = calloc ( argsNumber, sizeof ( op_arg ) );
+  planArguments = calloc ( argsNumber, sizeof ( op_arg_core ) );
 
   /* build planDatArgs variable by accessing OP_dat_list with indexes(=positions) in args */
   for ( i = 0; i < argsNumber; i++ )
@@ -268,7 +223,7 @@ op_plan * FortranPlanCallerOpenMP ( char name[],
 
 
   /* generate the input arguments for the plan function */
-  op_arg * planArguments = generatePlanInputData ( name, setId, argsNumber, args, idxs, maps, accs, indsNumber, inds, argsType );
+  op_arg_core * planArguments = generatePlanInputData ( name, setId, argsNumber, args, idxs, maps, accs, indsNumber, inds, argsType );
 
 
   /*
@@ -316,3 +271,8 @@ op_plan * FortranPlanCallerOpenMP ( char name[],
   return generatedPlan;
 }
 
+void
+op_fetch_data ( op_dat dat )
+{
+  (void)dat;
+}

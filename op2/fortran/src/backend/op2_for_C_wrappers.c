@@ -11,6 +11,30 @@
 #include <op_lib_c.h>
 #include "../../include/op2_for_C_wrappers.h"
 
+/*
+ * Small utility for transforming Fortran OP2 access codes into C OP2 access codes
+ */
+
+op_access getAccFromIntCode ( int accCode )
+{
+  switch ( accCode ) {
+  case FOP_READ:
+    return OP_READ;
+  case FOP_WRITE:
+    return OP_WRITE;
+  case FOP_RW:
+    return OP_RW;
+  case FOP_INC:
+    return OP_INC;
+  case FOP_MIN:
+    return OP_MIN;
+  case FOP_MAX:
+    return OP_MAX;
+  default:
+    return OP_READ; //default case is treated as READ
+  }
+}
+
 
 op_map_core * op_decl_null_map ( )
 {
@@ -114,10 +138,12 @@ void dumpOpDat (op_dat_core * data, const char * fileName)
 
   if ( data != NULL )
     {
-      if ( strncmp ( "real", data->type, 4 ) == 0 )
+      // support for old and new names (real should be replaced by double)
+      if ( strncmp ( "real", data->type, 4 ) == 0 ||
+	   strncmp ( "double", data->type, 6 ) == 0) {
         for ( i = 0; i < data->dim * data->set->size; i++ )
           fprintf (outfile, "%.10lf\n", ((double *) data->data)[i] );
-
+      }
       else if ( strncmp ( "integer", data->type, 7 ) == 0 )
         for ( i = 0; i < data->dim * data->set->size; i++ )
           fprintf (outfile, "%d\n", ((int *) data->data)[i] );
@@ -197,4 +223,31 @@ void dumpOpMap (op_map_core * map, const char * fileName)
     }
 
   fclose (outfile);
+}
+
+
+
+void
+op_get_dat (op_dat dat) {
+  (void) dat;
+}
+
+void
+op_put_dat (op_dat dat) {
+  (void) dat;
+}
+
+/*
+ * This is only needed to allocate the type string
+ * as we do for the op_decl_dat calls. It assumes that
+ * the input type is \0 terminated
+*/
+op_arg_core * op_arg_gbl_fortran (char * dat, int dim, char * type, int acc) {
+
+  int len = strlen (type);
+  char * typeC = (char *) calloc (len, sizeof (char));
+
+  strncpy (typeC, type, len);
+
+  return op_arg_gbl (dat, dim, typeC, acc);
 }
