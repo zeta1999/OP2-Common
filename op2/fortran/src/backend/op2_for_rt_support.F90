@@ -9,7 +9,6 @@ module OP2_Fortran_RT_Support
   use cudafor
 #endif
 
-
   integer(kind=c_int), parameter :: F_OP_ARG_DAT = 0
   integer(kind=c_int), parameter :: F_OP_ARG_GBL = 1
 
@@ -52,9 +51,9 @@ module OP2_Fortran_RT_Support
     type(c_ptr) ::         nindirect ! size of ind_maps (for Fortran)
 
 #ifdef OP2_WITH_CUDAFOR
-    type(c_devptr) ::      loc_map ! concatenated maps to local indices, renumbered as needed
+    type(c_devptr) ::      loc_map ! concatenated maps to local indices, renumbered as needed 
 #else
-    type(c_ptr) ::         loc_map ! concatenated maps to local indices, renumbered as needed
+    type(c_ptr) ::         loc_map ! concatenated maps to local indices, renumbered as needed 
 #endif
 
     type(c_ptr) ::         maps ! maps to local indices, renumbered as needed
@@ -80,78 +79,155 @@ module OP2_Fortran_RT_Support
     real(kind=c_float) ::  transfer ! bytes of data transfer per kernel call
     real(kind=c_float) ::  transfer2 ! bytes of cache line per kernel call
     integer(kind=c_int) :: count ! number fo times called (should not work for fortran?)
-
   end type op_plan
+
 
   interface
 
-    ! C wrapper to plan function for Fortran (cPlan function)
-    type(c_ptr) function FortranPlanCallerCUDA ( name, &
-                                               & setId, &
-                                               & argsNumber, &
-                                               & args, &
-                                               & idxs, &
-                                               & maps, &
-                                               & accs, &
-                                               & indsNumber, &
-                                               & inds, &
-                                               & argsType, &
-                                               & partitionSize ) &
-              & BIND(C,name='FortranPlanCallerCUDA')
+    ! C wrapper to plan function for Fortran
+    type(c_ptr) function FortranPlanCaller (name, set, partitionSize, argsNumber, args, indsNumber, inds) &
+      & BIND(C,name='FortranPlanCaller')
 
       use, intrinsic :: ISO_C_BINDING
+      use OP2_Fortran_Declarations
 
-      character(kind=c_char) :: name(*) ! name of kernel
-      integer(kind=c_int), value :: setId ! position in OP_set_list of the related set
+      character(kind=c_char) ::     name(*)    ! name of kernel
+      type(c_ptr), value ::         set        ! iteration set
+      integer(kind=c_int), value :: partitionSize
       integer(kind=c_int), value :: argsNumber ! number of op_dat arguments to op_par_loop
-      integer(kind=c_int) :: args(*) ! positions in OP_dat_list of arguments to op_par_loop
-      integer(kind=c_int) :: idxs(*) ! array of indexes to maps
-      integer(kind=c_int) :: maps(*) ! positions in OP_map_list of arguments to op_par_loop
-      integer(kind=c_int) :: accs(*) ! access flags to arguments
+      type(op_arg), dimension(*) :: args       ! array with op_args
       integer(kind=c_int), value :: indsNumber ! number of arguments accessed indirectly via a map
 
       ! indexes for indirectly accessed arguments (same indrectly accessed argument = same index)
       integer(kind=c_int), dimension(*) :: inds
 
-      integer(kind=c_int) :: argsType(*)
-      integer(kind=c_int), value :: partitionSize
+    end function FortranPlanCaller
 
-    end function FortranPlanCallerCUDA
-
-    ! C wrapper to plan function for Fortran (cPlan function)
-    type(c_ptr) function cplan_OpenMP ( name, &
-                                      & setId, &
-                                      & argsNumber, &
-                                      & args, &
-                                      & idxs, &
-                                      & maps, &
-                                      & accs, &
-                                      & indsNumber, &
-                                      & inds, &
-                                      & argsType, &
-                                      & partitionSize &
-                                      )  BIND(C,name='FortranPlanCallerOpenMP')
+    integer(kind=c_int) function getSetSizeFromOpArg (arg) BIND(C,name='getSetSizeFromOpArg')
 
       use, intrinsic :: ISO_C_BINDING
+      use OP2_Fortran_Declarations
 
-      character(kind=c_char) :: name(*) ! name of kernel
-      integer(kind=c_int), value :: setId ! position in OP_set_list of the related set
+      type(op_arg) :: arg
+
+    end function
+
+    subroutine op_partition_c (lib_name, lib_routine, prime_set, prime_map, coords) BIND(C,name='op_partition')
+
+      use, intrinsic :: ISO_C_BINDING
+      use OP2_Fortran_Declarations 
+
+      character(kind=c_char) :: lib_name(*)
+      character(kind=c_char) :: lib_routine(*)
+
+      type(op_set_core) :: prime_set
+      type(op_map_core) :: prime_map
+      type(op_dat_core) :: coords
+
+    end subroutine
+
+    integer(kind=c_int) function op_mpi_halo_exchanges (set, argsNumber, args) BIND(C,name='op_mpi_halo_exchanges')
+
+      use, intrinsic :: ISO_C_BINDING
+      use OP2_Fortran_Declarations
+
+      type(c_ptr), value ::         set        ! iteration set
       integer(kind=c_int), value :: argsNumber ! number of op_dat arguments to op_par_loop
-      integer(kind=c_int) :: args(*) ! positions in OP_dat_list of arguments to op_par_loop
-      integer(kind=c_int) :: idxs(*) ! array of indexes to maps
-      integer(kind=c_int) :: maps(*) ! positions in OP_map_list of arguments to op_par_loop
-      integer(kind=c_int) :: accs(*) ! access flags to arguments
-      integer(kind=c_int), value :: indsNumber ! number of arguments accessed indirectly via a map
+      type(op_arg), dimension(*) :: args       ! array with op_args
 
-      ! indexes for indirectly accessed arguments (same indrectly accessed argument = same index)
-      integer(kind=c_int), dimension(*) :: inds
+    end function
 
-      integer(kind=c_int) :: argsType(*)
-      integer(kind=c_int), value :: partitionSize
+    subroutine op_mpi_wait_all (argsNumber, args) BIND(C,name='op_mpi_wait_all')
 
-    end function cplan_OpenMP
+      use, intrinsic :: ISO_C_BINDING
+      use OP2_Fortran_Declarations
+
+      integer(kind=c_int), value :: argsNumber ! number of op_dat arguments to op_par_loop
+      type(op_arg), dimension(*) :: args       ! array with op_args
+
+    end subroutine
+
+    subroutine op_mpi_set_dirtybit (argsNumber, args) BIND(C,name='op_mpi_set_dirtybit')
+
+      use, intrinsic :: ISO_C_BINDING
+      use OP2_Fortran_Declarations
+
+      integer(kind=c_int), value :: argsNumber ! number of op_dat arguments to op_par_loop
+      type(op_arg), dimension(*) :: args       ! array with op_args
+
+    end subroutine
+
+    subroutine op_mpi_reduce_int (arg, data) BIND(C,name='op_mpi_reduce_int')
+
+      use, intrinsic :: ISO_C_BINDING
+      use OP2_Fortran_Declarations
+
+      type(op_arg) :: arg
+      type(c_ptr) :: data
+
+    end subroutine
+
+    subroutine op_mpi_reduce_double (arg, data) BIND(C,name='op_mpi_reduce_double')
+
+      use, intrinsic :: ISO_C_BINDING
+      use OP2_Fortran_Declarations
+
+      type(op_arg) :: arg
+      type(c_ptr) :: data
+
+    end subroutine
+
+    subroutine op_mpi_reduce_float (arg, data) BIND(C,name='op_mpi_reduce_float')
+
+      use, intrinsic :: ISO_C_BINDING
+      use OP2_Fortran_Declarations
+
+      type(op_arg) :: arg
+      type(c_ptr) :: data
+
+    end subroutine
+
+    ! commented while waiting for C-side support
+    ! subroutine op_mpi_reduce_bool (arg, data) BIND(C,name='op_mpi_reduce_bool')
+
+    !   use, intrinsic :: ISO_C_BINDING
+    !   use OP2_Fortran_Declarations
+
+    !   type(op_arg) :: arg
+    !   type(c_ptr) :: data
+
+    ! end subroutine
+
+    ! debugging routines
+    subroutine op_dump_arg (arg) BIND(C,name='op_dump_arg')
+
+      use, intrinsic :: ISO_C_BINDING
+      use OP2_Fortran_Declarations
+
+      type(op_arg) :: arg
+
+    end subroutine
 
   end interface
 
-end module OP2_Fortran_RT_Support
+  contains
 
+    subroutine op_partition (lib_name, lib_routine, prime_set, prime_map, coords)
+
+      use, intrinsic :: ISO_C_BINDING
+      use OP2_Fortran_Declarations 
+
+      implicit none
+
+      character(kind=c_char) :: lib_name(*)
+      character(kind=c_char) :: lib_routine(*)
+
+      type(op_set) :: prime_set
+      type(op_map) :: prime_map
+      type(op_dat) :: coords
+
+      call op_partition_c (lib_name, lib_routine, prime_set%setPtr, prime_map%mapPtr, coords%dataPtr)
+
+    end subroutine
+
+end module OP2_Fortran_RT_Support
