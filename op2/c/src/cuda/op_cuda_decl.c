@@ -146,7 +146,6 @@ int op_free_dat_temp_char ( op_dat dat )
 op_set
 op_decl_set ( int size, char const * name )
 {
-  printf ("In the CUDA backend, set size = %d, name = %s\n", size, name);
   return op_decl_set_core ( size, name );
 }
 
@@ -213,4 +212,11 @@ void op_exit()
 void op_timing_output()
 {
   op_timing_output_core();
+}
+
+void op_print_dat_to_binfile(op_dat dat, const char *file_name)
+{
+  //need to get data from GPU
+  op_fetch_data (dat);
+  op_print_dat_to_binfile_core(dat, file_name);
 }

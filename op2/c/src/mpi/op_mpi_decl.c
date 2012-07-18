@@ -193,7 +193,7 @@ op_map op_decl_map(op_set from, op_set to, int dim, int * imap, char const * nam
   //return op_decl_map_core ( from, to, dim, imap, name );
 }
 
-op_arg op_arg_dat (op_dat dat, int idx, op_map map, int dim, char const * type, op_access acc )
+op_arg op_arg_dat( op_dat dat, int idx, op_map map, int dim, char const * type, op_access acc )
 {
   return op_arg_dat_core ( dat, idx, map, dim, type, acc );
 }

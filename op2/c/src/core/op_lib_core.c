@@ -580,8 +580,7 @@ void op_timing_output_core()
                    OP_kernels[n].plan_time,
                    OP_kernels[n].time,
                    OP_kernels[n].transfer / ( 1e9f * OP_kernels[n].time ),
-                   OP_kernels[n].transfer2 / ( 1e9f * OP_kernels[n].time ),
-                   OP_kernels[n].name );
+                   OP_kernels[n].transfer2 / ( 1e9f * OP_kernels[n].time ), OP_kernels[n].name );
       }
     }
   }
@@ -676,7 +675,7 @@ op_dump_dat ( op_dat data )
   fflush (stdout);
 
   if ( data != NULL ) {
-    if ( strncmp ( "double", data->type, 6 ) == 0 ) {
+    if ( strncmp ( "real", data->type, 4 ) == 0 ) {
       for ( int i = 0; i < data->dim * data->set->size; i++ )
         printf ( "%lf\n", ((double *) data->data)[i] );
     } else if ( strncmp ( "integer", data->type, 7 ) == 0 ) {
@@ -691,3 +690,119 @@ op_dump_dat ( op_dat data )
   fflush (stdout);
 }
 
+void op_print_dat_to_binfile_core(op_dat dat, const char *file_name)
+{
+  if(strcmp(dat->type,"double") == 0)
+  {
+    size_t elem_size = dat->dim;
+    int count = dat->set->size;
+
+    double* array  = (double *)malloc(dat->dim*(count)*sizeof(double));
+    memcpy(array, (void *)&(dat->data[0]), dat->size*count);
+
+    FILE *fp;
+    if ( (fp = fopen(file_name,"wb")) == NULL) {
+      printf("can't open file %s\n",file_name);
+      exit(2);
+    }
+
+    if (fwrite(&count, sizeof(int),1, fp)<1)
+    {
+      printf("error writing to %s",file_name);
+      exit(2);
+    }
+    if (fwrite(&elem_size, sizeof(int),1, fp)<1)
+    {
+      printf("error writing to %s\n",file_name);
+      exit(2);
+    }
+
+    for(int i = 0; i< count; i++)
+    {
+      if (fwrite(&array[i*elem_size], sizeof(double), elem_size, fp ) < elem_size)
+      {
+        printf("error writing to %s\n",file_name);
+        exit(2);
+      }
+    }
+    fclose(fp);
+    free(array);
+
+  }
+  else if(strcmp(dat->type,"float") == 0)
+  {
+    size_t elem_size = dat->dim;
+    int count = dat->set->size;
+
+    float* array  = (float *)malloc(dat->dim*(count)*sizeof(float));
+    memcpy(array, (void *)&(dat->data[0]), dat->size*count);
+
+    FILE *fp;
+    if ( (fp = fopen(file_name,"wb")) == NULL) {
+      printf("can't open file %s\n",file_name);
+      exit(2);
+    }
+
+    if (fwrite(&count, sizeof(int),1, fp)<1)
+    {
+      printf("error writing to %s",file_name);
+      exit(2);
+    }
+    if (fwrite(&elem_size, sizeof(int),1, fp)<1)
+    {
+      printf("error writing to %s\n",file_name);
+      exit(2);
+    }
+
+    for(int i = 0; i< count; i++)
+    {
+      if (fwrite(&array[i*elem_size], sizeof(float), elem_size, fp ) < elem_size)
+      {
+        printf("error writing to %s\n",file_name);
+        exit(2);
+      }
+    }
+    fclose(fp);
+    free(array);
+  }
+  else if(strcmp(dat->type,"int") == 0)
+  {
+    size_t elem_size = dat->dim;
+    int count = dat->set->size;
+
+    int* array  = (int *)malloc(dat->dim*(count)*sizeof(int));
+    memcpy(array, (void *)&(dat->data[0]), dat->size*count);
+
+    FILE *fp;
+    if ( (fp = fopen(file_name,"wb")) == NULL) {
+      printf("can't open file %s\n",file_name);
+      exit(2);
+    }
+
+    if (fwrite(&count, sizeof(int),1, fp)<1)
+    {
+      printf("error writing to %s",file_name);
+      exit(2);
+    }
+    if (fwrite(&elem_size, sizeof(int),1, fp)<1)
+    {
+      printf("error writing to %s\n",file_name);
+      exit(2);
+    }
+
+    for(int i = 0; i< count; i++)
+    {
+      if (fwrite(&array[i*elem_size], sizeof(int), elem_size, fp ) < elem_size)
+      {
+        printf("error writing to %s\n",file_name);
+        exit(2);
+      }
+    }
+    fclose(fp);
+    free(array);
+  }
+   else
+  {
+    printf("Unknown type %s, cannot be written to file %s\n",dat->type,file_name);
+  }
+}

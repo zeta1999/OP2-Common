@@ -76,8 +76,9 @@ extern int OP_cache_line_size;
 
 
 /*
- * Definitions for op_access and op_arg_type
+ * enum list for op_par_loop
  */
+
 #define OP_READ 0
 #define OP_WRITE 1
 #define OP_RW 2
@@ -95,6 +96,7 @@ typedef int op_arg_type;
 //typedef enum { OP_READ, OP_WRITE, OP_RW, OP_INC, OP_MIN, OP_MAX } op_access;
 
 //typedef enum { OP_ARG_GBL, OP_ARG_DAT } op_arg_type;
+
 
 /*
  * structures
@@ -156,8 +158,8 @@ typedef struct
   char       *data,   /* data on host */
              *data_d; /* data on device (for CUDA execution) */
   char const *type;   /* datatype */
-  int         acc;
-  int         argtype;
+  op_access   acc;
+  op_arg_type argtype;
   int         sent;   /* flag to indicate if this argument has
                          data in flight under non-blocking MPI comms*/
 } op_arg;

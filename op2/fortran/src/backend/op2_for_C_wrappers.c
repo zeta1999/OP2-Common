@@ -202,10 +202,8 @@ void dumpOpMap (op_map_core * map, const char * fileName)
   if (outfile == NULL) exit (0);
 
   if ( map != NULL )
-    {
-      for ( i = 0; i < map->dim * map->from->size; i++ )
-  fprintf (outfile, "%d\n", ((int *) map->map)[i] );
-    }
+    for ( i = 0; i < map->dim * map->from->size; i++ )
+      fprintf (outfile, "%d\n", ((int *) map->map)[i] );
 
   fclose (outfile);
 }

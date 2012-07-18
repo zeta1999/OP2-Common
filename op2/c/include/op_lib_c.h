@@ -92,10 +92,6 @@ op_arg op_arg_gbl_char ( char * , int, const char*, int, op_access);
 
 void op_fetch_data ( op_dat );
 
-void op_get_dat (op_dat);
-
-void op_put_dat (op_dat);
-
 void op_exit (  );
 
 void op_timing_output();

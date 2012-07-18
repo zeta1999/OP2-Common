@@ -78,16 +78,6 @@ op_fetch_data ( op_dat dat )
   (void)dat;
 }
 
-void
-op_get_dat (op_dat dat) {
-  (void) dat;
-}
-
-void
-op_put_dat (op_dat dat) {
-  (void) dat;
-}
-
 /*
  * No specific action is required for constants in OpenMP
  */
