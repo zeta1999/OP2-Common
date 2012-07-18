@@ -20,8 +20,8 @@ module OP2_Fortran_Declarations
   integer(c_int) :: OP_WRITE = 2
   integer(c_int) :: OP_RW = 3
   integer(c_int) :: OP_INC = 4
-  integer(c_int) :: OP_MIN = 4
-  integer(c_int) :: OP_MAX = 5
+  integer(c_int) :: OP_MIN = 5
+  integer(c_int) :: OP_MAX = 6
 
   type, BIND(C) :: op_set_core
 
@@ -193,7 +193,7 @@ module OP2_Fortran_Declarations
 
     end function op_arg_dat_c
 
-    function op_arg_gbl_c ( dat, dim, type, acc ) BIND(C,name='op_arg_gbl_fortran')
+    function op_arg_gbl_c ( dat, dim, type, size, acc ) BIND(C,name='op_arg_gbl')
 
       use, intrinsic :: ISO_C_BINDING
 
@@ -203,7 +203,8 @@ module OP2_Fortran_Declarations
       
       type(c_ptr), value :: dat
       integer(kind=c_int), value :: dim
-      character(kind=c_char,len=1) :: type
+      character(kind=c_char), dimension(*) :: type
+      integer(kind=c_int), value :: size
       integer(kind=c_int), value :: acc
 
     end function op_arg_gbl_c
@@ -310,7 +311,7 @@ module OP2_Fortran_Declarations
   end interface op_decl_gbl
 
   interface op_arg_gbl
-    module procedure op_arg_gbl_real_8, op_arg_gbl_real_8_2
+    module procedure op_arg_gbl_real_8_scalar, op_arg_gbl_real_8, op_arg_gbl_real_8_2
   end interface op_arg_gbl
 
   interface op_decl_const
@@ -607,10 +608,28 @@ contains
     type(op_map) :: map
     integer(kind=c_int) :: access
 
-    print *, 'In arg fortran: dim = ', dat%dataPtr%dim
+    ! warning: access and idx are in FORTRAN style, while the C style is required here
+    if ( map%mapPtr%dim .eq. 0 ) then
+      ! OP_ID case
+      op_arg_dat = op_arg_dat_c ( dat%dataCPtr, idx-1, C_NULL_PTR, dat%dataPtr%dim, dat%dataPtr%type, access-1 )
+    else
+      op_arg_dat = op_arg_dat_c ( dat%dataCPtr, idx-1, map%mapCPtr, dat%dataPtr%dim, dat%dataPtr%type, access-1 )
+    endif
 
-    ! warning: access is in FORTRAN style, while the C style is required here
-    op_arg_dat = op_arg_dat_c ( dat%dataCPtr, idx, map%mapCPtr, dat%dataPtr%dim, dat%dataPtr%type, access-1 )
+  end function
+
+  type(op_arg) function op_arg_gbl_real_8_scalar ( dat, access )
+
+    use, intrinsic :: ISO_C_BINDING
+
+    implicit none
+
+    real(8) :: dat
+    integer(kind=c_int) :: access
+
+    character(kind=c_char,len=7) :: type = C_CHAR_'double'//C_NULL_CHAR
+
+    op_arg_gbl_real_8_scalar = op_arg_gbl_c ( c_loc (dat), 1, type, 8, access )
 
   end function
 
@@ -624,12 +643,11 @@ contains
     integer(kind=c_int) :: dim
     integer(kind=c_int) :: access
 
-    character(kind=c_char,len=5) :: type = "real" // CHAR(0)
+    character(kind=c_char,len=7) :: type = C_CHAR_'double'//C_NULL_CHAR
 
-    op_arg_gbl_real_8 = op_arg_gbl_c ( c_loc (dat), dim, type, access )
+    op_arg_gbl_real_8 = op_arg_gbl_c ( c_loc (dat), dim, type, 8, access )
 
   end function
-
 
   type(op_arg) function op_arg_gbl_real_8_2 ( dat, dim, access )
 
@@ -641,27 +659,9 @@ contains
     integer(kind=c_int) :: dim
     integer(kind=c_int) :: access
 
-    op_arg_gbl_real_8_2 = op_arg_gbl_real_8 ( dat, dim, access )
+    op_arg_gbl_real_8_2 = op_arg_gbl_real_8 ( dat, dim, access-1 )
 
   end function
-
-!   type(op_arg_fortran) function op_arg_gbl_real_8_1 ( argdat, argdim, access )
-
-!     use, intrinsic :: ISO_C_BINDING
-
-!     implicit none
-
-!     real(8), dimension(:) :: argdat
-!     integer(kind=c_int), value :: argdim
-!     integer(kind=c_int), value :: access
-
-!     type(op_arg_fortran) :: returnArg
-
-!     returnArg = op_arg_gbl_real_8 ( argdat, argdim, access )
-
-!     op_arg_gbl_real_8_1 = returnArg
-
-!   end function
 
   subroutine op_get_dat ( opdat )
 
