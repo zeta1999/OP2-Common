@@ -319,6 +319,7 @@ op_dat op_decl_dat_hdf5(op_set set, int dim, char const *type, char const *file,
   H5Fclose(file_id);
 
   op_dat new_dat = op_decl_dat_char(set, dim, type, dat_size, data, name );
+
   new_dat->user_managed = 0;
   return new_dat;
 }

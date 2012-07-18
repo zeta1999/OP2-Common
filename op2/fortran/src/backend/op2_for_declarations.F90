@@ -28,6 +28,7 @@ module OP2_Fortran_Declarations
     integer(kind=c_int) :: index        ! position in the private OP2 array of op_set_core variables
     integer(kind=c_int) :: size         ! number of elements in the set
     type(c_ptr)         :: name         ! set name
+    integer(kind=c_int) :: core_size    ! number of core elements in an mpi process
     integer(kind=c_int) :: exec_size    ! number of additional imported elements to be executed
     integer(kind=c_int) :: nonexec_size ! number of additional imported elements that are not executed
 
@@ -42,12 +43,13 @@ module OP2_Fortran_Declarations
 
   type, BIND(C) :: op_map_core
 
-    integer(kind=c_int) ::    index ! position in the private OP2 array of op_map_core variables
-    type(c_ptr) ::            from  ! set map from
-    type(c_ptr) ::            to    ! set map to
-    integer(kind=c_int) ::    dim   ! dimension of map
-    type(c_ptr) ::            map   ! array defining map
-    type(c_ptr) ::            name  ! map name
+    integer(kind=c_int) ::    index        ! position in the private OP2 array of op_map_core variables
+    type(c_ptr) ::            from         ! set map from
+    type(c_ptr) ::            to           ! set map to
+    integer(kind=c_int) ::    dim          ! dimension of map
+    type(c_ptr) ::            map          ! array defining map
+    type(c_ptr) ::            name         ! map name
+    integer(kind=c_int) ::    user_managed ! indicates whether the user is managing memory
 
   end type op_map_core
 
@@ -60,19 +62,21 @@ module OP2_Fortran_Declarations
 
   type, BIND(C) :: op_dat_core
 
-    integer(kind=c_int) ::    index    ! position in the private OP2 array of op_dat_core variables
-    type(c_ptr) ::            set      ! set on which data is defined
-    integer(kind=c_int) ::    dim      ! dimension of data
-    integer(kind=c_int) ::    size     ! size of each element in dataset
-    type(c_ptr) ::            dat      ! data on host
+    integer(kind=c_int) ::    index        ! position in the private OP2 array of op_dat_core variables
+    type(c_ptr) ::            set          ! set on which data is defined
+    integer(kind=c_int) ::    dim          ! dimension of data
+    integer(kind=c_int) ::    size         ! size of each element in dataset
+    type(c_ptr) ::            dat          ! data on host
 #ifdef OP2_WITH_CUDAFOR
-    type(c_devptr) ::         dat_d    ! data on device
+    type(c_devptr) ::         dat_d        ! data on device
 #else
-    type(c_ptr) ::            dat_d    ! data on device
+    type(c_ptr) ::            dat_d        ! data on device
 #endif
-    type(c_ptr) ::            type     ! data type
-    type(c_ptr) ::            name     ! data name
-    type(c_ptr) ::            buffer_d ! buffer for MPI halo sends on the device
+    type(c_ptr) ::            type         ! data type
+    type(c_ptr) ::            name         ! data name
+    type(c_ptr) ::            buffer_d     ! buffer for MPI halo sends on the device
+    integer(kind=c_int) ::    dirtybit     ! flag to indicate MPI halo exchange is needed
+    integer(kind=c_int) ::    user_managed ! indicates whether the user is managing memory
 
   end type op_dat_core
 
@@ -110,7 +114,7 @@ module OP2_Fortran_Declarations
   ! Declarations of op_par_loop implemented in C
   interface
 
-    subroutine op_init_core ( argc, argv, diags ) BIND(C,name='op_init_core')
+    subroutine op_init_c ( argc, argv, diags ) BIND(C,name='op_init')
 
       use, intrinsic :: ISO_C_BINDING
 
@@ -118,7 +122,7 @@ module OP2_Fortran_Declarations
       type(c_ptr), intent(in)                :: argv
       integer(kind=c_int), intent(in), value :: diags
 
-    end subroutine op_init_core
+    end subroutine op_init_c
 
     type(c_ptr) function op_decl_set_c ( setsize, name ) BIND(C,name='op_decl_set')
 
@@ -184,12 +188,12 @@ module OP2_Fortran_Declarations
       integer(kind=c_int), value :: idx
       type(c_ptr), value, intent(in) :: map
       integer(kind=c_int), value :: dim
-      type(c_ptr) :: type
+      type(c_ptr), value :: type
       integer(kind=c_int), value :: acc
 
     end function op_arg_dat_c
 
-    function op_arg_gbl_c ( dat, dim, type, size, acc ) BIND(C,name='op_arg_gbl')
+    function op_arg_gbl_c ( dat, dim, type, acc ) BIND(C,name='op_arg_gbl_copy')
 
       use, intrinsic :: ISO_C_BINDING
 
@@ -200,10 +204,18 @@ module OP2_Fortran_Declarations
       type(c_ptr), value :: dat
       integer(kind=c_int), value :: dim
       character(kind=c_char), dimension(*) :: type
-      integer(kind=c_int), value :: size
       integer(kind=c_int), value :: acc
 
     end function op_arg_gbl_c
+
+    subroutine print_type (type) BIND(C,name='print_type')
+    
+      use, intrinsic :: ISO_C_BINDING
+      import :: op_arg
+
+      type(op_arg) :: type
+
+    end subroutine
 
     subroutine op_fetch_data_f ( opdat ) BIND(C,name='op_fetch_data')
 
@@ -280,7 +292,7 @@ module OP2_Fortran_Declarations
    end subroutine
 
    subroutine dumpOpMap_c ( map, fileName ) BIND(C,name='dumpOpMap')
-      use, intrinsic :: ISO_C_BINDING
+     use, intrinsic :: ISO_C_BINDING
 
      import :: op_map_core
 
@@ -292,6 +304,17 @@ module OP2_Fortran_Declarations
     subroutine op_diagnostic_output (  ) BIND(C,name='op_diagnostic_output')
       use, intrinsic :: ISO_C_BINDING
     end subroutine
+
+
+    subroutine op_print_dat_to_binfile_c (dat, fileName) BIND(C,name='op_print_dat_to_binfile')
+      use, intrinsic :: ISO_C_BINDING
+
+      import :: op_dat_core
+
+      type(op_dat_core) :: dat
+      character(len=1,kind=c_char) :: fileName(*)
+
+    end subroutine op_print_dat_to_binfile_c
 
   end interface
 
@@ -307,7 +330,8 @@ module OP2_Fortran_Declarations
   end interface op_decl_gbl
 
   interface op_arg_gbl
-    module procedure op_arg_gbl_real_8_scalar, op_arg_gbl_real_8, op_arg_gbl_real_8_2
+    module procedure op_arg_gbl_real_8_scalar, op_arg_gbl_real_8, op_arg_gbl_real_8_2, &
+                   & op_arg_gbl_integer_4_scalar, op_arg_gbl_integer_4, op_arg_gbl_integer_4_2
   end interface op_arg_gbl
 
   interface op_decl_const
@@ -348,11 +372,11 @@ contains
     OP_ID%mapPtr => idPtr
     OP_GBL%mapPtr => gblPtr
 
-    call op_init_core ( argc, C_NULL_PTR, diags )
+    call op_init_c ( argc, C_NULL_PTR, diags )
 
 #ifdef OP2_WITH_CUDAFOR
     ! support for GTX
-    setDevReturnVal = cudaSetDevice ( 0 )
+!    setDevReturnVal = cudaSetDevice ( 0 )
 
     devPropRetVal = cudaGetDeviceProperties ( deviceProperties, 0 )
 
@@ -418,6 +442,8 @@ contains
 
     ! convert the generated C pointer to Fortran pointer and store it inside the op_map variable
     call c_f_pointer ( data%dataCPtr, data%dataPtr )
+
+    ! debugging
 
   end subroutine op_decl_dat_real_8
 
@@ -606,13 +632,37 @@ contains
 
     ! warning: access and idx are in FORTRAN style, while the C style is required here
     if ( map%mapPtr%dim .eq. 0 ) then
-      ! OP_ID case
-      op_arg_dat = op_arg_dat_c ( dat%dataCPtr, idx-1, C_NULL_PTR, dat%dataPtr%dim, dat%dataPtr%type, access-1 )
+      ! OP_ID case (does not decrement idx)
+      op_arg_dat = op_arg_dat_c ( dat%dataCPtr, idx, C_NULL_PTR, dat%dataPtr%dim, dat%dataPtr%type, access-1 )
     else
       op_arg_dat = op_arg_dat_c ( dat%dataCPtr, idx-1, map%mapCPtr, dat%dataPtr%dim, dat%dataPtr%type, access-1 )
     endif
 
   end function
+
+  type(op_arg) function op_arg_dat_generic (dat, idx, map, dim, type, access )
+
+    use, intrinsic :: ISO_C_BINDING
+
+    implicit none
+
+    type(op_dat) :: dat
+    integer(kind=c_int) :: idx
+    type(op_map) :: map
+    integer(kind=c_int) :: dim
+    character(kind=c_char,len=*) :: type
+    integer(kind=c_int) :: access
+
+    ! warning: access and idx are in FORTRAN style, while the C style is required here
+    if ( map%mapPtr%dim .eq. 0 ) then
+      ! OP_ID case (does not decrement idx)
+      op_arg_dat_generic = op_arg_dat_c ( dat%dataCPtr, idx, C_NULL_PTR, dat%dataPtr%dim, dat%dataPtr%type, access-1 )
+    else
+      op_arg_dat_generic = op_arg_dat_c ( dat%dataCPtr, idx-1, map%mapCPtr, dat%dataPtr%dim, dat%dataPtr%type, access-1 )
+    endif
+
+  end function op_arg_dat_generic
+
 
   type(op_arg) function op_arg_gbl_real_8_scalar ( dat, access )
 
@@ -620,14 +670,15 @@ contains
 
     implicit none
 
-    real(8) :: dat
+    real(8), target :: dat
     integer(kind=c_int) :: access
 
     character(kind=c_char,len=7) :: type = C_CHAR_'double'//C_NULL_CHAR
 
-    op_arg_gbl_real_8_scalar = op_arg_gbl_c ( c_loc (dat), 1, type, 8, access )
+    ! warning: access is in FORTRAN style, while the C style is required here
+    op_arg_gbl_real_8_scalar = op_arg_gbl_c ( c_loc (dat), 1, type, access-1 )
 
-  end function
+  end function op_arg_gbl_real_8_scalar
 
   type(op_arg) function op_arg_gbl_real_8 ( dat, dim, access )
 
@@ -635,15 +686,16 @@ contains
 
     implicit none
 
-    real(8), dimension(*) :: dat
+    real(8), dimension(*), target :: dat
     integer(kind=c_int) :: dim
     integer(kind=c_int) :: access
 
     character(kind=c_char,len=7) :: type = C_CHAR_'double'//C_NULL_CHAR
 
-    op_arg_gbl_real_8 = op_arg_gbl_c ( c_loc (dat), dim, type, 8, access )
+    ! warning: access is in FORTRAN style, while the C style is required here
+    op_arg_gbl_real_8 = op_arg_gbl_c ( c_loc (dat), dim, type, access-1 )
 
-  end function
+  end function op_arg_gbl_real_8
 
   type(op_arg) function op_arg_gbl_real_8_2 ( dat, dim, access )
 
@@ -655,9 +707,57 @@ contains
     integer(kind=c_int) :: dim
     integer(kind=c_int) :: access
 
-    op_arg_gbl_real_8_2 = op_arg_gbl_real_8 ( dat, dim, access-1 )
+    op_arg_gbl_real_8_2 = op_arg_gbl_real_8 ( dat, dim, access )
 
-  end function
+  end function op_arg_gbl_real_8_2
+
+  type(op_arg) function op_arg_gbl_integer_4_scalar ( dat, access )
+
+    use, intrinsic :: ISO_C_BINDING
+
+    implicit none
+
+    integer(4), target :: dat
+    integer(kind=c_int) :: access
+
+    character(kind=c_char,len=4) :: type = C_CHAR_'int'//C_NULL_CHAR
+
+    ! warning: access is in FORTRAN style, while the C style is required here
+    op_arg_gbl_integer_4_scalar = op_arg_gbl_c ( c_loc (dat), 1, type, access-1 )
+
+  end function op_arg_gbl_integer_4_scalar
+
+  type(op_arg) function op_arg_gbl_integer_4 ( dat, dim, access )
+
+    use, intrinsic :: ISO_C_BINDING
+
+    implicit none
+
+    integer(4), dimension(*), target :: dat
+    integer(kind=c_int) :: dim
+    integer(kind=c_int) :: access
+
+    character(kind=c_char,len=4) :: type = C_CHAR_'int'//C_NULL_CHAR
+
+    ! warning: access is in FORTRAN style, while the C style is required here
+    op_arg_gbl_integer_4 = op_arg_gbl_c ( c_loc (dat), dim, type, access-1 )
+
+  end function op_arg_gbl_integer_4
+
+  type(op_arg) function op_arg_gbl_integer_4_2 ( dat, dim, access )
+
+    use, intrinsic :: ISO_C_BINDING
+
+    implicit none
+
+    integer(4), dimension(:,:) :: dat
+    integer(kind=c_int) :: dim
+    integer(kind=c_int) :: access
+
+    op_arg_gbl_integer_4_2 = op_arg_gbl_integer_4 ( dat, dim, access )
+
+  end function op_arg_gbl_integer_4_2
+
 
   subroutine op_get_dat ( opdat )
 
@@ -732,6 +832,15 @@ contains
     get_associated_set_size = get_associated_set_size_f ( dat%dataPtr )
 
   end function
+
+  subroutine op_print_dat_to_binfile (dat, fileName)
+
+    type(op_dat) :: dat
+    character(len=*) :: fileName
+
+    call op_print_dat_to_binfile_c (dat%dataPtr, fileName)
+
+  end subroutine op_print_dat_to_binfile
 
 end module OP2_Fortran_Declarations
 
