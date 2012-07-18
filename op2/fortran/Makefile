@@ -38,12 +38,12 @@ else
 ifeq ($(OP2_COMPILER),pgi)
   F_OP2_MOD_INTEL = $(F_OP2_MOD)/intel
   F_OP2_MOD_PGI   = $(F_OP2_MOD)/pgi
-  CC              = icc -O3
+  CC              = icc -g
   CFLAGS          = -std=c99 -Wall -Werror
-  FC              = ifort -O3
+  FC              = ifort -g
   FFLAGS          = -module $(F_OP2_MOD_INTEL)
   PGCC            = nvcc
-  PGCFLAGS        = -Xcompiler="-O4 -std=c99 -Wall -fPIC -pedantic -pipe"
+  PGCFLAGS        = -Xcompiler="-g -std=c99 -Wall -fPIC -pedantic -pipe"
   PGFC            = pgfortran
   PGFFLAGS        = -module $(F_OP2_MOD_PGI) -Mcuda=cuda4.0 -Minform=inform -DOP2_WITH_CUDAFOR
   ALLTARGETS      = f_reference f_openmp f_cuda
@@ -81,7 +81,7 @@ f_reference: $(C_OP2_INC)/op_lib_core.h $(C_OP2_SRC)/core/op_lib_core.c \
 						 directories
 	$(CC) $(CFLAGS) -I$(C_OP2_INC) -c $(C_OP2_SRC)/core/op_lib_core.c -o $(F_OP2_OBJ)/op_lib_core.o
 	$(CC) $(CFLAGS) -I$(C_OP2_INC) -c $(C_OP2_SRC)/sequential/op_seq.c -o $(F_OP2_OBJ)/op_seq.o
-	$(CC) -I$(C_OP2_INC) -c $(F_OP2_SRC)/backend/op2_for_C_wrappers.c -o $(F_OP2_OBJ)/op2_for_C_wrappers.o
+	$(CC) $(CFLAGS) -I$(C_OP2_INC) -c $(F_OP2_SRC)/backend/op2_for_C_wrappers.c -o $(F_OP2_OBJ)/op2_for_C_wrappers.o
 	$(FC) $(FFLAGS) -c $(F_OP2_SRC)/backend/op2_for_declarations.F90 -o $(F_OP2_OBJ)/op2_for_declarations.o
 	$(shell cp $(F_OP2_SRC)/backend/op2_for_reference.F90 $(F_OP2_SRC)/backend/op2_for_reference.c)
 	$(shell cpp $(F_OP2_SRC)/backend/op2_for_reference.c | sed s/##//g | sed s/\"@\"//g | tr "@" "\\n" > $(F_OP2_SRC)/backend/op2_cpp_reference.F90)

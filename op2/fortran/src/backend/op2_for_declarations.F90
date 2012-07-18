@@ -87,21 +87,26 @@ module OP2_Fortran_Declarations
 
   end type op_dat
 
-!  type, BIND(C) :: op_arg
+  type, BIND(C) :: op_arg
 
-!    integer(4) ::   index
-!    type(op_dat) :: dat
-!    type(op_map) :: map
-!    integer(4) ::   dim
-!    integer(4) ::   idx
-!    integer(4) ::   size
-!    type(c_ptr) ::  data
-!    type(c_ptr) ::  data_d
-!    type(c_ptr) ::  type
-!    integer(4) ::   acc
-!    integer(4) ::   argType
+    integer(kind=c_int) :: index
+    type(c_ptr)         :: dat
+    type(c_ptr)         :: map
+    integer(kind=c_int) :: dim
+    integer(kind=c_int) :: idx
+    integer(kind=c_int) :: size
+    type(c_ptr)         :: data
+#ifdef OP2_WITH_CUDAFOR
+    type(c_devptr) ::         data_d    ! data on device
+#else
+    type(c_ptr)         :: data_d
+#endif
+    type(c_ptr)         :: type
+    integer(kind=c_int) :: acc
+    integer(kind=c_int) :: argtype
+    integer(kind=c_int) :: sent
 
-!  end type op_arg
+  end type op_arg
 
   ! declaration of identity and global mapping
   type(op_map) :: OP_ID, OP_GBL
@@ -170,6 +175,38 @@ module OP2_Fortran_Declarations
       character(kind=c_char,len=1) :: name(*)
 
     end function op_decl_gbl_f
+
+    function op_arg_dat_c ( dat, idx, map, dim, type, acc ) BIND(C,name='op_arg_dat')
+
+      use, intrinsic :: ISO_C_BINDING
+
+      import :: op_arg
+
+      type(op_arg) :: op_arg_dat_c
+      
+      type(c_ptr), value, intent(in) :: dat
+      integer(kind=c_int), value :: idx
+      type(c_ptr), value, intent(in) :: map
+      integer(kind=c_int), value :: dim
+      type(c_ptr) :: type
+      integer(kind=c_int), value :: acc
+
+    end function op_arg_dat_c
+
+    function op_arg_gbl_c ( dat, dim, type, acc ) BIND(C,name='op_arg_gbl_fortran')
+
+      use, intrinsic :: ISO_C_BINDING
+
+      import :: op_arg
+
+      type(op_arg) :: op_arg_gbl_c
+      
+      type(c_ptr), value :: dat
+      integer(kind=c_int), value :: dim
+      character(kind=c_char,len=1) :: type
+      integer(kind=c_int), value :: acc
+
+    end function op_arg_gbl_c
 
     subroutine op_fetch_data_f ( opdat ) BIND(C,name='op_fetch_data')
 
@@ -272,6 +309,10 @@ module OP2_Fortran_Declarations
     module procedure op_decl_gbl_real_8,  op_decl_gbl_integer_4_scalar
   end interface op_decl_gbl
 
+  interface op_arg_gbl
+    module procedure op_arg_gbl_real_8, op_arg_gbl_real_8_2
+  end interface op_arg_gbl
+
   interface op_decl_const
     module procedure op_decl_const_integer_4, op_decl_const_real_8, op_decl_const_scalar_integer_4, &
     & op_decl_const_scalar_real_8
@@ -314,9 +355,9 @@ contains
 
 #ifdef OP2_WITH_CUDAFOR
     ! support for GTX
-    setDevReturnVal = cudaSetDevice ( 3 )
+    setDevReturnVal = cudaSetDevice ( 0 )
 
-    devPropRetVal = cudaGetDeviceProperties ( deviceProperties, 3 )
+    devPropRetVal = cudaGetDeviceProperties ( deviceProperties, 0 )
 
     print *, 'Using: ', deviceProperties%name
 #endif
@@ -555,13 +596,72 @@ contains
 
   end subroutine op_decl_const_scalar_real_8
 
-  subroutine op_fetch_data ( opdat )
+  type(op_arg) function op_arg_dat (dat, idx, map, access )
 
-    type(op_dat) :: opdat
+    use, intrinsic :: ISO_C_BINDING
 
-    call op_fetch_data_f ( opdat%dataPtr)
+    implicit none
 
-  end subroutine op_fetch_data
+    type(op_dat) :: dat
+    integer(kind=c_int) :: idx
+    type(op_map) :: map
+    integer(kind=c_int) :: access
+
+    print *, 'In arg fortran: dim = ', dat%dataPtr%dim
+
+    ! warning: access is in FORTRAN style, while the C style is required here
+    op_arg_dat = op_arg_dat_c ( dat%dataCPtr, idx, map%mapCPtr, dat%dataPtr%dim, dat%dataPtr%type, access-1 )
+
+  end function
+
+  type(op_arg) function op_arg_gbl_real_8 ( dat, dim, access )
+
+    use, intrinsic :: ISO_C_BINDING
+
+    implicit none
+
+    real(8), dimension(*) :: dat
+    integer(kind=c_int) :: dim
+    integer(kind=c_int) :: access
+
+    character(kind=c_char,len=5) :: type = "real" // CHAR(0)
+
+    op_arg_gbl_real_8 = op_arg_gbl_c ( c_loc (dat), dim, type, access )
+
+  end function
+
+
+  type(op_arg) function op_arg_gbl_real_8_2 ( dat, dim, access )
+
+    use, intrinsic :: ISO_C_BINDING
+
+    implicit none
+
+    real(8), dimension(:,:) :: dat
+    integer(kind=c_int) :: dim
+    integer(kind=c_int) :: access
+
+    op_arg_gbl_real_8_2 = op_arg_gbl_real_8 ( dat, dim, access )
+
+  end function
+
+!   type(op_arg_fortran) function op_arg_gbl_real_8_1 ( argdat, argdim, access )
+
+!     use, intrinsic :: ISO_C_BINDING
+
+!     implicit none
+
+!     real(8), dimension(:) :: argdat
+!     integer(kind=c_int), value :: argdim
+!     integer(kind=c_int), value :: access
+
+!     type(op_arg_fortran) :: returnArg
+
+!     returnArg = op_arg_gbl_real_8 ( argdat, argdim, access )
+
+!     op_arg_gbl_real_8_1 = returnArg
+
+!   end function
 
   subroutine op_get_dat ( opdat )
 

@@ -165,23 +165,6 @@ void op_fetch_data ( op_dat dat )
   }
 }
 
-
-void
-op_get_dat (op_dat dat) {
-  cutilSafeCall ( cudaMemcpy ( dat->data, dat->data_d,
-                               dat->size * dat->set->size,
-                               cudaMemcpyDeviceToHost ) );
-  cutilSafeCall ( cudaThreadSynchronize (  ) );
-}
-
-void
-op_put_dat (op_dat dat) {
-  cutilSafeCall ( cudaMemcpy ( dat->data_d, dat->data,
-                               dat->size * dat->set->size,
-                               cudaMemcpyHostToDevice ) );
-  cutilSafeCall ( cudaThreadSynchronize (  ) );
-}
-
 op_plan * op_plan_get ( char const * name, op_set set, int part_size,
                         int nargs, op_arg * args, int ninds, int *inds )
 {
