@@ -140,15 +140,34 @@ op_map op_decl_map(op_set from, op_set to, int dim, int * imap, char const * nam
   //return op_decl_map_core ( from, to, dim, imap, name );
 }
 
-op_arg op_arg_dat (op_dat dat, int idx, op_map map, int dim, char const * type, op_access acc )
+op_arg op_arg_dat( op_dat dat, int idx, op_map map, int dim, char const * type, op_access acc )
 {
   return op_arg_dat_core ( dat, idx, map, dim, type, acc );
 }
 
+<<<<<<< HEAD
 op_arg
 op_arg_gbl_char ( char * data, int dim, const char *type, int size, op_access acc )
 {
   return op_arg_gbl_core ( data, dim, type, size, acc );
+=======
+op_arg op_arg_gbl( char * data, int dim, const char * type, op_access acc )
+{
+  int size = -1;
+
+  if ( strncmp (type, "double", 6) == 0 )
+    size = dim * 8;
+  else if ( strncmp (type, "float", 5) == 0 )
+    size = dim * 4;
+  else if ( strncmp (type, "int", 5) == 0 )
+    size = dim * 4;
+  else {
+    printf ("Unsupported type for global\n");
+    exit (0);
+  }
+
+  return op_arg_gbl_core (data, dim, type, size, acc);
+>>>>>>> 9a1cb8e... - Implement op_args for fortran and tested with MPI, MPI+CUDA and SEQ back-ends
 }
 
 void op_timers(double * cpu, double * et)
