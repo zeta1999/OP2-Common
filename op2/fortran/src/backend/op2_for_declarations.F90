@@ -331,12 +331,13 @@ module OP2_Fortran_Declarations
 
   interface op_arg_gbl
     module procedure op_arg_gbl_real_8_scalar, op_arg_gbl_real_8, op_arg_gbl_real_8_2, &
-                   & op_arg_gbl_integer_4_scalar, op_arg_gbl_integer_4, op_arg_gbl_integer_4_2
+                   & op_arg_gbl_integer_4_scalar, op_arg_gbl_integer_4, op_arg_gbl_integer_4_2, &
+		   & op_arg_gbl_logical
   end interface op_arg_gbl
 
   interface op_decl_const
     module procedure op_decl_const_integer_4, op_decl_const_real_8, op_decl_const_scalar_integer_4, &
-    & op_decl_const_scalar_real_8
+    & op_decl_const_scalar_real_8, op_decl_const_logical
   end interface op_decl_const
 
 contains
@@ -619,6 +620,23 @@ contains
 
   end subroutine op_decl_const_scalar_real_8
 
+  subroutine op_decl_const_logical ( dat, constdim, opname )
+
+    logical, intent(in), target :: dat
+    integer(kind=c_int), value :: constdim
+    character(kind=c_char,len=*), optional :: opname
+
+    ! local dummies to prevent compiler warning
+    logical :: dat_dummy
+    integer(kind=c_int) :: constdim_dummy
+    character(kind=c_char) :: opname_dummy
+
+    dat_dummy = dat
+    constdim_dummy = constdim
+    opname_dummy = opname
+
+  end subroutine op_decl_const_logical
+
   type(op_arg) function op_arg_dat (dat, idx, map, access )
 
     use, intrinsic :: ISO_C_BINDING
@@ -758,6 +776,21 @@ contains
 
   end function op_arg_gbl_integer_4_2
 
+  type(op_arg) function op_arg_gbl_logical ( dat, access )
+
+    use, intrinsic :: ISO_C_BINDING
+
+    implicit none
+
+    logical, target :: dat
+    integer(kind=c_int) :: access
+
+    character(kind=c_char,len=5) :: type = C_CHAR_'bool'//C_NULL_CHAR
+
+    ! warning: access is in FORTRAN style, while the C style is required here
+    op_arg_gbl_logical = op_arg_gbl_c ( c_loc (dat), 1, type, access-1 )
+
+  end function op_arg_gbl_logical
 
   subroutine op_get_dat ( opdat )
 
