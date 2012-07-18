@@ -14,16 +14,16 @@ int op2_stride = 1;
 char blank_args[512]; // scratch space to use for blank args
 
 inline void op_arg_set(int n, op_arg arg, char **p_arg, int halo){
-  *p_arg = arg.data;
+  *p_arg = arg->data;
 
   if (arg.argtype==OP_ARG_GBL) {
-    if (halo && (arg.acc != OP_READ)) *p_arg = blank_args;
+    if (halo && (arg->acc != OP_READ)) *p_arg = blank_args;
   }
   else {
-    if (arg.map==NULL)         // identity mapping
-      *p_arg += arg.size*n;
+    if (arg->map==NULL)         // identity mapping
+      *p_arg += arg->size*n;
     else                       // standard pointers
-      *p_arg += arg.size*arg.map->map[arg.idx+n*arg.map->dim];
+      *p_arg += arg->size*arg->map->map[arg->idx+n*arg->map->dim];
   }
 }
 

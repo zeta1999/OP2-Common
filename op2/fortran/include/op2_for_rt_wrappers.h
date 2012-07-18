@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-op_arg * generatePlanInputData ( char name[],
+op_arg_core * generatePlanInputData ( char name[],
                                  int setId,
                                  int argsNumber,
                                  int args[],

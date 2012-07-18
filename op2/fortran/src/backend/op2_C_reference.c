@@ -14,30 +14,17 @@
 #include <op_lib_core.h>
 
 
-void arg_set ( int displacement, op_dat_core * arg, int itemSel, op_map_core * mapIn, char ** p_arg )
-{
-  int n2;
+inline void op_arg_set(int n, op_arg arg, char **p_arg){
+  *p_arg = arg->data;
 
-  if ( mapIn->dim == -1 ) /* global variable, no mapping at all */
-    {
-      n2 = 0;
-    }
+  if ( arg->argtype == OP_ARG_DAT ) {
 
-  if ( mapIn->dim == 0 ) /* identity mapping */
-    {
-      n2 = displacement;
-    }
-  if ( mapIn->dim > 0 ) /* standard pointers */
-    {
-      n2 = mapIn->map[itemSel + displacement * mapIn->dim];
-
-     // in fortran I have incremented all values by one..
-      n2 = n2 -1;
-    }
-
-  *p_arg = (char *) ( arg->data + n2 * arg->size );
+    if ( arg->map == NULL ) // identity mapping
+      *p_arg += arg->size*n;
+    else                       // standard pointers
+      *p_arg += arg->size*arg->map->map[arg->idx+n*arg->map->dim];
+  }
 }
-
 
 #define CHARP_LIST(N) COMMA_LIST(N,CHARP)
 #define CHARP(x) char*
@@ -46,13 +33,10 @@ void arg_set ( int displacement, op_dat_core * arg, int itemSel, op_map_core * m
 #define CHARP2(x) char* ptr##x
 
 #define ARG_SET_LIST(N) SEMI_LIST(N,ARGSET)
-#define ARGSET(x) arg_set(i,dat##x,itemSel##x,map##x,&ptr##x)
+#define ARGSET(x) op_arg_set(i,arg##x,&ptr##x)
 
 #define PTR_LIST(N) COMMA_LIST(N,PTRL)
 #define PTRL(x) ptr##x
-
-//#define ARG_LIST(N) COMMA_LIST(N,ARGS)
-//#define ARGS(x) op_dat_core * dat##x, int itemSel##x, op_map_core * map##x, op_access access##x
 
 #define OP_LOOP(N) \
   void op_par_loop_##N(void (*kernel)(CHARP_LIST(N)), op_set_core * set, ARG_LIST(N)) { \
@@ -64,7 +48,8 @@ void arg_set ( int displacement, op_dat_core * arg, int itemSel, op_map_core * m
     }                 \
   }
 
-OP_LOOP(1) OP_LOOP(2)  OP_LOOP(3)  OP_LOOP(4)  OP_LOOP(5)  OP_LOOP(6)  OP_LOOP(7)  OP_LOOP(8)  OP_LOOP(9)  OP_LOOP(10)
+
+OP_LOOP(1)  OP_LOOP(2)  OP_LOOP(3)  OP_LOOP(4)  OP_LOOP(5)  OP_LOOP(6)  OP_LOOP(7)  OP_LOOP(8)  OP_LOOP(9)  OP_LOOP(10)
 OP_LOOP(11) OP_LOOP(12) OP_LOOP(13) OP_LOOP(14) OP_LOOP(15) OP_LOOP(16) OP_LOOP(17) OP_LOOP(18) OP_LOOP(19) OP_LOOP(20)
 OP_LOOP(21) OP_LOOP(22) OP_LOOP(23) OP_LOOP(24) OP_LOOP(25) OP_LOOP(26) OP_LOOP(27) OP_LOOP(28) OP_LOOP(29) OP_LOOP(30)
 OP_LOOP(31) OP_LOOP(32) OP_LOOP(33) OP_LOOP(34) OP_LOOP(35) OP_LOOP(36) OP_LOOP(37) OP_LOOP(38) OP_LOOP(39) OP_LOOP(40)
