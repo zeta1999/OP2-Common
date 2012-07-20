@@ -166,15 +166,15 @@ module OP2_Fortran_Declarations
 
     end function op_decl_dat_c
 
-    type(c_ptr) function op_decl_gbl_f ( dataIn, dataDim, dataSize, name ) BIND(C,name='op_decl_gbl_f')
+!     type(c_ptr) function op_decl_gbl_f ( dataIn, dataDim, dataSize, name ) BIND(C,name='op_decl_gbl_f')
 
-      use, intrinsic :: ISO_C_BINDING
+!       use, intrinsic :: ISO_C_BINDING
 
-      type(c_ptr), intent(in) :: dataIn
-      integer(kind=c_int), value, intent(in) :: dataDim, dataSize
-      character(kind=c_char,len=1) :: name(*)
+!       type(c_ptr), intent(in) :: dataIn
+!       integer(kind=c_int), value, intent(in) :: dataDim, dataSize
+!       character(kind=c_char,len=1) :: name(*)
 
-    end function op_decl_gbl_f
+!     end function op_decl_gbl_f
 
     function op_arg_dat_c ( dat, idx, map, dim, type, acc ) BIND(C,name='op_arg_dat')
 
@@ -193,7 +193,7 @@ module OP2_Fortran_Declarations
 
     end function op_arg_dat_c
 
-    function op_arg_gbl_c ( dat, dim, type, acc ) BIND(C,name='op_arg_gbl_copy')
+    function op_arg_gbl_c ( dat, dim, type, size, acc ) BIND(C,name='op_arg_gbl_copy')
 
       use, intrinsic :: ISO_C_BINDING
 
@@ -204,6 +204,7 @@ module OP2_Fortran_Declarations
       type(c_ptr), value :: dat
       integer(kind=c_int), value :: dim
       character(kind=c_char), dimension(*) :: type
+      integer(kind=c_int), value :: size
       integer(kind=c_int), value :: acc
 
     end function op_arg_gbl_c
@@ -325,14 +326,14 @@ module OP2_Fortran_Declarations
                      op_decl_dat_real_8_3, op_decl_dat_integer_4_3
   end interface op_decl_dat
 
-  interface op_decl_gbl
-    module procedure op_decl_gbl_real_8,  op_decl_gbl_integer_4_scalar
-  end interface op_decl_gbl
+!  interface op_decl_gbl
+!    module procedure op_decl_gbl_real_8,  op_decl_gbl_integer_4_scalar
+!  end interface op_decl_gbl
 
   interface op_arg_gbl
     module procedure op_arg_gbl_real_8_scalar, op_arg_gbl_real_8, op_arg_gbl_real_8_2, &
                    & op_arg_gbl_integer_4_scalar, op_arg_gbl_integer_4, op_arg_gbl_integer_4_2, &
-		   & op_arg_gbl_logical
+		   & op_arg_gbl_logical_scalar, op_arg_gbl_logical
   end interface op_arg_gbl
 
   interface op_decl_const
@@ -373,16 +374,18 @@ contains
     OP_ID%mapPtr => idPtr
     OP_GBL%mapPtr => gblPtr
 
-    call op_init_c ( argc, C_NULL_PTR, diags )
-
 #ifdef OP2_WITH_CUDAFOR
     ! support for GTX
-!    setDevReturnVal = cudaSetDevice ( 0 )
 
-    devPropRetVal = cudaGetDeviceProperties ( deviceProperties, 0 )
+    setDevReturnVal = cudaSetDevice ( 2 )
+    devPropRetVal = cudaGetDeviceProperties ( deviceProperties, 2 )
 
     print *, 'Using: ', deviceProperties%name
 #endif
+
+
+    call op_init_c ( argc, C_NULL_PTR, diags )
+
   end subroutine op_init
 
   subroutine op_decl_set ( setsize, set, opname )
@@ -518,33 +521,33 @@ contains
   !   declarations of globals    !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine op_decl_gbl_real_8 ( dat, gbldata, gbldim )
+!   subroutine op_decl_gbl_real_8 ( dat, gbldata, gbldim )
 
-    real(8), dimension(*), intent(in), target :: dat
-    type(op_dat) :: gblData
-    integer, intent(in) :: gbldim
+!     real(8), dimension(*), intent(in), target :: dat
+!     type(op_dat) :: gblData
+!     integer, intent(in) :: gbldim
 
-    ! FIXME: should this be double?
-    character(kind=c_char,len=5) :: type = C_CHAR_'real'//C_NULL_CHAR
+!     ! FIXME: should this be double?
+!     character(kind=c_char,len=5) :: type = C_CHAR_'real'//C_NULL_CHAR
 
-    gblData%dataCPtr = op_decl_gbl_f ( c_loc ( dat ), gbldim, 8, type )
+!     gblData%dataCPtr = op_decl_gbl_f ( c_loc ( dat ), gbldim, 8, type )
 
-    call c_f_pointer ( gblData%dataCPtr, gblData%dataPtr )
+!     call c_f_pointer ( gblData%dataCPtr, gblData%dataPtr )
 
-  end subroutine op_decl_gbl_real_8
+!   end subroutine op_decl_gbl_real_8
 
-  subroutine op_decl_gbl_integer_4_scalar ( dat, gbldata)
+!   subroutine op_decl_gbl_integer_4_scalar ( dat, gbldata)
 
-    integer(4), intent(in), target :: dat
-    type(op_dat) :: gblData
+!     integer(4), intent(in), target :: dat
+!     type(op_dat) :: gblData
 
-    character(kind=c_char,len=8) :: type = C_CHAR_'integer'//C_NULL_CHAR
+!     character(kind=c_char,len=8) :: type = C_CHAR_'integer'//C_NULL_CHAR
 
-    gblData%dataCPtr = op_decl_gbl_f ( c_loc ( dat ), 1, 4, type )
+!     gblData%dataCPtr = op_decl_gbl_f ( c_loc ( dat ), 1, 4, type )
 
-    call c_f_pointer ( gblData%dataCPtr, gblData%dataPtr )
+!     call c_f_pointer ( gblData%dataCPtr, gblData%dataPtr )
 
-  end subroutine op_decl_gbl_integer_4_scalar
+!   end subroutine op_decl_gbl_integer_4_scalar
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !   declarations of constants  !
@@ -694,7 +697,7 @@ contains
     character(kind=c_char,len=7) :: type = C_CHAR_'double'//C_NULL_CHAR
 
     ! warning: access is in FORTRAN style, while the C style is required here
-    op_arg_gbl_real_8_scalar = op_arg_gbl_c ( c_loc (dat), 1, type, access-1 )
+    op_arg_gbl_real_8_scalar = op_arg_gbl_c ( c_loc (dat), 1, type, 8, access-1 )
 
   end function op_arg_gbl_real_8_scalar
 
@@ -711,7 +714,7 @@ contains
     character(kind=c_char,len=7) :: type = C_CHAR_'double'//C_NULL_CHAR
 
     ! warning: access is in FORTRAN style, while the C style is required here
-    op_arg_gbl_real_8 = op_arg_gbl_c ( c_loc (dat), dim, type, access-1 )
+    op_arg_gbl_real_8 = op_arg_gbl_c ( c_loc (dat), dim, type, 8, access-1 )
 
   end function op_arg_gbl_real_8
 
@@ -741,7 +744,7 @@ contains
     character(kind=c_char,len=4) :: type = C_CHAR_'int'//C_NULL_CHAR
 
     ! warning: access is in FORTRAN style, while the C style is required here
-    op_arg_gbl_integer_4_scalar = op_arg_gbl_c ( c_loc (dat), 1, type, access-1 )
+    op_arg_gbl_integer_4_scalar = op_arg_gbl_c ( c_loc (dat), 1, type, 4, access-1 )
 
   end function op_arg_gbl_integer_4_scalar
 
@@ -758,7 +761,7 @@ contains
     character(kind=c_char,len=4) :: type = C_CHAR_'int'//C_NULL_CHAR
 
     ! warning: access is in FORTRAN style, while the C style is required here
-    op_arg_gbl_integer_4 = op_arg_gbl_c ( c_loc (dat), dim, type, access-1 )
+    op_arg_gbl_integer_4 = op_arg_gbl_c ( c_loc (dat), dim, type, 4, access-1 )
 
   end function op_arg_gbl_integer_4
 
@@ -776,7 +779,7 @@ contains
 
   end function op_arg_gbl_integer_4_2
 
-  type(op_arg) function op_arg_gbl_logical ( dat, access )
+  type(op_arg) function op_arg_gbl_logical_scalar ( dat, access )
 
     use, intrinsic :: ISO_C_BINDING
 
@@ -788,7 +791,24 @@ contains
     character(kind=c_char,len=5) :: type = C_CHAR_'bool'//C_NULL_CHAR
 
     ! warning: access is in FORTRAN style, while the C style is required here
-    op_arg_gbl_logical = op_arg_gbl_c ( c_loc (dat), 1, type, access-1 )
+    op_arg_gbl_logical_scalar = op_arg_gbl_c ( c_loc (dat), 1, type, 1, access-1 )
+
+  end function op_arg_gbl_logical_scalar
+
+  type(op_arg) function op_arg_gbl_logical ( dat, dim, access )
+
+    use, intrinsic :: ISO_C_BINDING
+
+    implicit none
+
+    logical, dimension(*), target :: dat
+    integer(kind=c_int) :: dim
+    integer(kind=c_int) :: access
+
+    character(kind=c_char,len=5) :: type = C_CHAR_'bool'//C_NULL_CHAR
+
+    ! warning: access is in FORTRAN style, while the C style is required here
+    op_arg_gbl_logical = op_arg_gbl_c ( c_loc (dat), dim, type, 1, access-1 )
 
   end function op_arg_gbl_logical
 
