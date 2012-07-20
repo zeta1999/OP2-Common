@@ -32,12 +32,12 @@ inline void op_arg_set(int n, op_arg arg, char **p_arg, int halo){
   }
 }
 
-inline void op_arg_copy_in(int n, op_arg arg, char **p_arg) {
+void op_arg_copy_in(int n, op_arg arg, char **p_arg) {
   for (int i = 0; i < -1*arg.idx; ++i)
     p_arg[i] = arg.data + arg.map->map[i+n*arg.map->dim]*arg.size;
 }
 
-inline void op_args_check(op_set set, int nargs, op_arg *args,
+void op_args_check(op_set set, int nargs, op_arg *args,
                                       int *ninds, const char *name) {
   for (int n=0; n<nargs; n++)
     op_arg_check(set,n,args[n],ninds,name);

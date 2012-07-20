@@ -210,14 +210,14 @@ void dumpOpMap (op_map_core * map, const char * fileName)
 
 
 op_arg
-op_arg_gbl_copy ( char * data, int dim, const char * typ, op_access acc ) {
+op_arg_gbl_copy ( char * data, int dim, const char * typ, int size, op_access acc ) {
 
   int len = strlen (typ);
   char * heapType = (char *) calloc (len, sizeof (char));
 
   strncpy (heapType, typ, len);
 
-  return op_arg_gbl (data, dim, heapType, acc);
+  return op_arg_gbl_char (data, dim, heapType, size, acc);
 }
 
 void op_dump_arg (op_arg * arg)
