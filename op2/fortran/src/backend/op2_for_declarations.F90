@@ -106,6 +106,21 @@ module OP2_Fortran_Declarations
     integer(kind=c_int) :: argtype
     integer(kind=c_int) :: sent
 
+  int         index;  /* index */
+  op_dat      dat;    /* dataset */
+  op_map      map;    /* indirect mapping */
+  int         dim,    /* dimension of data */
+              idx,
+              size;   /* size (for sequential execution) */
+  char       *data,   /* data on host */
+             *data_d; /* data on device (for CUDA execution) */
+  char const *type;   /* datatype */
+  op_access   acc;
+  op_arg_type argtype;
+  int         sent;   /* flag to indicate if this argument has                                                                                                                                                     
+                         data in flight under non-blocking MPI comms*/
+
+
   end type op_arg
 
   ! declaration of identity and global mapping
