@@ -27,8 +27,8 @@ inline void op_arg_set(int n, op_arg arg, char **p_arg, int halo){
   else {
     if (arg.map==NULL)         // identity mapping
       *p_arg += arg.size*n;
-    else                       // standard pointers
-      *p_arg += arg.size*arg.map->map[arg.idx+n*arg.map->dim];
+    else                       // standard pointers (decremented for FORTRAN)
+      *p_arg += arg.size*(arg.map->map[arg.idx+n*arg.map->dim]-1);
   }
 }
 
