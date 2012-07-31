@@ -220,6 +220,26 @@ op_arg_gbl_copy ( char * data, int dim, const char * typ, int size, op_access ac
   return op_arg_gbl_char (data, dim, heapType, size, acc);
 }
 
+op_arg
+op_arg_dat_null (op_dat dat, int idx, op_map map, int dim, const char * typ, op_access acc) {
+  op_arg arg;
+
+  arg.argtype = OP_ARG_NULL;
+
+  arg.dat = NULL;
+  // forces impossible dimension
+  arg.dim = -1;
+  arg.idx = -1; //this avoids getting a free in the MPI implementation (see op2_C_reference.c)
+  
+  arg.map = NULL;
+  arg.acc = OP_ACC_NULL;
+
+  arg.data = NULL;
+  arg.data_d = NULL;
+
+  return arg;
+}
+
 void op_dump_arg (op_arg * arg)
 {
   printf ("index = %d\n", arg->index);

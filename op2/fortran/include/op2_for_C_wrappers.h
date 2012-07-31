@@ -22,6 +22,15 @@ extern "C" {
 #define FOP_MIN 5
 #define FOP_MAX 6
 
+/* HYDRA feature: in some cases the op_dat
+ * passed to an op_arg is NULL, and this index notifies it
+ * to the parallel loop implementation 
+ * The following IDX value is for this case
+ */
+#define OP_ARG_NULL -3
+#define OP_IDX_NULL -3
+#define OP_ACC_NULL -3
+
 
 op_access getAccFromIntCode (int accCode);
 
