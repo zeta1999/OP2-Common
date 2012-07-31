@@ -10,6 +10,7 @@
 
 #include "../../include/op2_C_reference.h"
 #include "../../include/op2_reference_macros.h"
+#include "../../include/op2_for_C_wrappers.h"
 
 #include <op_lib_core.h>
 
@@ -19,6 +20,12 @@ int op2_stride = 1;
 char blank_args[512]; // scratch space to use for blank args
 
 inline void op_arg_set(int n, op_arg arg, char **p_arg, int halo){
+  if (arg.argtype == OP_ARG_NULL)
+  { //for null arguments, p_arg is not used in the user kernel
+    *p_arg = NULL;
+    return;
+  }
+
   *p_arg = arg.data;
 
   if (arg.argtype==OP_ARG_GBL) {

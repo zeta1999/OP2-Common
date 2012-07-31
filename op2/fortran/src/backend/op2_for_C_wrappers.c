@@ -207,3 +207,38 @@ void dumpOpMap (op_map_core * map, const char * fileName)
 
   fclose (outfile);
 }
+
+op_arg
+op_arg_dat_null (op_dat dat, int idx, op_map map, int dim, const char * typ, op_access acc) {
+  op_arg arg;
+
+  arg.argtype = OP_ARG_NULL;
+
+  arg.dat = NULL;
+  // forces impossible dimension
+  arg.dim = -1;
+  arg.idx = -1; //this avoids getting a free in the MPI implementation (see op2_C_reference.c)
+
+  arg.map = NULL;
+  arg.acc = OP_ACC_NULL;
+
+  arg.data = NULL;
+  arg.data_d = NULL;
+
+  return arg;
+}
+
+void op_dump_arg (op_arg * arg)
+{
+  printf ("index = %d\n", arg->index);
+  printf ("dat name = %s, type = %s\n", arg->dat->name, arg->dat->type);
+
+  if ( arg->map != NULL )
+    printf ("map name = %s, dim = %d\n", arg->map->name, arg->map->dim);
+
+  printf (" dim and size of op_dat = %d, %d\n", arg->dim, arg->size);
+  printf ("type = %s\n", arg->type);
+  printf ("access = %d\n", arg->acc);
+  printf ("argtype = %d\n", arg->argtype);
+  printf ("sent = %d\n", arg->sent);
+}

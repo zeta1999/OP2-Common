@@ -106,21 +106,6 @@ module OP2_Fortran_Declarations
     integer(kind=c_int) :: argtype
     integer(kind=c_int) :: sent
 
-  int         index;  /* index */
-  op_dat      dat;    /* dataset */
-  op_map      map;    /* indirect mapping */
-  int         dim,    /* dimension of data */
-              idx,
-              size;   /* size (for sequential execution) */
-  char       *data,   /* data on host */
-             *data_d; /* data on device (for CUDA execution) */
-  char const *type;   /* datatype */
-  op_access   acc;
-  op_arg_type argtype;
-  int         sent;   /* flag to indicate if this argument has
-                         data in flight under non-blocking MPI comms*/
-
-
   end type op_arg
 
   ! declaration of identity and global mapping
@@ -207,6 +192,24 @@ module OP2_Fortran_Declarations
       integer(kind=c_int), value :: acc
 
     end function op_arg_dat_c
+
+    function op_arg_dat_null_c ( dat, idx, map, dim, type, acc ) BIND(C,name='op_arg_dat_null')
+
+      use, intrinsic :: ISO_C_BINDING
+
+      import :: op_arg
+
+      type(op_arg) :: op_arg_dat_null_c
+
+      type(c_ptr), value, intent(in) :: dat
+      integer(kind=c_int), value :: idx
+      type(c_ptr), value, intent(in) :: map
+      integer(kind=c_int), value :: dim
+      type(c_ptr), value :: type
+      integer(kind=c_int), value :: acc
+
+    end function op_arg_dat_null_c
+
 
     function op_arg_gbl_c ( dat, dim, type, size, acc ) BIND(C,name='op_arg_gbl_copy')
 
@@ -666,15 +669,21 @@ contains
     type(op_map) :: map
     integer(kind=c_int) :: access
 
-    ! warning: access and idx are in FORTRAN style, while the C style is required here
-    if ( map%mapPtr%dim .eq. 0 ) then
-      ! OP_ID case (does not decrement idx)
-      op_arg_dat = op_arg_dat_c ( dat%dataCPtr, idx, C_NULL_PTR, dat%dataPtr%dim, dat%dataPtr%type, access-1 )
+    ! first check if the op_dat is actually declared (HYDRA feature)
+    ! If so, then return an empty op_arg
+    if (dat%dataCPtr .eq. C_NULL_PTR) then
+      op_arg_dat = op_arg_dat_null_c (C_NULL_PTR, idx-1, C_NULL_PTR, -1, C_NULL_PTR, access-1)
     else
-      op_arg_dat = op_arg_dat_c ( dat%dataCPtr, idx-1, map%mapCPtr, dat%dataPtr%dim, dat%dataPtr%type, access-1 )
+      ! warning: access and idx are in FORTRAN style, while the C style is required here
+      if ( map%mapPtr%dim .eq. 0 ) then
+        ! OP_ID case (does not decrement idx)
+        op_arg_dat = op_arg_dat_c ( dat%dataCPtr, idx, C_NULL_PTR, dat%dataPtr%dim, dat%dataPtr%type, access-1 )
+      else
+        op_arg_dat = op_arg_dat_c ( dat%dataCPtr, idx-1, map%mapCPtr, dat%dataPtr%dim, dat%dataPtr%type, access-1 )
+      endif
     endif
 
-  end function
+  end function op_arg_dat
 
   type(op_arg) function op_arg_dat_generic (dat, idx, map, dim, type, access )
 

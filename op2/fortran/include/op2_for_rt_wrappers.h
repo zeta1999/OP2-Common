@@ -31,6 +31,14 @@ op_plan * FortranPlanCallerCUDA ( char name[],
                                   int partitionSize
                                 );
 
+void FortranToCMapping (op_arg * arg);
+
+void checkCMapping (op_arg arg);
+
+op_plan * checkExistingPlan (char name[], op_set set,
+  int partitionSize, int argsNumber, op_arg args[],
+  int indsNumber, int inds[]);
+
 #ifdef __cplusplus
 }
 #endif
