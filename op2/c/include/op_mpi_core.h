@@ -282,6 +282,7 @@ void op_partition_ptscotch(op_map primary_map);
 void op_exchange_halo(op_arg* arg);
 void op_wait_all(op_arg* arg);
 
+void print_dat_to_binfile_mpi(op_dat dat, const char *file_name);
 
 #endif /* __OP_MPI_CORE_H */
 
