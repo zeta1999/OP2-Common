@@ -48,6 +48,7 @@ end interface
    external kernel @\
    type(op_set) :: set @\
    ARG_NOCORE_LIST(N) @\
+   if (set%setPtr%size .eq. 0) return @\
    call op_par_loop_##N##_f(kernel, set%setPtr, &@\
       ARG_LIST(N) \
    ) @\
