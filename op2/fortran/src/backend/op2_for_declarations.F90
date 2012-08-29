@@ -312,6 +312,22 @@ module OP2_Fortran_Declarations
 
     end subroutine
 
+    subroutine op_get_dat_mpi_c ( opdat ) BIND(C,name='op_get_dat_mpi')
+
+      import :: op_dat_core
+
+      type(op_dat_core) :: opdat
+
+    end subroutine op_get_dat_mpi_c
+
+    subroutine op_put_dat_mpi_c ( opdat ) BIND(C,name='op_put_dat_mpi')
+
+      import :: op_dat_core
+
+      type(op_dat_core) :: opdat
+
+    end subroutine op_put_dat_mpi_c
+
    subroutine dumpOpDatFromDevice_c ( data, label, sequenceNumber ) BIND(C,name='dumpOpDatFromDevice')
       use, intrinsic :: ISO_C_BINDING
 
@@ -1024,6 +1040,23 @@ contains
     call op_put_dat_c ( opdat%dataPtr)
 
   end subroutine op_put_dat
+
+  subroutine op_get_dat_mpi ( opdat )
+
+    type(op_dat) :: opdat
+
+    call op_get_dat_mpi_c ( opdat%dataPtr)
+
+  end subroutine op_get_dat_mpi
+
+  subroutine op_put_dat_mpi ( opdat )
+
+    type(op_dat) :: opdat
+
+    call op_put_dat_mpi_c ( opdat%dataPtr)
+
+  end subroutine op_put_dat_mpi
+
 
   subroutine op_timers ( et )
 

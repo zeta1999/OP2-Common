@@ -11,11 +11,42 @@ extern op_plan * OP_plans;
 
 #define ERR_INDEX -1
 
-/*
- * This function transforms a 1 to N based mapping
- * input from FORTRAN to a 0 to N-1 based mapping
- * required by the C implementation of OP2 in CUDA
- */
+void decrement_all_mappings () {
+  for ( int i = 0; i < OP_map_index; i++ )
+    for ( int j = 0; j < OP_map_list[i]->from->size * OP_map_list[i]->dim; j++ )
+      OP_map_list[i]->map[j]--;
+}
+
+void increment_all_mappings () {
+  for ( int i = 0; i < OP_map_index; i++ )
+    for ( int j = 0; j < OP_map_list[i]->from->size * OP_map_list[i]->dim; j++ )
+      OP_map_list[i]->map[j]++;
+}
+
+void op_partition_wrapper (const char* lib_name, const char* lib_routine,
+  op_set prime_set, op_map prime_map, op_dat coords) {
+
+  /* // copying and decrementing map */
+  /* op_map newMap = (op_map) calloc (1, sizeof (op_map_core)); */
+
+  /* // warning: the new map is an exact replica of the original map */
+  /* // except that it's a 0->N-1 mapping */
+  /* newMap->index = prime_map->index; */
+  /* newMap->from = prime_map->from; */
+  /* newMap->to = prime_map->to; */
+  /* newMap->dim = prime_map->dim; */
+  /* newMap->name = prime_map->name; */
+  /* newMap->user_managed = prime_map->user_managed; */
+
+  /* newMap->map = (int *) calloc (prime_map->from->size * prime_map->dim, sizeof (int)); */
+
+  /* for ( int i = 0; i < prime_map->from->size * prime_map->dim; i++ ) { */
+  /*   newMap->map[i] = prime_map->map[i] - 1; */
+  /* } */
+
+  op_partition (lib_name, lib_routine, prime_set, prime_map, coords);
+}
+
 void FortranToCMapping (op_arg * arg) {
   op_map newMapStruct = (op_map) calloc (1, sizeof(op_map_core));
   int * newMap = (int *) calloc (arg->map->from->size * arg->map->dim, sizeof (int));
@@ -106,17 +137,17 @@ op_plan * FortranPlanCaller (char name[], op_set set,
   char * heapName = (char *) calloc (nameLen, sizeof(char));
   strncpy (heapName, name, nameLen);
 
-  for ( int i = 0; i < argsNumber; i++ ) {
-    if ( inds[i] != -1 ) {
-      if ( args[i].map == NULL) {
-        printf ("Null map\n");
-        exit (0);
-      }
-//      printf ("Now checking argument %d\n", i);
-      FortranToCMapping (&args[i]);
-      checkCMapping (args[i]);
-    }
-  }
+/*   for ( int i = 0; i < argsNumber; i++ ) { */
+/*     if ( inds[i] != -1 ) { */
+/*       if ( args[i].map == NULL) { */
+/*         printf ("Null map\n"); */
+/*         exit (0); */
+/*       } */
+/* //      printf ("Now checking argument %d\n", i); */
+/*       FortranToCMapping (&args[i]); */
+/*       checkCMapping (args[i]); */
+/*     } */
+/*   } */
 
   /* call the C OP2 function including CUDA movement of data */
   generatedPlan = op_plan_get (heapName, set, partitionSize,

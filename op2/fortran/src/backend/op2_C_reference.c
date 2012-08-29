@@ -35,7 +35,9 @@ inline void op_arg_set(int n, op_arg arg, char **p_arg, int halo){
     if (arg.map==NULL)         // identity mapping
       *p_arg += arg.size*n;
     else                       // standard pointers (decremented for FORTRAN)
-      *p_arg += arg.size*(arg.map->map[arg.idx+n*arg.map->dim]-1);
+                               // undone decrementing because everything now
+                               // runs in OP2
+      *p_arg += arg.size*(arg.map->map[arg.idx+n*arg.map->dim]);
   }
 }
 
@@ -79,7 +81,7 @@ void op_args_check(op_set set, int nargs, op_arg *args,
 #define FREE(x) if (arg##x->idx < -1) {free (p_a[x-1]);}
 
 #define REDUCE_LIST(N) SEMI_LIST(N,REDUCE)
-#define REDUCE(x) if (strncmp (arg##x->type, "double", 6) == 0) op_mpi_reduce_double(arg##x,(double *)p_a[x-1]); else if (strncmp (arg##x->type, "float", 5) == 0) op_mpi_reduce_float(arg##x,(float *)p_a[x-1]); else op_mpi_reduce_int(arg##x,(int *)p_a[x-1]);
+#define REDUCE(x) if (arg##x->argtype == OP_ARG_GBL) {if (strncmp (arg##x->type, "double", 6) == 0) {op_mpi_reduce_double(arg##x,(double *)p_a[x-1]);} else if (strncmp (arg##x->type, "float", 5) == 0) op_mpi_reduce_float(arg##x,(float *)p_a[x-1]); else if ( strncmp (arg##x->type, "int", 3) == 0 ){op_mpi_reduce_int(arg##x,(int *)p_a[x-1]);} else if ( strncmp (arg##x->type, "bool", 4) == 0 ) op_mpi_reduce_bool(arg##x,(bool *)p_a[x-1]); else { printf ("OP2 error: unrecognised type for reduction, type %s\n",arg##x->type); exit (0);}}
 
 #define OP_LOOP(N) \
   void op_par_loop_##N(void (*kernel)(CHARP_LIST(N)), op_set_core * set, ARG_LIST_POINTERS(N)) { \
@@ -100,8 +102,24 @@ void op_args_check(op_set set, int nargs, op_arg *args,
     FREE_LIST(N)                                                        \
  }
 
+/*    printf ("before set dirt bit\n");                                   \
+    printf ("before allocating pointers\n");                            \
+
+    printf ("before reduce\n");                                         \
+    printf ("before free list\n");                                      \
+
+//      printf ("before wait all\n");                                     \
+//      printf ("before argset list\n");                                  \
+//      printf ("at the end\n");                                          \
+    printf ("after halo exchanges\n");                                  \
+
+//    printf ("execution size = %d: set->size = %d, set->exec_size = %d \n", n_upper,set->size,set->exec_size); \
+//    fflush (0);                                                         \
+
+*/
 
 OP_LOOP(1)  OP_LOOP(2)  OP_LOOP(3)  OP_LOOP(4)  OP_LOOP(5)  OP_LOOP(6)  OP_LOOP(7)  OP_LOOP(8)  OP_LOOP(9)  OP_LOOP(10)
 OP_LOOP(11) OP_LOOP(12) OP_LOOP(13) OP_LOOP(14) OP_LOOP(15) OP_LOOP(16) OP_LOOP(17) OP_LOOP(18) OP_LOOP(19) OP_LOOP(20)
 OP_LOOP(21) OP_LOOP(22) OP_LOOP(23) OP_LOOP(24) OP_LOOP(25) OP_LOOP(26) OP_LOOP(27) OP_LOOP(28) OP_LOOP(29) OP_LOOP(30)
 OP_LOOP(31) OP_LOOP(32) OP_LOOP(33) OP_LOOP(34) OP_LOOP(35) OP_LOOP(36) OP_LOOP(37) OP_LOOP(38) OP_LOOP(39) OP_LOOP(40)
+OP_LOOP(41) OP_LOOP(42)

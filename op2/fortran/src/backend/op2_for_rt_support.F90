@@ -113,7 +113,7 @@ module OP2_Fortran_RT_Support
 
     end function
 
-    subroutine op_partition_c (lib_name, lib_routine, prime_set, prime_map, coords) BIND(C,name='op_partition')
+    subroutine op_partition_c (lib_name, lib_routine, prime_set, prime_map, coords) BIND(C,name='op_partition_wrapper')
 
       use, intrinsic :: ISO_C_BINDING
       use OP2_Fortran_Declarations
@@ -208,6 +208,21 @@ module OP2_Fortran_RT_Support
       type(op_arg) :: arg
 
     end subroutine
+
+    subroutine decrement_all_maps () BIND(C,name='decrement_all_mappings')
+    end subroutine decrement_all_maps
+
+    subroutine increment_all_maps () BIND(C,name='increment_all_mappings')
+    end subroutine increment_all_maps
+
+    integer(kind=c_int) function op_mpi_size () BIND(C,name='op_mpi_size')
+    end function op_mpi_size
+
+    integer(kind=c_int) function op_mpi_rank () BIND(C,name='op_mpi_rank')
+    end function op_mpi_rank
+
+    subroutine op_barrier () BIND(C,name='op_barrier')
+    end subroutine op_barrier
 
   end interface
 

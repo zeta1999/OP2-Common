@@ -110,6 +110,8 @@ op_set op_decl_set_hdf5(char const *file, char const *name)
   int l_size = compute_local_size (g_size, comm_size, my_rank);
   MPI_Comm_free(&OP_MPI_HDF5_WORLD);
 
+  printf ("Declaring set with name %s and size = %d\n", name, l_size);
+
   return op_decl_set(l_size,  name);
 }
 
@@ -158,6 +160,9 @@ op_map op_decl_map_hdf5(op_set from, op_set to, int dim, char const *file, char 
 
   //calculate local size of set for this mpi process
   int l_size = compute_local_size (g_size, comm_size, my_rank);
+
+  printf ("my_rank = %d, comm size = %d, g_size = %d, l_size = %d, and from->size = %d, name = %s\n", my_rank, comm_size, g_size, l_size, from->size, name);
+//  exit (0);
 
   //check if size is accurate
   if(from->size != l_size)

@@ -31,6 +31,9 @@ op_plan * FortranPlanCallerCUDA ( char name[],
                                   int partitionSize
                                 );
 
+void op_partition_wrapper (const char* lib_name, const char* lib_routine,
+  op_set prime_set, op_map prime_map, op_dat coords);
+
 void FortranToCMapping (op_arg * arg);
 
 void checkCMapping (op_arg arg);
