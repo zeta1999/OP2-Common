@@ -85,7 +85,7 @@ void op_exchange_halo(op_arg* arg)
      (arg->acc == OP_READ || arg->acc == OP_RW /* good for debug || arg->acc == OP_INC*/) &&
      (dat->dirtybit == 1))
   {
-    //printf("Exchanging Halo of data array %10s\n",dat->name);
+//    printf("Exchanging Halo of data array %10s\n",dat->name);
     halo_list imp_exec_list = OP_import_exec_list[dat->set->index];
     halo_list imp_nonexec_list = OP_import_nonexec_list[dat->set->index];
 
@@ -213,5 +213,4 @@ void op_partition(const char* lib_name, const char* lib_routine,
   op_set prime_set, op_map prime_map, op_dat coords )
 {
   partition(lib_name, lib_routine, prime_set, prime_map, coords );
-
 }

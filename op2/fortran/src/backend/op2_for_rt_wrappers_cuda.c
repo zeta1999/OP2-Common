@@ -18,3 +18,17 @@ op_put_dat (op_dat dat) {
 
   cudaThreadSynchronize();
 }
+
+void
+op_get_dat_mpi (op_dat dat) {
+  cudaMemcpy (dat->data, dat->data_d,
+    dat->size * (dat->set->size + dat->set->exec_size + dat->set->nonexec_size), cudaMemcpyDeviceToHost);
+  cudaThreadSynchronize();
+}
+
+void
+op_put_dat_mpi (op_dat dat) {
+  cudaMemcpy (dat->data_d, dat->data,
+    dat->size * (dat->set->size + dat->set->exec_size + dat->set->nonexec_size),cudaMemcpyHostToDevice);
+  cudaThreadSynchronize();
+}

@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include <op_lib_c.h>
+#include <mpi.h>
 #include "../../include/op2_for_C_wrappers.h"
 
 /*
@@ -260,3 +261,18 @@ void print_type (op_arg * arg)
   printf ("String is %s\n", arg->type);
 }
 
+int op_mpi_size () {
+  int size;
+  MPI_Comm_size (MPI_COMM_WORLD, &size);
+  return size;
+}
+
+int op_mpi_rank () {
+  int rank;
+  MPI_Comm_rank (MPI_COMM_WORLD, &rank);
+  return rank;
+}
+
+void op_barrier () {
+  MPI_Barrier (MPI_COMM_WORLD);
+}
