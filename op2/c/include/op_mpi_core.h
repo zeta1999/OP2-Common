@@ -227,6 +227,8 @@ op_dat op_mpi_get_data(op_dat dat);
 
 void mpi_timing_output();
 
+void op_monitor_dat(op_dat dat, int original_index);
+
 void op_mpi_exit();
 
 void print_dat_tofile(op_dat dat, const char *file_name);
