@@ -2701,8 +2701,8 @@ void op_monitor_dat(op_dat dat, int original_g_index)
     {
       double* value = (double *)xmalloc(sizeof(double)*dat->dim);
       memcpy(value, (void *)(&dat->data[local_index*dat->size]), sizeof(double)*dat->dim);
-      printf("Element %d located on mpi rank %d at local index: %d value: ",
-        original_g_index, my_rank, local_index);
+      printf("op_dat %s element %d located on mpi rank %d at local index: %d value: ",
+        dat->name, original_g_index, my_rank, local_index);
       for(int i = 0; i<dat->dim; i++)
         printf("%lf ",value[i]);
       printf("\n");  
@@ -2712,8 +2712,8 @@ void op_monitor_dat(op_dat dat, int original_g_index)
     {
       float* value = (float *)xmalloc(sizeof(float)*dat->dim);
       memcpy(value, (void *)(&dat->data[local_index*dat->size]), sizeof(float)*dat->dim);
-      printf("Element %d located on mpi rank %d at local index: %d value: ",
-        original_g_index, my_rank, local_index);
+      printf("op_dat %s element %d located on mpi rank %d at local index: %d value: ",
+        dat->name, original_g_index, my_rank, local_index);
       for(int i = 0; i<dat->dim; i++)
         printf("%f ",value[i]);
       printf("\n");  
@@ -2723,8 +2723,8 @@ void op_monitor_dat(op_dat dat, int original_g_index)
     {
       int* value = (int *)xmalloc(sizeof(int)*dat->dim);
       memcpy(value, (void *)(&dat->data[local_index*dat->size]), sizeof(int)*dat->dim);
-      printf("Element %d located on mpi rank %d at local index: %d value: ",
-        original_g_index, my_rank, local_index);
+      printf("op_dat %s element %d located on mpi rank %d at local index: %d value: ",
+        dat->name, original_g_index, my_rank, local_index);
       for(int i = 0; i<dat->dim; i++)
         printf("%d ",value[i]);
       printf("\n");  
@@ -2734,8 +2734,8 @@ void op_monitor_dat(op_dat dat, int original_g_index)
     {
       long* value = (long *)xmalloc(sizeof(long)*dat->dim);
       memcpy(value, (void *)(&dat->data[local_index*dat->size]), sizeof(long)*dat->dim);
-      printf("Element %d located on mpi rank %d at local index: %d value: ",
-        original_g_index, my_rank, local_index);
+      printf("op_dat %s element %d located on mpi rank %d at local index: %d value: ",
+        dat->name, original_g_index, my_rank, local_index);
       for(int i = 0; i<dat->dim; i++)
         printf("%ld ",value[i]);
       printf("\n");  
@@ -2744,3 +2744,30 @@ void op_monitor_dat(op_dat dat, int original_g_index)
   }
 }
 
+/*******************************************************************************
+ * Monitir/Print the Contents (i.e. to elements)/Original Global Index/
+ * Current Index/Rank of an element in a op_map
+ *******************************************************************************/
+void op_monitor_map(op_map map, int original_g_index)
+{
+  int my_rank, comm_size;
+  MPI_Comm_rank(OP_MPI_WORLD, &my_rank);
+  MPI_Comm_size(OP_MPI_WORLD, &comm_size);
+  
+  //check if the element requested is held in local mpi process
+  int local_index = linear_search(OP_part_list[map->from->index]->g_index, 
+    original_g_index, 0, map->from->size - 1);
+  
+  if(local_index >= 0)
+  {
+    int* value = (int *)xmalloc(sizeof(int)*map->dim);
+    memcpy(value, (void *)(&map->map[local_index*map->dim]), sizeof(int)*map->dim);
+    printf("op_map %s element %d located on mpi rank %d at local index: %d points\
+    to current to set elements with local index: ",
+      map->name, original_g_index, my_rank, local_index);
+    for(int i = 0; i<map->dim; i++)
+      printf("%d ",value[i]);
+    printf("\n");
+    free(value);
+  }
+}

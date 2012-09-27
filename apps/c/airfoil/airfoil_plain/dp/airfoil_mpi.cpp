@@ -350,6 +350,9 @@ int main(int argc, char **argv)
   //initialise timers for total execution wall time
   op_timers(&cpu_t1, &wall_t1);
 
+  //op_monitor_dat(p_res, 12056);
+  //op_monitor_map(pcell, 120);
+  
   niter = 1000;
   for(int iter=1; iter<=niter; iter++) {
 
