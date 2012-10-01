@@ -62,6 +62,9 @@
 int** export_exec_list_d;
 int** export_nonexec_list_d;
 
+/*******************************************************************************
+ * Main MPI Halo Exchange Function
+ *******************************************************************************/
 void op_exchange_halo(op_arg* arg)
 {
   op_dat dat = arg->dat;
@@ -162,6 +165,9 @@ void op_exchange_halo(op_arg* arg)
   }
 }
 
+/*******************************************************************************
+ * MPI Halo Exchange Wait-all Function (to complete the non-blocking comms)
+ *******************************************************************************/
 void op_wait_all(op_arg* arg)
 {
   if(arg->argtype == OP_ARG_DAT && arg->sent == 1)
@@ -208,6 +214,103 @@ void op_partition(const char* lib_name, const char* lib_routine,
   }
 
   op_mv_halo_list_device();
-
 }
 
+
+/*******************************************************************************
+ * Monitir/Print the Contents/Original Global Index/Current Index/Rank of an 
+ * element in op_dat
+ *******************************************************************************/
+void op_monitor_dat_mpi(op_dat dat, int original_g_index)
+{
+  int my_rank, comm_size;
+  MPI_Comm_rank(OP_MPI_WORLD, &my_rank);
+  MPI_Comm_size(OP_MPI_WORLD, &comm_size);
+  
+  //check if the element requested is held in local mpi process
+  int local_index = linear_search(OP_part_list[dat->set->index]->g_index, 
+    original_g_index, 0, dat->set->size - 1);
+  
+  if(local_index >= 0)
+  {
+    if(strcmp(dat->type,"double") == 0)
+    {
+      double* value = (double *)xmalloc(sizeof(double)*dat->dim);
+      cutilSafeCall( cudaMemcpy (value, (void *)(&dat->data_d[local_index*dat->size]),
+          sizeof(double)*dat->dim, cudaMemcpyDeviceToHost ) );
+      
+      printf("op_dat %s element %d located on mpi rank %d at local index: %d value: ",
+        dat->name, original_g_index, my_rank, local_index);
+      for(int i = 0; i<dat->dim; i++)
+        printf("%lf ",value[i]);
+      printf("\n");  
+      free(value);      
+    }
+    else if(strcmp(dat->type,"float") == 0)
+    {
+      float* value = (float *)xmalloc(sizeof(float)*dat->dim);
+      cutilSafeCall( cudaMemcpy (value, (void *)(&dat->data_d[local_index*dat->size]),
+          sizeof(float)*dat->dim, cudaMemcpyDeviceToHost ) );
+      
+      printf("op_dat %s element %d located on mpi rank %d at local index: %d value: ",
+        dat->name, original_g_index, my_rank, local_index);
+      for(int i = 0; i<dat->dim; i++)
+        printf("%f ",value[i]);
+      printf("\n");  
+      free(value);      
+    }
+    else if(strcmp(dat->type,"int") == 0)
+    {
+      int* value = (int *)xmalloc(sizeof(int)*dat->dim);
+      cutilSafeCall( cudaMemcpy (value, (void *)(&dat->data_d[local_index*dat->size]),
+          sizeof(int)*dat->dim, cudaMemcpyDeviceToHost ) );
+      
+      printf("op_dat %s element %d located on mpi rank %d at local index: %d value: ",
+        dat->name, original_g_index, my_rank, local_index);
+      for(int i = 0; i<dat->dim; i++)
+        printf("%d ",value[i]);
+      printf("\n");  
+      free(value);      
+    }
+    if(strcmp(dat->type,"long") == 0)
+    {
+      long* value = (long *)xmalloc(sizeof(long)*dat->dim);
+      cutilSafeCall( cudaMemcpy (value, (void *)(&dat->data_d[local_index*dat->size]),
+          sizeof(long)*dat->dim, cudaMemcpyDeviceToHost ) );
+      printf("op_dat %s element %d located on mpi rank %d at local index: %d value: ",
+        dat->name, original_g_index, my_rank, local_index);
+      for(int i = 0; i<dat->dim; i++)
+        printf("%ld ",value[i]);
+      printf("\n");  
+      free(value);      
+    }
+  }
+}
+
+/*******************************************************************************
+ * Monitir/Print the Contents (i.e. to elements)/Original Global Index/
+ * Current Index/Rank of an element in a op_map
+ *******************************************************************************/
+void op_monitor_map_mpi(op_map map, int original_g_index)
+{
+  int my_rank, comm_size;
+  MPI_Comm_rank(OP_MPI_WORLD, &my_rank);
+  MPI_Comm_size(OP_MPI_WORLD, &comm_size);
+  
+  //check if the element requested is held in local mpi process
+  int local_index = linear_search(OP_part_list[map->from->index]->g_index, 
+    original_g_index, 0, map->from->size - 1);
+  
+  if(local_index >= 0)
+  {
+    int* value = (int *)xmalloc(sizeof(int)*map->dim);
+    memcpy(value, (void *)(&map->map[local_index*map->dim]), sizeof(int)*map->dim);
+    printf("op_map %s element %d located on mpi rank %d at local index: %d points\
+    to current to set elements with local index: ",
+      map->name, original_g_index, my_rank, local_index);
+    for(int i = 0; i<map->dim; i++)
+      printf("%d ",value[i]);
+    printf("\n");
+    free(value);
+  }
+}

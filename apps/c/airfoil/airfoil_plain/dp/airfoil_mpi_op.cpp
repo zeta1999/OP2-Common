@@ -396,6 +396,9 @@ int main(int argc, char **argv)
 
   //initialise timers for total execution wall time
   op_timers(&cpu_t1, &wall_t1);
+  
+
+  op_monitor_map(pcell, 120);
 
   niter = 1000;
   for(int iter=1; iter<=niter; iter++) {
@@ -428,7 +431,7 @@ int main(int argc, char **argv)
                  op_arg_dat(p_adt,1,pecell,1,"double",OP_READ),
                  op_arg_dat(p_res,0,pecell,4,"double",OP_INC),
                  op_arg_dat(p_res,1,pecell,4,"double",OP_INC));
-
+      op_monitor_dat(p_q, 10234);
       op_par_loop_bres_calc("bres_calc",bedges,
                  op_arg_dat(p_x,0,pbedge,2,"double",OP_READ),
                  op_arg_dat(p_x,1,pbedge,2,"double",OP_READ),
@@ -440,7 +443,7 @@ int main(int argc, char **argv)
       //    update flow field
 
       rms = 0.0;
-
+      
       op_par_loop_update("update",cells,
                  op_arg_dat(p_qold,-1,OP_ID,4,"double",OP_READ),
                  op_arg_dat(p_q,-1,OP_ID,4,"double",OP_WRITE),
