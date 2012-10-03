@@ -234,6 +234,8 @@ void op_monitor_set_mpi(op_set set, int original_g_index)
   {
     printf("op_set %s element %d located on mpi rank %d at local index: %d\n",
         set->name, original_g_index, my_rank, local_index);
+    printf("\n");
+    fflush(stdout);
   }
 }
 
@@ -304,6 +306,8 @@ void op_monitor_dat_mpi(op_dat dat, int original_g_index)
       printf("\n");  
       free(value);      
     }
+    printf("\n");
+    fflush(stdout);
   }
 }
 
@@ -317,20 +321,55 @@ void op_monitor_map_mpi(op_map map, int original_g_index)
   MPI_Comm_rank(OP_MPI_WORLD, &my_rank);
   MPI_Comm_size(OP_MPI_WORLD, &comm_size);
   
+  /* Compute global partition range information for each set*/
+  int** part_range = (int **)xmalloc(OP_set_index*sizeof(int*));
+  get_part_range(part_range,my_rank,comm_size, MPI_COMM_WORLD);
+    
   //check if the element requested is held in local mpi process
   int local_index = linear_search(OP_part_list[map->from->index]->g_index, 
     original_g_index, 0, map->from->size - 1);
   
   if(local_index >= 0)
   {
-    int* value = (int *)xmalloc(sizeof(int)*map->dim);
-    memcpy(value, (void *)(&map->map[local_index*map->dim]), sizeof(int)*map->dim);
-    printf("op_map %s element %d located on mpi rank %d at local index: %d points\
-    to current to set elements with local index: ",
-      map->name, original_g_index, my_rank, local_index);
+    int* value_c_l = (int *)xmalloc(sizeof(int)*map->dim);
+    memcpy(value_c_l, (void *)(&map->map[local_index*map->dim]), sizeof(int)*map->dim);
+      
+    int* value_c_g = (int *)xmalloc(sizeof(int)*map->dim);
     for(int i = 0; i<map->dim; i++)
-      printf("%d ",value[i]);
+      value_c_g[i] = get_global_index(value_c_l[i], my_rank, part_range[map->to->index],comm_size);    
+    
+    int* value_o_l = (int *)xmalloc(sizeof(int)*map->dim);
+    int* orig_rank = (int *)xmalloc(sizeof(int)*map->dim);
+       
+    int* value_o_g = (int *)xmalloc(sizeof(int)*map->dim);
+    for(int i = 0; i<map->dim; i++)
+      value_o_g[i] = OP_part_list[map->to->index]->g_index[value_c_l[i]];
+    
+    for(int i = 0; i<map->dim; i++)
+      orig_rank[i] = get_partition(value_o_g[i], orig_part_range[map->to->index], 
+        &value_o_l[i], comm_size);
+      
+    printf("op_map %s element (from %s to %s) at original global index %d ",
+      map->name, map->from->name, map->to->name, original_g_index);
+    printf("is now located on mpi rank %d at local index: %d \n",
+      my_rank, local_index);
+    
+    printf("points to current to-set elements : \n");
+    for(int i = 0; i<map->dim; i++)
+    {
+      printf("-> with curr local index: %d curr global index: %d ",value_c_l[i], value_c_g[i]);
+      printf("originally located on mpi rank %d, ",orig_rank[i]);
+      printf("orig local index: %d orig global index: %d\n",value_o_l[i], value_o_g[i]);
+    }
     printf("\n");
-    free(value);
+    fflush(stdout);
+    
+    free(value_c_l);
+    free(value_c_g);
+    free(value_o_l);
+    free(value_o_g);
+    free(orig_rank);
   }
+  
+  for(int i = 0; i<OP_set_index; i++)free(part_range[i]);free(part_range);  
 }
