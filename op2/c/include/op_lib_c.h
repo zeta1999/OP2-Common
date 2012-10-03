@@ -102,6 +102,8 @@ void op_printf(const char* format, ...);
 
 void op_timers( double *cpu, double *et );
 
+void op_monitor_set(op_set set, int orig_g_index);
+
 void op_monitor_dat(op_dat dat, int orig_g_index);
 
 void op_monitor_map(op_map map, int orig_g_index);

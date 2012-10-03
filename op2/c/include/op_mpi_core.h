@@ -227,6 +227,8 @@ op_dat op_mpi_get_data(op_dat dat);
 
 void mpi_timing_output();
 
+void op_monitor_set_mpi(op_set set, int orig_g_index);
+
 void op_monitor_dat_mpi(op_dat dat, int orig_g_index);
 
 void op_monitor_map_mpi(op_map map, int orig_g_index);

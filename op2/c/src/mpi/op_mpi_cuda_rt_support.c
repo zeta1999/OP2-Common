@@ -216,6 +216,26 @@ void op_partition(const char* lib_name, const char* lib_routine,
   op_mv_halo_list_device();
 }
 
+/*******************************************************************************
+ * Monitir/Print the Original Global Index/Current Index/Rank of an 
+ * element in an op_set
+ *******************************************************************************/
+void op_monitor_set_mpi(op_set set, int original_g_index)
+{
+  int my_rank, comm_size;
+  MPI_Comm_rank(OP_MPI_WORLD, &my_rank);
+  MPI_Comm_size(OP_MPI_WORLD, &comm_size);
+  
+  //check if the element requested is held in local mpi process
+  int local_index = linear_search(OP_part_list[set->index]->g_index, 
+    original_g_index, 0, set->size - 1);
+  
+  if(local_index >= 0)
+  {
+    printf("op_set %s element %d located on mpi rank %d at local index: %d\n",
+        set->name, original_g_index, my_rank, local_index);
+  }
+}
 
 /*******************************************************************************
  * Monitir/Print the Contents/Original Global Index/Current Index/Rank of an 

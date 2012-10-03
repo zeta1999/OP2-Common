@@ -217,6 +217,12 @@ void op_timing_output()
    mpi_timing_output();
 }
 
+
+void op_monitor_set(op_set set, int orig_g_index)
+{
+  op_monitor_set_mpi(set, orig_g_index);  
+}
+
 void op_monitor_dat(op_dat dat, int orig_g_index)
 {
   op_monitor_dat_mpi(dat, orig_g_index);  
