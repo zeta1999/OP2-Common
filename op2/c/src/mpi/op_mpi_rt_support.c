@@ -300,35 +300,51 @@ void op_monitor_map_mpi(op_map map, int original_g_index)
   
   if(local_index >= 0)
   {
-    int* value_c_l = (int *)xmalloc(sizeof(int)*map->dim);
-    memcpy(value_c_l, (void *)(&map->map[local_index*map->dim]), sizeof(int)*map->dim);
-      
-    int* value_c_g = (int *)xmalloc(sizeof(int)*map->dim);
-    for(int i = 0; i<map->dim; i++)
-      value_c_g[i] = get_global_index(value_c_l[i], my_rank, part_range[map->to->index],comm_size);    
-    
-    int* value_o_l = (int *)xmalloc(sizeof(int)*map->dim);
-    int* orig_rank = (int *)xmalloc(sizeof(int)*map->dim);
-       
-    int* value_o_g = (int *)xmalloc(sizeof(int)*map->dim);
-    for(int i = 0; i<map->dim; i++)
-      value_o_g[i] = OP_part_list[map->to->index]->g_index[value_c_l[i]];
-    
-    for(int i = 0; i<map->dim; i++)
-      orig_rank[i] = get_partition(value_o_g[i], orig_part_range[map->to->index], 
-        &value_o_l[i], comm_size);
-      
     printf("op_map %s element (from %s to %s) at original global index %d ",
       map->name, map->from->name, map->to->name, original_g_index);
     printf("is now located on mpi rank %d at local index: %d \n",
       my_rank, local_index);
-    
     printf("points to current to-set elements : \n");
+    
+    int* value_c_l = (int *)xmalloc(sizeof(int)*map->dim); //current local index
+    int* value_c_g = (int *)xmalloc(sizeof(int)*map->dim); //current global index
+    int* value_o_l = (int *)xmalloc(sizeof(int)*map->dim); //original local index
+    int* value_o_g = (int *)xmalloc(sizeof(int)*map->dim); //original global index
+    int* orig_rank = (int *)xmalloc(sizeof(int)*map->dim); //original mpi rank
+    
+    memcpy(value_c_l, (void *)(&map->map[local_index*map->dim]), sizeof(int)*map->dim);
+    
     for(int i = 0; i<map->dim; i++)
-    {
-      printf("-> with curr local index: %d curr global index: %d ",value_c_l[i], value_c_g[i]);
-      printf("originally located on mpi rank %d, ",orig_rank[i]);
-      printf("orig local index: %d orig global index: %d\n",value_o_l[i], value_o_g[i]);
+    { 
+      if (value_c_l[i] > (map->to->size + OP_import_exec_list[map->to->index]->size)) //in nonexec halo
+      {
+        printf("-> with curr local index: %d in nonexec halo ",value_c_l[i]);
+        for(int j = OP_import_nonexec_list[map->to->index]->ranks_size-1; j > 0; j--)
+        {
+          if(value_c_l[i] >= OP_import_nonexec_list[map->to->index]->disps[j])
+            printf("imported from rank: %d on its local index %d\n", 
+              OP_import_nonexec_list[map->to->index]->ranks[j],
+              OP_import_nonexec_list[map->to->index]->list[value_c_l[i]]);
+        }
+      }
+      else if (value_c_l[i] > map->to->size) //in exec halo
+      {
+        printf("-> with curr local index: %d in exec halo\n ",value_c_l[i]);        
+      }
+      else //is an owned element
+      {
+        value_c_g[i] = get_global_index(value_c_l[i], 
+        my_rank, part_range[map->to->index],comm_size);
+        
+        value_o_g[i] = OP_part_list[map->to->index]->g_index[value_c_l[i]];
+    
+        orig_rank[i] = get_partition(value_o_g[i], orig_part_range[map->to->index],
+          &value_o_l[i], comm_size);   
+        
+        printf("-> with curr local index: %d curr global index: %d ",value_c_l[i], value_c_g[i]);
+        printf("originally located on mpi rank %d, ",orig_rank[i]);
+        printf("orig local index: %d orig global index: %d\n",value_o_l[i], value_o_g[i]);
+      }
     }
     printf("\n");
     fflush(stdout);
