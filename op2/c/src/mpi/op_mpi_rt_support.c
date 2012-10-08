@@ -316,20 +316,31 @@ void op_monitor_map_mpi(op_map map, int original_g_index)
     
     for(int i = 0; i<map->dim; i++)
     { 
-      if (value_c_l[i] > (map->to->size + OP_import_exec_list[map->to->index]->size)) //in nonexec halo
+      if (value_c_l[i] >= (map->to->size + OP_import_exec_list[map->to->index]->size)) //in nonexec halo
       {
         printf("-> with curr local index: %d in nonexec halo ",value_c_l[i]);
-        for(int j = OP_import_nonexec_list[map->to->index]->ranks_size-1; j > 0; j--)
-        {
-          if(value_c_l[i] >= OP_import_nonexec_list[map->to->index]->disps[j])
+        int offset = value_c_l[i] - (map->to->size + OP_import_exec_list[map->to->index]->size);
+        for(int j = OP_import_nonexec_list[map->to->index]->ranks_size-1; j >= 0; j--)
+        {           
+          if( offset >= OP_import_nonexec_list[map->to->index]->disps[j])
             printf("imported from rank: %d on its local index %d\n", 
               OP_import_nonexec_list[map->to->index]->ranks[j],
-              OP_import_nonexec_list[map->to->index]->list[value_c_l[i]]);
+              OP_import_nonexec_list[map->to->index]->list[offset]);
         }
+        fflush(stdout);
       }
-      else if (value_c_l[i] > map->to->size) //in exec halo
+      else if (value_c_l[i] >= map->to->size) //in exec halo
       {
-        printf("-> with curr local index: %d in exec halo\n ",value_c_l[i]);        
+        printf("-> with curr local index: %d in exec halo ",value_c_l[i]); 
+        int offset = value_c_l[i] - map->to->size;
+        for(int j = OP_import_exec_list[map->to->index]->ranks_size-1; j >= 0; j--)
+        {
+          if( offset >= OP_import_exec_list[map->to->index]->disps[j])
+            printf("imported from rank: %d on its local index %d\n", 
+              OP_import_exec_list[map->to->index]->ranks[j],
+              OP_import_exec_list[map->to->index]->list[offset]);
+        }
+        fflush(stdout);
       }
       else //is an owned element
       {
@@ -341,13 +352,14 @@ void op_monitor_map_mpi(op_map map, int original_g_index)
         orig_rank[i] = get_partition(value_o_g[i], orig_part_range[map->to->index],
           &value_o_l[i], comm_size);   
         
-        printf("-> with curr local index: %d curr global index: %d ",value_c_l[i], value_c_g[i]);
-        printf("originally located on mpi rank %d, ",orig_rank[i]);
-        printf("orig local index: %d orig global index: %d\n",value_o_l[i], value_o_g[i]);
+       // printf("-> with curr local index: %d curr global index: %d ",value_c_l[i], value_c_g[i]);
+       // printf("originally located on mpi rank %d, ",orig_rank[i]);
+       // printf("orig local index: %d orig global index: %d\n",value_o_l[i], value_o_g[i]);
+       // fflush(stdout);
       }
     }
     printf("\n");
-    fflush(stdout);
+    
     
     free(value_c_l);
     free(value_c_g);
