@@ -8,8 +8,6 @@
 extern int OP_plan_index, OP_plan_max;
 extern op_plan * OP_plans;
 
-<<<<<<< HEAD
-
 #define ERR_INDEX -1
 
 void decrement_all_mappings () {
@@ -132,23 +130,11 @@ op_plan * FortranPlanCaller (char name[], op_set set,
 
   if ( generatedPlan != NULL ) return generatedPlan;
 
-=======
-#define ERR_INDEX -1
-
-
-op_plan * FortranPlanCaller (char name[], op_set set,
-  int partitionSize, int argsNumber, op_arg args[], 
-  int indsNumber, int inds[]) {
-
-  op_plan * generatedPlan = NULL;
-
->>>>>>> 91a1b5bf4b61f120d4f599350756a7f5aee527f6
   /* copy the name because FORTRAN doesn't allow allocating
      strings */
   int nameLen = strlen (name);
   char * heapName = (char *) calloc (nameLen, sizeof(char));
   strncpy (heapName, name, nameLen);
-<<<<<<< HEAD
 
 /*   for ( int i = 0; i < argsNumber; i++ ) { */
 /*     if ( inds[i] != -1 ) { */
@@ -166,13 +152,6 @@ op_plan * FortranPlanCaller (char name[], op_set set,
   generatedPlan = op_plan_get (heapName, set, partitionSize,
     argsNumber, args, indsNumber, inds);
 
-=======
-
-  /* call the C OP2 function including CUDA movement of data */
-  generatedPlan = op_plan_get (heapName, set, partitionSize,
-    argsNumber, args, indsNumber, inds);
-
->>>>>>> 91a1b5bf4b61f120d4f599350756a7f5aee527f6
   return generatedPlan;
 }
 

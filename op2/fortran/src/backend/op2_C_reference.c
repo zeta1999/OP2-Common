@@ -14,7 +14,6 @@
 
 #include <op_lib_core.h>
 
-<<<<<<< HEAD
 // only for debugging!!!
 #include <op_lib_mpi.h>
 
@@ -49,7 +48,6 @@ void op_arg_copy_in(int n, op_arg arg, char **p_arg) {
     p_arg[i] = arg.data + arg.map->map[i+n*arg.map->dim]*arg.size;
 }
 
-=======
 int op2_stride = 1;
 #define OP2_STRIDE(arr, idx) arr[idx]
 
@@ -74,7 +72,6 @@ void op_arg_copy_in(int n, op_arg arg, char **p_arg) {
     p_arg[i] = arg.data + arg.map->map[i+n*arg.map->dim]*arg.size;
 }
 
->>>>>>> 91a1b5bf4b61f120d4f599350756a7f5aee527f6
 void op_args_check(op_set set, int nargs, op_arg *args,
                                       int *ninds, const char *name) {
   for (int n=0; n<nargs; n++)
@@ -93,7 +90,6 @@ void op_args_check(op_set set, int nargs, op_arg *args,
 
 #define PTR_LIST(N) COMMA_LIST(N,PTRL)
 #define PTRL(x) p_a[x-1]
-<<<<<<< HEAD
 
 #define ZERO_LIST(N) COMMA_LIST(N,ZERO)
 #define ZERO(x) 0
@@ -157,47 +153,6 @@ void op_args_check(op_set set, int nargs, op_arg *args,
 
 */
 
-=======
-
-#define ZERO_LIST(N) COMMA_LIST(N,ZERO)
-#define ZERO(x) 0
-
-#define ARG_ARR_LIST(N) COMMA_LIST(N,ARG_ARR)
-#define ARG_ARR(x) *arg##x
-
-#define ARG_LIST_POINTERS(N) COMMA_LIST(N,ARG_POINTERS)
-#define ARG_POINTERS(x) op_arg * arg##x
-
-#define ALLOC_POINTER_LIST(N) SEMI_LIST(N,ALLOC_POINTER)
-#define ALLOC_POINTER(x) if (arg##x->idx < -1) { p_a[x-1] = (char *) malloc (-1*args[x-1].idx*arg##x->dim);}
-
-#define FREE_LIST(N) SEMI_LIST(N,FREE)
-#define FREE(x) if (arg##x->idx < -1) {free (p_a[x-1]);}
-
-#define REDUCE_LIST(N) SEMI_LIST(N,REDUCE)
-#define REDUCE(x) if (strncmp (arg##x->type, "double", 6) == 0) op_mpi_reduce_double(arg##x,(double *)p_a[x-1]); else if (strncmp (arg##x->type, "float", 5) == 0) op_mpi_reduce_float(arg##x,(float *)p_a[x-1]); else op_mpi_reduce_int(arg##x,(int *)p_a[x-1]);
-
-#define OP_LOOP(N) \
-  void op_par_loop_##N(void (*kernel)(CHARP_LIST(N)), op_set_core * set, ARG_LIST_POINTERS(N)) { \
-    char * p_a[N] = {ZERO_LIST(N)};                                     \
-    op_arg args[N] = {ARG_ARR_LIST(N)};                                 \
-    int halo = 0;                                                       \
-    int n_upper;                                                        \
-    ALLOC_POINTER_LIST(N)                                               \
-    n_upper = op_mpi_halo_exchanges (set, N, args);                     \
-    for ( int n=0; n<n_upper; n++ ) {                                   \
-      if ( n==set->core_size ) op_mpi_wait_all (N,args);                \
-      if ( n==set->size) halo = 1;                                      \
-      ARG_SET_LIST(N);                                                  \
-      (*kernel)(PTR_LIST(N));                                           \
-    }                                                                   \
-    op_mpi_set_dirtybit (N, args);                                      \
-    REDUCE_LIST(N)                                                      \
-    FREE_LIST(N)                                                        \
- }
-
-
->>>>>>> 91a1b5bf4b61f120d4f599350756a7f5aee527f6
 OP_LOOP(1)  OP_LOOP(2)  OP_LOOP(3)  OP_LOOP(4)  OP_LOOP(5)  OP_LOOP(6)  OP_LOOP(7)  OP_LOOP(8)  OP_LOOP(9)  OP_LOOP(10)
 OP_LOOP(11) OP_LOOP(12) OP_LOOP(13) OP_LOOP(14) OP_LOOP(15) OP_LOOP(16) OP_LOOP(17) OP_LOOP(18) OP_LOOP(19) OP_LOOP(20)
 OP_LOOP(21) OP_LOOP(22) OP_LOOP(23) OP_LOOP(24) OP_LOOP(25) OP_LOOP(26) OP_LOOP(27) OP_LOOP(28) OP_LOOP(29) OP_LOOP(30)

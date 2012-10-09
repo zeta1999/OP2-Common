@@ -22,7 +22,6 @@ extern "C" {
 #define FOP_MIN 5
 #define FOP_MAX 6
 
-<<<<<<< HEAD
 /* HYDRA feature: in some cases the op_dat
  * passed to an op_arg is NULL, and this index notifies it
  * to the parallel loop implementation 
@@ -31,9 +30,6 @@ extern "C" {
 #define OP_ARG_NULL -3
 #define OP_IDX_NULL -3
 #define OP_ACC_NULL -3
-
-=======
->>>>>>> 91a1b5bf4b61f120d4f599350756a7f5aee527f6
 
 op_access getAccFromIntCode (int accCode);
 
@@ -56,7 +52,6 @@ void dumpOpMap (op_map_core * map, const char * fileName);
 op_arg
 op_arg_gbl_fortran (char * dat, int dim, char * type, int acc);
 
-<<<<<<< HEAD
 
 #ifdef NO_MPI
 
@@ -70,8 +65,6 @@ void op_barrier ();
 void printDat_noGather (op_dat dat);
 #endif
 
-=======
->>>>>>> 91a1b5bf4b61f120d4f599350756a7f5aee527f6
 #ifdef __cplusplus
 }
 #endif

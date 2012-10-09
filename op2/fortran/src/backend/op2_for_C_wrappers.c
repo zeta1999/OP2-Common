@@ -133,14 +133,9 @@ void dumpOpDat (op_dat_core * data, const char * fileName)
       // support for old and new names (real should be replaced by double)
       if ( strncmp ( "double", data->type, 6 ) == 0 ||
 	   strncmp ( "double", data->type, 6 ) == 0) {
-<<<<<<< HEAD
         for ( i = 0; i < data->set->size; i++ )
           for ( j = 0; j < data->dim; j++ )
             fprintf (outfile, "%d, %d -> %e\n", i, j, ((double *) data->data)[i*data->dim + j] );
-=======
-        for ( i = 0; i < data->dim * data->set->size; i++ )
-          fprintf (outfile, "%.10lf\n", ((double *) data->data)[i] );
->>>>>>> 91a1b5bf4b61f120d4f599350756a7f5aee527f6
       }
       else if ( strncmp ( "integer", data->type, 7 ) == 0 )
         for ( i = 0; i < data->dim * data->set->size; i++ )
@@ -215,7 +210,6 @@ void dumpOpMap (op_map_core * map, const char * fileName)
 
   if (outfile == NULL) exit (0);
 
-<<<<<<< HEAD
   if ( map != NULL ) {
     for ( i = 0; i < map->from->size; i++ ) {
       for ( j = 0; j < map->dim; j++ ) {
@@ -224,12 +218,6 @@ void dumpOpMap (op_map_core * map, const char * fileName)
       fprintf (outfile, "\n");
     }
   }
-=======
-  if ( map != NULL )
-    for ( i = 0; i < map->dim * map->from->size; i++ )
-      fprintf (outfile, "%d\n", ((int *) map->map)[i] );
-
->>>>>>> 91a1b5bf4b61f120d4f599350756a7f5aee527f6
   fclose (outfile);
 }
 
@@ -245,7 +233,6 @@ op_arg_gbl_copy ( char * data, int dim, const char * typ, int size, op_access ac
   return op_arg_gbl_char (data, dim, heapType, size, acc);
 }
 
-<<<<<<< HEAD
 op_arg
 op_arg_dat_null (op_dat dat, int idx, op_map map, int dim, const char * typ, op_access acc) {
   op_arg arg;
@@ -267,8 +254,6 @@ op_arg_dat_null (op_dat dat, int idx, op_map map, int dim, const char * typ, op_
   return arg;
 }
 
-=======
->>>>>>> 91a1b5bf4b61f120d4f599350756a7f5aee527f6
 void op_dump_arg (op_arg * arg)
 {
   printf ("index = %d\n", arg->index);
@@ -289,7 +274,6 @@ void print_type (op_arg * arg)
   printf ("String is %s\n", arg->type);
 }
 
-<<<<<<< HEAD
 #ifdef NO_MPI
 
 #else
@@ -346,5 +330,3 @@ void printDat_noGather (op_dat dat) {
 bool isCNullPointer (void * ptr) {
   return (ptr == NULL);
 }
-=======
->>>>>>> 91a1b5bf4b61f120d4f599350756a7f5aee527f6

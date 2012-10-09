@@ -2,21 +2,13 @@
 ! (i.e. plan struct) and defines the interface for the C plan function
 
 module OP2_Fortran_RT_Support
-<<<<<<< HEAD
 
   use, intrinsic :: ISO_C_BINDING
 
-=======
->>>>>>> 91a1b5bf4b61f120d4f599350756a7f5aee527f6
 #ifdef OP2_WITH_CUDAFOR
   use cudafor
 #endif
 
-<<<<<<< HEAD
-=======
-  use, intrinsic :: ISO_C_BINDING
-
->>>>>>> 91a1b5bf4b61f120d4f599350756a7f5aee527f6
   integer(kind=c_int), parameter :: F_OP_ARG_DAT = 0
   integer(kind=c_int), parameter :: F_OP_ARG_GBL = 1
 
@@ -121,11 +113,7 @@ module OP2_Fortran_RT_Support
 
     end function
 
-<<<<<<< HEAD
     subroutine op_partition_c (lib_name, lib_routine, prime_set, prime_map, coords) BIND(C,name='op_partition_wrapper')
-=======
-    subroutine op_partition_c (lib_name, lib_routine, prime_set, prime_map, coords) BIND(C,name='op_partition')
->>>>>>> 91a1b5bf4b61f120d4f599350756a7f5aee527f6
 
       use, intrinsic :: ISO_C_BINDING
       use OP2_Fortran_Declarations 
@@ -148,11 +136,7 @@ module OP2_Fortran_RT_Support
       integer(kind=c_int), value :: argsNumber ! number of op_dat arguments to op_par_loop
       type(op_arg), dimension(*) :: args       ! array with op_args
 
-<<<<<<< HEAD
     end function op_mpi_halo_exchanges
-=======
-    end function
->>>>>>> 91a1b5bf4b61f120d4f599350756a7f5aee527f6
 
     subroutine op_mpi_wait_all (argsNumber, args) BIND(C,name='op_mpi_wait_all')
 
@@ -225,7 +209,6 @@ module OP2_Fortran_RT_Support
 
     end subroutine
 
-<<<<<<< HEAD
     subroutine decrement_all_maps () BIND(C,name='decrement_all_mappings')
     end subroutine decrement_all_maps
 
@@ -243,8 +226,6 @@ module OP2_Fortran_RT_Support
     subroutine op_barrier () BIND(C,name='op_barrier')
     end subroutine op_barrier
 
-=======
->>>>>>> 91a1b5bf4b61f120d4f599350756a7f5aee527f6
   end interface
 
   contains
