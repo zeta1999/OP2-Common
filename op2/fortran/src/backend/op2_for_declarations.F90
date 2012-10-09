@@ -166,6 +166,7 @@ module OP2_Fortran_Declarations
 
     end function op_decl_dat_c
 
+<<<<<<< HEAD
 
     function op_arg_dat_c ( dat, idx, map, dim, type, acc ) BIND(C,name='op_arg_dat')
 
@@ -185,12 +186,29 @@ module OP2_Fortran_Declarations
     end function op_arg_dat_c
 
     function op_arg_dat_null_c ( dat, idx, map, dim, type, acc ) BIND(C,name='op_arg_dat_null')
+=======
+!     type(c_ptr) function op_decl_gbl_f ( dataIn, dataDim, dataSize, name ) BIND(C,name='op_decl_gbl_f')
+
+!       use, intrinsic :: ISO_C_BINDING
+
+!       type(c_ptr), intent(in) :: dataIn
+!       integer(kind=c_int), value, intent(in) :: dataDim, dataSize
+!       character(kind=c_char,len=1) :: name(*)
+
+!     end function op_decl_gbl_f
+
+    function op_arg_dat_c ( dat, idx, map, dim, type, acc ) BIND(C,name='op_arg_dat')
+>>>>>>> 91a1b5bf4b61f120d4f599350756a7f5aee527f6
 
       use, intrinsic :: ISO_C_BINDING
 
       import :: op_arg
 
+<<<<<<< HEAD
       type(op_arg) :: op_arg_dat_null_c
+=======
+      type(op_arg) :: op_arg_dat_c
+>>>>>>> 91a1b5bf4b61f120d4f599350756a7f5aee527f6
       
       type(c_ptr), value, intent(in) :: dat
       integer(kind=c_int), value :: idx
@@ -199,6 +217,7 @@ module OP2_Fortran_Declarations
       type(c_ptr), value :: type
       integer(kind=c_int), value :: acc
 
+<<<<<<< HEAD
     end function op_arg_dat_null_c
 
 
@@ -258,6 +277,34 @@ module OP2_Fortran_Declarations
       character(kind=c_char,len=1), intent(in) :: datName
 
     end function op_decl_dat_hdf5_c
+=======
+    end function op_arg_dat_c
+
+    function op_arg_gbl_c ( dat, dim, type, size, acc ) BIND(C,name='op_arg_gbl_copy')
+
+      use, intrinsic :: ISO_C_BINDING
+
+      import :: op_arg
+
+      type(op_arg) :: op_arg_gbl_c
+      
+      type(c_ptr), value :: dat
+      integer(kind=c_int), value :: dim
+      character(kind=c_char), dimension(*) :: type
+      integer(kind=c_int), value :: size
+      integer(kind=c_int), value :: acc
+
+    end function op_arg_gbl_c
+
+    subroutine print_type (type) BIND(C,name='print_type')
+    
+      use, intrinsic :: ISO_C_BINDING
+      import :: op_arg
+
+      type(op_arg) :: type
+
+    end subroutine
+>>>>>>> 91a1b5bf4b61f120d4f599350756a7f5aee527f6
 
     subroutine op_fetch_data_f ( opdat ) BIND(C,name='op_fetch_data')
 
@@ -371,6 +418,10 @@ module OP2_Fortran_Declarations
       use, intrinsic :: ISO_C_BINDING
     end subroutine
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 91a1b5bf4b61f120d4f599350756a7f5aee527f6
     subroutine op_print_dat_to_binfile_c (dat, fileName) BIND(C,name='op_print_dat_to_binfile')
       use, intrinsic :: ISO_C_BINDING
 
@@ -381,6 +432,7 @@ module OP2_Fortran_Declarations
 
     end subroutine op_print_dat_to_binfile_c
 
+<<<<<<< HEAD
     subroutine printDat_noGather_c (dat) BIND(C,name='printDat_noGather')
       use, intrinsic :: ISO_C_BINDING
 
@@ -402,6 +454,8 @@ module OP2_Fortran_Declarations
       type(c_ptr) :: ptr
     end function isCNullPointer_c
 
+=======
+>>>>>>> 91a1b5bf4b61f120d4f599350756a7f5aee527f6
   end interface
 
   ! the two numbers at the end of the name indicate the size of the type (e.g. real(8))
@@ -411,11 +465,14 @@ module OP2_Fortran_Declarations
                      op_decl_dat_real_8_3, op_decl_dat_integer_4_3
   end interface op_decl_dat
 
+<<<<<<< HEAD
 !  interface op_decl_dat_hdf5
 !    module procedure op_decl_dat_hdf5_real_8, op_decl_dat_hdf5_integer_4
 !  end interface
 
 
+=======
+>>>>>>> 91a1b5bf4b61f120d4f599350756a7f5aee527f6
 !  interface op_decl_gbl
 !    module procedure op_decl_gbl_real_8,  op_decl_gbl_integer_4_scalar
 !  end interface op_decl_gbl
@@ -661,6 +718,41 @@ contains
   end subroutine op_decl_dat_integer_4_3
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+<<<<<<< HEAD
+=======
+  !   declarations of globals    !
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+!   subroutine op_decl_gbl_real_8 ( dat, gbldata, gbldim )
+
+!     real(8), dimension(*), intent(in), target :: dat
+!     type(op_dat) :: gblData
+!     integer, intent(in) :: gbldim
+
+!     ! FIXME: should this be double?
+!     character(kind=c_char,len=5) :: type = C_CHAR_'real'//C_NULL_CHAR
+
+!     gblData%dataCPtr = op_decl_gbl_f ( c_loc ( dat ), gbldim, 8, type )
+
+!     call c_f_pointer ( gblData%dataCPtr, gblData%dataPtr )
+
+!   end subroutine op_decl_gbl_real_8
+
+!   subroutine op_decl_gbl_integer_4_scalar ( dat, gbldata)
+
+!     integer(4), intent(in), target :: dat
+!     type(op_dat) :: gblData
+
+!     character(kind=c_char,len=8) :: type = C_CHAR_'integer'//C_NULL_CHAR
+
+!     gblData%dataCPtr = op_decl_gbl_f ( c_loc ( dat ), 1, 4, type )
+
+!     call c_f_pointer ( gblData%dataCPtr, gblData%dataPtr )
+
+!   end subroutine op_decl_gbl_integer_4_scalar
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+>>>>>>> 91a1b5bf4b61f120d4f599350756a7f5aee527f6
   !   declarations of constants  !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -762,6 +854,7 @@ contains
     type(op_map) :: map
     integer(kind=c_int) :: access
 
+<<<<<<< HEAD
     ! first check if the op_dat is actually declared (HYDRA feature)
     ! If is NULL, then return an empty op_arg
 #ifdef OP2_WITH_CUDAFOR
@@ -781,6 +874,17 @@ contains
     endif
 
   end function op_arg_dat
+=======
+    ! warning: access and idx are in FORTRAN style, while the C style is required here
+    if ( map%mapPtr%dim .eq. 0 ) then
+      ! OP_ID case (does not decrement idx)
+      op_arg_dat = op_arg_dat_c ( dat%dataCPtr, idx, C_NULL_PTR, dat%dataPtr%dim, dat%dataPtr%type, access-1 )
+    else
+      op_arg_dat = op_arg_dat_c ( dat%dataCPtr, idx-1, map%mapCPtr, dat%dataPtr%dim, dat%dataPtr%type, access-1 )
+    endif
+
+  end function
+>>>>>>> 91a1b5bf4b61f120d4f599350756a7f5aee527f6
 
   type(op_arg) function op_arg_dat_generic (dat, idx, map, dim, type, access )
 
@@ -934,6 +1038,7 @@ contains
   end function op_arg_gbl_logical
 
   subroutine op_get_dat ( opdat )
+<<<<<<< HEAD
 
     type(op_dat) :: opdat
 
@@ -965,6 +1070,22 @@ contains
 
   end subroutine op_put_dat_mpi
 
+=======
+
+    type(op_dat) :: opdat
+
+    call op_get_dat_c ( opdat%dataPtr)
+
+  end subroutine op_get_dat
+
+  subroutine op_put_dat ( opdat )
+
+    type(op_dat) :: opdat
+
+    call op_put_dat_c ( opdat%dataPtr)
+
+  end subroutine op_put_dat
+>>>>>>> 91a1b5bf4b61f120d4f599350756a7f5aee527f6
 
   subroutine op_timers ( et )
 
@@ -1033,6 +1154,7 @@ contains
 
   end subroutine op_print_dat_to_binfile
 
+<<<<<<< HEAD
   subroutine printDat_noGather (dat)
 
     type(op_dat) :: dat
@@ -1049,5 +1171,7 @@ contains
 
   end subroutine op_mpi_rank
 
+=======
+>>>>>>> 91a1b5bf4b61f120d4f599350756a7f5aee527f6
 end module OP2_Fortran_Declarations
 

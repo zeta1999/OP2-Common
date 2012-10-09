@@ -2777,6 +2777,11 @@ void print_dat_to_binfile_mpi(op_dat dat, const char *file_name)
     {
       FILE *fp;
 
+<<<<<<< HEAD
+=======
+      printf ("Rank %d, going into wb\n", rank);
+
+>>>>>>> 91a1b5bf4b61f120d4f599350756a7f5aee527f6
       if ( (fp = fopen(file_name,"wb")) == NULL) {
         printf("can't open file %s\n",file_name);
         MPI_Abort(OP_MPI_IO_WORLD, -1);
@@ -2937,8 +2942,11 @@ void print_dat_to_binfile_mpi(op_dat dat, const char *file_name)
   }
 
   MPI_Comm_free(&OP_MPI_IO_WORLD);
+<<<<<<< HEAD
 
   MPI_Barrier (OP_MPI_WORLD);
+=======
+>>>>>>> 91a1b5bf4b61f120d4f599350756a7f5aee527f6
 }
 
 
