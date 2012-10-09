@@ -166,7 +166,6 @@ module OP2_Fortran_Declarations
 
     end function op_decl_dat_c
 
-
     function op_arg_dat_c ( dat, idx, map, dim, type, acc ) BIND(C,name='op_arg_dat')
 
       use, intrinsic :: ISO_C_BINDING
@@ -359,10 +358,17 @@ module OP2_Fortran_Declarations
 
    end subroutine
 
+   subroutine op_mpi_rank_c (rank) BIND(C,name='op_mpi_rank')
+
+     use, intrinsic :: ISO_C_BINDING
+
+     integer(kind=c_int) :: rank
+
+   end subroutine op_mpi_rank_c
+
     subroutine op_diagnostic_output (  ) BIND(C,name='op_diagnostic_output')
       use, intrinsic :: ISO_C_BINDING
     end subroutine
-
 
     subroutine op_print_dat_to_binfile_c (dat, fileName) BIND(C,name='op_print_dat_to_binfile')
       use, intrinsic :: ISO_C_BINDING
@@ -374,11 +380,26 @@ module OP2_Fortran_Declarations
 
     end subroutine op_print_dat_to_binfile_c
 
+    subroutine printDat_noGather_c (dat) BIND(C,name='printDat_noGather')
+      use, intrinsic :: ISO_C_BINDING
+
+      import :: op_dat_core
+
+      type(op_dat_core) :: dat
+
+    end subroutine printDat_noGather_c
+
     subroutine op_write_hdf5 (fileName) BIND(C,name='op_write_hdf5')
       use, intrinsic :: ISO_C_BINDING
 
       character(len=1,kind=c_char) :: fileName(*)
     end subroutine op_write_hdf5
+
+    logical function isCNullPointer_c (ptr) BIND(C,name='isCNullPointer')
+      use, intrinsic :: ISO_C_BINDING
+
+      type(c_ptr) :: ptr
+    end function isCNullPointer_c
 
   end interface
 
@@ -388,15 +409,6 @@ module OP2_Fortran_Declarations
                      op_decl_dat_real_8_2, op_decl_dat_integer_4_2, &
                      op_decl_dat_real_8_3, op_decl_dat_integer_4_3
   end interface op_decl_dat
-
-!  interface op_decl_dat_hdf5
-!    module procedure op_decl_dat_hdf5_real_8, op_decl_dat_hdf5_integer_4
-!  end interface
-
-
-!  interface op_decl_gbl
-!    module procedure op_decl_gbl_real_8,  op_decl_gbl_integer_4_scalar
-!  end interface op_decl_gbl
 
   interface op_arg_gbl
     module procedure op_arg_gbl_real_8_scalar, op_arg_gbl_real_8, op_arg_gbl_real_8_2, &
@@ -514,7 +526,7 @@ contains
     character(kind=c_char,len=*) :: fileName
     character(kind=c_char,len=*) :: mapName
 
-   ! assume names are /0 terminated - will fix this if needed later
+    ! assume names are /0 terminated - will fix this if needed later
     map%mapCPtr = op_decl_map_hdf5_c ( from%setCPtr, to%setCPtr, mapdim, fileName, mapName )
 
     ! convert the generated C pointer to Fortran pointer and store it inside the op_map variable
@@ -574,8 +586,6 @@ contains
 
   end subroutine op_decl_dat_real_8_3
 
-
-
   subroutine op_decl_dat_hdf5 ( set, datdim, data, type, fileName, datName )
     implicit none
 
@@ -597,51 +607,6 @@ contains
     ! debugging
 
   end subroutine op_decl_dat_hdf5
-
-
-  ! subroutine op_decl_dat_hdf5_real_8 ( set, datdim, dat, fileName, datName )
-
-  !   type(op_set), intent(in) :: set
-  !   integer, intent(in) :: datdim
-  !   type(op_dat) :: data
-  !   character(kind=c_char,len=*) :: fileName
-  !   character(kind=c_char,len=*) :: datName
-
-  !   character(kind=c_char,len=7) :: type = C_CHAR_'double'//C_NULL_CHAR
-
-  !   ! assume names are /0 terminated
-  !   data%dataCPtr = op_decl_dat_hdf5_c ( set%setCPtr, datdim, type, fileName, datName)
-
-  !   ! convert the generated C pointer to Fortran pointer and store it inside the op_map variable
-  !   call c_f_pointer ( data%dataCPtr, data%dataPtr )
-
-  !   ! debugging
-
-  ! end subroutine op_decl_dat_hdf5_real_8
-
-  ! subroutine op_decl_dat_hdf5_real_8_2 ( set, datdim, data, fileName, datName )
-
-  !   type(op_set), intent(in) :: set
-  !   integer, intent(in) :: datdim
-  !   type(op_dat) :: data
-  !   character(kind=c_char,len=*) :: fileName
-  !   character(kind=c_char,len=*) :: datName
-
-  !   call op_decl_dat_hdf5_real_8 ( set, datdim, dat, data, fileName, datName )
-
-  ! end subroutine op_decl_dat_hdf5_real_8_2
-
-  ! subroutine op_decl_dat_hdf5_real_8_3 ( set, datdim, data, fileName, datName )
-
-  !   type(op_set), intent(in) :: set
-  !   integer, intent(in) :: datdim
-  !   type(op_dat) :: data
-  !   character(kind=c_char,len=*) :: fileNameName
-  !   character(kind=c_char,len=*) :: datName
-
-  !   call op_decl_dat_hdf5_real_8 ( set, datdim, data, fileName, datName )
-
-  ! end subroutine op_decl_dat_hdf5_real_8_3
 
   subroutine op_decl_dat_integer_4 ( set, datdim, dat, data, opname )
     type(op_set), intent(in) :: set
@@ -684,77 +649,6 @@ contains
     call op_decl_dat_integer_4 ( set, datdim, dat, data, opname )
 
   end subroutine op_decl_dat_integer_4_3
-
-  ! subroutine op_decl_dat_hdf5_integer_4 ( set, datdim, data, fileName, datName )
-  !   type(op_set), intent(in) :: set
-  !   integer, intent(in) :: datdim
-  !   type(op_dat) :: data
-  !   character(kind=c_char,len=*) :: fileName
-  !   character(kind=c_char,len=*) :: datName
-
-  !   character(kind=c_char,len=4) :: type = C_CHAR_'int'//C_NULL_CHAR
-
-  !   ! assume fileName is /0 terminated
-  !   data%dataCPtr = op_decl_dat_hdf5_c ( set%setCPtr, datdim, type, fileName, datName//C_NULL_CHAR )
-
-  !   ! convert the generated C pointer to Fortran pointer and store it inside the op_map variable
-  !   call c_f_pointer ( data%dataCPtr, data%dataPtr )
-
-  ! end subroutine op_decl_dat_hdf5_integer_4
-
-  ! subroutine op_decl_dat_hdf5_integer_4_2 ( set, datdim, data, fileName, datName )
-  !   type(op_set), intent(in) :: set
-  !   integer, intent(in) :: datdim
-  !   type(op_dat) :: data
-  !   character(kind=c_char,len=*) :: fileName
-  !   character(kind=c_char,len=*) :: datName
-
-  !   call op_decl_dat_hdf5_integer_4 ( set, datdim, data, fileName, datName )
-
-  ! end subroutine op_decl_dat_hdf5_integer_4_2
-
-  ! subroutine op_decl_dat_hdf5_integer_4_3 ( set, datdim, dat, data, opname )
-  !   type(op_set), intent(in) :: set
-  !   integer, intent(in) :: datdim
-  !   type(op_dat) :: data
-  !   character(kind=c_char,len=*), optional :: opname
-
-  !   call op_decl_dat_hdf5_integer_4 ( set, datdim, dat, data, opname )
-
-  ! end subroutine op_decl_dat_hdf5_integer_4_3
-
-
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !   declarations of globals    !
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-!   subroutine op_decl_gbl_real_8 ( dat, gbldata, gbldim )
-
-!     real(8), dimension(*), intent(in), target :: dat
-!     type(op_dat) :: gblData
-!     integer, intent(in) :: gbldim
-
-!     ! FIXME: should this be double?
-!     character(kind=c_char,len=5) :: type = C_CHAR_'real'//C_NULL_CHAR
-
-!     gblData%dataCPtr = op_decl_gbl_f ( c_loc ( dat ), gbldim, 8, type )
-
-!     call c_f_pointer ( gblData%dataCPtr, gblData%dataPtr )
-
-!   end subroutine op_decl_gbl_real_8
-
-!   subroutine op_decl_gbl_integer_4_scalar ( dat, gbldata)
-
-!     integer(4), intent(in), target :: dat
-!     type(op_dat) :: gblData
-
-!     character(kind=c_char,len=8) :: type = C_CHAR_'integer'//C_NULL_CHAR
-
-!     gblData%dataCPtr = op_decl_gbl_f ( c_loc ( dat ), 1, 4, type )
-
-!     call c_f_pointer ( gblData%dataCPtr, gblData%dataPtr )
-
-!   end subroutine op_decl_gbl_integer_4_scalar
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !   declarations of constants  !
@@ -859,8 +753,12 @@ contains
     integer(kind=c_int) :: access
 
     ! first check if the op_dat is actually declared (HYDRA feature)
-    ! If so, then return an empty op_arg
+    ! If is NULL, then return an empty op_arg
+#ifdef OP2_WITH_CUDAFOR
     if (dat%dataCPtr .eq. C_NULL_PTR) then
+#else
+    if ( isCNullPointer_c (dat%dataCPtr) .eq. .true. ) then
+#endif
       op_arg_dat = op_arg_dat_null_c (C_NULL_PTR, idx-1, C_NULL_PTR, -1, C_NULL_PTR, access-1)
     else
       ! warning: access and idx are in FORTRAN style, while the C style is required here
@@ -1057,7 +955,6 @@ contains
 
   end subroutine op_put_dat_mpi
 
-
   subroutine op_timers ( et )
 
     real(kind=c_double) :: et
@@ -1124,6 +1021,22 @@ contains
     call op_print_dat_to_binfile_c (dat%dataPtr, fileName)
 
   end subroutine op_print_dat_to_binfile
+
+  subroutine printDat_noGather (dat)
+
+    type(op_dat) :: dat
+
+    call printDat_noGather_c (dat%dataPtr)
+
+  end subroutine printDat_noGather
+
+  subroutine op_mpi_rank (rank)
+
+    integer(kind=c_int) :: rank
+
+    call op_mpi_rank_c (rank)
+
+  end subroutine op_mpi_rank
 
 end module OP2_Fortran_Declarations
 

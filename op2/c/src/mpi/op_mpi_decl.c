@@ -222,7 +222,12 @@ void op_print_dat_to_binfile(op_dat dat, const char *file_name)
 {
   //rearrange data backe to original order in mpi
   op_dat temp = op_mpi_get_data(dat);
+//  op_partition_reverse ();
+  MPI_Barrier (MPI_COMM_WORLD);
   print_dat_to_binfile_mpi(temp, file_name);
+
+//  MPI_Barrier (MPI_COMM_WORLD);
+//  printDat_noGather (temp);
 
   free(temp->data);
 }

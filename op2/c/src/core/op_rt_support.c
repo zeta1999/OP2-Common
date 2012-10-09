@@ -241,8 +241,11 @@ void op_plan_check( op_plan OP_plan, int ninds, int * inds)
       {
         err += ( OP_plan.ind_maps[m][e] <= last );
         last = OP_plan.ind_maps[m][e];
+        if (err > 0) printf ("err at e = %d, last = %d, content = %d\n", e, last, OP_plan.ind_maps[m][e]);
       }
       err += ( last >= set_size );
+      if (err > 0) printf ("err last = %d > set_size = %d\n", last, set_size);
+
       ntot += OP_plan.ind_sizes[m + n * ninds];
     }
   }

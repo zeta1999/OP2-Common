@@ -285,9 +285,17 @@ void op_partition_ptscotch(op_map primary_map);
 *******************************************************************************/
 
 void op_exchange_halo(op_arg* arg);
+
+// new for HYDRA...
+void op_exchange_halo_seq(op_arg* arg);
+
 void op_wait_all(op_arg* arg);
 
+void op_wait_all_seq(op_arg* arg);
+
 void print_dat_to_binfile_mpi(op_dat dat, const char *file_name);
+
+void op_monitor_dat_mpi(op_dat dat, int original_g_index);
 
 #endif /* __OP_MPI_CORE_H */
 

@@ -9,7 +9,13 @@
 #include <string.h>
 
 #include <op_lib_c.h>
+#include <op_mpi_core.h>
+#ifdef NO_MPI
+
+#else
 #include <mpi.h>
+#endif
+
 #include "../../include/op2_for_C_wrappers.h"
 
 /*
@@ -116,7 +122,7 @@ int get_associated_set_size (op_dat_core * dat)
 
 void dumpOpDat (op_dat_core * data, const char * fileName)
 {
-  int i;
+  int i, j;
 
   FILE * outfile = fopen (fileName, "w+");
 
@@ -127,8 +133,9 @@ void dumpOpDat (op_dat_core * data, const char * fileName)
       // support for old and new names (real should be replaced by double)
       if ( strncmp ( "double", data->type, 6 ) == 0 ||
 	   strncmp ( "double", data->type, 6 ) == 0) {
-        for ( i = 0; i < data->dim * data->set->size; i++ )
-          fprintf (outfile, "%.10lf\n", ((double *) data->data)[i] );
+        for ( i = 0; i < data->set->size; i++ )
+          for ( j = 0; j < data->dim; j++ )
+            fprintf (outfile, "%d, %d -> %e\n", i, j, ((double *) data->data)[i*data->dim + j] );
       }
       else if ( strncmp ( "integer", data->type, 7 ) == 0 )
         for ( i = 0; i < data->dim * data->set->size; i++ )
@@ -140,6 +147,9 @@ void dumpOpDat (op_dat_core * data, const char * fileName)
           exit ( 0 );
         }
     }
+
+  i = 291088; j = 2;
+  fprintf (outfile, "%d, %d -> %e\n", i, j, ((double *) data->data)[i*data->dim + j] );
 
   fclose (outfile);
 }
@@ -192,21 +202,35 @@ void dumpOpGbl (op_dat_core * data)
     }
 }
 
-
-
 void dumpOpMap (op_map_core * map, const char * fileName)
 {
-  int i;
+  int i, j;
 
   FILE * outfile = fopen (fileName, "w+");
 
   if (outfile == NULL) exit (0);
 
-  if ( map != NULL )
-    for ( i = 0; i < map->dim * map->from->size; i++ )
-      fprintf (outfile, "%d\n", ((int *) map->map)[i] );
-
+  if ( map != NULL ) {
+    for ( i = 0; i < map->from->size; i++ ) {
+      for ( j = 0; j < map->dim; j++ ) {
+        fprintf (outfile, "%d --> %d", i, ((int *) map->map)[i * map->dim + j] );
+      }
+      fprintf (outfile, "\n");
+    }
+  }
   fclose (outfile);
+}
+
+
+op_arg
+op_arg_gbl_copy ( char * data, int dim, const char * typ, int size, op_access acc ) {
+
+  int len = strlen (typ);
+  char * heapType = (char *) calloc (len, sizeof (char));
+
+  strncpy (heapType, typ, len);
+
+  return op_arg_gbl_char (data, dim, heapType, size, acc);
 }
 
 op_arg
@@ -216,6 +240,7 @@ op_arg_dat_null (op_dat dat, int idx, op_map map, int dim, const char * typ, op_
   arg.argtype = OP_ARG_NULL;
 
   arg.dat = NULL;
+
   // forces impossible dimension
   arg.dim = -1;
   arg.idx = -1; //this avoids getting a free in the MPI implementation (see op2_C_reference.c)
@@ -249,18 +274,59 @@ void print_type (op_arg * arg)
   printf ("String is %s\n", arg->type);
 }
 
+#ifdef NO_MPI
+
+#else
 int op_mpi_size () {
   int size;
   MPI_Comm_size (MPI_COMM_WORLD, &size);
   return size;
 }
 
-int op_mpi_rank () {
-  int rank;
-  MPI_Comm_rank (MPI_COMM_WORLD, &rank);
-  return rank;
+void op_mpi_rank (int * rank) {
+  MPI_Comm_rank (MPI_COMM_WORLD, rank);
 }
 
 void op_barrier () {
   MPI_Barrier (MPI_COMM_WORLD);
+}
+
+void printDat_noGather (op_dat dat) {
+  int rank;
+
+  op_mpi_rank (&rank);
+
+  char prefix[13] = "dat_nogather_";
+  char filename[14];
+  FILE * fileptr;
+
+  sprintf (filename, "%s%d", prefix, rank);
+
+  fileptr = fopen (filename, "a");
+
+  printf ("writing out to %s\n", filename);
+  fflush (0);
+
+  // print also the global index of each element
+  if ( strncmp ("double", dat->type, 6) == 0 ) {
+    for ( int i = 0; i < dat->set->size; i++ ) {
+      for ( int j = 0; j < dat->dim; j++ ) {
+          fprintf (fileptr, "%lf ", ((double *)dat->data)[i*dat->dim+j]);
+//          if ( ((double *)dat->data)[i*dat->dim+j] > 0.0 || ((double *)dat->data)[i*dat->dim+j] < 0.0 ) {
+            if ( rank == 2 ) {
+              printf ("Rank = %d  --> At (local id = %d, el = %d) original global id = %d --> %.12lf\n", rank, i, j, OP_part_list[dat->set->index]->g_index[i], ((double *)dat->data)[i*dat->dim+j]);
+              fflush (0);
+            }
+//        }
+      }
+      fprintf (fileptr, "\n");
+    }
+  }
+
+  fclose (fileptr);
+}
+#endif
+
+bool isCNullPointer (void * ptr) {
+  return (ptr == NULL);
 }

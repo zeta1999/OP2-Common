@@ -34,6 +34,32 @@ OP_LOOP(11) OP_LOOP(12) OP_LOOP(13) OP_LOOP(14) OP_LOOP(15) OP_LOOP(16) OP_LOOP(
 OP_LOOP(21) OP_LOOP(22) OP_LOOP(23) OP_LOOP(24) OP_LOOP(25) OP_LOOP(26) OP_LOOP(27) OP_LOOP(28) OP_LOOP(29) OP_LOOP(30)
 OP_LOOP(31) OP_LOOP(32) OP_LOOP(33) OP_LOOP(34) OP_LOOP(35) OP_LOOP(36) OP_LOOP(37) OP_LOOP(38) OP_LOOP(39) OP_LOOP(40)
 OP_LOOP(41) OP_LOOP(42)
+
+ subroutine op_par_loop_6_f_per(kernel, set, &
+ arg1 &
+, arg2 &
+, arg3 &
+, arg4 &
+, arg5 &
+, arg6 &
+ ) BIND(C,name="op_par_loop_6_per")
+ use, intrinsic :: ISO_C_BINDING
+ import :: op_set_core, op_arg
+interface
+ subroutine kernel () BIND(C)
+ end subroutine kernel
+end interface
+ type(op_set_core) :: set
+ type(op_arg) :: arg1
+ type(op_arg) :: arg2
+ type(op_arg) :: arg3
+ type(op_arg) :: arg4
+ type(op_arg) :: arg5
+ type(op_arg) :: arg6
+
+end subroutine op_par_loop_6_f_per
+
+
 end interface
 
   contains
@@ -58,6 +84,33 @@ OP_LOOP2(11) OP_LOOP2(12) OP_LOOP2(13) OP_LOOP2(14) OP_LOOP2(15) OP_LOOP2(16) OP
 OP_LOOP2(21) OP_LOOP2(22) OP_LOOP2(23) OP_LOOP2(24) OP_LOOP2(25) OP_LOOP2(26) OP_LOOP2(27) OP_LOOP2(28) OP_LOOP2(29) OP_LOOP2(30)
 OP_LOOP2(31) OP_LOOP2(32) OP_LOOP2(33) OP_LOOP2(34) OP_LOOP2(35) OP_LOOP2(36) OP_LOOP2(37) OP_LOOP2(38) OP_LOOP2(39) OP_LOOP2(40)
 OP_LOOP2(41) OP_LOOP2(42)
+
+ subroutine op_par_loop_6_per(kernel, set, &
+ arg1 &
+, arg2 &
+, arg3 &
+, arg4 &
+, arg5 &
+, arg6 &
+ )
+ external kernel
+ type(op_set) :: set
+ type(op_arg) :: arg1
+ type(op_arg) :: arg2
+ type(op_arg) :: arg3
+ type(op_arg) :: arg4
+ type(op_arg) :: arg5
+ type(op_arg) :: arg6
+
+ call op_par_loop_6_f_per(kernel, set%setPtr, &
+ arg1 &
+, arg2 &
+, arg3 &
+, arg4 &
+, arg5 &
+, arg6 &
+ )
+end subroutine op_par_loop_6_per
 
 end module OP2_Fortran_Reference
 

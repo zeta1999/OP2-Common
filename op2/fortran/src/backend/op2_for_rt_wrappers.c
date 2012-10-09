@@ -8,7 +8,6 @@
 extern int OP_plan_index, OP_plan_max;
 extern op_plan * OP_plans;
 
-
 #define ERR_INDEX -1
 
 void decrement_all_mappings () {
@@ -149,7 +148,7 @@ op_plan * FortranPlanCaller (char name[], op_set set,
 /*     } */
 /*   } */
 
-  /* call the C OP2 function including CUDA movement of data */
+  /* call the C OP2 function */
   generatedPlan = op_plan_get (heapName, set, partitionSize,
     argsNumber, args, indsNumber, inds);
 
