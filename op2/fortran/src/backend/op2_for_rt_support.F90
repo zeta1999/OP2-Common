@@ -136,7 +136,7 @@ module OP2_Fortran_RT_Support
       integer(kind=c_int), value :: argsNumber ! number of op_dat arguments to op_par_loop
       type(op_arg), dimension(*) :: args       ! array with op_args
 
-    end function
+    end function op_mpi_halo_exchanges
 
     subroutine op_mpi_wait_all (argsNumber, args) BIND(C,name='op_mpi_wait_all')
 
@@ -216,10 +216,12 @@ module OP2_Fortran_RT_Support
     end subroutine increment_all_maps
 
     integer(kind=c_int) function op_mpi_size () BIND(C,name='op_mpi_size')
+      use, intrinsic :: ISO_C_BINDING
     end function op_mpi_size
 
-    integer(kind=c_int) function op_mpi_rank () BIND(C,name='op_mpi_rank')
-    end function op_mpi_rank
+!    integer(kind=c_int) function op_mpi_rank () BIND(C,name='op_mpi_rank')
+!      use, intrinsic :: ISO_C_BINDING
+!    end function op_mpi_rank
 
     subroutine op_barrier () BIND(C,name='op_barrier')
     end subroutine op_barrier

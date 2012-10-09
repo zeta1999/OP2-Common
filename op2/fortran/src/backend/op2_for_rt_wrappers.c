@@ -149,7 +149,7 @@ op_plan * FortranPlanCaller (char name[], op_set set,
 /*     } */
 /*   } */
 
-  /* call the C OP2 function including CUDA movement of data */
+  /* call the C OP2 function */
   generatedPlan = op_plan_get (heapName, set, partitionSize,
     argsNumber, args, indsNumber, inds);
 

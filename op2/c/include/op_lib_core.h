@@ -235,11 +235,15 @@ void op_dump_dat ( op_dat data );
 * Core MPI lib function prototypes
 *******************************************************************************/
 
+int op_mpi_halo_exchanges_seq(op_set set, int nargs, op_arg *args);
+
 int op_mpi_halo_exchanges(op_set set, int nargs, op_arg *args);
 
 void op_mpi_set_dirtybit(int nargs, op_arg *args);
 
 void op_mpi_wait_all(int nargs, op_arg* args);
+
+void op_mpi_wait_all_seq(int nargs, op_arg *args);
 
 void op_mpi_global_reduction(int nargs, op_arg* args);
 
@@ -254,6 +258,8 @@ void op_mpi_reduce_int(op_arg *args, int* data);
 void op_mpi_reduce_bool(op_arg *args, bool* data);
 
 void op_mpi_barrier();
+
+void op_print_dat_to_binfile_core(op_dat dat, const char *file_name);
 
 /*******************************************************************************
 * Toplevel partitioning selection function - also triggers halo creation

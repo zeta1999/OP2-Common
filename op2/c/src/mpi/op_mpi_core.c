@@ -562,11 +562,17 @@ void op_halo_create()
         if(compare_sets(map->from,set)==1) //need to select mappings
           //FROM this set
         {
+//          if ( my_rank == 1 ) printf ("Now renumbering for from set = (%s,%s), mapping %s\n", set->name, map->from->name, map->name);
           int part, local_index;
           for(int j=0; j<map->dim; j++) { //for each element
             //pointed at by this entry
             part = get_partition(map->map[e*map->dim+j],
                 part_range[map->to->index],&local_index,comm_size);
+//            if ( map->index == 1 && map->map[e*map->dim+j] == 6874 && my_rank == 1 ) {
+//              printf ("For node 6874 the bnds node before re-numbering is %d\n", e);
+//              fflush (stdout);
+//            }
+
             if(s_i>=cap_s)
             {
               cap_s = cap_s*2;
@@ -2203,11 +2209,45 @@ void op_mpi_exit()
 }
 
 int op_mpi_halo_exchanges(op_set set, int nargs, op_arg *args) {
-  int size = set->size;
+  int size = set->size + set->exec_size;
+
+  int direct_flag = 1;
+  
+  //check if this is a direct loop
+  for (int n=0; n<nargs; n++)
+    if(args[n].argtype == OP_ARG_DAT && args[n].idx != -1)
+      direct_flag = 0;
+  
+  if (direct_flag == 1) return size;
+
   for (int n=0; n<nargs; n++) {
     if(args[n].argtype == OP_ARG_DAT)
     {
       op_exchange_halo(&args[n]);
+      //set_dirtybit(&args[n]);
+    }
+    if(args[n].idx != -1 && args[n].acc != OP_READ) size = set->size + set->exec_size;
+  }
+  return size;
+}
+
+int op_mpi_halo_exchanges_seq(op_set set, int nargs, op_arg *args) {
+  int size = set->size;
+
+  int direct_flag = 1;
+  
+  //check if this is a direct loop
+  for (int n=0; n<nargs; n++)
+    if(args[n].argtype == OP_ARG_DAT && args[n].idx != -1)
+      direct_flag = 0;
+  
+  if (direct_flag == 1) return size;
+
+  for (int n=0; n<nargs; n++) {
+    if(args[n].argtype == OP_ARG_DAT)
+    {
+      op_exchange_halo_seq(&args[n]);
+//      op_exchange_halo(&args[n]);
       //set_dirtybit(&args[n]);
     }
     if(args[n].idx != -1 && args[n].acc != OP_READ) size = set->size + set->exec_size;
@@ -2228,6 +2268,13 @@ void op_mpi_set_dirtybit(int nargs, op_arg *args) {
 void op_mpi_wait_all(int nargs, op_arg *args) {
   for (int n=0; n<nargs; n++) {
     op_wait_all(&args[n]);
+  }
+}
+
+void op_mpi_wait_all_seq(int nargs, op_arg *args) {
+  for (int n=0; n<nargs; n++) {
+    op_wait_all_seq(&args[n]);
+//    op_wait_all(&args[n]);
   }
 }
 
@@ -2730,8 +2777,6 @@ void print_dat_to_binfile_mpi(op_dat dat, const char *file_name)
     {
       FILE *fp;
 
-      printf ("Rank %d, going into wb\n", rank);
-
       if ( (fp = fopen(file_name,"wb")) == NULL) {
         printf("can't open file %s\n",file_name);
         MPI_Abort(OP_MPI_IO_WORLD, -1);
@@ -2892,6 +2937,8 @@ void print_dat_to_binfile_mpi(op_dat dat, const char *file_name)
   }
 
   MPI_Comm_free(&OP_MPI_IO_WORLD);
+
+  MPI_Barrier (OP_MPI_WORLD);
 }
 
 

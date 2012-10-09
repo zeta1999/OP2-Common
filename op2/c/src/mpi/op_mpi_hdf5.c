@@ -323,7 +323,7 @@ op_dat op_decl_dat_hdf5(op_set set, int dim, char const *type, char const *file,
   H5Dclose(dset_id);
   if(dat_dim != dim)
   {
-    printf("dat.dim %d in file %s and dim %d do not match\n",dat_dim,file,dim);
+    printf("dat.dim %d in file %s and dim %d do not match, name = %s\n",dat_dim,file,dim,name);
     MPI_Abort(OP_MPI_HDF5_WORLD, 2);
   }
 
@@ -433,8 +433,10 @@ op_dat op_decl_dat_hdf5(op_set set, int dim, char const *type, char const *file,
   H5Fclose(file_id);
   MPI_Comm_free(&OP_MPI_HDF5_WORLD);
 
-
   op_dat new_dat = op_decl_dat_core(set, dim, type, dat_size, data, name );
+//  printf ("dat name = %s, dat dim = %d, dat size = %d\n", new_dat->name, new_dat->dim, new_dat->size);
+  fflush (stdout);
+
   new_dat->user_managed = 0;
   return new_dat;
 

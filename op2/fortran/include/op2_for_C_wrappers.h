@@ -53,6 +53,19 @@ void dumpOpMap (op_map_core * map, const char * fileName);
 op_arg
 op_arg_gbl_fortran (char * dat, int dim, char * type, int acc);
 
+
+#ifdef NO_MPI
+
+#else
+int op_mpi_size ();
+
+void op_mpi_rank (int * rank);
+
+void op_barrier ();
+
+void printDat_noGather (op_dat dat);
+#endif
+
 #ifdef __cplusplus
 }
 #endif
