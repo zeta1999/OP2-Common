@@ -48,30 +48,6 @@ void op_arg_copy_in(int n, op_arg arg, char **p_arg) {
     p_arg[i] = arg.data + arg.map->map[i+n*arg.map->dim]*arg.size;
 }
 
-int op2_stride = 1;
-#define OP2_STRIDE(arr, idx) arr[idx]
-
-char blank_args[512]; // scratch space to use for blank args                                                                                                                                                       
-
-inline void op_arg_set(int n, op_arg arg, char **p_arg, int halo){
-  *p_arg = arg.data;
-
-  if (arg.argtype==OP_ARG_GBL) {
-    if (halo && (arg.acc != OP_READ)) *p_arg = blank_args;
-  }
-  else {
-    if (arg.map==NULL)         // identity mapping
-      *p_arg += arg.size*n;
-    else                       // standard pointers
-      *p_arg += arg.size*arg.map->map[arg.idx+n*arg.map->dim];
-  }
-}
-
-void op_arg_copy_in(int n, op_arg arg, char **p_arg) {
-  for (int i = 0; i < -1*arg.idx; ++i)
-    p_arg[i] = arg.data + arg.map->map[i+n*arg.map->dim]*arg.size;
-}
-
 void op_args_check(op_set set, int nargs, op_arg *args,
                                       int *ninds, const char *name) {
   for (int n=0; n<nargs; n++)
