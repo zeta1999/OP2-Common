@@ -352,10 +352,10 @@ void op_monitor_map_mpi(op_map map, int original_g_index)
         orig_rank[i] = get_partition(value_o_g[i], orig_part_range[map->to->index],
           &value_o_l[i], comm_size);   
         
-       // printf("-> with curr local index: %d curr global index: %d ",value_c_l[i], value_c_g[i]);
-       // printf("originally located on mpi rank %d, ",orig_rank[i]);
-       // printf("orig local index: %d orig global index: %d\n",value_o_l[i], value_o_g[i]);
-       // fflush(stdout);
+        printf("-> with curr local index: %d curr global index: %d ",value_c_l[i], value_c_g[i]);
+        printf("originally located on mpi rank %d, ",orig_rank[i]);
+        printf("orig local index: %d orig global index: %d\n",value_o_l[i], value_o_g[i]);
+        fflush(stdout);
       }
     }
     printf("\n");

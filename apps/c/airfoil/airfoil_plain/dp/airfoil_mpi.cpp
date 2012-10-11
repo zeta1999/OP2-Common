@@ -354,8 +354,8 @@ int main(int argc, char **argv)
   op_monitor_set(nodes, 234);
   op_monitor_dat(p_q, 10234);
   
-  for(int i = 0; i<100000; i++)
-    op_monitor_map(pecell, i);
+  //for(int i = 0; i<100000; i++)
+  op_monitor_map(pecell, 5785);
   
   niter = 1000;
   for(int iter=1; iter<=niter; iter++) {
