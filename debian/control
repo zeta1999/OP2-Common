@@ -1,7 +1,7 @@
 Source: op2-common
 Priority: extra
 Maintainer: Graham Markall <graham.markall08@imperial.ac.uk>
-Build-Depends: debhelper (>= 8.0.0), cmake, libhdf5-openmpi-dev, libptscotch-dev
+Build-Depends: debhelper (>= 8.0.0), cmake, libopenmpi-dev, libhdf5-openmpi-dev, libptscotch-dev, texlive-latex-base
 Standards-Version: 3.9.3
 Section: libs
 Homepage: http://www.oerc.ox.ac.uk/research/op2
@@ -12,6 +12,7 @@ Package: libop2-dev
 Section: libdevel
 Architecture: any
 Depends: libop2 (= ${binary:Version})
+Suggests: libop2-doc
 Description: The OP2 common libraries
 
 Package: libop2
@@ -19,3 +20,9 @@ Section: libs
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: The OP2 common development files
+
+Package: libop2-doc
+Section: doc
+Architecture: all
+Depends: ${misc:Depends}
+Description: The OP2 documentation.
