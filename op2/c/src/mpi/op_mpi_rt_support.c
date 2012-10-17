@@ -231,7 +231,7 @@ void op_monitor_dat_mpi(op_dat dat, int original_g_index)
   
   if(local_index >= 0)
   {
-    if(strcmp(dat->type,"double") == 0)
+    if(strcmp(dat->type,"double") == 0 || strcmp(dat->type,"double:soa") == 0)
     {
       double* value = (double *)xmalloc(sizeof(double)*dat->dim);
       memcpy(value, (void *)(&dat->data[local_index*dat->size]), sizeof(double)*dat->dim);
@@ -242,7 +242,7 @@ void op_monitor_dat_mpi(op_dat dat, int original_g_index)
       printf("\n");  
       free(value);      
     }
-    else if(strcmp(dat->type,"float") == 0)
+    else if(strcmp(dat->type,"float") == 0 || strcmp(dat->type,"float:soa") == 0)
     {
       float* value = (float *)xmalloc(sizeof(float)*dat->dim);
       memcpy(value, (void *)(&dat->data[local_index*dat->size]), sizeof(float)*dat->dim);
@@ -253,7 +253,7 @@ void op_monitor_dat_mpi(op_dat dat, int original_g_index)
       printf("\n");  
       free(value);      
     }
-    else if(strcmp(dat->type,"int") == 0)
+    else if(strcmp(dat->type,"int") == 0 || strcmp(dat->type,"int:soa") == 0)
     {
       int* value = (int *)xmalloc(sizeof(int)*dat->dim);
       memcpy(value, (void *)(&dat->data[local_index*dat->size]), sizeof(int)*dat->dim);
@@ -264,7 +264,7 @@ void op_monitor_dat_mpi(op_dat dat, int original_g_index)
       printf("\n");  
       free(value);      
     }
-    if(strcmp(dat->type,"long") == 0)
+    if(strcmp(dat->type,"long") == 0 || strcmp(dat->type,"long:soa") == 0)
     {
       long* value = (long *)xmalloc(sizeof(long)*dat->dim);
       memcpy(value, (void *)(&dat->data[local_index*dat->size]), sizeof(long)*dat->dim);

@@ -245,9 +245,7 @@ void op_monitor_set_mpi(op_set set, int original_g_index)
  * Monitir/Print the Contents/Original Global Index/Current Index/Rank of an 
  * element in op_dat
  *******************************************************************************/
- 
- /* Any SOA op_dats needs to be converted back to AOS*/
- 
+
 void op_monitor_dat_mpi(op_dat dat, int original_g_index)
 {
   int my_rank, comm_size;
@@ -260,12 +258,24 @@ void op_monitor_dat_mpi(op_dat dat, int original_g_index)
   
   if(local_index >= 0)
   {
-    if(strcmp(dat->type,"double") == 0)
+    if(strcmp(dat->type,"double") == 0 || strcmp(dat->type,"double:soa") == 0)
     {
       double* value = (double *)xmalloc(sizeof(double)*dat->dim);
-      cutilSafeCall( cudaMemcpy (value, (void *)(&dat->data_d[local_index*dat->size]),
-          sizeof(double)*dat->dim, cudaMemcpyDeviceToHost ) );
       
+      if (strstr(dat->type, ":soa")!= NULL) {
+        for(int d = 0; d<dat->dim; d++)
+        { 
+          cutilSafeCall( cudaMemcpy ( &value[d],
+            (void *)(&dat->data_d[(local_index+d*(dat->set->size+
+              dat->set->exec_size+dat->set->nonexec_size))*sizeof(double)]),
+            sizeof(double), cudaMemcpyDeviceToHost ) );
+        }
+      }
+      else {
+        cutilSafeCall( cudaMemcpy (value, (void *)(&dat->data_d[local_index*dat->size]),
+          sizeof(double)*dat->dim, cudaMemcpyDeviceToHost ) );
+      }
+            
       printf("op_dat %s element %d located on mpi rank %d at local index: %d value: ",
         dat->name, original_g_index, my_rank, local_index);
       for(int i = 0; i<dat->dim; i++)
@@ -273,11 +283,23 @@ void op_monitor_dat_mpi(op_dat dat, int original_g_index)
       printf("\n");  
       free(value);      
     }
-    else if(strcmp(dat->type,"float") == 0)
+    else if(strcmp(dat->type,"float") == 0 || strcmp(dat->type,"float:soa") == 0)
     {
       float* value = (float *)xmalloc(sizeof(float)*dat->dim);
-      cutilSafeCall( cudaMemcpy (value, (void *)(&dat->data_d[local_index*dat->size]),
+      
+      if (strstr(dat->type, ":soa")!= NULL) {
+        for(int d = 0; d<dat->dim; d++)
+        { 
+          cutilSafeCall( cudaMemcpy ( &value[d],
+            (void *)(&dat->data_d[(local_index+d*(dat->set->size+
+              dat->set->exec_size+dat->set->nonexec_size))*sizeof(float)]),
+            sizeof(float), cudaMemcpyDeviceToHost ) );
+        }
+      }
+      else {
+        cutilSafeCall( cudaMemcpy (value, (void *)(&dat->data_d[local_index*dat->size]),
           sizeof(float)*dat->dim, cudaMemcpyDeviceToHost ) );
+      }
       
       printf("op_dat %s element %d located on mpi rank %d at local index: %d value: ",
         dat->name, original_g_index, my_rank, local_index);
@@ -286,11 +308,23 @@ void op_monitor_dat_mpi(op_dat dat, int original_g_index)
       printf("\n");  
       free(value);      
     }
-    else if(strcmp(dat->type,"int") == 0)
+    else if(strcmp(dat->type,"int") == 0 || strcmp(dat->type,"int:soa") == 0)
     {
       int* value = (int *)xmalloc(sizeof(int)*dat->dim);
-      cutilSafeCall( cudaMemcpy (value, (void *)(&dat->data_d[local_index*dat->size]),
+      
+      if (strstr(dat->type, ":soa")!= NULL) {
+        for(int d = 0; d<dat->dim; d++)
+        { 
+          cutilSafeCall( cudaMemcpy ( &value[d],
+            (void *)(&dat->data_d[(local_index+d*(dat->set->size+
+              dat->set->exec_size+dat->set->nonexec_size))*sizeof(int)]),
+            sizeof(int), cudaMemcpyDeviceToHost ) );
+        }
+      }
+      else {
+        cutilSafeCall( cudaMemcpy (value, (void *)(&dat->data_d[local_index*dat->size]),
           sizeof(int)*dat->dim, cudaMemcpyDeviceToHost ) );
+      }
       
       printf("op_dat %s element %d located on mpi rank %d at local index: %d value: ",
         dat->name, original_g_index, my_rank, local_index);
@@ -299,11 +333,24 @@ void op_monitor_dat_mpi(op_dat dat, int original_g_index)
       printf("\n");  
       free(value);      
     }
-    if(strcmp(dat->type,"long") == 0)
+    if(strcmp(dat->type,"long") == 0 || strcmp(dat->type,"long:soa") == 0)
     {
       long* value = (long *)xmalloc(sizeof(long)*dat->dim);
-      cutilSafeCall( cudaMemcpy (value, (void *)(&dat->data_d[local_index*dat->size]),
+      
+      if (strstr(dat->type, ":soa")!= NULL) {
+        for(int d = 0; d<dat->dim; d++)
+        { 
+          cutilSafeCall( cudaMemcpy ( &value[d],
+            (void *)(&dat->data_d[(local_index+d*(dat->set->size+
+              dat->set->exec_size+dat->set->nonexec_size))*sizeof(long)]),
+            sizeof(long), cudaMemcpyDeviceToHost ) );
+        }
+      }
+      else {
+        cutilSafeCall( cudaMemcpy (value, (void *)(&dat->data_d[local_index*dat->size]),
           sizeof(long)*dat->dim, cudaMemcpyDeviceToHost ) );
+      }
+      
       printf("op_dat %s element %d located on mpi rank %d at local index: %d value: ",
         dat->name, original_g_index, my_rank, local_index);
       for(int i = 0; i<dat->dim; i++)
