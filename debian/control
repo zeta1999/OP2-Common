@@ -2,7 +2,8 @@ Source: op2-common
 Priority: extra
 Maintainer: Francis Russell <francis.russell02@imperial.ac.uk>
 Build-Depends: debhelper (>= 8.0.0), cmake, mpi-default-dev, libhdf5-mpi-dev, 
- libptscotch-dev, texlive-latex-base, libpetsc3.1-dev | libpetsc3.2-dev
+ libptscotch-dev, texlive-latex-base, libpetsc3.1-dev | libpetsc3.2-dev,
+ texlive-science, texlive-latex-extra, texlive-latex-recommended
 Standards-Version: 3.9.3
 Section: libs
 Homepage: http://www.oerc.ox.ac.uk/research/op2
