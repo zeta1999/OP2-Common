@@ -64,7 +64,7 @@ int** export_nonexec_list_d;
 
 void op_exchange_halo (op_arg* arg)
 {
-//  printf("CALLING THE CUDA FUNCTION\n");
+//  printf("CALLING THE CUDA FUNCTION for %s, dirty bit = %d\n", arg->dat->name, arg->dat->dirtybit);
 //  fflush(0);
 
   op_dat dat = arg->dat;
@@ -409,7 +409,7 @@ void op_wait_all_seq(op_arg* arg)
 
 
 /*******************************************************************************
-* Monitir/Print the Contents/Original Global Index/Current Index/Rank of an
+* Monitor/Print the Contents/Original Global Index/Current Index/Rank of an
 * element in op_dat
 *******************************************************************************/
 void op_monitor_dat_mpi(op_dat dat, int original_g_index)

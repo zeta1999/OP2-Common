@@ -327,6 +327,15 @@ module OP2_Fortran_Declarations
 
     end subroutine op_put_dat_mpi_c
 
+    ! this function shall be removed after debugging HYDRA (the above ones should be used instead)
+!    subroutine op_fetch_data ( opdat ) BIND(C,name='op_fetch_data')
+
+!      import :: op_dat_core
+
+!      type(op_dat_core) :: opdat
+
+!    end subroutine op_fetch_data
+
    subroutine dumpOpDatFromDevice_c ( data, label, sequenceNumber ) BIND(C,name='dumpOpDatFromDevice')
       use, intrinsic :: ISO_C_BINDING
 
@@ -366,6 +375,13 @@ module OP2_Fortran_Declarations
 
    end subroutine op_mpi_rank_c
 
+   subroutine printFirstDatPosition (data) BIND(C,name='printFirstDatPosition')
+     import :: op_dat_core
+
+     type(op_dat_core) :: data
+
+   end subroutine printFirstDatPosition
+
     subroutine op_diagnostic_output (  ) BIND(C,name='op_diagnostic_output')
       use, intrinsic :: ISO_C_BINDING
     end subroutine
@@ -380,26 +396,21 @@ module OP2_Fortran_Declarations
 
     end subroutine op_print_dat_to_binfile_c
 
-    subroutine printDat_noGather_c (dat) BIND(C,name='printDat_noGather')
-      use, intrinsic :: ISO_C_BINDING
-
-      import :: op_dat_core
-
-      type(op_dat_core) :: dat
-
-    end subroutine printDat_noGather_c
-
     subroutine op_write_hdf5 (fileName) BIND(C,name='op_write_hdf5')
       use, intrinsic :: ISO_C_BINDING
 
       character(len=1,kind=c_char) :: fileName(*)
     end subroutine op_write_hdf5
 
-    logical function isCNullPointer_c (ptr) BIND(C,name='isCNullPointer')
+    logical(kind=c_bool) function isCNullPointer_c (ptr) BIND(C,name='isCNullPointer')
       use, intrinsic :: ISO_C_BINDING
 
-      type(c_ptr) :: ptr
+      type(c_ptr), value :: ptr
     end function isCNullPointer_c
+
+    subroutine op_timing_output () BIND(C,name='op_timing_output')
+
+    end subroutine op_timing_output
 
   end interface
 
@@ -454,14 +465,14 @@ contains
     OP_ID%mapPtr => idPtr
     OP_GBL%mapPtr => gblPtr
 
-#ifdef OP2_WITH_CUDAFOR
+!#ifdef OP2_WITH_CUDAFOR
     ! support for GTX
 
-    setDevReturnVal = cudaSetDevice ( 2 )
-    devPropRetVal = cudaGetDeviceProperties ( deviceProperties, 2 )
+!    setDevReturnVal = cudaSetDevice ( 2 )
+!    devPropRetVal = cudaGetDeviceProperties ( deviceProperties, 2 )
 
-    print *, 'Using: ', deviceProperties%name
-#endif
+!    print *, 'Using: ', deviceProperties%name
+!#endif
 
 
     call op_init_c ( argc, C_NULL_PTR, diags )
@@ -757,7 +768,7 @@ contains
 #ifdef OP2_WITH_CUDAFOR
     if (dat%dataCPtr .eq. C_NULL_PTR) then
 #else
-    if ( isCNullPointer_c (dat%dataCPtr) .eq. .true. ) then
+    if ( isCNullPointer_c (dat%dataCPtr) .eqv. .true. ) then
 #endif
       op_arg_dat = op_arg_dat_null_c (C_NULL_PTR, idx-1, C_NULL_PTR, -1, C_NULL_PTR, access-1)
     else
@@ -784,6 +795,9 @@ contains
     integer(kind=c_int) :: dim
     character(kind=c_char,len=*) :: type
     integer(kind=c_int) :: access
+
+!    dim = dim
+!    type = type
 
     ! warning: access and idx are in FORTRAN style, while the C style is required here
     if ( map%mapPtr%dim .eq. 0 ) then
@@ -919,7 +933,7 @@ contains
     character(kind=c_char,len=5) :: type = C_CHAR_'bool'//C_NULL_CHAR
 
     ! warning: access is in FORTRAN style, while the C style is required here
-    op_arg_gbl_logical = op_arg_gbl_c ( c_loc (dat), dim, type, 1, access-1 )
+    op_arg_gbl_logical = op_arg_gbl_c ( c_loc (dat(1)), dim, type, 1, access-1 )
 
   end function op_arg_gbl_logical
 
@@ -1021,14 +1035,6 @@ contains
     call op_print_dat_to_binfile_c (dat%dataPtr, fileName)
 
   end subroutine op_print_dat_to_binfile
-
-  subroutine printDat_noGather (dat)
-
-    type(op_dat) :: dat
-
-    call printDat_noGather_c (dat%dataPtr)
-
-  end subroutine printDat_noGather
 
   subroutine op_mpi_rank (rank)
 

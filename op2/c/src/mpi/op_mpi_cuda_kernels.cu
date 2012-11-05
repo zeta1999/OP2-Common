@@ -77,6 +77,7 @@ void gather_data_to_buffer(op_arg arg, halo_list exp_exec_list, halo_list exp_no
   int threads = 192;
   int blocks = 1+((exp_exec_list->size-1)/192);
 
+
   if (strstr( arg.dat->type, ":soa")!= NULL) {
 
     int set_size = arg.dat->set->size + arg.dat->set->exec_size + arg.dat->set->nonexec_size;

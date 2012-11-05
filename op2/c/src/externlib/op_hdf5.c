@@ -213,7 +213,7 @@ op_dat op_decl_dat_hdf5(op_set set, int dim, char const *type, char const *file,
   H5Dclose(dset_id);
   if(dat_dim != dim)
   {
-    printf("dat.dim %d in file %s and dim %d do not match\n",dat_dim,file,dim);
+    printf("For dat %s, dat.dim %d in file %s and dim %d do not match\n",name,dat_dim,file,dim);
     exit(2);
   }
 
@@ -324,7 +324,7 @@ op_dat op_decl_dat_hdf5(op_set set, int dim, char const *type, char const *file,
   H5Dclose(dset_id);
   H5Fclose(file_id);
 
-  printf ("dat name = %s, dat size = %d\n", name, dat_size);
+  printf ("dat name = %s, dat size = %zu\n", name, dat_size);
   fflush (stdout);
 
   op_dat new_dat = op_decl_dat_char(set, dim, type, dat_size, data, name );
