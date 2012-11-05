@@ -47,7 +47,7 @@ void gather_data_to_buffer(op_arg arg, halo_list exp_exec_list, halo_list exp_no
   int threads = 192;
   int blocks = 1+((exp_exec_list->size-1)/192);
 
-//  printf ("gather data to buffer, blocks = %d, treads = %d\n", blocks, threads);
+//  printf ("gather data to buffer, data %s, blocks = %d, treads = %d\n", arg.dat->name, blocks, threads);
 //  fflush (0);
 
   export_halo_gather<<<blocks,threads>>>(export_exec_list_d[arg.dat->set->index],

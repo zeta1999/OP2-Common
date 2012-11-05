@@ -10,18 +10,6 @@ extern op_plan * OP_plans;
 
 #define ERR_INDEX -1
 
-void decrement_all_mappings () {
-  for ( int i = 0; i < OP_map_index; i++ )
-    for ( int j = 0; j < OP_map_list[i]->from->size * OP_map_list[i]->dim; j++ )
-      OP_map_list[i]->map[j]--;
-}
-
-void increment_all_mappings () {
-  for ( int i = 0; i < OP_map_index; i++ )
-    for ( int j = 0; j < OP_map_list[i]->from->size * OP_map_list[i]->dim; j++ )
-      OP_map_list[i]->map[j]++;
-}
-
 void op_partition_wrapper (const char* lib_name, const char* lib_routine,
   op_set prime_set, op_map prime_map, op_dat coords) {
 

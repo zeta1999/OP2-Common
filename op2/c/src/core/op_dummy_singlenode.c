@@ -138,3 +138,5 @@ void op_partition(const char* lib_name, const char* lib_routine,
 void op_partition_reverse() {
 }
 
+void op_monitor_dat_mpi(op_dat dat, int original_g_index) {
+}

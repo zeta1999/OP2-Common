@@ -39,6 +39,9 @@
  * written by: Gihan R. Mudalige, (Started 01-03-2011)
  */
 
+#include <sys/types.h>
+#include <unistd.h>
+
 
 #include <op_lib_core.h>
 #include <op_lib_c.h>
@@ -507,6 +510,7 @@ void op_halo_create()
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
   double time;
   double max_time;
+  pid_t mypid;
   op_timers(&cpu_t1, &wall_t1); //timer start for list create
 
   //create new communicator for OP mpi operation
@@ -514,6 +518,15 @@ void op_halo_create()
   MPI_Comm_dup(MPI_COMM_WORLD, &OP_MPI_WORLD);
   MPI_Comm_rank(OP_MPI_WORLD, &my_rank);
   MPI_Comm_size(OP_MPI_WORLD, &comm_size);
+
+  if ( my_rank == 0 ) {
+    mypid = getpid ();
+    printf ("Rank 0 pid = %d\n", mypid);
+  }
+
+//  op_barrier ();
+//  sleep (15);
+//  op_barrier ();
 
   /* Compute global partition range information for each set*/
   int** part_range = (int **)xmalloc(OP_set_index*sizeof(int*));
@@ -1032,7 +1045,7 @@ void op_halo_create()
 
   /*-STEP 9 ---------------- Create MPI send Buffers-----------------------*/
 
-  OP_mpi_buffer_list = (op_mpi_buffer *)xmalloc(OP_dat_index*sizeof(op_mpi_buffer));
+  OP_mpi_buffer_list = (op_mpi_buffer *)xmalloc(OP_dat_index*sizeof(op_mpi_buffer));  
 
   for(int d=0; d<OP_dat_index; d++){//for each data array
     op_dat dat=OP_dat_list[d];
@@ -1045,6 +1058,7 @@ void op_halo_create()
     mpi_buf->buf_exec = (char *)xmalloc((exec_e_list->size)*dat->size);
     mpi_buf->buf_nonexec = (char *)xmalloc((nonexec_e_list->size)*dat->size);
 
+
     halo_list exec_i_list = OP_import_exec_list[dat->set->index];
     halo_list nonexec_i_list = OP_import_nonexec_list[dat->set->index];
 
@@ -1053,12 +1067,26 @@ void op_halo_create()
     mpi_buf->r_req = (MPI_Request *)xmalloc(sizeof(MPI_Request)*
         (exec_i_list->ranks_size + nonexec_i_list->ranks_size));
 
+/*    if ( my_rank == 0 ) {
+      mypid = getpid ();
+      printf ("Rank %d pid = %d, MPI buffer exec for %s is included in pointer %p\n", my_rank, mypid,
+        dat->name, mpi_buf);
+      fflush (stdout);
+      printf ("exec e ranks = %d, nonexec e ranks = %d, exec i ranks = %d, nonexec i ranks = %d\n", exec_e_list->ranks_size, nonexec_e_list->ranks_size, exec_i_list->ranks_size, nonexec_i_list->ranks_size);
+      fflush (stdout);
+    }
+*/
+
     mpi_buf->s_num_req = 0;
     mpi_buf->r_num_req = 0;
     mpi_buf->dat_index = dat->index;
     OP_mpi_buffer_list[dat->index] = mpi_buf;
   }
 
+
+//  op_barrier ();
+//  sleep (20);
+//  op_barrier ();
 
   //set dirty bits of all data arrays to 0
   //for each data array
@@ -2223,6 +2251,7 @@ int op_mpi_halo_exchanges(op_set set, int nargs, op_arg *args) {
   for (int n=0; n<nargs; n++) {
     if(args[n].argtype == OP_ARG_DAT)
     {
+//      printf ("On the cuda side exchanging for %s\n", args[n].dat->name);
       op_exchange_halo(&args[n]);
       //set_dirtybit(&args[n]);
     }
@@ -2246,14 +2275,65 @@ int op_mpi_halo_exchanges_seq(op_set set, int nargs, op_arg *args) {
   for (int n=0; n<nargs; n++) {
     if(args[n].argtype == OP_ARG_DAT)
     {
-      op_exchange_halo_seq(&args[n]);
-//      op_exchange_halo(&args[n]);
+//      op_exchange_halo_seq(&args[n]);
+      op_exchange_halo(&args[n]);
       //set_dirtybit(&args[n]);
     }
     if(args[n].idx != -1 && args[n].acc != OP_READ) size = set->size + set->exec_size;
   }
   return size;
 }
+
+
+/* int op_mpi_halo_exchanges_seq_accu(op_set set, int nargs, op_arg *args) { */
+/*   int size = set->size; */
+
+/*   int direct_flag = 1; */
+  
+/*   //check if this is a direct loop */
+/*   for (int n=0; n<nargs; n++) */
+/*     if(args[n].argtype == OP_ARG_DAT && args[n].idx != -1) */
+/*       direct_flag = 0; */
+  
+/*   if (direct_flag == 1) return size; */
+
+/*   for (int n=0; n<nargs; n++) { */
+/*     if(args[n].argtype == OP_ARG_DAT) */
+/*     { */
+/* //      op_exchange_halo_seq(&args[n]); */
+/*       op_exchange_halo_accu(&args[n]); */
+/*       //set_dirtybit(&args[n]); */
+/*     } */
+/*     if(args[n].idx != -1 && args[n].acc != OP_READ) size = set->size + set->exec_size; */
+/*   } */
+/*   return size; */
+/* } */
+
+/* int op_mpi_halo_exchanges_seq_real(op_set set, int nargs, op_arg *args) { */
+/*   int size = set->size; */
+
+/*   int direct_flag = 1; */
+  
+/*   //check if this is a direct loop */
+/*   for (int n=0; n<nargs; n++) */
+/*     if(args[n].argtype == OP_ARG_DAT && args[n].idx != -1) */
+/*       direct_flag = 0; */
+  
+/*   if (direct_flag == 1) return size; */
+
+/*   for (int n=0; n<nargs; n++) { */
+/*     if(args[n].argtype == OP_ARG_DAT) */
+/*     { */
+/* //      op_exchange_halo_seq(&args[n]); */
+/*       op_exchange_halo_accu(&args[n]); */
+/*       //set_dirtybit(&args[n]); */
+/*     } */
+/*     if(args[n].idx != -1 && args[n].acc != OP_READ) size = set->size + set->exec_size; */
+/*   } */
+/*   return size; */
+/* } */
+
+
 
 void op_mpi_set_dirtybit(int nargs, op_arg *args) {
 
@@ -2273,8 +2353,8 @@ void op_mpi_wait_all(int nargs, op_arg *args) {
 
 void op_mpi_wait_all_seq(int nargs, op_arg *args) {
   for (int n=0; n<nargs; n++) {
-    op_wait_all_seq(&args[n]);
-//    op_wait_all(&args[n]);
+//    op_wait_all_seq(&args[n]);
+    op_wait_all(&args[n]);
   }
 }
 

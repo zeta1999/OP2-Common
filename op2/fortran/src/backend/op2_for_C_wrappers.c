@@ -9,14 +9,18 @@
 #include <string.h>
 
 #include <op_lib_c.h>
-#include <op_mpi_core.h>
+
+
 #ifdef NO_MPI
 
 #else
 #include <mpi.h>
+#include <op_mpi_core.h>
 #endif
 
 #include "../../include/op2_for_C_wrappers.h"
+
+op_kernel * OP_kernels;
 
 /*
  * Small utility for transforming Fortran OP2 access codes into C OP2 access codes
@@ -211,7 +215,7 @@ void dumpOpMap (op_map_core * map, const char * fileName)
   if (outfile == NULL) exit (0);
 
   if ( map != NULL ) {
-    for ( i = 0; i < map->from->size; i++ ) {
+    for ( i = 0; i < map->from->size + map->from->exec_size; i++ ) {
       for ( j = 0; j < map->dim; j++ ) {
         fprintf (outfile, "%d --> %d", i, ((int *) map->map)[i * map->dim + j] );
       }
@@ -276,6 +280,18 @@ void print_type (op_arg * arg)
 
 #ifdef NO_MPI
 
+int op_mpi_size () {
+  return -1;
+}
+
+void op_mpi_rank (int * rank) {
+  (void) rank;
+}
+
+void op_barrier () {
+}
+
+
 #else
 int op_mpi_size () {
   int size;
@@ -313,10 +329,10 @@ void printDat_noGather (op_dat dat) {
       for ( int j = 0; j < dat->dim; j++ ) {
           fprintf (fileptr, "%lf ", ((double *)dat->data)[i*dat->dim+j]);
 //          if ( ((double *)dat->data)[i*dat->dim+j] > 0.0 || ((double *)dat->data)[i*dat->dim+j] < 0.0 ) {
-            if ( rank == 2 ) {
-              printf ("Rank = %d  --> At (local id = %d, el = %d) original global id = %d --> %.12lf\n", rank, i, j, OP_part_list[dat->set->index]->g_index[i], ((double *)dat->data)[i*dat->dim+j]);
-              fflush (0);
-            }
+//            if ( rank == 2 ) {
+//              printf ("Rank = %d  --> At (local id = %d, el = %d) original global id = %d --> %.12lf\n", rank, i, j, OP_part_list[dat->set->index]->g_index[i], ((double *)dat->data)[i*dat->dim+j]);
+//              fflush (0);
+//            }
 //        }
       }
       fprintf (fileptr, "\n");
@@ -329,4 +345,63 @@ void printDat_noGather (op_dat dat) {
 
 bool isCNullPointer (void * ptr) {
   return (ptr == NULL);
+}
+
+
+void printFirstDatPosition (op_dat dat)
+{
+  printf ("Data in position 0 is:\n%lf\n%lf\n%lf\n%lf\n%lf\n%lf\n", 
+    ((double *)dat->data)[0],
+    ((double *)dat->data)[1],
+    ((double *)dat->data)[2],
+    ((double *)dat->data)[3],
+    ((double *)dat->data)[4],
+    ((double *)dat->data)[5]);
+}
+
+
+/*void printFirstDatPosition (op_arg * arg)
+{
+  printf ("Data in position 0 is:\n%lf\n%lf\n%lf\n%lf\n%lf\n%lf\n", 
+    ((double *)arg->data)[0],
+    ((double *)arg->data)[1],
+    ((double *)arg->data)[2],
+    ((double *)arg->data)[3],
+    ((double *)arg->data)[4],
+    ((double *)arg->data)[5]);
+}
+*/
+
+int setKernelTime (int id, char name[], double kernelTime, float transfer, float transfer2) {
+  int nameLen = -1; 
+  char * heapName;
+
+  op_timing_realloc(id);
+
+  /* need to copy the name the first time */
+  if ( OP_kernels[id].count == 0 ) {
+    nameLen = strlen (name);
+    heapName = (char *) calloc (nameLen, sizeof(char));
+    strncpy (heapName, name, nameLen);
+    OP_kernels[id].name = heapName;
+  }
+
+  OP_kernels[id].count += 1;
+  OP_kernels[id].time += kernelTime;
+  OP_kernels[id].transfer += transfer;
+  OP_kernels[id].transfer2 += transfer2;
+
+  return 0;
+}
+
+void decrement_all_mappings () {
+  for ( int i = 0; i < OP_map_index; i++ )
+    for ( int j = 0; j < OP_map_list[i]->from->size * OP_map_list[i]->dim; j++ )
+      OP_map_list[i]->map[j]--;
+}
+
+void increment_all_mappings () {
+  for ( int i = 0; i < OP_map_index; i++ )
+    for ( int j = 0; j < OP_map_list[i]->from->size * OP_map_list[i]->dim; j++ )
+      OP_map_list[i]->map[j]++;
 }

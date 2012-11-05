@@ -35,29 +35,99 @@ OP_LOOP(21) OP_LOOP(22) OP_LOOP(23) OP_LOOP(24) OP_LOOP(25) OP_LOOP(26) OP_LOOP(
 OP_LOOP(31) OP_LOOP(32) OP_LOOP(33) OP_LOOP(34) OP_LOOP(35) OP_LOOP(36) OP_LOOP(37) OP_LOOP(38) OP_LOOP(39) OP_LOOP(40)
 OP_LOOP(41) OP_LOOP(42)
 
- subroutine op_par_loop_6_f_per(kernel, set, &
- arg1 &
-, arg2 &
-, arg3 &
-, arg4 &
-, arg5 &
-, arg6 &
- ) BIND(C,name="op_par_loop_6_per") 
- use, intrinsic :: ISO_C_BINDING 
- import :: op_set_core, op_arg 
-interface 
- subroutine kernel () BIND(C) 
- end subroutine kernel 
-end interface 
- type(op_set_core) :: set 
- type(op_arg) :: arg1 
- type(op_arg) :: arg2 
- type(op_arg) :: arg3 
- type(op_arg) :: arg4 
- type(op_arg) :: arg5 
- type(op_arg) :: arg6 
+!  subroutine op_par_loop_2_f_real(kernel, set, &
+!  arg1 &
+! , arg2 &
+!  ) BIND(C,name="op_par_loop_2_real") 
+!  use, intrinsic :: ISO_C_BINDING 
+!  import :: op_set_core, op_arg 
+! interface 
+!  subroutine kernel () BIND(C) 
+!  end subroutine kernel 
+! end interface 
+!  type(op_set_core) :: set 
+!  type(op_arg) :: arg1 
+!  type(op_arg) :: arg2 
  
-end subroutine op_par_loop_6_f_per
+! end subroutine op_par_loop_2_f_real
+
+
+
+!  subroutine op_par_loop_6_f_per(kernel, set, &
+!  arg1 &
+! , arg2 &
+! , arg3 &
+! , arg4 &
+! , arg5 &
+! , arg6 &
+!  ) BIND(C,name="op_par_loop_6_per") 
+!  use, intrinsic :: ISO_C_BINDING 
+!  import :: op_set_core, op_arg 
+! interface 
+!  subroutine kernel () BIND(C) 
+!  end subroutine kernel 
+! end interface 
+!  type(op_set_core) :: set 
+!  type(op_arg) :: arg1 
+!  type(op_arg) :: arg2 
+!  type(op_arg) :: arg3 
+!  type(op_arg) :: arg4 
+!  type(op_arg) :: arg5 
+!  type(op_arg) :: arg6 
+ 
+! end subroutine op_par_loop_6_f_per
+
+
+!  subroutine op_par_loop_19_accu_f(kernel, set, &
+!  arg1 &
+! , arg2 &
+! , arg3 &
+! , arg4 &
+! , arg5 &
+! , arg6 &
+! , arg7 &
+! , arg8 &
+! , arg9 &
+! , arg10 &
+! , arg11 &
+! , arg12 &
+! , arg13 &
+! , arg14 &
+! , arg15 &
+! , arg16 &
+! , arg17 &
+! , arg18 &
+! , arg19 &
+!  ) BIND(C,name="op_par_loop_19_accu") 
+!  use, intrinsic :: ISO_C_BINDING 
+!  import :: op_set_core, op_arg 
+! interface 
+!  subroutine kernel () BIND(C) 
+!  end subroutine kernel 
+! end interface 
+!  type(op_set_core) :: set 
+!  type(op_arg) :: arg1 
+!  type(op_arg) :: arg2 
+!  type(op_arg) :: arg3 
+!  type(op_arg) :: arg4 
+!  type(op_arg) :: arg5 
+!  type(op_arg) :: arg6 
+!  type(op_arg) :: arg7 
+!  type(op_arg) :: arg8 
+!  type(op_arg) :: arg9 
+!  type(op_arg) :: arg10 
+!  type(op_arg) :: arg11 
+!  type(op_arg) :: arg12 
+!  type(op_arg) :: arg13 
+!  type(op_arg) :: arg14 
+!  type(op_arg) :: arg15 
+!  type(op_arg) :: arg16 
+!  type(op_arg) :: arg17 
+!  type(op_arg) :: arg18 
+!  type(op_arg) :: arg19 
+ 
+! end subroutine op_par_loop_19_accu_f 
+
 
 
 end interface
@@ -85,32 +155,117 @@ OP_LOOP2(21) OP_LOOP2(22) OP_LOOP2(23) OP_LOOP2(24) OP_LOOP2(25) OP_LOOP2(26) OP
 OP_LOOP2(31) OP_LOOP2(32) OP_LOOP2(33) OP_LOOP2(34) OP_LOOP2(35) OP_LOOP2(36) OP_LOOP2(37) OP_LOOP2(38) OP_LOOP2(39) OP_LOOP2(40)
 OP_LOOP2(41) OP_LOOP2(42)
 
- subroutine op_par_loop_6_per(kernel, set, &
- arg1 &
-, arg2 &
-, arg3 &
-, arg4 &
-, arg5 &
-, arg6 &
- ) 
- external kernel 
- type(op_set) :: set 
- type(op_arg) :: arg1 
- type(op_arg) :: arg2 
- type(op_arg) :: arg3 
- type(op_arg) :: arg4 
- type(op_arg) :: arg5 
- type(op_arg) :: arg6 
+!  subroutine op_par_loop_6_per(kernel, set, &
+!  arg1 &
+! , arg2 &
+! , arg3 &
+! , arg4 &
+! , arg5 &
+! , arg6 &
+!  ) 
+!  external kernel 
+!  type(op_set) :: set 
+!  type(op_arg) :: arg1 
+!  type(op_arg) :: arg2 
+!  type(op_arg) :: arg3 
+!  type(op_arg) :: arg4 
+!  type(op_arg) :: arg5 
+!  type(op_arg) :: arg6 
  
- call op_par_loop_6_f_per(kernel, set%setPtr, &
- arg1 &
-, arg2 &
-, arg3 &
-, arg4 &
-, arg5 &
-, arg6 &
- ) 
-end subroutine op_par_loop_6_per
+!  call op_par_loop_6_f_per(kernel, set%setPtr, &
+!  arg1 &
+! , arg2 &
+! , arg3 &
+! , arg4 &
+! , arg5 &
+! , arg6 &
+!  ) 
+! end subroutine op_par_loop_6_per
+
+
+!  subroutine op_par_loop_19_accu(kernel, set, &
+!  arg1 &
+! , arg2 &
+! , arg3 &
+! , arg4 &
+! , arg5 &
+! , arg6 &
+! , arg7 &
+! , arg8 &
+! , arg9 &
+! , arg10 &
+! , arg11 &
+! , arg12 &
+! , arg13 &
+! , arg14 &
+! , arg15 &
+! , arg16 &
+! , arg17 &
+! , arg18 &
+! , arg19 &
+!  ) 
+!  external kernel 
+!  type(op_set) :: set 
+!  type(op_arg) :: arg1 
+!  type(op_arg) :: arg2 
+!  type(op_arg) :: arg3 
+!  type(op_arg) :: arg4 
+!  type(op_arg) :: arg5 
+!  type(op_arg) :: arg6 
+!  type(op_arg) :: arg7 
+!  type(op_arg) :: arg8 
+!  type(op_arg) :: arg9 
+!  type(op_arg) :: arg10 
+!  type(op_arg) :: arg11 
+!  type(op_arg) :: arg12 
+!  type(op_arg) :: arg13 
+!  type(op_arg) :: arg14 
+!  type(op_arg) :: arg15 
+!  type(op_arg) :: arg16 
+!  type(op_arg) :: arg17 
+!  type(op_arg) :: arg18 
+!  type(op_arg) :: arg19 
+ 
+!  call op_par_loop_19_accu_f(kernel, set%setPtr, &
+!  arg1 &
+! , arg2 &
+! , arg3 &
+! , arg4 &
+! , arg5 &
+! , arg6 &
+! , arg7 &
+! , arg8 &
+! , arg9 &
+! , arg10 &
+! , arg11 &
+! , arg12 &
+! , arg13 &
+! , arg14 &
+! , arg15 &
+! , arg16 &
+! , arg17 &
+! , arg18 &
+! , arg19 &
+!  ) 
+! end subroutine op_par_loop_19_accu
+
+
+!  subroutine op_par_loop_2_real(kernel, set, &
+!  arg1 &
+! , arg2 &
+!  ) 
+!  external kernel 
+!  type(op_set) :: set 
+!  type(op_arg) :: arg1 
+!  type(op_arg) :: arg2 
+ 
+!  call op_par_loop_2_f_real(kernel, set%setPtr, &
+!  arg1 &
+! , arg2 &
+!  ) 
+! end subroutine op_par_loop_2_real
+
+
 
 end module OP2_Fortran_Reference
 
