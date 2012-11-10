@@ -53,6 +53,7 @@ int OP_set_index = 0, OP_set_max = 0,
     OP_dat_index = 0,
     OP_kern_max = 0;
 
+std::vector<op_kernel_descriptor> kernel_list;
 /*
  * Lists of sets, maps and dats declared in OP2 programs
  */

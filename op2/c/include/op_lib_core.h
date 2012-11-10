@@ -47,6 +47,7 @@
 #include <math.h>
 #include <stdarg.h>
 #include <sys/queue.h> //contains double linked list implementation
+#include <vector>
 
 /*
  * essential typedefs
@@ -73,7 +74,6 @@ typedef unsigned long long ull;
 extern int OP_diags;
 
 extern int OP_cache_line_size;
-
 
 /*
  * enum list for op_par_loop
@@ -160,6 +160,15 @@ typedef struct
   float       transfer2;/* bytes of data transfer (total) */
 } op_kernel;
 
+typedef struct op_kernel_descriptor
+{
+  char const *name;     /* name of kernel */
+  int        *exec_list;/* list of set elements to execute */
+  int         exec_num; /* number of elements to execute */
+  op_arg     *args;     /* list of arguments to pass in */
+  op_set      set;      /* set to execute on */
+  void (*function)(op_kernel_descriptor *desc); /* Function pointer to a wrapper to be called */
+} op_kernel_descriptor;
 
 //struct definition for a double linked list entry to hold an op_dat
 struct op_dat_entry_core{
@@ -167,6 +176,8 @@ struct op_dat_entry_core{
   TAILQ_ENTRY(op_dat_entry_core) entries; /*holds pointers to next and
                                           previous entries in the list*/
 };
+
+extern std::vector<op_kernel_descriptor> kernel_list;
 
 typedef struct op_dat_entry_core op_dat_entry;
 
