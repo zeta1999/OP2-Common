@@ -38,6 +38,7 @@
  */
 
 #include "op_rt_support.h"
+#include <algorithm>
 
 /*
  * Global variables
@@ -48,6 +49,9 @@ op_plan * OP_plans;
 
 extern op_kernel * OP_kernels;
 extern int OP_kern_max;
+
+extern Double_linked_list OP_dat_list;
+extern int OP_dat_index;
 
 void
 op_rt_exit (  )
@@ -963,62 +967,190 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size,
   return &( OP_plans[ip] );
 }
 
+typedef struct
+{
+  op_dat dataset;
+  std::vector<int> elements;
+  int size;
+  int last_update;
+} op_dataset_dependency;
+
+std::vector<op_dataset_dependency> dependencies;
+void compute_dependencies(op_kernel_descriptor *kernel, int index);
+
 void op_end_superloop ( op_subset *subset, op_dat data) {
   if (data->set != subset->set) {
     printf("subset must be a subset of the set the data is on\n");
     exit(-1);
   }
-  op_kernel_descriptor *last_kernel = &kernel_list[kernel_list.size()-1];
-  last_kernel->subset = (op_subest *)malloc(sizeof(op_subset));
-  int indirect = 0;
-  std::vector<int> ind_indices(0); //TODO: vector maps support
-  op_map ind_map = NULL;
-  
-  //look for the arg that outputs "data", decide if indirect
-  for (int i = 0; i < last_kernel->nargs; i++) {
-    if (last_kernel->args[i].dat == data) {
-      if (last_kernel->args[i].map == -1)
-        break; //cannot have more than one arguments (if any of them are direct) using the same dataset
-      else {
-        indirect = 1;
-        ind_map = last_kernel->args[i].map;
-        ind_indices.push_back(last_kernel->args[i].index);
-      }
+  //Set up initial active dataset
+  //TODO: more than one output dataset
+  dependencies.clear();
+  dependencies.resize(OP_dat_index);
+  op_dat_entry *item;
+  int i = 0;
+  TAILQ_FOREACH(item, &OP_dat_list, entries)
+  {
+    dependencies[i].dataset = item->dat;
+    dependencies[i].elements.resize(item->dat->set->size);
+    if (item->dat == data) {
+      dependencies[i].last_update = 0;
+      dependencies[i].elements.resize(item->dat->set->size);
+      dependencies[i].size = subset->size;
+      std::copy(subset->elements, subset->elements+subset->size, dependencies[i].elements.begin());
+    } else {
+      dependencies[i].size = 0;
+      dependencies[i].last_update = -1;
     }
+    i++;
   }
   
-  if (indirect) { //if indirect
-    std::vector<int> set_elements(0);
-    op_map rev_map = ind_map->reverse_map; //determine who in the current loop's execution set may contribute
-    for (int i = 0; i < subset->size; i++) { //for each element in the output subset
-      int element = subset->elements[i];
-      int *from_elements;
-      int count;
-      if (rev_map.isSimple) {
-        from_elements = rev_map->map[rev_map->dim * element];
-        count = rev_map->dim;
-      } else {
-        from_elements = rev_map->map[rev_map->row_offsets[element]];
-        count = rev_map->row_offsets[element+1] - rev_map->row_offsets[element];
-      }
-      //find out who really does (some indices of the map may not be used
-      for (k = 0; k < count; k++)
-        for (int j = 0; j < ind_indices.size(); j++)
-          if (ind_map->map[from_elements[k]*ind_map->dim + ind_indices[j]] == element) { //TODO: non-simple forward map support 
-            set_elements.push_back(from_elements[k]);
-            break;
-          }
+  for (unsigned int i = 0; i < kernel_list.size(); i++) {
+    compute_dependencies(&kernel_list[kernel_list.size()-1-i], (int)i+1);
+  }
+}
+
+//first, determine what the execution set has to be so that all the already existing data dependencies are computed (OP_WRITE, OP_RW, OP_INC)
+//what if we write something that's not an output?? - I think solved by getting ignored (dependencies[idx].size will be 0, nothing will be merged in)
+//second, add further dependencies based on what is read (OP_RW, OP_INC, OP_READ)
+void compute_dependencies(op_kernel_descriptor *kernel, int index) {
+  kernel->subset = (op_subset *)malloc(sizeof(op_subset));
+  kernel->subset->set = kernel->set;
+  //TODO reuse
+  std::vector<int> execution_set(kernel->set->size);
+  int execution_size = 0;
+  //phase one, determine execution set based on existing data dependencies
+  for (unsigned int dat_index = 0; dat_index < dependencies.size(); dat_index++) {
+    op_dat data = dependencies[dat_index].dataset;
+    //find data in list of arguments
+    int m = 0;
+    while (m < kernel->nargs) {
+      if (kernel->args[m].dat == data) break;
+      m++;
     }
-    // at this point we have a big unordered list with duplicates
-    std::sort(set_elements.begin(), set_elements.end());  //sort
-    int num_unique = std::unique(set_elements.begin(), set_elements.end()) - set_elements.begin(); //get rid of duplicates
-    last_kernel->subset.set = data->set;
-    last_kernel->subset.size = num_unique;
-    last_kernel->subset.elements = (int *)malloc(num_unique * sizeof(int));
-    std::copy(set_elements.begin(), set_elements.begin() + num_unique, last_kernel->subset.elements);
-  } else { //if the output is directly computed by this loop, then we only need to execute the required subset
-    last_kernel->subset.set = data->set;
-    last_kernel->subset.size = subset->size;
-    last_kernel->subset.elements = subset->elements;
+    //if not found or only read then ignore
+    if (m == kernel->nargs || kernel->args[m].acc == OP_READ || kernel->args[m].argtype==OP_ARG_GBL) continue; //TODO: handle OP_ARG_GBL
+
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    //TODO: check if direct and already computed exec set
+    //or if indirect and already computed dependencies for that set
+    //still have to mark all the datasets as dependency!!
+    
+    // but then, they might be different size/subset - still need to compute for each one (I think)
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    //see if arg.dat is indirectly accessed
+    int indirect = (kernel->args[m].map != NULL);
+    
+    //if so, find all the indices of the map used to access the dat
+    std::vector<int> ind_indices(0);
+    op_map ind_map = NULL;
+    if (indirect) {
+      ind_map = kernel->args[m].map;
+      if (kernel->args[m].idx < 0) for (int i = 0; i < -1*kernel->args[m].idx; i++) ind_indices.push_back(i); //Vector maps support
+      else {
+        //Look for other args with the same dat, register their idx
+        ind_indices.push_back(kernel->args[m].idx);
+        for (int i = m+1; i < kernel->nargs; i++)
+          if (kernel->args[i].dat == data) ind_indices.push_back(kernel->args[i].idx);
+      }
+    }
+    
+    //find execution set elements required to compute values of the dataset
+    if (indirect) { //if indirect
+      std::vector<int> set_elements(0);
+      op_map rev_map = ind_map->reverse_map; //determine who in the current loop's execution set may contribute
+      for (int i = 0; i < dependencies[dat_index].size; i++) { //for each element in the output subset
+        int element = dependencies[dat_index].elements[i];
+        int *from_elements;
+        int count;
+        if (rev_map->isSimple) {
+          from_elements = &rev_map->map[rev_map->dim * element];
+          count = rev_map->dim;
+        } else {
+          from_elements = &rev_map->map[rev_map->row_offsets[element]];
+          count = rev_map->row_offsets[element+1] - rev_map->row_offsets[element];
+        }
+        //find out who really does (some indices of the map may not be used
+        for (int k = 0; k < count; k++) {
+          for (unsigned int j = 0; j < ind_indices.size(); j++)
+            if (ind_map->map[from_elements[k]*ind_map->dim + ind_indices[j]] == element) { //TODO: non-simple forward map support
+              set_elements.push_back(from_elements[k]);
+              break;
+            }
+        }
+      }
+      // at this point we have a big unordered list with duplicates
+      std::sort(set_elements.begin(), set_elements.end());  //sort
+      int num_unique = std::unique(set_elements.begin(), set_elements.end()) - set_elements.begin(); //get rid of duplicates
+      std::vector<int> temp(execution_set.begin(), execution_set.begin()+execution_size);
+      execution_size = std::set_union(temp.begin(), temp.end(), set_elements.begin(), set_elements.begin()+num_unique, execution_set.begin()) - execution_set.begin();
+    } else { //if the output is directly computed by this loop, then we only need to execute the required subset - merge it into existing
+      std::vector<int> temp(execution_set.begin(), execution_set.begin()+execution_size);
+      execution_size = std::set_union(temp.begin(), temp.end(), dependencies[dat_index].elements.begin(), dependencies[dat_index].elements.begin()+dependencies[dat_index].size, execution_set.begin()) - execution_set.begin();
+    }
+  }
+  kernel->subset->size = execution_size;
+  kernel->subset->elements = (int *)malloc(execution_size * sizeof(int));
+  std::copy(execution_set.begin(), execution_set.begin() + execution_size, kernel->subset->elements);
+  
+  //phase two - based on the execution set update data dependencies
+  //TODO: merge some of this with first phase?
+  for (int arg = 0; arg < kernel->nargs; arg++) {
+    if (kernel->args[arg].argtype==OP_ARG_GBL) continue;
+    op_dat data = kernel->args[arg].dat;
+    //index of data in dependencies[]
+    if (dependencies[data->index].dataset != data) {printf("ERROR - dataset index doesn't match element in dependencies[]\n"); exit(-1);}
+    //if OP_WRITE or already processed, skip
+    if (kernel->args[arg].acc == OP_WRITE || dependencies[data->index].last_update == index) continue;
+    
+    //mark it as processed (in this step)
+    dependencies[data->index].last_update = index;
+    
+    //see if arg.dat is indirectly accessed
+    int indirect = (kernel->args[arg].map != NULL);
+    //if so, find all the indices of the map used to access the dat
+    std::vector<int> ind_indices(0);
+    op_map ind_map = NULL;
+    if (indirect) {
+      ind_map = kernel->args[arg].map;
+      if (kernel->args[arg].idx < 0) for (int i = 0; i < -1*kernel->args[arg].idx; i++) ind_indices.push_back(i); //Vector maps support
+      else {
+        //Look for other args with the same dat, register their idx
+        ind_indices.push_back(kernel->args[arg].idx);
+        for (int i = arg+1; i < kernel->nargs; i++)
+          if (kernel->args[i].dat == data) ind_indices.push_back(kernel->args[i].idx);
+      }
+    }
+    
+    //find dataset elements required to execute the current execution subset
+    if (indirect) { //if indirect
+      std::vector<int> set_elements(0);
+      for (int i = 0; i < kernel->subset->size; i++) { //for each element in the output subset
+        int element = kernel->subset->elements[i];
+        int *from_elements;
+        if (ind_map->isSimple) {
+          from_elements = &ind_map->map[ind_map->dim * element];
+        } else {
+          printf("ERROR: op_arg's map cannot be non-simple\n"); //TODO: non-simple forward map support
+          exit(-1);
+//          from_elements = rev_map->map[rev_map->row_offsets[element]];
+//          count = rev_map->row_offsets[element+1] - rev_map->row_offsets[element];
+        }
+        //find out who really does (some indices of the map may not be used
+        for (unsigned int j = 0; j < ind_indices.size(); j++)
+            set_elements.push_back(from_elements[j]);
+      }
+      // at this point we have a big unordered list with duplicates
+      std::sort(set_elements.begin(), set_elements.end());  //sort
+      int num_unique = std::unique(set_elements.begin(), set_elements.end()) - set_elements.begin(); //get rid of duplicates
+      std::vector<int> temp(dependencies[data->index].elements.begin(), dependencies[data->index].elements.begin()+dependencies[data->index].size);
+      dependencies[data->index].size = std::set_union(temp.begin(), temp.end(), set_elements.begin(), set_elements.begin()+num_unique, dependencies[data->index].elements.begin()) - dependencies[data->index].elements.begin();
+      //TODO: merge this into other datasets accessed by the same mapping too
+    } else { //if the dependent dataset is directly accessed by this loop, then we only need to add the execution subset - merge it into existing
+      std::vector<int> temp(dependencies[data->index].elements.begin(), dependencies[data->index].elements.begin()+dependencies[data->index].size);
+      dependencies[data->index].size = std::set_union(temp.begin(), temp.end(), kernel->subset->elements, kernel->subset->elements+kernel->subset->size, dependencies[data->index].elements.begin()) - dependencies[data->index].elements.begin();
+      //TODO: merge this into other directly accessed datasets too
+    }
   }
 }
