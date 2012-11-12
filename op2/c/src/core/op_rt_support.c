@@ -963,3 +963,62 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size,
   return &( OP_plans[ip] );
 }
 
+void op_end_superloop ( op_subset *subset, op_dat data) {
+  if (data->set != subset->set) {
+    printf("subset must be a subset of the set the data is on\n");
+    exit(-1);
+  }
+  op_kernel_descriptor *last_kernel = &kernel_list[kernel_list.size()-1];
+  last_kernel->subset = (op_subest *)malloc(sizeof(op_subset));
+  int indirect = 0;
+  std::vector<int> ind_indices(0); //TODO: vector maps support
+  op_map ind_map = NULL;
+  
+  //look for the arg that outputs "data", decide if indirect
+  for (int i = 0; i < last_kernel->nargs; i++) {
+    if (last_kernel->args[i].dat == data) {
+      if (last_kernel->args[i].map == -1)
+        break; //cannot have more than one arguments (if any of them are direct) using the same dataset
+      else {
+        indirect = 1;
+        ind_map = last_kernel->args[i].map;
+        ind_indices.push_back(last_kernel->args[i].index);
+      }
+    }
+  }
+  
+  if (indirect) { //if indirect
+    std::vector<int> set_elements(0);
+    op_map rev_map = ind_map->reverse_map; //determine who in the current loop's execution set may contribute
+    for (int i = 0; i < subset->size; i++) { //for each element in the output subset
+      int element = subset->elements[i];
+      int *from_elements;
+      int count;
+      if (rev_map.isSimple) {
+        from_elements = rev_map->map[rev_map->dim * element];
+        count = rev_map->dim;
+      } else {
+        from_elements = rev_map->map[rev_map->row_offsets[element]];
+        count = rev_map->row_offsets[element+1] - rev_map->row_offsets[element];
+      }
+      //find out who really does (some indices of the map may not be used
+      for (k = 0; k < count; k++)
+        for (int j = 0; j < ind_indices.size(); j++)
+          if (ind_map->map[from_elements[k]*ind_map->dim + ind_indices[j]] == element) { //TODO: non-simple forward map support 
+            set_elements.push_back(from_elements[k]);
+            break;
+          }
+    }
+    // at this point we have a big unordered list with duplicates
+    std::sort(set_elements.begin(), set_elements.end());  //sort
+    int num_unique = std::unique(set_elements.begin(), set_elements.end()) - set_elements.begin(); //get rid of duplicates
+    last_kernel->subset.set = data->set;
+    last_kernel->subset.size = num_unique;
+    last_kernel->subset.elements = (int *)malloc(num_unique * sizeof(int));
+    std::copy(set_elements.begin(), set_elements.begin() + num_unique, last_kernel->subset.elements);
+  } else { //if the output is directly computed by this loop, then we only need to execute the required subset
+    last_kernel->subset.set = data->set;
+    last_kernel->subset.size = subset->size;
+    last_kernel->subset.elements = subset->elements;
+  }
+}

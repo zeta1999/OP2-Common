@@ -309,7 +309,14 @@ int main(int argc, char **argv)
     if (iter%100 == 0)
       op_printf(" %d  %10.5e \n",iter,rms);
   }
-
+  
+  int index = 0;
+  op_subset need;
+  need.set = cells;
+  need.size = 1;
+  need.elements = &index;
+  op_end_superloop(&need);
+  
   printf("size %d\n", (int)kernel_list.size());
   int i = 0;
   while ( i < (int)kernel_list.size()) {

@@ -100,7 +100,7 @@ typedef struct
 
 typedef op_set_core * op_set;
 
-typedef struct
+typedef struct op_map_core
 {
   int         index;  /* index */
   op_set      from,   /* set pointed from */
@@ -109,6 +109,9 @@ typedef struct
              *map;    /* array defining pointer */
   char const *name;   /* name of pointer */
   int         user_managed; /* indicates whether the user is managing memory */
+  op_map_core *reverse_map; /* pointer to a reverse map */
+  int         isSimple;     /* flag to indicate if map is simple (fixed dimension) or not */
+  int        *row_offsets;  /* in case of non-simple maps, offsets to every element */
 } op_map_core;
 
 typedef op_map_core * op_map;
@@ -160,12 +163,19 @@ typedef struct
   float       transfer2;/* bytes of data transfer (total) */
 } op_kernel;
 
+typedef struct
+{
+  op_set      set;     /* superset */
+  int         size;    /* number of elements */
+  int        *elements; /* list of elements */
+} op_subset;
+
 typedef struct op_kernel_descriptor
 {
   char const *name;     /* name of kernel */
-  int        *exec_list;/* list of set elements to execute */
-  int         exec_num; /* number of elements to execute */
+  op_subset  *subset;   /* set of elements to execute */
   op_arg     *args;     /* list of arguments to pass in */
+  int         nargs;    /* number of arguments */
   op_set      set;      /* set to execute on */
   void (*function)(op_kernel_descriptor *desc); /* Function pointer to a wrapper to be called */
 } op_kernel_descriptor;
@@ -293,6 +303,12 @@ void op_mpi_perf_comms(int k_i, int nargs, op_arg *args);
 int compare_sets(op_set set1, op_set set2);
 op_dat search_dat(op_set set, int dim, char const * type, int size, char const * name);
 
+/*******************************************************************************
+ * Tiling utility functions
+ *******************************************************************************/
+
+int is_map_reverse(op_map a, op_map b);
+  
 #ifdef __cplusplus
 }
 #endif

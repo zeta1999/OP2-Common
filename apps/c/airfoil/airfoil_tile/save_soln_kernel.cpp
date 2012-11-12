@@ -101,6 +101,7 @@ void op_par_loop_save_soln_enqueue(char const *name, op_set set,
   op_kernel_descriptor kern;
   kern.name = name;
   kern.set = set;
+  kern.nargs = 2;
   kern.args = (op_arg *)malloc(2*sizeof(op_arg));
   kern.args[0] = arg0;
   kern.args[1] = arg1;

@@ -187,6 +187,7 @@ void op_par_loop_adt_calc_enqueue(char const *name, op_set set,
   op_kernel_descriptor kern;
   kern.name = name;
   kern.set = set;
+  kern.nargs = 6;
   kern.args = (op_arg *)malloc(6*sizeof(op_arg));
   kern.args[0] = arg0;
   kern.args[1] = arg1;

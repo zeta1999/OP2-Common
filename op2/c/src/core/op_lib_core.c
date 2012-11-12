@@ -37,7 +37,7 @@
 
 #include <sys/time.h>
 #include "op_lib_core.h"
-
+#include <algorithm>
 /*
  * OP2 global state variables
  */
@@ -240,7 +240,21 @@ op_decl_map_core ( op_set from, op_set to, int dim, int * imap, char const * nam
   map->map = imap;
   map->name = copy_str( name );
   map->user_managed = 1;
-
+  map->isSimple = 1;
+  map->reverse_map = NULL;
+  map->row_offsets = NULL;
+  for (int j = 0; j < OP_map_index; j++) {
+    if (is_map_reverse(map, OP_map_list[j])) {
+      map->reverse_map = OP_map_list[j];
+      //just for sanity
+      if (OP_map_list[j]->reverse_map != NULL) {
+        printf("WARNING: map %s had an inverse, skip this one (%s)\n", OP_map_list[j]->name, name);
+      } else {
+        OP_map_list[j]->reverse_map = map;
+      }
+    }
+  }
+  
   OP_map_list[OP_map_index++] = map;
 
   return map;
@@ -366,6 +380,7 @@ op_exit_core (  )
     if (!OP_map_list[i]->user_managed)
       free ( OP_map_list[i]->map );
     free ( (char*)OP_map_list[i]->name );
+    if (!OP_map_list[i]->isSimple) free(OP_map_list[i]->row_offsets);
     free ( OP_map_list[i] );
   }
   free ( OP_map_list );
@@ -691,3 +706,135 @@ op_dump_dat ( op_dat data )
   fflush (stdout);
 }
 
+int is_map_reverse(op_map a, op_map b) {
+  //simple check: to/from match
+  if (a->to != b->from || a->from != b->to) return 0;
+  //simple check: size
+  int size_a = a->isSimple ? a->from->size * a->dim : a->row_offsets[a->from->size];
+  int size_b = b->isSimple ? b->from->size * b->dim : b->row_offsets[b->from->size];
+  if (size_a != size_b) return 0;
+  
+  //exhaustive check: for each edge in a find edge back in b
+  for (int n = 0; n < a->from->size; n++) {
+    if (a->isSimple) {
+      for (int d = 0; d < a->dim; d++) {
+        int element = a->map[n*a->dim+d];
+        int found = 0;
+        if (b->isSimple) {
+          for (int d2 = 0; d2 < b->dim; d2++)
+            if (b->map[element*b->dim+d2] == n) {found = 1; break;}
+          if (!found) return 0;
+        } else {
+          for (int d2 = b->row_offsets[element]; d2 < b->row_offsets[element+1]; d2++)
+            if (b->map[b->row_offsets[element]+d2] == n)  {found = 1; break;}
+          if (!found) return 0;
+        }
+      }
+    } else {
+      for (int d = a->row_offsets[n]; d < a->row_offsets[n+1]; d++) {
+        int element = a->map[a->row_offsets[n]+d];
+        int found = 0;
+        if (b->isSimple) {
+          for (int d2 = 0; d2 < b->dim; d2++)
+            if (b->map[element*b->dim+d2] == n) {found = 1; break;}
+          if (!found) return 0;
+        } else {
+          for (int d2 = b->row_offsets[element]; d2 < b->row_offsets[element+1]; d2++)
+            if (b->map[b->row_offsets[element]+d2] == n)  {found = 1; break;}
+          if (!found) return 0;
+        }
+      }
+    }
+  }
+  return 1;
+}
+
+typedef struct
+{
+  int key;
+  int value;
+} kv_sort;
+
+bool kv_sort_comp(const kv_sort i, const kv_sort j) {return i.key < j.key;}
+
+void generate_inverse_maps() {
+  int i = 0;
+  while (i < OP_map_index) {
+    if (OP_map_list[i]->reverse_map == NULL) {
+      op_map from_map = OP_map_list[i];
+      if (!from_map->isSimple) {
+        printf("No reverse map computation for dynamic maps implemented\n");
+        exit(-1);
+      }
+      if ( OP_map_index == OP_map_max )
+      {
+        OP_map_max += 10;
+        OP_map_list = ( op_map * ) realloc ( OP_map_list, OP_map_max * sizeof ( op_map ) );
+        
+        if ( OP_map_list == NULL )
+        {
+          printf ( " op_decl_map error -- error reallocating memory\n" );
+          exit ( -1 );
+        }
+      }
+      
+      //set up basics
+      op_map map = ( op_map ) malloc ( sizeof ( op_map_core ) );
+      map->index = OP_map_index;
+      map->from = from_map->to;
+      map->to = from_map->from;
+      char *name = (char *) calloc ( strlen( from_map->name ) + 5, sizeof ( char ) );
+      sprintf(name, "%s_rev", from_map->name);
+      map->name = name;
+      map->user_managed = 0;
+      map->reverse_map = from_map;
+      from_map->reverse_map = map;
+      
+      //allocate memory
+      map->map = (int *)malloc(from_map->from->size * from_map->dim * sizeof(int));
+      map->row_offsets = (int *)malloc(map->from->size * sizeof(int));
+      
+      //compute reverse map
+      std::vector<kv_sort> temp(from_map->from->size * from_map->dim);
+      for (unsigned int j = 0; j < temp.size(); j++) {
+        temp[j].value = j/from_map->dim;
+        temp[j].key = from_map->map[j];
+      }
+      std::sort(temp.begin(), temp.end(), kv_sort_comp);
+      
+      //populate row_offsets
+      map->map[0] = temp[0].value;
+      map->row_offsets[0] = 0;
+      for (unsigned int j = 1; j < temp.size(); j++) {
+        map->map[j] = temp[j].value;
+        if (temp[j].key != temp[j-1].key) {
+          //for maps that are not onto (bijective) there will be empty elements
+          for (int k = temp[j-1].key+1; k < temp[j].key; k++)  map->row_offsets[k] = j;
+          map->row_offsets[temp[j].key] = j;
+        }
+      }
+      
+      //see if map is simple
+      map->isSimple = 1;
+      map->dim = map->row_offsets[1];
+      for (int j = 2; j < map->from->size; j++) {
+        if (map->row_offsets[j]-map->row_offsets[j-1] != map->dim) {
+          map->isSimple = 0;
+          map->dim = 0xFFFFFFFF; //make sure we get nice segfaults if we try to use this
+          break;
+        }
+      }
+      if (map->isSimple) {
+        free(map->row_offsets); //we don't need it, free it up
+        map->row_offsets = NULL;
+      }
+      
+      OP_map_list[OP_map_index++] = map;
+      
+      //sanity check
+      is_map_reverse(map, OP_map_list[i]);
+      
+    }
+    i++;
+  }
+}
