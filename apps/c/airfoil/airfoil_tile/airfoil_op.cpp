@@ -248,7 +248,7 @@ int main(int argc, char **argv)
 
   // main time-marching loop
 
-  niter = 1000;
+  niter = 1;
 
   for(int iter=1; iter<=niter; iter++) {
 
@@ -338,7 +338,11 @@ int main(int argc, char **argv)
     if (i/9%100 == 0)
       op_printf(" %d  %10.5e \n",i/9,rms);
   }
-
+  for (int i = 0; i < need.size; i++) {
+    double *data = (double *)p_q->data;
+    data = &data[p_q->dim * need.elements[i]];
+    printf("Set element %d value %g %g %g %g\n", need.elements[i], data[0], data[1], data[2], data[3]);
+  }
   op_timers(&cpu_t2, &wall_t2);
   op_timing_output();
   op_printf("Max total runtime = \n%f\n",wall_t2-wall_t1);
