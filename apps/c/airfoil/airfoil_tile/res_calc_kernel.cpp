@@ -169,78 +169,39 @@ void op_par_loop_res_calc(op_kernel_descriptor *desc ){
   int    inds[8] = {0,0,1,1,2,2,3,3};
 
   if (OP_diags>2) {
-    printf(" kernel routine with indirection: res_calc\n");
+    printf(" kernel routine with indirection: %s\n", name);
   }
 
-  // get plan
-
-  #ifdef OP_PART_SIZE_2
-    int part_size = OP_PART_SIZE_2;
-  #else
-    int part_size = OP_part_size;
-  #endif
-
-  int set_size = op_mpi_halo_exchanges(set, nargs, args);
-
+  
+  char  *p_a[8] = {0,0,0,0,0,0,0,0};
+  
   // initialise timers
-
-  double cpu_t1, cpu_t2, wall_t1=0, wall_t2=0;
-  op_timing_realloc(2);
-  OP_kernels[2].name      = name;
-  OP_kernels[2].count    += 1;
-
-  if (set->size >0) {
-
-    op_plan *Plan = op_plan_get(name,set,part_size,nargs,args,ninds,inds);
-
-    op_timers_core(&cpu_t1, &wall_t1);
-
-    // execute plan
-
-    int block_offset = 0;
-
-    for (int col=0; col < Plan->ncolors; col++) {
-      if (col==Plan->ncolors_core) op_mpi_wait_all(nargs, args);
-
-      int nblocks = Plan->ncolblk[col];
-
-#pragma omp parallel for
-      for (int blockIdx=0; blockIdx<nblocks; blockIdx++)
-      op_x86_res_calc( blockIdx,
-         (double *)arg0.data,
-         (double *)arg2.data,
-         (double *)arg4.data,
-         (double *)arg6.data,
-         Plan->ind_map,
-         Plan->loc_map,
-         Plan->ind_sizes,
-         Plan->ind_offs,
-         block_offset,
-         Plan->blkmap,
-         Plan->offset,
-         Plan->nelems,
-         Plan->nthrcol,
-         Plan->thrcol,
-         set_size);
-
-      block_offset += nblocks;
-    }
-
-  op_timing_realloc(2);
-  OP_kernels[2].transfer  += Plan->transfer;
-  OP_kernels[2].transfer2 += Plan->transfer2;
-
+  double cpu_t1, cpu_t2, wall_t1, wall_t2;
+  op_timers_core(&cpu_t1, &wall_t1);
+  
+  for (int i=0; i<desc->subset->size; i++) {
+    int n = desc->subset->elements[i];
+    
+    op_arg_set(n,args[0], &p_a[0],0);
+    op_arg_set(n,args[1], &p_a[1],0);
+    op_arg_set(n,args[2], &p_a[2],0);
+    op_arg_set(n,args[3], &p_a[3],0);
+    op_arg_set(n,args[4], &p_a[4],0);
+    op_arg_set(n,args[5], &p_a[5],0);
+    op_arg_set(n,args[6], &p_a[6],0);
+    op_arg_set(n,args[7], &p_a[7],0);
+    
+    // call kernel function, passing in pointers to data
+    
+    res_calc( (double *)p_a[0],  (double *)p_a[1],  (double *)p_a[2],  (double *)p_a[3],
+             (double *)p_a[4],  (double *)p_a[5],  (double *)p_a[6],  (double *)p_a[7] );
   }
-
-
-  // combine reduction data
-
-  op_mpi_set_dirtybit(nargs, args);
-
-  // update kernel record
-
+  
+  // update timer record
   op_timers_core(&cpu_t2, &wall_t2);
+  op_timing_realloc(2);
   OP_kernels[2].time     += wall_t2 - wall_t1;
+
 }
 
 void op_par_loop_res_calc_enqueue(char const *name, op_set set,

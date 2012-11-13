@@ -792,7 +792,7 @@ void generate_inverse_maps() {
       
       //allocate memory
       map->map = (int *)malloc(from_map->from->size * from_map->dim * sizeof(int));
-      map->row_offsets = (int *)malloc(map->from->size * sizeof(int));
+      map->row_offsets = (int *)malloc((map->from->size+1) * sizeof(int));
       
       //compute reverse map
       std::vector<kv_sort> temp(from_map->from->size * from_map->dim);

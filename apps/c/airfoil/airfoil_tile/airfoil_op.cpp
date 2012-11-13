@@ -310,12 +310,13 @@ int main(int argc, char **argv)
       op_printf(" %d  %10.5e \n",iter,rms);
   }
   
+  generate_inverse_maps();
   int index = 0;
   op_subset need;
   need.set = cells;
   need.size = 1;
   need.elements = &index;
-  op_end_superloop(&need);
+  op_end_superloop(&need, p_q);
   
   printf("size %d\n", (int)kernel_list.size());
   int i = 0;

@@ -308,6 +308,7 @@ op_dat search_dat(op_set set, int dim, char const * type, int size, char const *
  *******************************************************************************/
 
 int is_map_reverse(op_map a, op_map b);
+void generate_inverse_maps();
   
 #ifdef __cplusplus
 }
