@@ -165,9 +165,11 @@ typedef struct
 
 typedef struct
 {
-  op_set      set;     /* superset */
-  int         size;    /* number of elements */
-  int        *elements; /* list of elements */
+  op_set      set;        /* superset */
+  int         size;       /* number of elements */
+  int        *elements;   /* list of elements */
+  int         ncolors;    /* number of colors */
+  int        *color_ptrs; /* offsets to first elements of each color in "elements' */
 } op_subset;
 
 typedef struct op_kernel_descriptor
@@ -179,6 +181,14 @@ typedef struct op_kernel_descriptor
   op_set      set;      /* set to execute on */
   void (*function)(op_kernel_descriptor *desc); /* Function pointer to a wrapper to be called */
 } op_kernel_descriptor;
+
+typedef struct
+{
+  int key;
+  int value;
+} kv_sort;
+
+inline bool kv_sort_comp(const kv_sort i, const kv_sort j) {return i.key < j.key;}
 
 //struct definition for a double linked list entry to hold an op_dat
 struct op_dat_entry_core{

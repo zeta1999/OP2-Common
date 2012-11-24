@@ -49,9 +49,11 @@ op_plan * OP_plans;
 
 extern op_kernel * OP_kernels;
 extern int OP_kern_max;
-
+extern int OP_set_index;
+extern int OP_map_index;
+extern op_set *OP_set_list;
+extern op_map *OP_map_list;
 extern Double_linked_list OP_dat_list;
-extern int OP_dat_index;
 
 void
 op_rt_exit (  )
@@ -969,14 +971,18 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size,
 
 typedef struct
 {
-  op_dat dataset;
+  op_set set;
   std::vector<int> elements;
+  std::vector<op_dat> dats;
+  std::vector<int> written;
   int size;
-  int last_update;
 } op_dataset_dependency;
 
 std::vector<op_dataset_dependency> dependencies;
-void compute_dependencies(op_kernel_descriptor *kernel, int index);
+std::vector<op_map> maps;
+std::vector<op_dat> dats;
+void compute_dependencies(op_kernel_descriptor *kernel);
+void do_coloring(op_kernel_descriptor *kernel);
 
 void op_end_superloop ( op_subset *subset, op_dat data) {
   if (data->set != subset->set) {
@@ -986,58 +992,166 @@ void op_end_superloop ( op_subset *subset, op_dat data) {
   //Set up initial active dataset
   //TODO: more than one output dataset
   dependencies.clear();
-  dependencies.resize(OP_dat_index);
-  op_dat_entry *item;
-  int i = 0;
-  TAILQ_FOREACH(item, &OP_dat_list, entries)
-  {
-    dependencies[i].dataset = item->dat;
-    dependencies[i].elements.resize(item->dat->set->size);
-    if (item->dat == data) {
-      dependencies[i].last_update = 0;
-      dependencies[i].elements.resize(item->dat->set->size);
+  dependencies.resize(OP_set_index);
+  for (int i = 0; i < OP_set_index; i++) {
+    dependencies[i].set = OP_set_list[i];
+    dependencies[i].elements.resize(dependencies[i].set->size); //TODO: this is way too big
+    if (data->set == dependencies[i].set) {
       dependencies[i].size = subset->size;
       std::copy(subset->elements, subset->elements+subset->size, dependencies[i].elements.begin());
+      dependencies[i].dats.push_back(data);
+      dependencies[i].written.push_back(0);
     } else {
       dependencies[i].size = 0;
-      dependencies[i].last_update = -1;
     }
-    i++;
+  }
+  
+  maps.resize(OP_map_index, NULL);
+  for (int i = 0; i < OP_map_index; i++) {
+    //skip reverse maps
+    if (OP_map_list[i]->index > OP_map_list[i]->reverse_map->index) continue;
+    maps[i] = (op_map_core *)malloc(sizeof(op_map_core));
+    maps[i]->index = OP_map_list[i]->index;
+    maps[i]->from = OP_map_list[i]->from;
+    maps[i]->to = OP_map_list[i]->to;
+    maps[i]->dim = OP_map_list[i]->dim;
+    maps[i]->name = OP_map_list[i]->name;
+    maps[i]->map = NULL;
+    maps[i]->row_offsets = NULL;
+    maps[i]->reverse_map = NULL;
+    maps[i]->user_managed = 0;
+    maps[i]->isSimple = OP_map_list[i]->isSimple;
   }
   
   for (unsigned int i = 0; i < kernel_list.size(); i++) {
-    compute_dependencies(&kernel_list[kernel_list.size()-1-i], (int)i+1);
+    compute_dependencies(&kernel_list[kernel_list.size()-1-i]);
+  }
+  
+  for (int i = 0; i < OP_set_index; i++) {
+    dependencies[i].elements.resize(dependencies[i].size);
+  }
+  
+  //populate local maps
+  for (int i = 0; i < OP_map_index; i++) {
+    if (maps[i]==NULL) continue;
+    maps[i]->map = (int *)malloc(dependencies[maps[i]->from->index].size * maps[i]->dim*sizeof(int));
+    for (int e = 0; e < dependencies[maps[i]->from->index].size; e++) {
+      int el = dependencies[maps[i]->from->index].elements[e];
+      for (int d = 0; d < maps[i]->dim; d++) {
+        int gbl = OP_map_list[i]->map[el*maps[i]->dim + d];
+        maps[i]->map[e*maps[i]->dim + d] = std::find(dependencies[maps[i]->to->index].elements.begin(), dependencies[maps[i]->to->index].elements.end(), gbl) - dependencies[maps[i]->to->index].elements.begin();
+        //DEBUG: guaranteed segfault, it is okay if we don't find the global index in the other set, but in that case we must never use that map (i.e. this set element cannot be part of any execution set)
+        if (maps[i]->map[e*maps[i]->dim + d] == dependencies[maps[i]->to->index].size) maps[i]->map[e*maps[i]->dim + d] = 0xFFFFFFFF;
+      }
+    }
+  }
+
+  //Bring in dats to scratch memory
+  for (int i = 0; i < OP_set_index; i++) {
+    //TODO: shouldn't being in read only ones? would need to use a different map though...
+    for (unsigned int j = 0; j < dependencies[i].dats.size(); j ++) {
+      op_dat data = (op_dat)malloc(sizeof(op_dat_core));
+      data->name = dependencies[i].dats[j]->name;
+      data->index = dependencies[i].dats[j]->index;
+      data->set = dependencies[i].dats[j]->set;
+      data->dim = dependencies[i].dats[j]->dim;
+      data->size = dependencies[i].dats[j]->size;
+      data->type = dependencies[i].dats[j]->type;
+      data->data = (char *)malloc(dependencies[i].size * data->size);
+      //collect
+      for (int e = 0; e < dependencies[i].size; e++) {
+        memcpy(&data->data[e*data->size], &dependencies[i].dats[j]->data[dependencies[i].elements[e]*data->size], data->size);
+      }
+      data->data_d = NULL;
+      //TODO: all MPI related stuff
+      dats.push_back(data);
+    }
+  }
+  
+  //renumber execution sets, substitute new maps and dats
+  for (unsigned int i = 0; i < kernel_list.size(); i++) {
+    for (int e = 0; e < kernel_list[i].subset->size; e++) {
+      int el = kernel_list[i].subset->elements[e];
+      kernel_list[i].subset->elements[e] = std::find(dependencies[kernel_list[i].subset->set->index].elements.begin(), dependencies[kernel_list[i].subset->set->index].elements.end(), el) - dependencies[kernel_list[i].subset->set->index].elements.begin();
+      if (kernel_list[i].subset->elements[e] == dependencies[kernel_list[i].subset->set->index].size) {
+        printf("Error, execution set element not found in set dependency list\n");
+        exit(-1);
+      }
+    }
+    for (int arg = 0; arg <kernel_list[i].nargs; arg++) {
+      if (kernel_list[i].args[arg].argtype==OP_ARG_GBL) continue;
+      //find local dat, substitute
+      op_dat original = kernel_list[i].args[arg].dat;
+      for (unsigned int j = 0; j < dats.size(); j++)
+        if (dats[j]->index == original->index) {kernel_list[i].args[arg].dat = dats[j]; break;}
+      if (kernel_list[i].args[arg].dat == original) {
+        printf("Error, local dat not found\n"); exit(-1);}//just some sanity check
+      
+      //find local map, substitute
+      if (kernel_list[i].args[arg].map != NULL) {
+        for (unsigned int j = 0; j < maps.size(); j++)
+          if (maps[j]->index == kernel_list[i].args[arg].map->index) {kernel_list[i].args[arg].map = maps[j]; break;}
+      }
+    }
+  }
+  
+  for (unsigned int i = 0; i < kernel_list.size(); i++) {
+    do_coloring(&kernel_list[kernel_list.size()-1-i]);
+  }
+  
+  //Execute
+  printf("Executing tile, depth %d\n", (int)kernel_list.size());
+  unsigned int i = 0;
+  while ( i < kernel_list.size()) {
+    kernel_list[i].function(&kernel_list[i]); //save_soln
+    i++;
+  }
+  
+  //Put data back
+  //TODO: only write out the "owned" data on the top of the tile
+  for (int i = 0; i < OP_set_index; i++) {
+    for (unsigned int j = 0; j < dependencies[i].dats.size(); j ++) {
+      if (dependencies[i].written[j]==0) continue;
+      op_dat data = NULL;
+      for (unsigned int loc = 0; loc < dats.size(); loc ++) if (dats[loc]->index == dependencies[i].dats[j]->index) data = dats[loc];
+      //put
+      for (int e = 0; e < dependencies[i].size; e++) {
+        memcpy(&dependencies[i].dats[j]->data[dependencies[i].elements[e]*data->size], &data->data[e*data->size], data->size);
+      }
+    }
+  }
+
+}
+
+void add_dependency(op_dat data, int written) {
+  //find data in set's data list (or append) and set written flag to 1
+  unsigned int idx = std::find(dependencies[data->set->index].dats.begin(), dependencies[data->set->index].dats.end(), data) - dependencies[data->set->index].dats.begin();
+  if (idx == dependencies[data->set->index].dats.size()) {
+    dependencies[data->set->index].dats.push_back(data);
+    dependencies[data->set->index].written.push_back(written);
+  } else {
+    if (written) dependencies[data->set->index].written[idx] = 1;
   }
 }
 
 //first, determine what the execution set has to be so that all the already existing data dependencies are computed (OP_WRITE, OP_RW, OP_INC)
 //what if we write something that's not an output?? - I think solved by getting ignored (dependencies[idx].size will be 0, nothing will be merged in)
 //second, add further dependencies based on what is read (OP_RW, OP_INC, OP_READ)
-void compute_dependencies(op_kernel_descriptor *kernel, int index) {
+void compute_dependencies(op_kernel_descriptor *kernel) {
   kernel->subset = (op_subset *)malloc(sizeof(op_subset));
   kernel->subset->set = kernel->set;
   //TODO reuse
   std::vector<int> execution_set(kernel->set->size);
   int execution_size = 0;
+  int own_set_added = 0; //For loops that only acess data indirectly, we still need to add execution set to dependency list
+  
+  std::vector<int> args_done(kernel->nargs, 0);
   //phase one, determine execution set based on existing data dependencies
-  for (unsigned int dat_index = 0; dat_index < dependencies.size(); dat_index++) {
-    op_dat data = dependencies[dat_index].dataset;
-    //find data in list of arguments
-    int m = 0;
-    while (m < kernel->nargs) {
-      if (kernel->args[m].dat == data) break;
-      m++;
-    }
-    //if not found or only read then ignore
-    if (m == kernel->nargs || kernel->args[m].acc == OP_READ || kernel->args[m].argtype==OP_ARG_GBL) continue; //TODO: handle OP_ARG_GBL
-
-//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    //TODO: check if direct and already computed exec set
-    //or if indirect and already computed dependencies for that set
-    //still have to mark all the datasets as dependency!!
+  for (int m = 0; m < kernel->nargs; m++) {
+    if (args_done[m] || kernel->args[m].acc == OP_READ || kernel->args[m].argtype==OP_ARG_GBL) continue; //TODO: handle OP_ARG_GBL
+    op_set set = kernel->args[m].dat->set;
+    args_done[m] = 1;
     
-    // but then, they might be different size/subset - still need to compute for each one (I think)
-//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     
     //see if arg.dat is indirectly accessed
     int indirect = (kernel->args[m].map != NULL);
@@ -1049,19 +1163,32 @@ void compute_dependencies(op_kernel_descriptor *kernel, int index) {
       ind_map = kernel->args[m].map;
       if (kernel->args[m].idx < 0) for (int i = 0; i < -1*kernel->args[m].idx; i++) ind_indices.push_back(i); //Vector maps support
       else {
-        //Look for other args with the same dat, register their idx
         ind_indices.push_back(kernel->args[m].idx);
+        //Look for other args with the same map, register their idx
         for (int i = m+1; i < kernel->nargs; i++)
-          if (kernel->args[i].dat == data) ind_indices.push_back(kernel->args[i].idx);
+          if (kernel->args[i].map == ind_map && kernel->args[i].acc != OP_READ) {
+            if (std::find(ind_indices.begin(), ind_indices.end(), kernel->args[i].idx) == ind_indices.end()) {
+              ind_indices.push_back(kernel->args[i].idx);
+            }
+            args_done[i] = 1;
+          }
       }
+    } else {
+      for (int i = m+1; i < kernel->nargs; i++)
+        if (kernel->args[i].map == NULL)
+          args_done[i] = 1;
+    }
+    
+    for (int i = m; i < kernel->nargs; i++) {
+      if (kernel->args[i].map == ind_map && kernel->args[i].argtype != OP_ARG_GBL) add_dependency(kernel->args[i].dat, kernel->args[i].acc != OP_READ);
     }
     
     //find execution set elements required to compute values of the dataset
     if (indirect) { //if indirect
       std::vector<int> set_elements(0);
       op_map rev_map = ind_map->reverse_map; //determine who in the current loop's execution set may contribute
-      for (int i = 0; i < dependencies[dat_index].size; i++) { //for each element in the output subset
-        int element = dependencies[dat_index].elements[i];
+      for (int i = 0; i < dependencies[set->index].size; i++) { //for each element in the output subset
+        int element = dependencies[set->index].elements[i];
         int *from_elements;
         int count;
         if (rev_map->isSimple) {
@@ -1087,40 +1214,59 @@ void compute_dependencies(op_kernel_descriptor *kernel, int index) {
       execution_size = std::set_union(temp.begin(), temp.end(), set_elements.begin(), set_elements.begin()+num_unique, execution_set.begin()) - execution_set.begin();
     } else { //if the output is directly computed by this loop, then we only need to execute the required subset - merge it into existing
       std::vector<int> temp(execution_set.begin(), execution_set.begin()+execution_size);
-      execution_size = std::set_union(temp.begin(), temp.end(), dependencies[dat_index].elements.begin(), dependencies[dat_index].elements.begin()+dependencies[dat_index].size, execution_set.begin()) - execution_set.begin();
+      execution_size = std::set_union(temp.begin(), temp.end(), dependencies[set->index].elements.begin(), dependencies[set->index].elements.begin()+dependencies[set->index].size, execution_set.begin()) - execution_set.begin();
+      own_set_added = 1;
     }
   }
+  
+  //write execution set
   kernel->subset->size = execution_size;
   kernel->subset->elements = (int *)malloc(execution_size * sizeof(int));
   std::copy(execution_set.begin(), execution_set.begin() + execution_size, kernel->subset->elements);
   
+  std::fill(args_done.begin(), args_done.end(), 0);
   //phase two - based on the execution set update data dependencies
   //TODO: merge some of this with first phase?
   for (int arg = 0; arg < kernel->nargs; arg++) {
     if (kernel->args[arg].argtype==OP_ARG_GBL) continue;
     op_dat data = kernel->args[arg].dat;
-    //index of data in dependencies[]
-    if (dependencies[data->index].dataset != data) {printf("ERROR - dataset index doesn't match element in dependencies[]\n"); exit(-1);}
+    op_set set = data->set;
+
     //if OP_WRITE or already processed, skip
-    if (kernel->args[arg].acc == OP_WRITE || dependencies[data->index].last_update == index) continue;
+    //TODO: OP_WRITE skip or not?
+    if (/*kernel->args[arg].acc == OP_WRITE ||*/ args_done[arg]) continue;
+    //TODO: indirect writes???
     
-    //mark it as processed (in this step)
-    dependencies[data->index].last_update = index;
+    args_done[arg] = 1;
+    
     
     //see if arg.dat is indirectly accessed
     int indirect = (kernel->args[arg].map != NULL);
-    //if so, find all the indices of the map used to access the dat
+    
     std::vector<int> ind_indices(0);
     op_map ind_map = NULL;
     if (indirect) {
       ind_map = kernel->args[arg].map;
       if (kernel->args[arg].idx < 0) for (int i = 0; i < -1*kernel->args[arg].idx; i++) ind_indices.push_back(i); //Vector maps support
       else {
-        //Look for other args with the same dat, register their idx
         ind_indices.push_back(kernel->args[arg].idx);
+        //Look for other args with the same map, register their idx
         for (int i = arg+1; i < kernel->nargs; i++)
-          if (kernel->args[i].dat == data) ind_indices.push_back(kernel->args[i].idx);
+          if (kernel->args[i].map == ind_map /*&& kernel->args[i].acc != OP_WRITE*/) { //TODO: OP_WRITE?
+            if (std::find(ind_indices.begin(), ind_indices.end(), kernel->args[i].idx) == ind_indices.end()) {
+              ind_indices.push_back(kernel->args[i].idx);
+            }
+            args_done[i] = 1;
+          }
       }
+    } else {
+      for (int i = arg+1; i < kernel->nargs; i++)
+        if (kernel->args[i].map == NULL)
+          args_done[i] = 1;
+    }
+    
+    for (int i = arg; i < kernel->nargs; i++) {
+      if (kernel->args[i].map == ind_map && kernel->args[i].argtype != OP_ARG_GBL) add_dependency(kernel->args[i].dat, kernel->args[i].acc != OP_READ);
     }
     
     //find dataset elements required to execute the current execution subset
@@ -1134,8 +1280,6 @@ void compute_dependencies(op_kernel_descriptor *kernel, int index) {
         } else {
           printf("ERROR: op_arg's map cannot be non-simple\n"); //TODO: non-simple forward map support
           exit(-1);
-//          from_elements = rev_map->map[rev_map->row_offsets[element]];
-//          count = rev_map->row_offsets[element+1] - rev_map->row_offsets[element];
         }
         //find out who really does (some indices of the map may not be used
         for (unsigned int j = 0; j < ind_indices.size(); j++)
@@ -1144,13 +1288,141 @@ void compute_dependencies(op_kernel_descriptor *kernel, int index) {
       // at this point we have a big unordered list with duplicates
       std::sort(set_elements.begin(), set_elements.end());  //sort
       int num_unique = std::unique(set_elements.begin(), set_elements.end()) - set_elements.begin(); //get rid of duplicates
-      std::vector<int> temp(dependencies[data->index].elements.begin(), dependencies[data->index].elements.begin()+dependencies[data->index].size);
-      dependencies[data->index].size = std::set_union(temp.begin(), temp.end(), set_elements.begin(), set_elements.begin()+num_unique, dependencies[data->index].elements.begin()) - dependencies[data->index].elements.begin();
-      //TODO: merge this into other datasets accessed by the same mapping too
+      std::vector<int> temp(dependencies[set->index].elements.begin(), dependencies[set->index].elements.begin()+dependencies[set->index].size);
+      dependencies[set->index].size = std::set_union(temp.begin(), temp.end(), set_elements.begin(), set_elements.begin()+num_unique, dependencies[set->index].elements.begin()) - dependencies[set->index].elements.begin();
+
     } else { //if the dependent dataset is directly accessed by this loop, then we only need to add the execution subset - merge it into existing
-      std::vector<int> temp(dependencies[data->index].elements.begin(), dependencies[data->index].elements.begin()+dependencies[data->index].size);
-      dependencies[data->index].size = std::set_union(temp.begin(), temp.end(), kernel->subset->elements, kernel->subset->elements+kernel->subset->size, dependencies[data->index].elements.begin()) - dependencies[data->index].elements.begin();
-      //TODO: merge this into other directly accessed datasets too
+      std::vector<int> temp(dependencies[set->index].elements.begin(), dependencies[set->index].elements.begin()+dependencies[set->index].size);
+      dependencies[set->index].size = std::set_union(temp.begin(), temp.end(), kernel->subset->elements, kernel->subset->elements+kernel->subset->size, dependencies[set->index].elements.begin()) - dependencies[set->index].elements.begin();
+      own_set_added = 1;
     }
+  }
+  
+  //For loops such as res_calc, no direct access, edges never brought in as a dependency otherwise, couldn't renumber
+  if (!own_set_added) {
+    std::vector<int> temp(dependencies[kernel->set->index].elements.begin(), dependencies[kernel->set->index].elements.begin()+dependencies[kernel->set->index].size);
+    dependencies[kernel->set->index].size = std::set_union(temp.begin(), temp.end(), kernel->subset->elements, kernel->subset->elements+kernel->subset->size, dependencies[kernel->set->index].elements.begin()) - dependencies[kernel->set->index].elements.begin();
+  }
+}
+
+void do_coloring(op_kernel_descriptor *kernel) {
+  //do the coloring if necessary
+  int color = 0;
+  for (int arg = 0; arg < kernel->nargs; arg++) {
+    if (kernel->args[arg].map != NULL && kernel->args[arg].acc != OP_READ) {
+      color = 1;
+      break;
+    }
+  }
+  
+  if (color) {
+    //
+    // Begin execution set coloring
+    //
+
+    //set all colors to -1
+    //TODO: merge this dataset with the execution_set vector
+    std::vector<kv_sort> colors(kernel->subset->size);
+    for (int i = 0 ; i < kernel->subset->size; i++) {
+      colors[i].key = -1;
+      colors[i].value = kernel->subset->elements[i];
+    }
+    std::vector<int> inds(kernel->nargs, -1);
+    std::vector<op_map> maps(kernel->nargs, NULL);
+    
+    int ninds = 0;
+    for (int i = 0; i < kernel->nargs; i++) {
+      if (kernel->args[i].map != NULL && inds[i] == -1) {
+        inds[i] = ninds;
+        maps[i] = kernel->args[i].map;
+        for (int j = i+1; j<kernel->nargs; j++) {
+          if (kernel->args[i].map == kernel->args[j].map && kernel->args[i].dat == kernel->args[j].dat) {
+            inds[j] = ninds;
+            maps[j] = kernel->args[j].map;
+          }
+        }
+        ninds++;
+      }
+    }
+    
+    uint **work;
+    work = (uint **)malloc(ninds * sizeof(uint *));
+    
+    for ( int m = 0; m < ninds; m++ )
+    {
+      int m2 = 0;
+      while ( inds[m2] != m )
+        m2++;
+      
+      int to_size = dependencies[maps[m2]->to->index].size;
+      work[m] = ( uint * )malloc( to_size * sizeof (uint));
+    }
+    
+    int repeat = 1;
+    int ncolor = 0;
+    int ncolors = 0;
+    //TODO: reuse previous kernel's coloring
+    while ( repeat )
+    {
+      repeat = 0;
+      //TODO: vector maps support
+      for ( int m = 0; m < kernel->nargs; m++ )
+      {
+        if ( inds[m] > 0 )
+          for ( int el = 0; el < kernel->subset->size; el++ ) {
+            int e = kernel->subset->elements[el];
+            work[inds[m]][maps[m]->map[kernel->args[m].idx + e * maps[m]->dim]] = 0; // zero out color array
+          }
+      }
+      
+      for ( int el = 0; el < kernel->subset->size; el++ ) {
+        int e = kernel->subset->elements[el];
+        if ( colors[el].key == -1 )
+        {
+          //TODO: vector maps support
+          int mask = 0;
+          for ( int m = 0; m < kernel->nargs; m++ )
+            if ( inds[m] >= 0 && kernel->args[m].acc == OP_INC )
+              mask |= work[inds[m]][maps[m]->map[kernel->args[m].idx + e * maps[m]->dim]]; // set bits of mask
+
+          
+          int color = ffs ( ~mask ) - 1;  // find first bit not set
+          if ( color == -1 )
+          {                     // run out of colors on this pass
+            repeat = 1;
+          }
+          else
+          {
+           colors[el].key = ncolor + color;
+            mask = 1 << color;
+            ncolors = MAX ( ncolors, ncolor + color + 1 );
+            
+            for ( int m = 0; m < kernel->nargs; m++ )
+              if ( inds[m] >= 0 && kernel->args[m].acc == OP_INC )
+                work[inds[m]][maps[m]->map[kernel->args[m].idx + e * maps[m]->dim]] |= mask; // set color bit
+          }
+        }
+      }
+      
+      ncolor += 32;             // increment base level
+    }
+    
+    kernel->subset->ncolors = ncolors;
+    std::sort(colors.begin(), colors.end(), kv_sort_comp);
+    kernel->subset->color_ptrs = (int *) malloc ((ncolors+1)*sizeof(int));
+    kernel->subset->elements[0] = colors[0].value;
+    kernel->subset->color_ptrs[0] = 0;
+    kernel->subset->color_ptrs[ncolors] = kernel->subset->size;
+    for (int i = 1; i < kernel->subset->size; i++) {
+      kernel->subset->elements[i] = colors[i].value;
+      if (colors[i].key != colors[i-1].key) kernel->subset->color_ptrs[colors[i].key] = i;
+    }
+    
+  //
+  // End Execution set coloring
+  //
+  } else {
+    kernel->subset->ncolors = 0;
+    kernel->subset->color_ptrs = NULL;
   }
 }

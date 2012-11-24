@@ -749,14 +749,6 @@ int is_map_reverse(op_map a, op_map b) {
   return 1;
 }
 
-typedef struct
-{
-  int key;
-  int value;
-} kv_sort;
-
-bool kv_sort_comp(const kv_sort i, const kv_sort j) {return i.key < j.key;}
-
 void generate_inverse_maps() {
   int i = 0;
   while (i < OP_map_index) {
@@ -813,6 +805,7 @@ void generate_inverse_maps() {
           map->row_offsets[temp[j].key] = j;
         }
       }
+      map->row_offsets[map->from->size] = from_map->from->size * from_map->dim;
       
       //see if map is simple
       map->isSimple = 1;

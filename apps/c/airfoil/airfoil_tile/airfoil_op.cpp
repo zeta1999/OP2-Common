@@ -311,33 +311,13 @@ int main(int argc, char **argv)
   }
   
   generate_inverse_maps();
-  int index = 0;
+  int index[] = {0, 1, 2, 3, 4, 5};
   op_subset need;
   need.set = cells;
-  need.size = 1;
-  need.elements = &index;
+  need.size = 6;
+  need.elements = index;
   op_end_superloop(&need, p_q);
   
-  printf("size %d\n", (int)kernel_list.size());
-  int i = 0;
-  while ( i < (int)kernel_list.size()) {
-    kernel_list[i].function(&kernel_list[i]); //save_soln
-    i++;
-    for(int k=0; k<2; k++) {
-      kernel_list[i].function(&kernel_list[i]); //adt
-      i++;
-      kernel_list[i].function(&kernel_list[i]); //res
-      i++;
-      kernel_list[i].function(&kernel_list[i]); //bres
-      i++;
-      rms = 0.0;
-      kernel_list[i].function(&kernel_list[i]); //update
-      i++;
-    }
-    rms = sqrt(rms/(double) op_get_size(cells));
-    if (i/9%100 == 0)
-      op_printf(" %d  %10.5e \n",i/9,rms);
-  }
   for (int i = 0; i < need.size; i++) {
     double *data = (double *)p_q->data;
     data = &data[p_q->dim * need.elements[i]];
