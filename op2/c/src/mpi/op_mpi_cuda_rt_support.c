@@ -193,6 +193,7 @@ void op_wait_all(op_arg* arg)
 
     cutilSafeCall(cudaThreadSynchronize ());
   }
+  arg->sent = 0;
 }
 
 void op_partition(const char* lib_name, const char* lib_routine,
@@ -269,7 +270,7 @@ void op_exchange_halo_seq(op_arg* arg)
             (void *)&dat->data[dat->size*(set_elem_index)],dat->size);
       }
 //      printf("export from %d to %d data %10s, number of elements of size %d | sending:\n ",
-//                my_rank, exp_exec_list->ranks[i], dat->name,exp_exec_list->sizes[i]);
+//                rank, exp_exec_list->ranks[i], dat->name,exp_exec_list->sizes[i]);
 //        printf ("first mpisend\n");
       MPI_Isend(&OP_mpi_buffer_list[dat->index]->
           buf_exec[exp_exec_list->disps[i]*dat->size],
@@ -284,7 +285,7 @@ void op_exchange_halo_seq(op_arg* arg)
     int init = dat->set->size*dat->size;
     for(int i=0; i < imp_exec_list->ranks_size; i++) {
 //      printf("import on to %d from %d data %10s, number of elements of size %d | recieving:\n ",
-//            my_rank, imp_exec_list.ranks[i], dat.name, imp_exec_list.sizes[i]);
+//            rank, imp_exec_list->ranks[i], dat->name, imp_exec_list->sizes[i]);
 //        printf ("first recv\n");
       MPI_Irecv(&(OP_dat_list[dat->index]->
             data[init+imp_exec_list->disps[i]*dat->size]),
@@ -321,13 +322,13 @@ void op_exchange_halo_seq(op_arg* arg)
         set_elem_index = exp_nonexec_list->list[exp_nonexec_list->disps[i]+j];
 //        if (myrank == 1)
 //        printf ("rank = %d, first memcpy, size = %d\n", rank, dat->size);
-//        printf ("second memcpy, dat->dim = %d, dat->size = %d, j = %d, exp_nonexec_list->disps[i] = %d, dat->index = %d\n",
-//          dat->dim, dat->size, j, exp_nonexec_list->disps[i], dat->index);
         memcpy(&OP_mpi_buffer_list[dat->index]->
             buf_nonexec[exp_nonexec_list->disps[i]*dat->size+j*dat->size],
             (void *)&dat->data[dat->size*(set_elem_index)],dat->size);
       }
 //        printf ("second send\n");
+//      printf("export from %d to %d data %10s, number of elements of size %d | sending:\n ",
+//                rank, exp_nonexec_list->ranks[i], dat->name,exp_nonexec_list->sizes[i]);
       MPI_Isend(&OP_mpi_buffer_list[dat->index]->
           buf_nonexec[exp_nonexec_list->disps[i]*dat->size],
           dat->size*exp_nonexec_list->sizes[i],
@@ -340,6 +341,8 @@ void op_exchange_halo_seq(op_arg* arg)
     int nonexec_init = (dat->set->size+imp_exec_list->size)*dat->size;
     for(int i=0; i<imp_nonexec_list->ranks_size; i++) {
 //        printf ("second recv\n");
+//      printf("import on to %d from %d data %10s, number of elements of size %d | recieving:\n ",
+//            rank, imp_nonexec_list->ranks[i], dat->name, imp_nonexec_list->sizes[i]);
       MPI_Irecv(&(OP_dat_list[dat->index]->
             data[nonexec_init+imp_nonexec_list->disps[i]*dat->size]),
           dat->size*imp_nonexec_list->sizes[i],
@@ -367,6 +370,7 @@ void op_wait_all_seq(op_arg* arg)
   if(arg->argtype == OP_ARG_DAT && arg->sent == 1)
   {
     op_dat dat = arg->dat;
+//    printf ("Waiting for op_dat %s\n", dat->name);
     MPI_Waitall(OP_mpi_buffer_list[dat->index]->s_num_req,
       OP_mpi_buffer_list[dat->index]->s_req,
       MPI_STATUSES_IGNORE );
@@ -377,7 +381,7 @@ void op_wait_all_seq(op_arg* arg)
     OP_mpi_buffer_list[dat->index]->r_num_req = 0;
   }
 
-  //arg->sent = 0;
+  arg->sent = 0;
 }
 
 
