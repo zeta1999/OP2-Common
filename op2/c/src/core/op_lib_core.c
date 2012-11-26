@@ -825,7 +825,7 @@ void generate_inverse_maps() {
       OP_map_list[OP_map_index++] = map;
       
       //sanity check
-      is_map_reverse(map, OP_map_list[i]);
+      //is_map_reverse(map, OP_map_list[i]);
       
     }
     i++;

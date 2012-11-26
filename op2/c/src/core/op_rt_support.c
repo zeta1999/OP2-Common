@@ -1031,10 +1031,15 @@ void op_end_superloop ( op_subset *subset, op_dat data) {
     dependencies[i].elements.resize(dependencies[i].size);
   }
   
+  double mem_maps = 0.0;
+  double mem_set_lists = 0.0;
+  double mem_execution_lists = 0.0;
+  double mem_dats = 0.0;
   //populate local maps
   for (int i = 0; i < OP_map_index; i++) {
     if (maps[i]==NULL) continue;
     maps[i]->map = (int *)malloc(dependencies[maps[i]->from->index].size * maps[i]->dim*sizeof(int));
+    mem_maps += (double)(dependencies[maps[i]->from->index].size * maps[i]->dim*sizeof(int));
     for (int e = 0; e < dependencies[maps[i]->from->index].size; e++) {
       int el = dependencies[maps[i]->from->index].elements[e];
       for (int d = 0; d < maps[i]->dim; d++) {
@@ -1048,6 +1053,7 @@ void op_end_superloop ( op_subset *subset, op_dat data) {
 
   //Bring in dats to scratch memory
   for (int i = 0; i < OP_set_index; i++) {
+    mem_set_lists += (double)(dependencies[i].size * sizeof(int));
     //TODO: shouldn't being in read only ones? would need to use a different map though...
     for (unsigned int j = 0; j < dependencies[i].dats.size(); j ++) {
       op_dat data = (op_dat)malloc(sizeof(op_dat_core));
@@ -1065,8 +1071,10 @@ void op_end_superloop ( op_subset *subset, op_dat data) {
       data->data_d = NULL;
       //TODO: all MPI related stuff
       dats.push_back(data);
+      mem_dats += (double)(data->size * dependencies[i].size);
     }
   }
+  
   
   //renumber execution sets, substitute new maps and dats
   for (unsigned int i = 0; i < kernel_list.size(); i++) {
@@ -1097,10 +1105,12 @@ void op_end_superloop ( op_subset *subset, op_dat data) {
   
   for (unsigned int i = 0; i < kernel_list.size(); i++) {
     do_coloring(&kernel_list[kernel_list.size()-1-i]);
+    mem_execution_lists += (double)(kernel_list[kernel_list.size()-1-i].subset->size * sizeof(int) + (kernel_list[kernel_list.size()-1-i].subset->ncolors+1)*sizeof(int));
   }
   
+  double memuse = mem_set_lists + mem_maps + mem_dats + mem_execution_lists;
   //Execute
-  printf("Executing tile, depth %d\n", (int)kernel_list.size());
+  printf("Executing tile, depth %d mem use: %g KB (%.2g KB setlists, %.2g KB maps, %.2g KB dats %.2g KBvjl;\ exec lists)\n", (int)kernel_list.size(), memuse/1024.0, mem_set_lists/1024.0, mem_maps/1024.0, mem_dats/1024.0, mem_execution_lists/1024.0);
   unsigned int i = 0;
   while ( i < kernel_list.size()) {
     kernel_list[i].function(&kernel_list[i]); //save_soln
