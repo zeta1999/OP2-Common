@@ -1,0 +1,1841 @@
+MODULE GENERATED_MODULE
+USE OP2_FORTRAN_DECLARATIONS
+USE OP2_FORTRAN_RT_SUPPORT
+USE ISO_C_BINDING
+USE CUDAFOR
+USE CUDACONFIGURATIONPARAMS
+REAL(kind=8), CONSTANT :: alpha_OP2_CONSTANT
+REAL(kind=8), CONSTANT :: cfl_OP2_CONSTANT
+REAL(kind=8), CONSTANT :: eps_OP2_CONSTANT
+REAL(kind=8), CONSTANT :: gam_OP2_CONSTANT
+REAL(kind=8), CONSTANT :: gm1_OP2_CONSTANT
+REAL(kind=8), CONSTANT :: mach_OP2_CONSTANT
+REAL(kind=8), DIMENSION(4), DEVICE :: qinf_OP2_CONSTANT
+TYPE  :: adt_calc_opDatDimensions
+INTEGER(kind=4) :: opDat1Dimension
+INTEGER(kind=4) :: opDat2Dimension
+INTEGER(kind=4) :: opDat3Dimension
+INTEGER(kind=4) :: opDat4Dimension
+INTEGER(kind=4) :: opDat5Dimension
+INTEGER(kind=4) :: opDat6Dimension
+END TYPE adt_calc_opDatDimensions
+
+TYPE  :: adt_calc_opDatCardinalities
+INTEGER(kind=4) :: opDat1Cardinality
+INTEGER(kind=4) :: opDat5Cardinality
+INTEGER(kind=4) :: opDat6Cardinality
+INTEGER(kind=4) :: ind_maps1Size
+INTEGER(kind=4) :: mappingArray1Size
+INTEGER(kind=4) :: mappingArray2Size
+INTEGER(kind=4) :: mappingArray3Size
+INTEGER(kind=4) :: mappingArray4Size
+INTEGER(kind=4) :: pblkMapSize
+INTEGER(kind=4) :: pindOffsSize
+INTEGER(kind=4) :: pindSizesSize
+INTEGER(kind=4) :: pnelemsSize
+INTEGER(kind=4) :: pnthrcolSize
+INTEGER(kind=4) :: poffsetSize
+INTEGER(kind=4) :: pthrcolSize
+END TYPE adt_calc_opDatCardinalities
+
+TYPE  :: bres_calc_opDatDimensions
+INTEGER(kind=4) :: opDat1Dimension
+INTEGER(kind=4) :: opDat2Dimension
+INTEGER(kind=4) :: opDat3Dimension
+INTEGER(kind=4) :: opDat4Dimension
+INTEGER(kind=4) :: opDat5Dimension
+INTEGER(kind=4) :: opDat6Dimension
+END TYPE bres_calc_opDatDimensions
+
+TYPE  :: bres_calc_opDatCardinalities
+INTEGER(kind=4) :: opDat1Cardinality
+INTEGER(kind=4) :: opDat3Cardinality
+INTEGER(kind=4) :: opDat4Cardinality
+INTEGER(kind=4) :: opDat5Cardinality
+INTEGER(kind=4) :: opDat6Cardinality
+INTEGER(kind=4) :: ind_maps1Size
+INTEGER(kind=4) :: mappingArray1Size
+INTEGER(kind=4) :: mappingArray2Size
+INTEGER(kind=4) :: ind_maps3Size
+INTEGER(kind=4) :: mappingArray3Size
+INTEGER(kind=4) :: ind_maps4Size
+INTEGER(kind=4) :: mappingArray4Size
+INTEGER(kind=4) :: ind_maps5Size
+INTEGER(kind=4) :: mappingArray5Size
+INTEGER(kind=4) :: pblkMapSize
+INTEGER(kind=4) :: pindOffsSize
+INTEGER(kind=4) :: pindSizesSize
+INTEGER(kind=4) :: pnelemsSize
+INTEGER(kind=4) :: pnthrcolSize
+INTEGER(kind=4) :: poffsetSize
+INTEGER(kind=4) :: pthrcolSize
+END TYPE bres_calc_opDatCardinalities
+
+TYPE  :: res_calc_opDatDimensions
+INTEGER(kind=4) :: opDat1Dimension
+INTEGER(kind=4) :: opDat2Dimension
+INTEGER(kind=4) :: opDat3Dimension
+INTEGER(kind=4) :: opDat4Dimension
+INTEGER(kind=4) :: opDat5Dimension
+INTEGER(kind=4) :: opDat6Dimension
+INTEGER(kind=4) :: opDat7Dimension
+INTEGER(kind=4) :: opDat8Dimension
+END TYPE res_calc_opDatDimensions
+
+TYPE  :: res_calc_opDatCardinalities
+INTEGER(kind=4) :: opDat1Cardinality
+INTEGER(kind=4) :: opDat3Cardinality
+INTEGER(kind=4) :: opDat5Cardinality
+INTEGER(kind=4) :: opDat7Cardinality
+INTEGER(kind=4) :: ind_maps1Size
+INTEGER(kind=4) :: mappingArray1Size
+INTEGER(kind=4) :: mappingArray2Size
+INTEGER(kind=4) :: ind_maps3Size
+INTEGER(kind=4) :: mappingArray3Size
+INTEGER(kind=4) :: mappingArray4Size
+INTEGER(kind=4) :: ind_maps5Size
+INTEGER(kind=4) :: mappingArray5Size
+INTEGER(kind=4) :: mappingArray6Size
+INTEGER(kind=4) :: ind_maps7Size
+INTEGER(kind=4) :: mappingArray7Size
+INTEGER(kind=4) :: mappingArray8Size
+INTEGER(kind=4) :: pblkMapSize
+INTEGER(kind=4) :: pindOffsSize
+INTEGER(kind=4) :: pindSizesSize
+INTEGER(kind=4) :: pnelemsSize
+INTEGER(kind=4) :: pnthrcolSize
+INTEGER(kind=4) :: poffsetSize
+INTEGER(kind=4) :: pthrcolSize
+END TYPE res_calc_opDatCardinalities
+
+TYPE  :: save_soln_qdim_opDatDimensions
+INTEGER(kind=4) :: opDat2Dimension
+INTEGER(kind=4) :: opDat3Dimension
+END TYPE save_soln_qdim_opDatDimensions
+
+TYPE  :: save_soln_qdim_opDatCardinalities
+INTEGER(kind=4) :: opDat2Cardinality
+INTEGER(kind=4) :: opDat3Cardinality
+END TYPE save_soln_qdim_opDatCardinalities
+
+TYPE  :: update_opDatDimensions
+INTEGER(kind=4) :: opDat1Dimension
+INTEGER(kind=4) :: opDat2Dimension
+INTEGER(kind=4) :: opDat3Dimension
+INTEGER(kind=4) :: opDat4Dimension
+END TYPE update_opDatDimensions
+
+TYPE  :: update_opDatCardinalities
+INTEGER(kind=4) :: opDat1Cardinality
+INTEGER(kind=4) :: opDat2Cardinality
+INTEGER(kind=4) :: opDat3Cardinality
+INTEGER(kind=4) :: opDat4Cardinality
+INTEGER(kind=4) :: opDat5Cardinality
+END TYPE update_opDatCardinalities
+
+REAL(kind=4) :: loopTimeHostadt_calc_1379395014
+REAL(kind=4) :: loopTimeKerneladt_calc_1379395014
+INTEGER(kind=4) :: numberCalledadt_calc_1379395014
+TYPE ( c_ptr )  :: planRet_adt_calc
+REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat1Deviceadt_calc_1379395014
+REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat5Deviceadt_calc_1379395014
+REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat6Deviceadt_calc_1379395014
+INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps1_adt_calc_1379395014
+INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps2_adt_calc_1379395014
+INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps3_adt_calc_1379395014
+INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps4_adt_calc_1379395014
+INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray1_adt_calc_1379395014
+INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray2_adt_calc_1379395014
+INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray3_adt_calc_1379395014
+INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray4_adt_calc_1379395014
+REAL(kind=4) :: loopTimeHostbres_calc_3019043301
+REAL(kind=4) :: loopTimeKernelbres_calc_3019043301
+INTEGER(kind=4) :: numberCalledbres_calc_3019043301
+TYPE ( c_ptr )  :: planRet_bres_calc
+REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat1Devicebres_calc_3019043301
+REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat3Devicebres_calc_3019043301
+REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat4Devicebres_calc_3019043301
+REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat5Devicebres_calc_3019043301
+INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat6Devicebres_calc_3019043301
+INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps1_bres_calc_3019043301
+INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps2_bres_calc_3019043301
+INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps3_bres_calc_3019043301
+INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps4_bres_calc_3019043301
+INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps5_bres_calc_3019043301
+INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray1_bres_calc_3019043301
+INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray2_bres_calc_3019043301
+INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray3_bres_calc_3019043301
+INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray4_bres_calc_3019043301
+INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray5_bres_calc_3019043301
+REAL(kind=4) :: loopTimeHostres_calc_3884922247
+REAL(kind=4) :: loopTimeKernelres_calc_3884922247
+INTEGER(kind=4) :: numberCalledres_calc_3884922247
+TYPE ( c_ptr )  :: planRet_res_calc
+REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat1Deviceres_calc_3884922247
+REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat3Deviceres_calc_3884922247
+REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat5Deviceres_calc_3884922247
+REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat7Deviceres_calc_3884922247
+INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps1_res_calc_3884922247
+INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps2_res_calc_3884922247
+INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps3_res_calc_3884922247
+INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps4_res_calc_3884922247
+INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps5_res_calc_3884922247
+INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps6_res_calc_3884922247
+INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps7_res_calc_3884922247
+INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps8_res_calc_3884922247
+INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray1_res_calc_3884922247
+INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray2_res_calc_3884922247
+INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray3_res_calc_3884922247
+INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray4_res_calc_3884922247
+INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray5_res_calc_3884922247
+INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray6_res_calc_3884922247
+INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray7_res_calc_3884922247
+INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray8_res_calc_3884922247
+REAL(kind=4) :: loopTimeHostsave_soln_qdim_2320554256
+REAL(kind=4) :: loopTimeKernelsave_soln_qdim_2320554256
+INTEGER(kind=4) :: numberCalledsave_soln_qdim_2320554256
+DOUBLE PRECISION, DIMENSION(:), DEVICE, ALLOCATABLE :: opDat2Devicesave_soln_qdim_2320554256
+DOUBLE PRECISION, DIMENSION(:), DEVICE, ALLOCATABLE :: opDat3Devicesave_soln_qdim_2320554256
+REAL(kind=4) :: loopTimeHostupdate_2692987784
+REAL(kind=4) :: loopTimeKernelupdate_2692987784
+INTEGER(kind=4) :: numberCalledupdate_2692987784
+REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat1Deviceupdate_2692987784
+REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat2Deviceupdate_2692987784
+REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat3Deviceupdate_2692987784
+REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat4Deviceupdate_2692987784
+CONTAINS
+
+attributes (device) SUBROUTINE ReductionFloat8(reductionResult,inputValue,reductionOperation)
+REAL(kind=8), DIMENSION(:), DEVICE :: reductionResult
+REAL(kind=8), DIMENSION(1:1) :: inputValue
+INTEGER(kind=4), VALUE :: reductionOperation
+REAL(kind=8), DIMENSION(0:*), SHARED :: sharedFloat8
+INTEGER(kind=4) :: i1
+INTEGER(kind=4) :: threadID
+threadID = threadIdx%x - 1
+i1 = ishft(blockDim%x,-1)
+CALL syncthreads()
+sharedFloat8(threadID) = inputValue(1)
+
+DO WHILE (i1 > 0)
+CALL syncthreads()
+
+IF (threadID < i1) THEN
+
+SELECT CASE(reductionOperation)
+CASE (0)
+sharedFloat8(threadID) = sharedFloat8(threadID) + sharedFloat8(threadID + i1)
+CASE (1)
+
+IF (sharedFloat8(threadID + i1) < sharedFloat8(threadID)) THEN
+sharedFloat8(threadID) = sharedFloat8(threadID + i1)
+END IF
+
+CASE (2)
+
+IF (sharedFloat8(threadID + i1) > sharedFloat8(threadID)) THEN
+sharedFloat8(threadID) = sharedFloat8(threadID + i1)
+END IF
+
+END SELECT
+
+END IF
+
+i1 = ishft(i1,-1)
+END DO
+
+CALL syncthreads()
+
+IF (threadID .EQ. 0) THEN
+
+SELECT CASE(reductionOperation)
+CASE (0)
+reductionResult(1) = reductionResult(1) + sharedFloat8(0)
+CASE (1)
+
+IF (sharedFloat8(0) < reductionResult(1)) THEN
+reductionResult(1) = sharedFloat8(0)
+END IF
+
+CASE (2)
+
+IF (sharedFloat8(0) > reductionResult(1)) THEN
+reductionResult(1) = sharedFloat8(0)
+END IF
+
+END SELECT
+
+END IF
+
+CALL syncthreads()
+END SUBROUTINE
+
+attributes (host) SUBROUTINE printProfInfo()
+print *, 'loopTimeHostadt_calc_1379395014 = ', loopTimeHostadt_calc_1379395014
+print *, 'loopTimeKerneladt_calc_1379395014 = ', loopTimeKerneladt_calc_1379395014
+print *, 'loopTimeHostadt_calc_1379395014 Average = ', loopTimeHostadt_calc_1379395014/numberCalledadt_calc_1379395014
+print *, 'loopTimeKerneladt_calc_1379395014 Average = ', loopTimeKerneladt_calc_1379395014/numberCalledadt_calc_1379395&
+&014
+print *, 'loopTimeHostbres_calc_3019043301 = ', loopTimeHostbres_calc_3019043301
+print *, 'loopTimeKernelbres_calc_3019043301 = ', loopTimeKernelbres_calc_3019043301
+print *, 'loopTimeHostbres_calc_3019043301 Average = ', loopTimeHostbres_calc_3019043301/numberCalledbres_calc_30190433&
+&01
+print *, 'loopTimeKernelbres_calc_3019043301 Average = ', loopTimeKernelbres_calc_3019043301/numberCalledbres_calc_3019&
+&043301
+print *, 'loopTimeHostres_calc_3884922247 = ', loopTimeHostres_calc_3884922247
+print *, 'loopTimeKernelres_calc_3884922247 = ', loopTimeKernelres_calc_3884922247
+print *, 'loopTimeHostres_calc_3884922247 Average = ', loopTimeHostres_calc_3884922247/numberCalledres_calc_3884922247
+print *, 'loopTimeKernelres_calc_3884922247 Average = ', loopTimeKernelres_calc_3884922247/numberCalledres_calc_3884922&
+&247
+print *, 'loopTimeHostsave_soln_qdim_2320554256 = ', loopTimeHostsave_soln_qdim_2320554256
+print *, 'loopTimeKernelsave_soln_qdim_2320554256 = ', loopTimeKernelsave_soln_qdim_2320554256
+print *, 'loopTimeHostsave_soln_qdim_2320554256 Average = ', loopTimeHostsave_soln_qdim_2320554256/numberCalledsave_sol&
+&n_qdim_2320554256
+print *, 'loopTimeKernelsave_soln_qdim_2320554256 Average = ', loopTimeKernelsave_soln_qdim_2320554256/numberCalledsave&
+&_soln_qdim_2320554256
+print *, 'loopTimeHostupdate_2692987784 = ', loopTimeHostupdate_2692987784
+print *, 'loopTimeKernelupdate_2692987784 = ', loopTimeKernelupdate_2692987784
+print *, 'loopTimeHostupdate_2692987784 Average = ', loopTimeHostupdate_2692987784/numberCalledupdate_2692987784
+print *, 'loopTimeKernelupdate_2692987784 Average = ', loopTimeKernelupdate_2692987784/numberCalledupdate_2692987784
+END SUBROUTINE
+
+attributes (host) SUBROUTINE initOP2Constants(alpha,cfl,eps,gam,gm1,mach,qinf)
+IMPLICIT NONE
+REAL(kind=8) :: alpha
+REAL(kind=8) :: cfl
+REAL(kind=8) :: eps
+REAL(kind=8) :: gam
+REAL(kind=8) :: gm1
+REAL(kind=8) :: mach
+REAL(kind=8), DIMENSION(4) :: qinf
+INTEGER(kind=4) :: i1
+alpha_OP2_CONSTANT = alpha
+cfl_OP2_CONSTANT = cfl
+eps_OP2_CONSTANT = eps
+gam_OP2_CONSTANT = gam
+gm1_OP2_CONSTANT = gm1
+mach_OP2_CONSTANT = mach
+qinf_OP2_CONSTANT = qinf
+END SUBROUTINE
+
+attributes (device) SUBROUTINE adt_calc_modified(x1,x2,x3,x4,q,adt)
+IMPLICIT NONE
+REAL(kind=8), DIMENSION(*) :: x1
+REAL(kind=8), DIMENSION(*) :: x2
+REAL(kind=8), DIMENSION(*) :: x3
+REAL(kind=8), DIMENSION(*) :: x4
+REAL(kind=8), DIMENSION(*) :: q
+REAL(kind=8) :: adt
+REAL(kind=8) :: dx
+REAL(kind=8) :: dy
+REAL(kind=8) :: ri
+REAL(kind=8) :: u
+REAL(kind=8) :: v
+REAL(kind=8) :: c
+ri = 1.0 / q(1)
+u = ri * q(2)
+v = ri * q(3)
+c = sqrt(gam_OP2_CONSTANT * gm1_OP2_CONSTANT * (ri * q(4) - 0.5 * (u * u + v * v)))
+dx = x2(1) - x1(1)
+dy = x2(2) - x1(2)
+adt = abs(u * dy - v * dx) + c * sqrt(dx * dx + dy * dy)
+dx = x3(1) - x2(1)
+dy = x3(2) - x2(2)
+adt = adt + abs(u * dy - v * dx) + c * sqrt(dx * dx + dy * dy)
+dx = x4(1) - x3(1)
+dy = x4(2) - x3(2)
+adt = adt + abs(u * dy - v * dx) + c * sqrt(dx * dx + dy * dy)
+dx = x1(1) - x4(1)
+dy = x1(2) - x4(2)
+adt = adt + abs(u * dy - v * dx) + c * sqrt(dx * dx + dy * dy)
+adt = adt / cfl_OP2_CONSTANT
+END SUBROUTINE
+
+attributes (global) SUBROUTINE adt_calc_kernel(opDatDimensions,opDatCardinalities,pindSizes,pindOffs,pblkMap,poffset,pn&
+&elems,pnthrcol,pthrcol,blockOffset)
+IMPLICIT NONE
+TYPE ( adt_calc_opDatDimensions ) , DEVICE :: opDatDimensions
+TYPE ( adt_calc_opDatCardinalities ) , DEVICE :: opDatCardinalities
+INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pindSizesSize - 1), DEVICE :: pindSizes
+INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pindOffsSize - 1), DEVICE :: pindOffs
+INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pblkMapSize - 1), DEVICE :: pblkMap
+INTEGER(kind=4), DIMENSION(0:opDatCardinalities%poffsetSize - 1), DEVICE :: poffset
+INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pnelemsSize - 1), DEVICE :: pnelems
+INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pnthrcolSize - 1), DEVICE :: pnthrcol
+INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pthrcolSize - 1), DEVICE :: pthrcol
+INTEGER(kind=4), VALUE :: blockOffset
+REAL(kind=8), DIMENSION(0:3) :: opDat5Local
+REAL(kind=8), DIMENSION(0:*), SHARED :: sharedFloat8
+INTEGER(kind=4) :: sharedOffsetFloat8
+INTEGER(kind=4), SHARED :: sharedMemoryOffset
+INTEGER(kind=4), SHARED :: blockID
+INTEGER(kind=4), SHARED :: numberOfActiveThreads
+INTEGER(kind=4) :: moduloResult
+INTEGER(kind=4) :: nbytes
+INTEGER(kind=4) :: i1
+INTEGER(kind=4) :: n1
+INTEGER(kind=4) :: opDat1nBytes
+INTEGER(kind=4) :: opDat5nBytes
+INTEGER(kind=4) :: opDat6nBytes
+INTEGER(kind=4) :: opDat1RoundUp
+INTEGER(kind=4) :: opDat5RoundUp
+INTEGER(kind=4) :: opDat6RoundUp
+INTEGER(kind=4), SHARED :: opDat1SharedIndirectionSize
+
+IF (threadIdx%x - 1 .EQ. 0) THEN
+blockID = pblkMap(blockIdx%x - 1 + blockOffset)
+numberOfActiveThreads = pnelems(blockID)
+sharedMemoryOffset = poffset(blockID)
+opDat1SharedIndirectionSize = pindSizes(0 + blockID * 1)
+END IF
+
+CALL syncthreads()
+opDat1RoundUp = opDat1SharedIndirectionSize * opDatDimensions%opDat1Dimension
+opDat1nBytes = 0
+i1 = threadIdx%x - 1
+n1 = opDat1SharedIndirectionSize * opDatDimensions%opDat1Dimension
+
+DO WHILE (i1 < n1)
+moduloResult = mod(i1,opDatDimensions%opDat1Dimension)
+sharedFloat8(opDat1nBytes + i1) = opDat1Deviceadt_calc_1379395014(moduloResult + ind_maps1_adt_calc_1379395014(0 + (pin&
+&dOffs(0 + blockID * 1) + i1 / opDatDimensions%opDat1Dimension) + 1) * opDatDimensions%opDat1Dimension + 1)
+i1 = i1 + blockDim%x
+END DO
+
+CALL syncthreads()
+i1 = threadIdx%x - 1
+
+DO WHILE (i1 < numberOfActiveThreads)
+CALL adt_calc_modified(sharedFloat8(opDat1nBytes + mappingArray1_adt_calc_1379395014(i1 + sharedMemoryOffset + 1) * opD&
+&atDimensions%opDat1Dimension),sharedFloat8(opDat1nBytes + mappingArray2_adt_calc_1379395014(i1 + sharedMemoryOffset + &
+&1) * opDatDimensions%opDat2Dimension),sharedFloat8(opDat1nBytes + mappingArray3_adt_calc_1379395014(i1 + sharedMemoryO&
+&ffset + 1) * opDatDimensions%opDat3Dimension),sharedFloat8(opDat1nBytes + mappingArray4_adt_calc_1379395014(i1 + share&
+&dMemoryOffset + 1) * opDatDimensions%opDat4Dimension),opDat5Deviceadt_calc_1379395014((i1 + sharedMemoryOffset) * opDa&
+&tDimensions%opDat5Dimension + 1:(i1 + sharedMemoryOffset) * opDatDimensions%opDat5Dimension + opDatDimensions%opDat5Di&
+&mension + 1 + 1),opDat6Deviceadt_calc_1379395014((i1 + sharedMemoryOffset) * opDatDimensions%opDat6Dimension + 1))
+i1 = i1 + blockDim%x
+END DO
+
+CALL syncthreads()
+END SUBROUTINE
+
+attributes (host) SUBROUTINE adt_calc_host(userSubroutine,set,opArg1,opArg2,opArg3,opArg4,opArg5,opArg6)
+IMPLICIT NONE
+character(len=9), INTENT(IN) :: userSubroutine
+TYPE ( op_set ) , INTENT(IN) :: set
+TYPE ( op_arg ) , INTENT(IN) :: opArg1
+TYPE ( op_arg ) , INTENT(IN) :: opArg2
+TYPE ( op_arg ) , INTENT(IN) :: opArg3
+TYPE ( op_arg ) , INTENT(IN) :: opArg4
+TYPE ( op_arg ) , INTENT(IN) :: opArg5
+TYPE ( op_arg ) , INTENT(IN) :: opArg6
+TYPE ( op_arg ) , DIMENSION(6) :: opArgArray
+INTEGER(kind=4) :: numberOfOpDats
+INTEGER(kind=4) :: returnMPIHaloExchange
+INTEGER(kind=4) :: returnSetKernelTiming
+TYPE ( adt_calc_opDatDimensions ) , DEVICE :: opDatDimensions
+TYPE ( adt_calc_opDatCardinalities ) , DEVICE :: opDatCardinalities
+INTEGER(kind=4) :: opDat1Cardinality
+INTEGER(kind=4) :: opDat5Cardinality
+INTEGER(kind=4) :: opDat6Cardinality
+INTEGER(kind=4) :: blocksPerGrid
+INTEGER(kind=4) :: threadsPerBlock
+INTEGER(kind=4) :: dynamicSharedMemorySize
+INTEGER(kind=4) :: threadSynchRet
+TYPE ( op_plan ) , POINTER :: actualPlan_adt_calc
+TYPE ( c_devptr ) , POINTER, DIMENSION(:) :: pindMaps
+TYPE ( c_devptr ) , POINTER, DIMENSION(:) :: pmaps
+INTEGER(kind=4) :: pindMapsSize
+INTEGER(kind=4), DIMENSION(1:6) :: opDatArray
+INTEGER(kind=4), DIMENSION(1:6) :: mappingIndicesArray
+INTEGER(kind=4), DIMENSION(1:6) :: mappingArray
+INTEGER(kind=4), DIMENSION(1:6) :: accessDescriptorArray
+INTEGER(kind=4), DIMENSION(1:6) :: indirectionDescriptorArray
+INTEGER(kind=4) :: mappingArray1Size
+INTEGER(kind=4) :: mappingArray2Size
+INTEGER(kind=4) :: mappingArray3Size
+INTEGER(kind=4) :: mappingArray4Size
+INTEGER(kind=4) :: numberOfIndirectOpDats
+INTEGER(kind=4) :: blockOffset
+INTEGER(kind=4) :: pindSizesSize
+INTEGER(kind=4) :: pindOffsSize
+INTEGER(kind=4) :: pblkMapSize
+INTEGER(kind=4) :: poffsetSize
+INTEGER(kind=4) :: pnelemsSize
+INTEGER(kind=4) :: pnthrcolSize
+INTEGER(kind=4) :: pthrcolSize
+INTEGER(kind=4), POINTER, DIMENSION(:) :: ncolblk
+INTEGER(kind=4), POINTER, DIMENSION(:) :: pnindirect
+INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: pindSizes
+INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: pindOffs
+INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: pblkMap
+INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: poffset
+INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: pnelems
+INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: pnthrcol
+INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: pthrcol
+INTEGER(kind=4) :: partitionSize
+INTEGER(kind=4) :: blockSize
+INTEGER(kind=4) :: i1
+INTEGER(kind=4) :: i2
+INTEGER(kind=4), SAVE :: calledTimes
+INTEGER(kind=4) :: returnDumpOpDat
+TYPE ( cudaEvent )  :: startTimeHost
+TYPE ( cudaEvent )  :: endTimeHost
+TYPE ( cudaEvent )  :: startTimeKernel
+TYPE ( cudaEvent )  :: endTimeKernel
+INTEGER(kind=4) :: istat
+REAL(kind=4) :: accumulatorHostTime
+REAL(kind=4) :: accumulatorKernelTime
+numberOfOpDats = 6
+opArgArray(1) = opArg1
+opArgArray(2) = opArg2
+opArgArray(3) = opArg3
+opArgArray(4) = opArg4
+opArgArray(5) = opArg5
+opArgArray(6) = opArg6
+
+IF (set%setPtr%size .EQ. 0) THEN
+RETURN
+END IF
+
+istat = cudaEventCreate(startTimeHost)
+istat = cudaEventCreate(endTimeHost)
+istat = cudaEventCreate(startTimeKernel)
+istat = cudaEventCreate(endTimeKernel)
+numberCalledadt_calc_1379395014 = numberCalledadt_calc_1379395014 + 1
+istat = cudaEventRecord(startTimeHost,0)
+indirectionDescriptorArray(1) = 0
+indirectionDescriptorArray(2) = 0
+indirectionDescriptorArray(3) = 0
+indirectionDescriptorArray(4) = 0
+indirectionDescriptorArray(5) = -1
+indirectionDescriptorArray(6) = -1
+numberOfIndirectOpDats = 1
+partitionSize = getPartitionSize(userSubroutine,set%setPtr%size)
+planRet_adt_calc = FortranPlanCaller(userSubroutine,set%setCPtr,partitionSize,numberOfOpDats,opArgArray,numberOfIndirec&
+&tOpDats,indirectionDescriptorArray)
+opDatDimensions%opDat1Dimension = opArg1%dim
+opDatDimensions%opDat2Dimension = opArg2%dim
+opDatDimensions%opDat3Dimension = opArg3%dim
+opDatDimensions%opDat4Dimension = opArg4%dim
+opDatDimensions%opDat5Dimension = opArg5%dim
+opDatDimensions%opDat6Dimension = opArg6%dim
+opDatCardinalities%opDat1Cardinality = opArg1%dim * getSetSizeFromOpArg(opArg1)
+opDatCardinalities%opDat5Cardinality = opArg5%dim * getSetSizeFromOpArg(opArg5)
+opDatCardinalities%opDat6Cardinality = opArg6%dim * getSetSizeFromOpArg(opArg6)
+opDat1Cardinality = opArg1%dim * getSetSizeFromOpArg(opArg1)
+opDat5Cardinality = opArg5%dim * getSetSizeFromOpArg(opArg5)
+opDat6Cardinality = opArg6%dim * getSetSizeFromOpArg(opArg6)
+CALL c_f_pointer(opArg1%data_d,opDat1Deviceadt_calc_1379395014,(/opDat1Cardinality/))
+CALL c_f_pointer(opArg5%data_d,opDat5Deviceadt_calc_1379395014,(/opDat5Cardinality/))
+CALL c_f_pointer(opArg6%data_d,opDat6Deviceadt_calc_1379395014,(/opDat6Cardinality/))
+CALL c_f_pointer(planRet_adt_calc,actualPlan_adt_calc)
+CALL c_f_pointer(actualPlan_adt_calc%ind_maps,pindMaps,(/numberOfIndirectOpDats/))
+CALL c_f_pointer(actualPlan_adt_calc%ncolblk,ncolblk,(/set%setPtr%size/))
+pindSizesSize = actualPlan_adt_calc%nblocks * numberOfIndirectOpDats
+CALL c_f_pointer(actualPlan_adt_calc%ind_sizes,pindSizes,(/pindSizesSize/))
+pindOffsSize = pindSizesSize
+CALL c_f_pointer(actualPlan_adt_calc%ind_offs,pindOffs,(/pindOffsSize/))
+pblkMapSize = actualPlan_adt_calc%nblocks
+CALL c_f_pointer(actualPlan_adt_calc%blkmap,pblkMap,(/pblkMapSize/))
+poffsetSize = actualPlan_adt_calc%nblocks
+CALL c_f_pointer(actualPlan_adt_calc%offset,poffset,(/poffsetSize/))
+pnelemsSize = actualPlan_adt_calc%nblocks
+CALL c_f_pointer(actualPlan_adt_calc%nelems,pnelems,(/pnelemsSize/))
+pnthrcolSize = actualPlan_adt_calc%nblocks
+CALL c_f_pointer(actualPlan_adt_calc%nthrcol,pnthrcol,(/pnthrcolSize/))
+pthrcolSize = set%setPtr%size
+CALL c_f_pointer(actualPlan_adt_calc%thrcol,pthrcol,(/pthrcolSize/))
+CALL c_f_pointer(actualPlan_adt_calc%nindirect,pnindirect,(/numberOfIndirectOpDats/))
+CALL c_f_pointer(pindMaps(1),ind_maps1_adt_calc_1379395014,pnindirect(1))
+CALL c_f_pointer(actualPlan_adt_calc%maps,pmaps,(/numberOfOpDats/))
+
+IF (indirectionDescriptorArray(1) >= 0) THEN
+mappingArray1Size = set%setPtr%size
+CALL c_f_pointer(pmaps(1),mappingArray1_adt_calc_1379395014,(/mappingArray1Size/))
+END IF
+
+IF (indirectionDescriptorArray(2) >= 0) THEN
+mappingArray2Size = set%setPtr%size
+CALL c_f_pointer(pmaps(2),mappingArray2_adt_calc_1379395014,(/mappingArray2Size/))
+END IF
+
+IF (indirectionDescriptorArray(3) >= 0) THEN
+mappingArray3Size = set%setPtr%size
+CALL c_f_pointer(pmaps(3),mappingArray3_adt_calc_1379395014,(/mappingArray3Size/))
+END IF
+
+IF (indirectionDescriptorArray(4) >= 0) THEN
+mappingArray4Size = set%setPtr%size
+CALL c_f_pointer(pmaps(4),mappingArray4_adt_calc_1379395014,(/mappingArray4Size/))
+END IF
+
+opDatCardinalities%ind_maps1Size = pnindirect(1)
+opDatCardinalities%mappingArray1Size = mappingArray1Size
+opDatCardinalities%mappingArray2Size = mappingArray2Size
+opDatCardinalities%mappingArray3Size = mappingArray3Size
+opDatCardinalities%mappingArray4Size = mappingArray4Size
+opDatCardinalities%pblkMapSize = pblkMapSize
+opDatCardinalities%pindOffsSize = pindOffsSize
+opDatCardinalities%pindSizesSize = pindSizesSize
+opDatCardinalities%pnelemsSize = pnelemsSize
+opDatCardinalities%pnthrcolSize = pnthrcolSize
+opDatCardinalities%poffsetSize = poffsetSize
+opDatCardinalities%pthrcolSize = pthrcolSize
+istat = cudaEventRecord(endTimeHost,0)
+istat = cudaEventSynchronize(endTimeHost)
+istat = cudaEventElapsedTime(accumulatorHostTime,startTimeHost,endTimeHost)
+loopTimeHostadt_calc_1379395014 = loopTimeHostadt_calc_1379395014 + accumulatorHostTime
+istat = cudaEventRecord(startTimeKernel,0)
+blockOffset = 0
+threadsPerBlock = getBlockSize(userSubroutine,set%setPtr%size)
+
+DO i2 = 0, actualPlan_adt_calc%ncolors - 1, 1
+blocksPerGrid = ncolblk(i2 + 1)
+dynamicSharedMemorySize = actualPlan_adt_calc%nshared
+CALL adt_calc_kernel <<<blocksPerGrid,threadsPerBlock,dynamicSharedMemorySize>>>(opDatDimensions,opDatCardinalities,pin&
+&dSizes,pindOffs,pblkMap,poffset,pnelems,pnthrcol,pthrcol,blockOffset)
+threadSynchRet = cudaThreadSynchronize()
+blockOffset = blockOffset + blocksPerGrid
+END DO
+
+istat = cudaEventRecord(endTimeKernel,0)
+istat = cudaEventSynchronize(endTimeKernel)
+istat = cudaEventElapsedTime(accumulatorKernelTime,startTimeKernel,endTimeKernel)
+loopTimeKerneladt_calc_1379395014 = loopTimeKerneladt_calc_1379395014 + accumulatorKernelTime
+istat = cudaEventRecord(startTimeHost,0)
+istat = cudaEventRecord(endTimeHost,0)
+istat = cudaEventSynchronize(endTimeHost)
+istat = cudaEventElapsedTime(accumulatorHostTime,startTimeHost,endTimeHost)
+loopTimeHostadt_calc_1379395014 = loopTimeHostadt_calc_1379395014 + accumulatorHostTime
+END SUBROUTINE
+
+attributes (device) SUBROUTINE bres_calc_modified(x1,x2,q1,adt1,res1,bound)
+IMPLICIT NONE
+REAL(kind=8), DIMENSION(2) :: x1
+REAL(kind=8), DIMENSION(2) :: x2
+REAL(kind=8), DIMENSION(4) :: q1
+REAL(kind=8) :: adt1
+REAL(kind=8), DIMENSION(4) :: res1
+INTEGER(kind=4), DIMENSION(1) :: bound
+REAL(kind=8) :: dx
+REAL(kind=8) :: dy
+REAL(kind=8) :: mu
+REAL(kind=8) :: ri
+REAL(kind=8) :: p1
+REAL(kind=8) :: vol1
+REAL(kind=8) :: p2
+REAL(kind=8) :: vol2
+REAL(kind=8) :: f
+dx = x1(1) - x2(1)
+dy = x1(2) - x2(2)
+ri = 1.0 / q1(1)
+p1 = gm1_OP2_CONSTANT * (q1(4) - 0.5 * ri * (q1(2) * q1(2) + q1(3) * q1(3)))
+
+IF (bound(1) .EQ. 1) THEN
+res1(2) = res1(2) + p1 * dy
+res1(3) = res1(3) + -(p1 * dx)
+ELSE
+vol1 = ri * (q1(2) * dy - q1(3) * dx)
+ri = 1.0 / qinf_OP2_CONSTANT(1)
+p2 = gm1_OP2_CONSTANT * (qinf_OP2_CONSTANT(4) - 0.5 * ri * (qinf_OP2_CONSTANT(2) * qinf_OP2_CONSTANT(2) + qinf_OP2_CONS&
+&TANT(3) * qinf_OP2_CONSTANT(3)))
+vol2 = ri * (qinf_OP2_CONSTANT(2) * dy - qinf_OP2_CONSTANT(3) * dx)
+mu = adt1 * eps_OP2_CONSTANT
+f = 0.5 * (vol1 * q1(1) + vol2 * qinf_OP2_CONSTANT(1)) + mu * (q1(1) - qinf_OP2_CONSTANT(1))
+res1(1) = res1(1) + f
+f = 0.5 * (vol1 * q1(2) + p1 * dy + vol2 * qinf_OP2_CONSTANT(2) + p2 * dy) + mu * (q1(2) - qinf_OP2_CONSTANT(2))
+res1(2) = res1(2) + f
+f = 0.5 * (vol1 * q1(3) - p1 * dx + vol2 * qinf_OP2_CONSTANT(3) - p2 * dx) + mu * (q1(3) - qinf_OP2_CONSTANT(3))
+res1(3) = res1(3) + f
+f = 0.5 * (vol1 * (q1(4) + p1) + vol2 * (qinf_OP2_CONSTANT(4) + p2)) + mu * (q1(4) - qinf_OP2_CONSTANT(4))
+res1(4) = res1(4) + f
+END IF
+
+END SUBROUTINE
+
+attributes (global) SUBROUTINE bres_calc_kernel(opDatDimensions,opDatCardinalities,pindSizes,pindOffs,pblkMap,poffset,p&
+&nelems,pnthrcol,pthrcol,blockOffset)
+IMPLICIT NONE
+TYPE ( bres_calc_opDatDimensions ) , DEVICE :: opDatDimensions
+TYPE ( bres_calc_opDatCardinalities ) , DEVICE :: opDatCardinalities
+INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pindSizesSize - 1), DEVICE :: pindSizes
+INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pindOffsSize - 1), DEVICE :: pindOffs
+INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pblkMapSize - 1), DEVICE :: pblkMap
+INTEGER(kind=4), DIMENSION(0:opDatCardinalities%poffsetSize - 1), DEVICE :: poffset
+INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pnelemsSize - 1), DEVICE :: pnelems
+INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pnthrcolSize - 1), DEVICE :: pnthrcol
+INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pthrcolSize - 1), DEVICE :: pthrcol
+INTEGER(kind=4), VALUE :: blockOffset
+REAL(kind=8), DIMENSION(0:3) :: opDat5Local
+REAL(kind=8), DIMENSION(0:*), SHARED :: sharedFloat8
+INTEGER(kind=4) :: sharedOffsetFloat8
+INTEGER(kind=4), SHARED :: sharedMemoryOffset
+INTEGER(kind=4), SHARED :: blockID
+INTEGER(kind=4), SHARED :: numberOfActiveThreads
+INTEGER(kind=4) :: moduloResult
+INTEGER(kind=4) :: nbytes
+INTEGER(kind=4) :: i1
+INTEGER(kind=4) :: n1
+INTEGER(kind=4) :: opDat1nBytes
+INTEGER(kind=4) :: opDat3nBytes
+INTEGER(kind=4) :: opDat4nBytes
+INTEGER(kind=4) :: opDat5nBytes
+INTEGER(kind=4) :: opDat6nBytes
+INTEGER(kind=4) :: opDat1RoundUp
+INTEGER(kind=4) :: opDat3RoundUp
+INTEGER(kind=4) :: opDat4RoundUp
+INTEGER(kind=4) :: opDat5RoundUp
+INTEGER(kind=4) :: opDat6RoundUp
+INTEGER(kind=4), SHARED :: opDat1SharedIndirectionSize
+INTEGER(kind=4), SHARED :: opDat3SharedIndirectionSize
+INTEGER(kind=4), SHARED :: opDat4SharedIndirectionSize
+INTEGER(kind=4), SHARED :: opDat5SharedIndirectionSize
+INTEGER(kind=4) :: opDat5Map
+INTEGER(kind=4), SHARED :: numOfColours
+INTEGER(kind=4), SHARED :: numberOfActiveThreadsCeiling
+INTEGER(kind=4) :: colour1
+INTEGER(kind=4) :: colour2
+INTEGER(kind=4) :: i2
+
+IF (threadIdx%x - 1 .EQ. 0) THEN
+blockID = pblkMap(blockIdx%x - 1 + blockOffset)
+numberOfActiveThreads = pnelems(blockID)
+numberOfActiveThreadsCeiling = blockDim%x * (1 + (numberOfActiveThreads - 1) / blockDim%x)
+numOfColours = pnthrcol(blockID)
+sharedMemoryOffset = poffset(blockID)
+opDat1SharedIndirectionSize = pindSizes(0 + blockID * 4)
+opDat3SharedIndirectionSize = pindSizes(1 + blockID * 4)
+opDat4SharedIndirectionSize = pindSizes(2 + blockID * 4)
+opDat5SharedIndirectionSize = pindSizes(3 + blockID * 4)
+END IF
+
+CALL syncthreads()
+opDat1RoundUp = opDat1SharedIndirectionSize * opDatDimensions%opDat1Dimension
+opDat3RoundUp = opDat3SharedIndirectionSize * opDatDimensions%opDat3Dimension
+opDat4RoundUp = opDat4SharedIndirectionSize * opDatDimensions%opDat4Dimension
+opDat5RoundUp = opDat5SharedIndirectionSize * opDatDimensions%opDat5Dimension
+opDat1nBytes = 0
+opDat3nBytes = opDat1nBytes * 8 / 8 + opDat1RoundUp * 8 / 8
+opDat4nBytes = opDat3nBytes * 8 / 8 + opDat3RoundUp * 8 / 8
+opDat5nBytes = opDat4nBytes * 8 / 8 + opDat4RoundUp * 8 / 8
+i1 = threadIdx%x - 1
+n1 = opDat1SharedIndirectionSize * opDatDimensions%opDat1Dimension
+
+DO WHILE (i1 < n1)
+moduloResult = mod(i1,opDatDimensions%opDat1Dimension)
+sharedFloat8(opDat1nBytes + i1) = opDat1Devicebres_calc_3019043301(moduloResult + ind_maps1_bres_calc_3019043301(0 + (p&
+&indOffs(0 + blockID * 4) + i1 / opDatDimensions%opDat1Dimension) + 1) * opDatDimensions%opDat1Dimension + 1)
+i1 = i1 + blockDim%x
+END DO
+
+i1 = threadIdx%x - 1
+n1 = opDat3SharedIndirectionSize * opDatDimensions%opDat3Dimension
+
+DO WHILE (i1 < n1)
+moduloResult = mod(i1,opDatDimensions%opDat3Dimension)
+sharedFloat8(opDat3nBytes + i1) = opDat3Devicebres_calc_3019043301(moduloResult + ind_maps3_bres_calc_3019043301(0 + (p&
+&indOffs(1 + blockID * 4) + i1 / opDatDimensions%opDat3Dimension) + 1) * opDatDimensions%opDat3Dimension + 1)
+i1 = i1 + blockDim%x
+END DO
+
+i1 = threadIdx%x - 1
+n1 = opDat4SharedIndirectionSize * opDatDimensions%opDat4Dimension
+
+DO WHILE (i1 < n1)
+moduloResult = mod(i1,opDatDimensions%opDat4Dimension)
+sharedFloat8(opDat4nBytes + i1) = opDat4Devicebres_calc_3019043301(moduloResult + ind_maps4_bres_calc_3019043301(0 + (p&
+&indOffs(2 + blockID * 4) + i1 / opDatDimensions%opDat4Dimension) + 1) * opDatDimensions%opDat4Dimension + 1)
+i1 = i1 + blockDim%x
+END DO
+
+i1 = threadIdx%x - 1
+n1 = opDat5SharedIndirectionSize * opDatDimensions%opDat5Dimension
+
+DO WHILE (i1 < n1)
+sharedFloat8(opDat5nBytes + i1) = 0
+i1 = i1 + blockDim%x
+END DO
+
+CALL syncthreads()
+i1 = threadIdx%x - 1
+
+DO WHILE (i1 < numberOfActiveThreadsCeiling)
+colour2 = -1
+
+IF (i1 < numberOfActiveThreads) THEN
+
+DO i2 = 0, opDatDimensions%opDat5Dimension - 1, 1
+opDat5Local(i2) = 0
+END DO
+
+CALL bres_calc_modified(sharedFloat8(opDat1nBytes + mappingArray1_bres_calc_3019043301(i1 + sharedMemoryOffset + 1) * o&
+&pDatDimensions%opDat1Dimension),sharedFloat8(opDat1nBytes + mappingArray2_bres_calc_3019043301(i1 + sharedMemoryOffset&
+& + 1) * opDatDimensions%opDat2Dimension),sharedFloat8(opDat3nBytes + mappingArray3_bres_calc_3019043301(i1 + sharedMem&
+&oryOffset + 1) * opDatDimensions%opDat3Dimension),sharedFloat8(opDat4nBytes + mappingArray4_bres_calc_3019043301(i1 + &
+&sharedMemoryOffset + 1) * opDatDimensions%opDat4Dimension),opDat5Local,opDat6Devicebres_calc_3019043301((i1 + sharedMe&
+&moryOffset) * opDatDimensions%opDat6Dimension + 1))
+colour2 = pthrcol(i1 + sharedMemoryOffset)
+END IF
+
+opDat5Map = mappingArray5_bres_calc_3019043301(i1 + sharedMemoryOffset + 1)
+
+DO colour1 = 0, numOfColours - 1, 1
+
+IF (colour2 .EQ. colour1) THEN
+
+DO i2 = 0, opDatDimensions%opDat5Dimension - 1, 1
+sharedFloat8(opDat5nBytes + (i2 + opDat5Map * opDatDimensions%opDat5Dimension)) = sharedFloat8(opDat5nBytes + (i2 + opD&
+&at5Map * opDatDimensions%opDat5Dimension)) + opDat5Local(i2)
+END DO
+
+END IF
+
+CALL syncthreads()
+END DO
+
+i1 = i1 + blockDim%x
+END DO
+
+CALL syncthreads()
+i1 = threadIdx%x - 1
+
+DO WHILE (i1 < opDat5SharedIndirectionSize * opDatDimensions%opDat5Dimension)
+moduloResult = mod(i1,opDatDimensions%opDat5Dimension)
+opDat5Devicebres_calc_3019043301(moduloResult + ind_maps5_bres_calc_3019043301(0 + (pindOffs(3 + blockID * 4) + i1 / op&
+&DatDimensions%opDat5Dimension) + 1) * opDatDimensions%opDat5Dimension + 1) = opDat5Devicebres_calc_3019043301(moduloRe&
+&sult + ind_maps5_bres_calc_3019043301(0 + (pindOffs(3 + blockID * 4) + i1 / opDatDimensions%opDat5Dimension) + 1) * op&
+&DatDimensions%opDat5Dimension + 1) + sharedFloat8(opDat5nBytes + i1)
+i1 = i1 + blockDim%x
+END DO
+
+END SUBROUTINE
+
+attributes (host) SUBROUTINE bres_calc_host(userSubroutine,set,opArg1,opArg2,opArg3,opArg4,opArg5,opArg6)
+IMPLICIT NONE
+character(len=10), INTENT(IN) :: userSubroutine
+TYPE ( op_set ) , INTENT(IN) :: set
+TYPE ( op_arg ) , INTENT(IN) :: opArg1
+TYPE ( op_arg ) , INTENT(IN) :: opArg2
+TYPE ( op_arg ) , INTENT(IN) :: opArg3
+TYPE ( op_arg ) , INTENT(IN) :: opArg4
+TYPE ( op_arg ) , INTENT(IN) :: opArg5
+TYPE ( op_arg ) , INTENT(IN) :: opArg6
+TYPE ( op_arg ) , DIMENSION(6) :: opArgArray
+INTEGER(kind=4) :: numberOfOpDats
+INTEGER(kind=4) :: returnMPIHaloExchange
+INTEGER(kind=4) :: returnSetKernelTiming
+TYPE ( bres_calc_opDatDimensions ) , DEVICE :: opDatDimensions
+TYPE ( bres_calc_opDatCardinalities ) , DEVICE :: opDatCardinalities
+INTEGER(kind=4) :: opDat1Cardinality
+INTEGER(kind=4) :: opDat3Cardinality
+INTEGER(kind=4) :: opDat4Cardinality
+INTEGER(kind=4) :: opDat5Cardinality
+INTEGER(kind=4) :: opDat6Cardinality
+INTEGER(kind=4) :: blocksPerGrid
+INTEGER(kind=4) :: threadsPerBlock
+INTEGER(kind=4) :: dynamicSharedMemorySize
+INTEGER(kind=4) :: threadSynchRet
+TYPE ( op_plan ) , POINTER :: actualPlan_bres_calc
+TYPE ( c_devptr ) , POINTER, DIMENSION(:) :: pindMaps
+TYPE ( c_devptr ) , POINTER, DIMENSION(:) :: pmaps
+INTEGER(kind=4) :: pindMapsSize
+INTEGER(kind=4), DIMENSION(1:6) :: opDatArray
+INTEGER(kind=4), DIMENSION(1:6) :: mappingIndicesArray
+INTEGER(kind=4), DIMENSION(1:6) :: mappingArray
+INTEGER(kind=4), DIMENSION(1:6) :: accessDescriptorArray
+INTEGER(kind=4), DIMENSION(1:6) :: indirectionDescriptorArray
+INTEGER(kind=4) :: mappingArray1Size
+INTEGER(kind=4) :: mappingArray2Size
+INTEGER(kind=4) :: mappingArray3Size
+INTEGER(kind=4) :: mappingArray4Size
+INTEGER(kind=4) :: mappingArray5Size
+INTEGER(kind=4) :: numberOfIndirectOpDats
+INTEGER(kind=4) :: blockOffset
+INTEGER(kind=4) :: pindSizesSize
+INTEGER(kind=4) :: pindOffsSize
+INTEGER(kind=4) :: pblkMapSize
+INTEGER(kind=4) :: poffsetSize
+INTEGER(kind=4) :: pnelemsSize
+INTEGER(kind=4) :: pnthrcolSize
+INTEGER(kind=4) :: pthrcolSize
+INTEGER(kind=4), POINTER, DIMENSION(:) :: ncolblk
+INTEGER(kind=4), POINTER, DIMENSION(:) :: pnindirect
+INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: pindSizes
+INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: pindOffs
+INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: pblkMap
+INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: poffset
+INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: pnelems
+INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: pnthrcol
+INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: pthrcol
+INTEGER(kind=4) :: partitionSize
+INTEGER(kind=4) :: blockSize
+INTEGER(kind=4) :: i1
+INTEGER(kind=4) :: i2
+INTEGER(kind=4), SAVE :: calledTimes
+INTEGER(kind=4) :: returnDumpOpDat
+TYPE ( cudaEvent )  :: startTimeHost
+TYPE ( cudaEvent )  :: endTimeHost
+TYPE ( cudaEvent )  :: startTimeKernel
+TYPE ( cudaEvent )  :: endTimeKernel
+INTEGER(kind=4) :: istat
+REAL(kind=4) :: accumulatorHostTime
+REAL(kind=4) :: accumulatorKernelTime
+numberOfOpDats = 6
+opArgArray(1) = opArg1
+opArgArray(2) = opArg2
+opArgArray(3) = opArg3
+opArgArray(4) = opArg4
+opArgArray(5) = opArg5
+opArgArray(6) = opArg6
+
+IF (set%setPtr%size .EQ. 0) THEN
+RETURN
+END IF
+
+istat = cudaEventCreate(startTimeHost)
+istat = cudaEventCreate(endTimeHost)
+istat = cudaEventCreate(startTimeKernel)
+istat = cudaEventCreate(endTimeKernel)
+numberCalledbres_calc_3019043301 = numberCalledbres_calc_3019043301 + 1
+istat = cudaEventRecord(startTimeHost,0)
+indirectionDescriptorArray(1) = 0
+indirectionDescriptorArray(2) = 0
+indirectionDescriptorArray(3) = 1
+indirectionDescriptorArray(4) = 2
+indirectionDescriptorArray(5) = 3
+indirectionDescriptorArray(6) = -1
+numberOfIndirectOpDats = 4
+partitionSize = getPartitionSize(userSubroutine,set%setPtr%size)
+planRet_bres_calc = FortranPlanCaller(userSubroutine,set%setCPtr,partitionSize,numberOfOpDats,opArgArray,numberOfIndire&
+&ctOpDats,indirectionDescriptorArray)
+opDatDimensions%opDat1Dimension = opArg1%dim
+opDatDimensions%opDat2Dimension = opArg2%dim
+opDatDimensions%opDat3Dimension = opArg3%dim
+opDatDimensions%opDat4Dimension = opArg4%dim
+opDatDimensions%opDat5Dimension = opArg5%dim
+opDatDimensions%opDat6Dimension = opArg6%dim
+opDatCardinalities%opDat1Cardinality = opArg1%dim * getSetSizeFromOpArg(opArg1)
+opDatCardinalities%opDat3Cardinality = opArg3%dim * getSetSizeFromOpArg(opArg3)
+opDatCardinalities%opDat4Cardinality = opArg4%dim * getSetSizeFromOpArg(opArg4)
+opDatCardinalities%opDat5Cardinality = opArg5%dim * getSetSizeFromOpArg(opArg5)
+opDatCardinalities%opDat6Cardinality = opArg6%dim * getSetSizeFromOpArg(opArg6)
+opDat1Cardinality = opArg1%dim * getSetSizeFromOpArg(opArg1)
+opDat3Cardinality = opArg3%dim * getSetSizeFromOpArg(opArg3)
+opDat4Cardinality = opArg4%dim * getSetSizeFromOpArg(opArg4)
+opDat5Cardinality = opArg5%dim * getSetSizeFromOpArg(opArg5)
+opDat6Cardinality = opArg6%dim * getSetSizeFromOpArg(opArg6)
+CALL c_f_pointer(opArg1%data_d,opDat1Devicebres_calc_3019043301,(/opDat1Cardinality/))
+CALL c_f_pointer(opArg3%data_d,opDat3Devicebres_calc_3019043301,(/opDat3Cardinality/))
+CALL c_f_pointer(opArg4%data_d,opDat4Devicebres_calc_3019043301,(/opDat4Cardinality/))
+CALL c_f_pointer(opArg5%data_d,opDat5Devicebres_calc_3019043301,(/opDat5Cardinality/))
+CALL c_f_pointer(opArg6%data_d,opDat6Devicebres_calc_3019043301,(/opDat6Cardinality/))
+CALL c_f_pointer(planRet_bres_calc,actualPlan_bres_calc)
+CALL c_f_pointer(actualPlan_bres_calc%ind_maps,pindMaps,(/numberOfIndirectOpDats/))
+CALL c_f_pointer(actualPlan_bres_calc%ncolblk,ncolblk,(/set%setPtr%size/))
+pindSizesSize = actualPlan_bres_calc%nblocks * numberOfIndirectOpDats
+CALL c_f_pointer(actualPlan_bres_calc%ind_sizes,pindSizes,(/pindSizesSize/))
+pindOffsSize = pindSizesSize
+CALL c_f_pointer(actualPlan_bres_calc%ind_offs,pindOffs,(/pindOffsSize/))
+pblkMapSize = actualPlan_bres_calc%nblocks
+CALL c_f_pointer(actualPlan_bres_calc%blkmap,pblkMap,(/pblkMapSize/))
+poffsetSize = actualPlan_bres_calc%nblocks
+CALL c_f_pointer(actualPlan_bres_calc%offset,poffset,(/poffsetSize/))
+pnelemsSize = actualPlan_bres_calc%nblocks
+CALL c_f_pointer(actualPlan_bres_calc%nelems,pnelems,(/pnelemsSize/))
+pnthrcolSize = actualPlan_bres_calc%nblocks
+CALL c_f_pointer(actualPlan_bres_calc%nthrcol,pnthrcol,(/pnthrcolSize/))
+pthrcolSize = set%setPtr%size
+CALL c_f_pointer(actualPlan_bres_calc%thrcol,pthrcol,(/pthrcolSize/))
+CALL c_f_pointer(actualPlan_bres_calc%nindirect,pnindirect,(/numberOfIndirectOpDats/))
+CALL c_f_pointer(pindMaps(1),ind_maps1_bres_calc_3019043301,pnindirect(1))
+CALL c_f_pointer(pindMaps(2),ind_maps3_bres_calc_3019043301,pnindirect(2))
+CALL c_f_pointer(pindMaps(3),ind_maps4_bres_calc_3019043301,pnindirect(3))
+CALL c_f_pointer(pindMaps(4),ind_maps5_bres_calc_3019043301,pnindirect(4))
+CALL c_f_pointer(actualPlan_bres_calc%maps,pmaps,(/numberOfOpDats/))
+
+IF (indirectionDescriptorArray(1) >= 0) THEN
+mappingArray1Size = set%setPtr%size
+CALL c_f_pointer(pmaps(1),mappingArray1_bres_calc_3019043301,(/mappingArray1Size/))
+END IF
+
+IF (indirectionDescriptorArray(2) >= 0) THEN
+mappingArray2Size = set%setPtr%size
+CALL c_f_pointer(pmaps(2),mappingArray2_bres_calc_3019043301,(/mappingArray2Size/))
+END IF
+
+IF (indirectionDescriptorArray(3) >= 0) THEN
+mappingArray3Size = set%setPtr%size
+CALL c_f_pointer(pmaps(3),mappingArray3_bres_calc_3019043301,(/mappingArray3Size/))
+END IF
+
+IF (indirectionDescriptorArray(4) >= 0) THEN
+mappingArray4Size = set%setPtr%size
+CALL c_f_pointer(pmaps(4),mappingArray4_bres_calc_3019043301,(/mappingArray4Size/))
+END IF
+
+IF (indirectionDescriptorArray(5) >= 0) THEN
+mappingArray5Size = set%setPtr%size
+CALL c_f_pointer(pmaps(5),mappingArray5_bres_calc_3019043301,(/mappingArray5Size/))
+END IF
+
+opDatCardinalities%ind_maps1Size = pnindirect(1)
+opDatCardinalities%ind_maps3Size = pnindirect(2)
+opDatCardinalities%ind_maps4Size = pnindirect(3)
+opDatCardinalities%ind_maps5Size = pnindirect(4)
+opDatCardinalities%mappingArray1Size = mappingArray1Size
+opDatCardinalities%mappingArray2Size = mappingArray2Size
+opDatCardinalities%mappingArray3Size = mappingArray3Size
+opDatCardinalities%mappingArray4Size = mappingArray4Size
+opDatCardinalities%mappingArray5Size = mappingArray5Size
+opDatCardinalities%pblkMapSize = pblkMapSize
+opDatCardinalities%pindOffsSize = pindOffsSize
+opDatCardinalities%pindSizesSize = pindSizesSize
+opDatCardinalities%pnelemsSize = pnelemsSize
+opDatCardinalities%pnthrcolSize = pnthrcolSize
+opDatCardinalities%poffsetSize = poffsetSize
+opDatCardinalities%pthrcolSize = pthrcolSize
+istat = cudaEventRecord(endTimeHost,0)
+istat = cudaEventSynchronize(endTimeHost)
+istat = cudaEventElapsedTime(accumulatorHostTime,startTimeHost,endTimeHost)
+loopTimeHostbres_calc_3019043301 = loopTimeHostbres_calc_3019043301 + accumulatorHostTime
+istat = cudaEventRecord(startTimeKernel,0)
+blockOffset = 0
+threadsPerBlock = getBlockSize(userSubroutine,set%setPtr%size)
+
+DO i2 = 0, actualPlan_bres_calc%ncolors - 1, 1
+blocksPerGrid = ncolblk(i2 + 1)
+dynamicSharedMemorySize = actualPlan_bres_calc%nshared
+CALL bres_calc_kernel <<<blocksPerGrid,threadsPerBlock,dynamicSharedMemorySize>>>(opDatDimensions,opDatCardinalities,pi&
+&ndSizes,pindOffs,pblkMap,poffset,pnelems,pnthrcol,pthrcol,blockOffset)
+threadSynchRet = cudaThreadSynchronize()
+blockOffset = blockOffset + blocksPerGrid
+END DO
+
+istat = cudaEventRecord(endTimeKernel,0)
+istat = cudaEventSynchronize(endTimeKernel)
+istat = cudaEventElapsedTime(accumulatorKernelTime,startTimeKernel,endTimeKernel)
+loopTimeKernelbres_calc_3019043301 = loopTimeKernelbres_calc_3019043301 + accumulatorKernelTime
+istat = cudaEventRecord(startTimeHost,0)
+istat = cudaEventRecord(endTimeHost,0)
+istat = cudaEventSynchronize(endTimeHost)
+istat = cudaEventElapsedTime(accumulatorHostTime,startTimeHost,endTimeHost)
+loopTimeHostbres_calc_3019043301 = loopTimeHostbres_calc_3019043301 + accumulatorHostTime
+END SUBROUTINE
+
+attributes (device) SUBROUTINE res_calc_modified(x1,x2,q1,q2,adt1,adt2,res1,res2)
+IMPLICIT NONE
+REAL(kind=8), DIMENSION(2) :: x1
+REAL(kind=8), DIMENSION(2) :: x2
+REAL(kind=8), DIMENSION(4) :: q1
+REAL(kind=8), DIMENSION(4) :: q2
+REAL(kind=8) :: adt1
+REAL(kind=8) :: adt2
+REAL(kind=8), DIMENSION(4) :: res1
+REAL(kind=8), DIMENSION(4) :: res2
+REAL(kind=8) :: dx
+REAL(kind=8) :: dy
+REAL(kind=8) :: mu
+REAL(kind=8) :: ri
+REAL(kind=8) :: p1
+REAL(kind=8) :: vol1
+REAL(kind=8) :: p2
+REAL(kind=8) :: vol2
+REAL(kind=8) :: f
+dx = x1(1) - x2(1)
+dy = x1(2) - x2(2)
+ri = 1.0 / q1(1)
+p1 = gm1_OP2_CONSTANT * (q1(4) - 0.5 * ri * (q1(2) * q1(2) + q1(3) * q1(3)))
+vol1 = ri * (q1(2) * dy - q1(3) * dx)
+ri = 1.0 / q2(1)
+p2 = gm1_OP2_CONSTANT * (q2(4) - 0.5 * ri * (q2(2) * q2(2) + q2(3) * q2(3)))
+vol2 = ri * (q2(2) * dy - q2(3) * dx)
+mu = 0.5 * (adt1 + adt2) * eps_OP2_CONSTANT
+f = 0.5 * (vol1 * q1(1) + vol2 * q2(1)) + mu * (q1(1) - q2(1))
+res1(1) = res1(1) + f
+res2(1) = res2(1) - f
+f = 0.5 * (vol1 * q1(2) + p1 * dy + vol2 * q2(2) + p2 * dy) + mu * (q1(2) - q2(2))
+res1(2) = res1(2) + f
+res2(2) = res2(2) - f
+f = 0.5 * (vol1 * q1(3) - p1 * dx + vol2 * q2(3) - p2 * dx) + mu * (q1(3) - q2(3))
+res1(3) = res1(3) + f
+res2(3) = res2(3) - f
+f = 0.5 * (vol1 * (q1(4) + p1) + vol2 * (q2(4) + p2)) + mu * (q1(4) - q2(4))
+res1(4) = res1(4) + f
+res2(4) = res2(4) - f
+END SUBROUTINE
+
+attributes (global) SUBROUTINE res_calc_kernel(opDatDimensions,opDatCardinalities,pindSizes,pindOffs,pblkMap,poffset,pn&
+&elems,pnthrcol,pthrcol,blockOffset)
+IMPLICIT NONE
+TYPE ( res_calc_opDatDimensions ) , DEVICE :: opDatDimensions
+TYPE ( res_calc_opDatCardinalities ) , DEVICE :: opDatCardinalities
+INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pindSizesSize - 1), DEVICE :: pindSizes
+INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pindOffsSize - 1), DEVICE :: pindOffs
+INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pblkMapSize - 1), DEVICE :: pblkMap
+INTEGER(kind=4), DIMENSION(0:opDatCardinalities%poffsetSize - 1), DEVICE :: poffset
+INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pnelemsSize - 1), DEVICE :: pnelems
+INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pnthrcolSize - 1), DEVICE :: pnthrcol
+INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pthrcolSize - 1), DEVICE :: pthrcol
+INTEGER(kind=4), VALUE :: blockOffset
+REAL(kind=8), DIMENSION(0:3) :: opDat7Local
+REAL(kind=8), DIMENSION(0:3) :: opDat8Local
+REAL(kind=8), DIMENSION(0:*), SHARED :: sharedFloat8
+INTEGER(kind=4) :: sharedOffsetFloat8
+INTEGER(kind=4), SHARED :: sharedMemoryOffset
+INTEGER(kind=4), SHARED :: blockID
+INTEGER(kind=4), SHARED :: numberOfActiveThreads
+INTEGER(kind=4) :: moduloResult
+INTEGER(kind=4) :: nbytes
+INTEGER(kind=4) :: i1
+INTEGER(kind=4) :: n1
+INTEGER(kind=4) :: opDat1nBytes
+INTEGER(kind=4) :: opDat3nBytes
+INTEGER(kind=4) :: opDat5nBytes
+INTEGER(kind=4) :: opDat7nBytes
+INTEGER(kind=4) :: opDat1RoundUp
+INTEGER(kind=4) :: opDat3RoundUp
+INTEGER(kind=4) :: opDat5RoundUp
+INTEGER(kind=4) :: opDat7RoundUp
+INTEGER(kind=4), SHARED :: opDat1SharedIndirectionSize
+INTEGER(kind=4), SHARED :: opDat3SharedIndirectionSize
+INTEGER(kind=4), SHARED :: opDat5SharedIndirectionSize
+INTEGER(kind=4), SHARED :: opDat7SharedIndirectionSize
+INTEGER(kind=4) :: opDat7Map
+INTEGER(kind=4) :: opDat8Map
+INTEGER(kind=4), SHARED :: numOfColours
+INTEGER(kind=4), SHARED :: numberOfActiveThreadsCeiling
+INTEGER(kind=4) :: colour1
+INTEGER(kind=4) :: colour2
+INTEGER(kind=4) :: i2
+
+IF (threadIdx%x - 1 .EQ. 0) THEN
+blockID = pblkMap(blockIdx%x - 1 + blockOffset)
+numberOfActiveThreads = pnelems(blockID)
+numberOfActiveThreadsCeiling = blockDim%x * (1 + (numberOfActiveThreads - 1) / blockDim%x)
+numOfColours = pnthrcol(blockID)
+sharedMemoryOffset = poffset(blockID)
+opDat1SharedIndirectionSize = pindSizes(0 + blockID * 4)
+opDat3SharedIndirectionSize = pindSizes(1 + blockID * 4)
+opDat5SharedIndirectionSize = pindSizes(2 + blockID * 4)
+opDat7SharedIndirectionSize = pindSizes(3 + blockID * 4)
+END IF
+
+CALL syncthreads()
+opDat1RoundUp = opDat1SharedIndirectionSize * opDatDimensions%opDat1Dimension
+opDat3RoundUp = opDat3SharedIndirectionSize * opDatDimensions%opDat3Dimension
+opDat5RoundUp = opDat5SharedIndirectionSize * opDatDimensions%opDat5Dimension
+opDat7RoundUp = opDat7SharedIndirectionSize * opDatDimensions%opDat7Dimension
+opDat1nBytes = 0
+opDat3nBytes = opDat1nBytes * 8 / 8 + opDat1RoundUp * 8 / 8
+opDat5nBytes = opDat3nBytes * 8 / 8 + opDat3RoundUp * 8 / 8
+opDat7nBytes = opDat5nBytes * 8 / 8 + opDat5RoundUp * 8 / 8
+i1 = threadIdx%x - 1
+n1 = opDat1SharedIndirectionSize * opDatDimensions%opDat1Dimension
+
+DO WHILE (i1 < n1)
+moduloResult = mod(i1,opDatDimensions%opDat1Dimension)
+sharedFloat8(opDat1nBytes + i1) = opDat1Deviceres_calc_3884922247(moduloResult + ind_maps1_res_calc_3884922247(0 + (pin&
+&dOffs(0 + blockID * 4) + i1 / opDatDimensions%opDat1Dimension) + 1) * opDatDimensions%opDat1Dimension + 1)
+i1 = i1 + blockDim%x
+END DO
+
+i1 = threadIdx%x - 1
+n1 = opDat3SharedIndirectionSize * opDatDimensions%opDat3Dimension
+
+DO WHILE (i1 < n1)
+moduloResult = mod(i1,opDatDimensions%opDat3Dimension)
+sharedFloat8(opDat3nBytes + i1) = opDat3Deviceres_calc_3884922247(moduloResult + ind_maps3_res_calc_3884922247(0 + (pin&
+&dOffs(1 + blockID * 4) + i1 / opDatDimensions%opDat3Dimension) + 1) * opDatDimensions%opDat3Dimension + 1)
+i1 = i1 + blockDim%x
+END DO
+
+i1 = threadIdx%x - 1
+n1 = opDat5SharedIndirectionSize * opDatDimensions%opDat5Dimension
+
+DO WHILE (i1 < n1)
+moduloResult = mod(i1,opDatDimensions%opDat5Dimension)
+sharedFloat8(opDat5nBytes + i1) = opDat5Deviceres_calc_3884922247(moduloResult + ind_maps5_res_calc_3884922247(0 + (pin&
+&dOffs(2 + blockID * 4) + i1 / opDatDimensions%opDat5Dimension) + 1) * opDatDimensions%opDat5Dimension + 1)
+i1 = i1 + blockDim%x
+END DO
+
+i1 = threadIdx%x - 1
+n1 = opDat7SharedIndirectionSize * opDatDimensions%opDat7Dimension
+
+DO WHILE (i1 < n1)
+sharedFloat8(opDat7nBytes + i1) = 0
+i1 = i1 + blockDim%x
+END DO
+
+CALL syncthreads()
+i1 = threadIdx%x - 1
+
+DO WHILE (i1 < numberOfActiveThreadsCeiling)
+colour2 = -1
+
+IF (i1 < numberOfActiveThreads) THEN
+
+DO i2 = 0, opDatDimensions%opDat7Dimension - 1, 1
+opDat7Local(i2) = 0
+END DO
+
+DO i2 = 0, opDatDimensions%opDat8Dimension - 1, 1
+opDat8Local(i2) = 0
+END DO
+
+CALL res_calc_modified(sharedFloat8(opDat1nBytes + mappingArray1_res_calc_3884922247(i1 + sharedMemoryOffset + 1) * opD&
+&atDimensions%opDat1Dimension),sharedFloat8(opDat1nBytes + mappingArray2_res_calc_3884922247(i1 + sharedMemoryOffset + &
+&1) * opDatDimensions%opDat2Dimension),sharedFloat8(opDat3nBytes + mappingArray3_res_calc_3884922247(i1 + sharedMemoryO&
+&ffset + 1) * opDatDimensions%opDat3Dimension),sharedFloat8(opDat3nBytes + mappingArray4_res_calc_3884922247(i1 + share&
+&dMemoryOffset + 1) * opDatDimensions%opDat4Dimension),sharedFloat8(opDat5nBytes + mappingArray5_res_calc_3884922247(i1&
+& + sharedMemoryOffset + 1) * opDatDimensions%opDat5Dimension),sharedFloat8(opDat5nBytes + mappingArray6_res_calc_38849&
+&22247(i1 + sharedMemoryOffset + 1) * opDatDimensions%opDat6Dimension),opDat7Local,opDat8Local)
+colour2 = pthrcol(i1 + sharedMemoryOffset)
+END IF
+
+opDat7Map = mappingArray7_res_calc_3884922247(i1 + sharedMemoryOffset + 1)
+opDat8Map = mappingArray8_res_calc_3884922247(i1 + sharedMemoryOffset + 1)
+
+DO colour1 = 0, numOfColours - 1, 1
+
+IF (colour2 .EQ. colour1) THEN
+
+DO i2 = 0, opDatDimensions%opDat7Dimension - 1, 1
+sharedFloat8(opDat7nBytes + (i2 + opDat7Map * opDatDimensions%opDat7Dimension)) = sharedFloat8(opDat7nBytes + (i2 + opD&
+&at7Map * opDatDimensions%opDat7Dimension)) + opDat7Local(i2)
+END DO
+
+DO i2 = 0, opDatDimensions%opDat8Dimension - 1, 1
+sharedFloat8(opDat7nBytes + (i2 + opDat8Map * opDatDimensions%opDat8Dimension)) = sharedFloat8(opDat7nBytes + (i2 + opD&
+&at8Map * opDatDimensions%opDat8Dimension)) + opDat8Local(i2)
+END DO
+
+END IF
+
+CALL syncthreads()
+END DO
+
+i1 = i1 + blockDim%x
+END DO
+
+CALL syncthreads()
+i1 = threadIdx%x - 1
+
+DO WHILE (i1 < opDat7SharedIndirectionSize * opDatDimensions%opDat7Dimension)
+moduloResult = mod(i1,opDatDimensions%opDat7Dimension)
+opDat7Deviceres_calc_3884922247(moduloResult + ind_maps7_res_calc_3884922247(0 + (pindOffs(3 + blockID * 4) + i1 / opDa&
+&tDimensions%opDat7Dimension) + 1) * opDatDimensions%opDat7Dimension + 1) = opDat7Deviceres_calc_3884922247(moduloResul&
+&t + ind_maps7_res_calc_3884922247(0 + (pindOffs(3 + blockID * 4) + i1 / opDatDimensions%opDat7Dimension) + 1) * opDatD&
+&imensions%opDat7Dimension + 1) + sharedFloat8(opDat7nBytes + i1)
+i1 = i1 + blockDim%x
+END DO
+
+END SUBROUTINE
+
+attributes (host) SUBROUTINE res_calc_host(userSubroutine,set,opArg1,opArg2,opArg3,opArg4,opArg5,opArg6,opArg7,opArg8)
+IMPLICIT NONE
+character(len=9), INTENT(IN) :: userSubroutine
+TYPE ( op_set ) , INTENT(IN) :: set
+TYPE ( op_arg ) , INTENT(IN) :: opArg1
+TYPE ( op_arg ) , INTENT(IN) :: opArg2
+TYPE ( op_arg ) , INTENT(IN) :: opArg3
+TYPE ( op_arg ) , INTENT(IN) :: opArg4
+TYPE ( op_arg ) , INTENT(IN) :: opArg5
+TYPE ( op_arg ) , INTENT(IN) :: opArg6
+TYPE ( op_arg ) , INTENT(IN) :: opArg7
+TYPE ( op_arg ) , INTENT(IN) :: opArg8
+TYPE ( op_arg ) , DIMENSION(8) :: opArgArray
+INTEGER(kind=4) :: numberOfOpDats
+INTEGER(kind=4) :: returnMPIHaloExchange
+INTEGER(kind=4) :: returnSetKernelTiming
+TYPE ( res_calc_opDatDimensions ) , DEVICE :: opDatDimensions
+TYPE ( res_calc_opDatCardinalities ) , DEVICE :: opDatCardinalities
+INTEGER(kind=4) :: opDat1Cardinality
+INTEGER(kind=4) :: opDat3Cardinality
+INTEGER(kind=4) :: opDat5Cardinality
+INTEGER(kind=4) :: opDat7Cardinality
+INTEGER(kind=4) :: blocksPerGrid
+INTEGER(kind=4) :: threadsPerBlock
+INTEGER(kind=4) :: dynamicSharedMemorySize
+INTEGER(kind=4) :: threadSynchRet
+TYPE ( op_plan ) , POINTER :: actualPlan_res_calc
+TYPE ( c_devptr ) , POINTER, DIMENSION(:) :: pindMaps
+TYPE ( c_devptr ) , POINTER, DIMENSION(:) :: pmaps
+INTEGER(kind=4) :: pindMapsSize
+INTEGER(kind=4), DIMENSION(1:8) :: opDatArray
+INTEGER(kind=4), DIMENSION(1:8) :: mappingIndicesArray
+INTEGER(kind=4), DIMENSION(1:8) :: mappingArray
+INTEGER(kind=4), DIMENSION(1:8) :: accessDescriptorArray
+INTEGER(kind=4), DIMENSION(1:8) :: indirectionDescriptorArray
+INTEGER(kind=4) :: mappingArray1Size
+INTEGER(kind=4) :: mappingArray2Size
+INTEGER(kind=4) :: mappingArray3Size
+INTEGER(kind=4) :: mappingArray4Size
+INTEGER(kind=4) :: mappingArray5Size
+INTEGER(kind=4) :: mappingArray6Size
+INTEGER(kind=4) :: mappingArray7Size
+INTEGER(kind=4) :: mappingArray8Size
+INTEGER(kind=4) :: numberOfIndirectOpDats
+INTEGER(kind=4) :: blockOffset
+INTEGER(kind=4) :: pindSizesSize
+INTEGER(kind=4) :: pindOffsSize
+INTEGER(kind=4) :: pblkMapSize
+INTEGER(kind=4) :: poffsetSize
+INTEGER(kind=4) :: pnelemsSize
+INTEGER(kind=4) :: pnthrcolSize
+INTEGER(kind=4) :: pthrcolSize
+INTEGER(kind=4), POINTER, DIMENSION(:) :: ncolblk
+INTEGER(kind=4), POINTER, DIMENSION(:) :: pnindirect
+INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: pindSizes
+INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: pindOffs
+INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: pblkMap
+INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: poffset
+INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: pnelems
+INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: pnthrcol
+INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: pthrcol
+INTEGER(kind=4) :: partitionSize
+INTEGER(kind=4) :: blockSize
+INTEGER(kind=4) :: i1
+INTEGER(kind=4) :: i2
+INTEGER(kind=4), SAVE :: calledTimes
+INTEGER(kind=4) :: returnDumpOpDat
+TYPE ( cudaEvent )  :: startTimeHost
+TYPE ( cudaEvent )  :: endTimeHost
+TYPE ( cudaEvent )  :: startTimeKernel
+TYPE ( cudaEvent )  :: endTimeKernel
+INTEGER(kind=4) :: istat
+REAL(kind=4) :: accumulatorHostTime
+REAL(kind=4) :: accumulatorKernelTime
+numberOfOpDats = 8
+opArgArray(1) = opArg1
+opArgArray(2) = opArg2
+opArgArray(3) = opArg3
+opArgArray(4) = opArg4
+opArgArray(5) = opArg5
+opArgArray(6) = opArg6
+opArgArray(7) = opArg7
+opArgArray(8) = opArg8
+
+IF (set%setPtr%size .EQ. 0) THEN
+RETURN
+END IF
+
+istat = cudaEventCreate(startTimeHost)
+istat = cudaEventCreate(endTimeHost)
+istat = cudaEventCreate(startTimeKernel)
+istat = cudaEventCreate(endTimeKernel)
+numberCalledres_calc_3884922247 = numberCalledres_calc_3884922247 + 1
+istat = cudaEventRecord(startTimeHost,0)
+indirectionDescriptorArray(1) = 0
+indirectionDescriptorArray(2) = 0
+indirectionDescriptorArray(3) = 1
+indirectionDescriptorArray(4) = 1
+indirectionDescriptorArray(5) = 2
+indirectionDescriptorArray(6) = 2
+indirectionDescriptorArray(7) = 3
+indirectionDescriptorArray(8) = 3
+numberOfIndirectOpDats = 4
+partitionSize = getPartitionSize(userSubroutine,set%setPtr%size)
+planRet_res_calc = FortranPlanCaller(userSubroutine,set%setCPtr,partitionSize,numberOfOpDats,opArgArray,numberOfIndirec&
+&tOpDats,indirectionDescriptorArray)
+opDatDimensions%opDat1Dimension = opArg1%dim
+opDatDimensions%opDat2Dimension = opArg2%dim
+opDatDimensions%opDat3Dimension = opArg3%dim
+opDatDimensions%opDat4Dimension = opArg4%dim
+opDatDimensions%opDat5Dimension = opArg5%dim
+opDatDimensions%opDat6Dimension = opArg6%dim
+opDatDimensions%opDat7Dimension = opArg7%dim
+opDatDimensions%opDat8Dimension = opArg8%dim
+opDatCardinalities%opDat1Cardinality = opArg1%dim * getSetSizeFromOpArg(opArg1)
+opDatCardinalities%opDat3Cardinality = opArg3%dim * getSetSizeFromOpArg(opArg3)
+opDatCardinalities%opDat5Cardinality = opArg5%dim * getSetSizeFromOpArg(opArg5)
+opDatCardinalities%opDat7Cardinality = opArg7%dim * getSetSizeFromOpArg(opArg7)
+opDat1Cardinality = opArg1%dim * getSetSizeFromOpArg(opArg1)
+opDat3Cardinality = opArg3%dim * getSetSizeFromOpArg(opArg3)
+opDat5Cardinality = opArg5%dim * getSetSizeFromOpArg(opArg5)
+opDat7Cardinality = opArg7%dim * getSetSizeFromOpArg(opArg7)
+CALL c_f_pointer(opArg1%data_d,opDat1Deviceres_calc_3884922247,(/opDat1Cardinality/))
+CALL c_f_pointer(opArg3%data_d,opDat3Deviceres_calc_3884922247,(/opDat3Cardinality/))
+CALL c_f_pointer(opArg5%data_d,opDat5Deviceres_calc_3884922247,(/opDat5Cardinality/))
+CALL c_f_pointer(opArg7%data_d,opDat7Deviceres_calc_3884922247,(/opDat7Cardinality/))
+CALL c_f_pointer(planRet_res_calc,actualPlan_res_calc)
+CALL c_f_pointer(actualPlan_res_calc%ind_maps,pindMaps,(/numberOfIndirectOpDats/))
+CALL c_f_pointer(actualPlan_res_calc%ncolblk,ncolblk,(/set%setPtr%size/))
+pindSizesSize = actualPlan_res_calc%nblocks * numberOfIndirectOpDats
+CALL c_f_pointer(actualPlan_res_calc%ind_sizes,pindSizes,(/pindSizesSize/))
+pindOffsSize = pindSizesSize
+CALL c_f_pointer(actualPlan_res_calc%ind_offs,pindOffs,(/pindOffsSize/))
+pblkMapSize = actualPlan_res_calc%nblocks
+CALL c_f_pointer(actualPlan_res_calc%blkmap,pblkMap,(/pblkMapSize/))
+poffsetSize = actualPlan_res_calc%nblocks
+CALL c_f_pointer(actualPlan_res_calc%offset,poffset,(/poffsetSize/))
+pnelemsSize = actualPlan_res_calc%nblocks
+CALL c_f_pointer(actualPlan_res_calc%nelems,pnelems,(/pnelemsSize/))
+pnthrcolSize = actualPlan_res_calc%nblocks
+CALL c_f_pointer(actualPlan_res_calc%nthrcol,pnthrcol,(/pnthrcolSize/))
+pthrcolSize = set%setPtr%size
+CALL c_f_pointer(actualPlan_res_calc%thrcol,pthrcol,(/pthrcolSize/))
+CALL c_f_pointer(actualPlan_res_calc%nindirect,pnindirect,(/numberOfIndirectOpDats/))
+CALL c_f_pointer(pindMaps(1),ind_maps1_res_calc_3884922247,pnindirect(1))
+CALL c_f_pointer(pindMaps(2),ind_maps3_res_calc_3884922247,pnindirect(2))
+CALL c_f_pointer(pindMaps(3),ind_maps5_res_calc_3884922247,pnindirect(3))
+CALL c_f_pointer(pindMaps(4),ind_maps7_res_calc_3884922247,pnindirect(4))
+CALL c_f_pointer(actualPlan_res_calc%maps,pmaps,(/numberOfOpDats/))
+
+IF (indirectionDescriptorArray(1) >= 0) THEN
+mappingArray1Size = set%setPtr%size
+CALL c_f_pointer(pmaps(1),mappingArray1_res_calc_3884922247,(/mappingArray1Size/))
+END IF
+
+IF (indirectionDescriptorArray(2) >= 0) THEN
+mappingArray2Size = set%setPtr%size
+CALL c_f_pointer(pmaps(2),mappingArray2_res_calc_3884922247,(/mappingArray2Size/))
+END IF
+
+IF (indirectionDescriptorArray(3) >= 0) THEN
+mappingArray3Size = set%setPtr%size
+CALL c_f_pointer(pmaps(3),mappingArray3_res_calc_3884922247,(/mappingArray3Size/))
+END IF
+
+IF (indirectionDescriptorArray(4) >= 0) THEN
+mappingArray4Size = set%setPtr%size
+CALL c_f_pointer(pmaps(4),mappingArray4_res_calc_3884922247,(/mappingArray4Size/))
+END IF
+
+IF (indirectionDescriptorArray(5) >= 0) THEN
+mappingArray5Size = set%setPtr%size
+CALL c_f_pointer(pmaps(5),mappingArray5_res_calc_3884922247,(/mappingArray5Size/))
+END IF
+
+IF (indirectionDescriptorArray(6) >= 0) THEN
+mappingArray6Size = set%setPtr%size
+CALL c_f_pointer(pmaps(6),mappingArray6_res_calc_3884922247,(/mappingArray6Size/))
+END IF
+
+IF (indirectionDescriptorArray(7) >= 0) THEN
+mappingArray7Size = set%setPtr%size
+CALL c_f_pointer(pmaps(7),mappingArray7_res_calc_3884922247,(/mappingArray7Size/))
+END IF
+
+IF (indirectionDescriptorArray(8) >= 0) THEN
+mappingArray8Size = set%setPtr%size
+CALL c_f_pointer(pmaps(8),mappingArray8_res_calc_3884922247,(/mappingArray8Size/))
+END IF
+
+opDatCardinalities%ind_maps1Size = pnindirect(1)
+opDatCardinalities%ind_maps3Size = pnindirect(2)
+opDatCardinalities%ind_maps5Size = pnindirect(3)
+opDatCardinalities%ind_maps7Size = pnindirect(4)
+opDatCardinalities%mappingArray1Size = mappingArray1Size
+opDatCardinalities%mappingArray2Size = mappingArray2Size
+opDatCardinalities%mappingArray3Size = mappingArray3Size
+opDatCardinalities%mappingArray4Size = mappingArray4Size
+opDatCardinalities%mappingArray5Size = mappingArray5Size
+opDatCardinalities%mappingArray6Size = mappingArray6Size
+opDatCardinalities%mappingArray7Size = mappingArray7Size
+opDatCardinalities%mappingArray8Size = mappingArray8Size
+opDatCardinalities%pblkMapSize = pblkMapSize
+opDatCardinalities%pindOffsSize = pindOffsSize
+opDatCardinalities%pindSizesSize = pindSizesSize
+opDatCardinalities%pnelemsSize = pnelemsSize
+opDatCardinalities%pnthrcolSize = pnthrcolSize
+opDatCardinalities%poffsetSize = poffsetSize
+opDatCardinalities%pthrcolSize = pthrcolSize
+istat = cudaEventRecord(endTimeHost,0)
+istat = cudaEventSynchronize(endTimeHost)
+istat = cudaEventElapsedTime(accumulatorHostTime,startTimeHost,endTimeHost)
+loopTimeHostres_calc_3884922247 = loopTimeHostres_calc_3884922247 + accumulatorHostTime
+istat = cudaEventRecord(startTimeKernel,0)
+blockOffset = 0
+threadsPerBlock = getBlockSize(userSubroutine,set%setPtr%size)
+
+DO i2 = 0, actualPlan_res_calc%ncolors - 1, 1
+blocksPerGrid = ncolblk(i2 + 1)
+dynamicSharedMemorySize = actualPlan_res_calc%nshared
+CALL res_calc_kernel <<<blocksPerGrid,threadsPerBlock,dynamicSharedMemorySize>>>(opDatDimensions,opDatCardinalities,pin&
+&dSizes,pindOffs,pblkMap,poffset,pnelems,pnthrcol,pthrcol,blockOffset)
+threadSynchRet = cudaThreadSynchronize()
+blockOffset = blockOffset + blocksPerGrid
+END DO
+
+istat = cudaEventRecord(endTimeKernel,0)
+istat = cudaEventSynchronize(endTimeKernel)
+istat = cudaEventElapsedTime(accumulatorKernelTime,startTimeKernel,endTimeKernel)
+loopTimeKernelres_calc_3884922247 = loopTimeKernelres_calc_3884922247 + accumulatorKernelTime
+istat = cudaEventRecord(startTimeHost,0)
+istat = cudaEventRecord(endTimeHost,0)
+istat = cudaEventSynchronize(endTimeHost)
+istat = cudaEventElapsedTime(accumulatorHostTime,startTimeHost,endTimeHost)
+loopTimeHostres_calc_3884922247 = loopTimeHostres_calc_3884922247 + accumulatorHostTime
+END SUBROUTINE
+
+attributes (device) SUBROUTINE s2456222878(qdim,q,qold)
+IMPLICIT NONE
+INTEGER(kind=4), VALUE :: qdim
+REAL(kind=8), DIMENSION(qdim) :: q
+REAL(kind=8), DIMENSION(*) :: qold
+INTEGER(kind=4) :: i
+
+DO i = 1, qdim
+qold(i) = q(i)
+END DO
+
+END SUBROUTINE
+
+attributes (global) SUBROUTINE s2882256832(opDatDimensions,opDatCardinalities,opDat1,setSize,warpSize,sharedMemoryOffse&
+&t)
+IMPLICIT NONE
+TYPE ( save_soln_qdim_opDatDimensions ) , DEVICE :: opDatDimensions
+TYPE ( save_soln_qdim_opDatCardinalities ) , DEVICE :: opDatCardinalities
+INTEGER(kind=4), VALUE :: opDat1
+INTEGER(kind=4), VALUE :: setSize
+INTEGER(kind=4), VALUE :: warpSize
+INTEGER(kind=4), VALUE :: sharedMemoryOffset
+DOUBLE PRECISION, DIMENSION(0:3) :: opDat2Local
+DOUBLE PRECISION, DIMENSION(0:3) :: opDat3Local
+DOUBLE PRECISION, DIMENSION(0:*), SHARED :: sharedDouble8
+INTEGER(kind=4) :: sharedOffsetDouble8
+INTEGER(kind=4) :: i1
+INTEGER(kind=4) :: i2
+INTEGER(kind=4) :: numberOfActiveThreads
+INTEGER(kind=4) :: localOffset
+INTEGER(kind=4) :: threadID
+threadID = mod(threadIdx%x - 1,warpSize)
+sharedOffsetDouble8 = sharedMemoryOffset * ((threadIdx%x - 1) / warpSize) / 8
+
+DO i1 = threadIdx%x - 1 + (blockIdx%x - 1) * blockDim%x, setSize - 1, blockDim%x * gridDim%x
+localOffset = i1 - threadID
+numberOfActiveThreads = min(warpSize,setSize - localOffset)
+
+DO i2 = 0, opDatDimensions%opDat2Dimension - 1, 1
+sharedDouble8(sharedOffsetDouble8 + (threadID + i2 * numberOfActiveThreads)) = opDat2Devicesave_soln_qdim_2320554256(th&
+&readID + (i2 * numberOfActiveThreads + localOffset * opDatDimensions%opDat2Dimension) + 1)
+END DO
+
+DO i2 = 0, opDatDimensions%opDat2Dimension - 1, 1
+opDat2Local(i2) = sharedDouble8(sharedOffsetDouble8 + (i2 + threadID * opDatDimensions%opDat2Dimension))
+END DO
+
+CALL s2456222878(opDat1,opDat2Local,opDat3Local)
+
+DO i2 = 0, opDatDimensions%opDat3Dimension - 1, 1
+sharedDouble8(sharedOffsetDouble8 + (i2 + threadID * opDatDimensions%opDat3Dimension)) = opDat3Local(i2)
+END DO
+
+DO i2 = 0, opDatDimensions%opDat3Dimension - 1, 1
+opDat3Devicesave_soln_qdim_2320554256(threadID + (i2 * numberOfActiveThreads + localOffset * opDatDimensions%opDat3Dime&
+&nsion) + 1) = sharedDouble8(sharedOffsetDouble8 + (threadID + i2 * numberOfActiveThreads))
+END DO
+
+END DO
+
+END SUBROUTINE
+
+attributes (host) SUBROUTINE save_soln_qdim_host(userSubroutine,set,opArg1,opArg2,opArg3)
+IMPLICIT NONE
+character(len=15), INTENT(IN) :: userSubroutine
+TYPE ( op_set ) , INTENT(IN) :: set
+TYPE ( op_arg ) , INTENT(IN) :: opArg1
+TYPE ( op_arg ) , INTENT(IN) :: opArg2
+TYPE ( op_arg ) , INTENT(IN) :: opArg3
+TYPE ( op_arg ) , DIMENSION(3) :: opArgArray
+INTEGER(kind=4) :: numberOfOpDats
+INTEGER(kind=4) :: returnMPIHaloExchange
+INTEGER(kind=4) :: returnSetKernelTiming
+TYPE ( save_soln_qdim_opDatDimensions ) , DEVICE :: opDatDimensions
+TYPE ( save_soln_qdim_opDatCardinalities ) , DEVICE :: opDatCardinalities
+INTEGER(kind=4) :: opDat2Cardinality
+INTEGER(kind=4) :: opDat3Cardinality
+INTEGER(kind=4), POINTER :: opDat1Host
+INTEGER(kind=4) :: blocksPerGrid
+INTEGER(kind=4) :: threadsPerBlock
+INTEGER(kind=4) :: dynamicSharedMemorySize
+INTEGER(kind=4) :: threadSynchRet
+INTEGER(kind=4) :: sharedMemoryOffset
+INTEGER(kind=4) :: warpSize
+INTEGER(kind=4), SAVE :: calledTimes
+INTEGER(kind=4) :: returnDumpOpDat
+INTEGER(kind=4) :: i1
+INTEGER(kind=4) :: i2
+TYPE ( cudaEvent )  :: startTimeHost
+TYPE ( cudaEvent )  :: endTimeHost
+TYPE ( cudaEvent )  :: startTimeKernel
+TYPE ( cudaEvent )  :: endTimeKernel
+INTEGER(kind=4) :: istat
+REAL(kind=4) :: accumulatorHostTime
+REAL(kind=4) :: accumulatorKernelTime
+numberOfOpDats = 3
+opArgArray(1) = opArg1
+opArgArray(2) = opArg2
+opArgArray(3) = opArg3
+
+IF (set%setPtr%size .EQ. 0) THEN
+RETURN
+END IF
+
+istat = cudaEventCreate(startTimeHost)
+istat = cudaEventCreate(endTimeHost)
+istat = cudaEventCreate(startTimeKernel)
+istat = cudaEventCreate(endTimeKernel)
+numberCalledsave_soln_qdim_2320554256 = numberCalledsave_soln_qdim_2320554256 + 1
+istat = cudaEventRecord(startTimeHost,0)
+blocksPerGrid = 200
+threadsPerBlock = getBlockSize(userSubroutine,set%setPtr%size)
+warpSize = OP_WARPSIZE
+dynamicSharedMemorySize = 32
+sharedMemoryOffset = dynamicSharedMemorySize * OP_WARPSIZE
+dynamicSharedMemorySize = dynamicSharedMemorySize * threadsPerBlock
+opDatDimensions%opDat2Dimension = opArg2%dim
+opDatDimensions%opDat3Dimension = opArg3%dim
+opDatCardinalities%opDat2Cardinality = opArg2%dim * getSetSizeFromOpArg(opArg2)
+opDatCardinalities%opDat3Cardinality = opArg3%dim * getSetSizeFromOpArg(opArg3)
+opDat2Cardinality = opArg2%dim * getSetSizeFromOpArg(opArg2)
+opDat3Cardinality = opArg3%dim * getSetSizeFromOpArg(opArg3)
+CALL c_f_pointer(opArg1%data,opDat1Host)
+CALL c_f_pointer(opArg2%data_d,opDat2Devicesave_soln_qdim_2320554256,(/opDat2Cardinality/))
+CALL c_f_pointer(opArg3%data_d,opDat3Devicesave_soln_qdim_2320554256,(/opDat3Cardinality/))
+istat = cudaEventRecord(endTimeHost,0)
+istat = cudaEventSynchronize(endTimeHost)
+istat = cudaEventElapsedTime(accumulatorHostTime,startTimeHost,endTimeHost)
+loopTimeHostsave_soln_qdim_2320554256 = loopTimeHostsave_soln_qdim_2320554256 + accumulatorHostTime
+istat = cudaEventRecord(startTimeKernel,0)
+CALL s2882256832 <<<blocksPerGrid,threadsPerBlock,dynamicSharedMemorySize>>>(opDatDimensions,opDatCardinalities,opDat1H&
+&ost,set%setPtr%size,warpSize,sharedMemoryOffset)
+threadSynchRet = cudaThreadSynchronize()
+istat = cudaEventRecord(endTimeKernel,0)
+istat = cudaEventSynchronize(endTimeKernel)
+istat = cudaEventElapsedTime(accumulatorKernelTime,startTimeKernel,endTimeKernel)
+loopTimeKernelsave_soln_qdim_2320554256 = loopTimeKernelsave_soln_qdim_2320554256 + accumulatorKernelTime
+istat = cudaEventRecord(startTimeHost,0)
+calledTimes = calledTimes + 1
+#ifdef PRINT_OUTPUT_DAT
+returnDumpOpDat = dumpOpDatFromDevice(opArg3,("save_soln_qdim" // "opArg3") // CHAR(0),calledTimes)
+#endif 
+istat = cudaEventRecord(endTimeHost,0)
+istat = cudaEventSynchronize(endTimeHost)
+istat = cudaEventElapsedTime(accumulatorHostTime,startTimeHost,endTimeHost)
+loopTimeHostsave_soln_qdim_2320554256 = loopTimeHostsave_soln_qdim_2320554256 + accumulatorHostTime
+END SUBROUTINE
+
+attributes (device) SUBROUTINE update_modified(qold,q,res,adt,rms)
+IMPLICIT NONE
+REAL(kind=8), DIMENSION(*) :: qold
+REAL(kind=8), DIMENSION(*) :: q
+REAL(kind=8), DIMENSION(*) :: res
+REAL(kind=8), DIMENSION(*) :: adt
+REAL(kind=8), DIMENSION(1) :: rms
+REAL(kind=8) :: del
+REAL(kind=8) :: adti
+INTEGER(kind=4) :: i
+adti = 1.0 / adt(1)
+
+DO i = 1, 4
+del = adti * res(i)
+q(i) = qold(i) - del
+res(i) = 0.0
+rms(1) = rms(1) + del * del
+END DO
+
+END SUBROUTINE
+
+attributes (global) SUBROUTINE update_kernel(opDatDimensions,opDatCardinalities,reductionArrayDevice5,setSize,warpSize,&
+&sharedMemoryOffset)
+IMPLICIT NONE
+TYPE ( update_opDatDimensions ) , DEVICE :: opDatDimensions
+TYPE ( update_opDatCardinalities ) , DEVICE :: opDatCardinalities
+REAL(kind=8), DIMENSION(:), DEVICE :: reductionArrayDevice5
+INTEGER(kind=4), VALUE :: setSize
+INTEGER(kind=4), VALUE :: warpSize
+INTEGER(kind=4), VALUE :: sharedMemoryOffset
+REAL(kind=8), DIMENSION(0:3) :: opDat1Local
+REAL(kind=8), DIMENSION(0:3) :: opDat2Local
+REAL(kind=8), DIMENSION(0:3) :: opDat3Local
+REAL(kind=8) :: opDat5Local
+REAL(kind=8), DIMENSION(0:*), SHARED :: sharedFloat8
+INTEGER(kind=4) :: sharedOffsetFloat8
+INTEGER(kind=4) :: i1
+INTEGER(kind=4) :: i2
+INTEGER(kind=4) :: numberOfActiveThreads
+INTEGER(kind=4) :: localOffset
+INTEGER(kind=4) :: threadID
+threadID = mod(threadIdx%x - 1,warpSize)
+sharedOffsetFloat8 = sharedMemoryOffset * ((threadIdx%x - 1) / warpSize) / 8
+
+DO i1 = threadIdx%x - 1 + (blockIdx%x - 1) * blockDim%x, setSize - 1, blockDim%x * gridDim%x
+localOffset = i1 - threadID
+numberOfActiveThreads = min(warpSize,setSize - localOffset)
+
+DO i2 = 0, opDatDimensions%opDat1Dimension - 1, 1
+sharedFloat8(sharedOffsetFloat8 + (threadID + i2 * numberOfActiveThreads)) = opDat1Deviceupdate_2692987784(threadID + (&
+&i2 * numberOfActiveThreads + localOffset * opDatDimensions%opDat1Dimension) + 1)
+END DO
+
+DO i2 = 0, opDatDimensions%opDat1Dimension - 1, 1
+opDat1Local(i2) = sharedFloat8(sharedOffsetFloat8 + (i2 + threadID * opDatDimensions%opDat1Dimension))
+END DO
+
+DO i2 = 0, opDatDimensions%opDat3Dimension - 1, 1
+sharedFloat8(sharedOffsetFloat8 + (threadID + i2 * numberOfActiveThreads)) = opDat3Deviceupdate_2692987784(threadID + (&
+&i2 * numberOfActiveThreads + localOffset * opDatDimensions%opDat3Dimension) + 1)
+END DO
+
+DO i2 = 0, opDatDimensions%opDat3Dimension - 1, 1
+opDat3Local(i2) = sharedFloat8(sharedOffsetFloat8 + (i2 + threadID * opDatDimensions%opDat3Dimension))
+END DO
+
+CALL update_modified(opDat1Local,opDat2Local,opDat3Local,opDat4Deviceupdate_2692987784(i1 + 1),opDat5Local)
+
+DO i2 = 0, opDatDimensions%opDat2Dimension - 1, 1
+sharedFloat8(sharedOffsetFloat8 + (i2 + threadID * opDatDimensions%opDat2Dimension)) = opDat2Local(i2)
+END DO
+
+DO i2 = 0, opDatDimensions%opDat2Dimension - 1, 1
+opDat2Deviceupdate_2692987784(threadID + (i2 * numberOfActiveThreads + localOffset * opDatDimensions%opDat2Dimension) +&
+& 1) = sharedFloat8(sharedOffsetFloat8 + (threadID + i2 * numberOfActiveThreads))
+END DO
+
+DO i2 = 0, opDatDimensions%opDat3Dimension - 1, 1
+sharedFloat8(sharedOffsetFloat8 + (i2 + threadID * opDatDimensions%opDat3Dimension)) = opDat3Local(i2)
+END DO
+
+DO i2 = 0, opDatDimensions%opDat3Dimension - 1, 1
+opDat3Deviceupdate_2692987784(threadID + (i2 * numberOfActiveThreads + localOffset * opDatDimensions%opDat3Dimension) +&
+& 1) = sharedFloat8(sharedOffsetFloat8 + (threadID + i2 * numberOfActiveThreads))
+END DO
+
+END DO
+
+CALL ReductionFloat8(reductionArrayDevice5(blockIdx%x - 1 + 1:),opDat5Local,0)
+END SUBROUTINE
+
+attributes (host) SUBROUTINE update_host(userSubroutine,set,opArg1,opArg2,opArg3,opArg4,opArg5)
+IMPLICIT NONE
+character(len=7), INTENT(IN) :: userSubroutine
+TYPE ( op_set ) , INTENT(IN) :: set
+TYPE ( op_arg ) , INTENT(IN) :: opArg1
+TYPE ( op_arg ) , INTENT(IN) :: opArg2
+TYPE ( op_arg ) , INTENT(IN) :: opArg3
+TYPE ( op_arg ) , INTENT(IN) :: opArg4
+TYPE ( op_arg ) , INTENT(IN) :: opArg5
+TYPE ( op_arg ) , DIMENSION(5) :: opArgArray
+INTEGER(kind=4) :: numberOfOpDats
+INTEGER(kind=4) :: returnMPIHaloExchange
+INTEGER(kind=4) :: returnSetKernelTiming
+TYPE ( update_opDatDimensions ) , DEVICE :: opDatDimensions
+TYPE ( update_opDatCardinalities ) , DEVICE :: opDatCardinalities
+INTEGER(kind=4) :: opDat1Cardinality
+INTEGER(kind=4) :: opDat2Cardinality
+INTEGER(kind=4) :: opDat3Cardinality
+INTEGER(kind=4) :: opDat4Cardinality
+INTEGER(kind=4) :: opDat5Cardinality
+INTEGER(kind=4) :: blocksPerGrid
+INTEGER(kind=4) :: threadsPerBlock
+INTEGER(kind=4) :: dynamicSharedMemorySize
+INTEGER(kind=4) :: threadSynchRet
+INTEGER(kind=4) :: sharedMemoryOffset
+INTEGER(kind=4) :: warpSize
+INTEGER(kind=4), SAVE :: calledTimes
+INTEGER(kind=4) :: returnDumpOpDat
+INTEGER(kind=4) :: i1
+INTEGER(kind=4) :: i2
+INTEGER(kind=4) :: i10
+INTEGER(kind=4) :: i20
+REAL(kind=8), DIMENSION(:), ALLOCATABLE :: reductionArrayHost5
+REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: reductionArrayDevice5
+REAL(kind=8), POINTER :: opDat5Host
+INTEGER(kind=4) :: reductionCardinality5
+TYPE ( cudaEvent )  :: startTimeHost
+TYPE ( cudaEvent )  :: endTimeHost
+TYPE ( cudaEvent )  :: startTimeKernel
+TYPE ( cudaEvent )  :: endTimeKernel
+INTEGER(kind=4) :: istat
+REAL(kind=4) :: accumulatorHostTime
+REAL(kind=4) :: accumulatorKernelTime
+numberOfOpDats = 5
+opArgArray(1) = opArg1
+opArgArray(2) = opArg2
+opArgArray(3) = opArg3
+opArgArray(4) = opArg4
+opArgArray(5) = opArg5
+
+IF (set%setPtr%size .EQ. 0) THEN
+RETURN
+END IF
+
+istat = cudaEventCreate(startTimeHost)
+istat = cudaEventCreate(endTimeHost)
+istat = cudaEventCreate(startTimeKernel)
+istat = cudaEventCreate(endTimeKernel)
+numberCalledupdate_2692987784 = numberCalledupdate_2692987784 + 1
+istat = cudaEventRecord(startTimeHost,0)
+blocksPerGrid = 200
+threadsPerBlock = getBlockSize(userSubroutine,set%setPtr%size)
+warpSize = OP_WARPSIZE
+dynamicSharedMemorySize = 32
+sharedMemoryOffset = dynamicSharedMemorySize * OP_WARPSIZE
+dynamicSharedMemorySize = dynamicSharedMemorySize * threadsPerBlock
+opDatDimensions%opDat1Dimension = opArg1%dim
+opDatDimensions%opDat2Dimension = opArg2%dim
+opDatDimensions%opDat3Dimension = opArg3%dim
+opDatDimensions%opDat4Dimension = opArg4%dim
+opDatCardinalities%opDat1Cardinality = opArg1%dim * getSetSizeFromOpArg(opArg1)
+opDatCardinalities%opDat2Cardinality = opArg2%dim * getSetSizeFromOpArg(opArg2)
+opDatCardinalities%opDat3Cardinality = opArg3%dim * getSetSizeFromOpArg(opArg3)
+opDatCardinalities%opDat4Cardinality = opArg4%dim * getSetSizeFromOpArg(opArg4)
+opDatCardinalities%opDat5Cardinality = set%setPtr%size
+opDat1Cardinality = opArg1%dim * getSetSizeFromOpArg(opArg1)
+opDat2Cardinality = opArg2%dim * getSetSizeFromOpArg(opArg2)
+opDat3Cardinality = opArg3%dim * getSetSizeFromOpArg(opArg3)
+opDat4Cardinality = opArg4%dim * getSetSizeFromOpArg(opArg4)
+opDat5Cardinality = set%setPtr%size
+CALL c_f_pointer(opArg1%data_d,opDat1Deviceupdate_2692987784,(/opDat1Cardinality/))
+CALL c_f_pointer(opArg2%data_d,opDat2Deviceupdate_2692987784,(/opDat2Cardinality/))
+CALL c_f_pointer(opArg3%data_d,opDat3Deviceupdate_2692987784,(/opDat3Cardinality/))
+CALL c_f_pointer(opArg4%data_d,opDat4Deviceupdate_2692987784,(/opDat4Cardinality/))
+CALL c_f_pointer(opArg5%data,opDat5Host)
+reductionCardinality5 = blocksPerGrid * 1
+allocate( reductionArrayHost5(reductionCardinality5) )
+allocate( reductionArrayDevice5(reductionCardinality5) )
+
+DO i10 = 1, reductionCardinality5, 1
+reductionArrayHost5(i10) = 0.00000
+END DO
+
+reductionArrayDevice5 = reductionArrayHost5
+istat = cudaEventRecord(endTimeHost,0)
+istat = cudaEventSynchronize(endTimeHost)
+istat = cudaEventElapsedTime(accumulatorHostTime,startTimeHost,endTimeHost)
+loopTimeHostupdate_2692987784 = loopTimeHostupdate_2692987784 + accumulatorHostTime
+istat = cudaEventRecord(startTimeKernel,0)
+CALL update_kernel <<<blocksPerGrid,threadsPerBlock,dynamicSharedMemorySize>>>(opDatDimensions,opDatCardinalities,reduc&
+&tionArrayDevice5,set%setPtr%size,warpSize,sharedMemoryOffset)
+threadSynchRet = cudaThreadSynchronize()
+istat = cudaEventRecord(endTimeKernel,0)
+istat = cudaEventSynchronize(endTimeKernel)
+istat = cudaEventElapsedTime(accumulatorKernelTime,startTimeKernel,endTimeKernel)
+loopTimeKernelupdate_2692987784 = loopTimeKernelupdate_2692987784 + accumulatorKernelTime
+istat = cudaEventRecord(startTimeHost,0)
+reductionArrayHost5 = reductionArrayDevice5
+
+DO i10 = 0, reductionCardinality5 - 1, 1
+opDat5Host = reductionArrayHost5(i10) + opDat5Host
+END DO
+
+deallocate( reductionArrayHost5 )
+deallocate( reductionArrayDevice5 )
+calledTimes = calledTimes + 1
+#ifdef PRINT_OUTPUT_DAT
+returnDumpOpDat = dumpOpDatFromDevice(opArg2,("update" // "opArg2") // CHAR(0),calledTimes)
+#endif 
+#ifdef PRINT_OUTPUT_DAT
+returnDumpOpDat = dumpOpDatFromDevice(opArg3,("update" // "opArg3") // CHAR(0),calledTimes)
+#endif 
+istat = cudaEventRecord(endTimeHost,0)
+istat = cudaEventSynchronize(endTimeHost)
+istat = cudaEventElapsedTime(accumulatorHostTime,startTimeHost,endTimeHost)
+loopTimeHostupdate_2692987784 = loopTimeHostupdate_2692987784 + accumulatorHostTime
+END SUBROUTINE
+
+END MODULE GENERATED_MODULE
+
