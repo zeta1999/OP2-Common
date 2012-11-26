@@ -436,6 +436,10 @@ module OP2_Fortran_Declarations
     module procedure op_decl_set_hdf5_noSetSize, op_decl_set_hdf5_setSize
   end interface op_decl_set_hdf5
 
+  interface op_arg_dat
+    module procedure op_arg_dat_rose, op_arg_dat_python
+  end interface op_arg_dat
+
 contains
 
   subroutine op_init ( diags )
@@ -775,7 +779,7 @@ contains
 
   end subroutine op_decl_const_logical
 
-  type(op_arg) function op_arg_dat (dat, idx, map, access )
+  type(op_arg) function op_arg_dat_rose (dat, idx, map, access )
 
     use, intrinsic :: ISO_C_BINDING
 
@@ -793,18 +797,51 @@ contains
 #else
     if ( isCNullPointer_c (dat%dataCPtr) .eqv. .true. ) then
 #endif
-      op_arg_dat = op_arg_dat_null_c (C_NULL_PTR, idx-1, C_NULL_PTR, -1, C_NULL_PTR, access-1)
+      op_arg_dat_rose = op_arg_dat_null_c (C_NULL_PTR, idx-1, C_NULL_PTR, -1, C_NULL_PTR, access-1)
     else
       ! warning: access and idx are in FORTRAN style, while the C style is required here
       if ( map%mapPtr%dim .eq. 0 ) then
         ! OP_ID case (does not decrement idx)
-        op_arg_dat = op_arg_dat_c ( dat%dataCPtr, idx, C_NULL_PTR, dat%dataPtr%dim, dat%dataPtr%type, access-1 )
+        op_arg_dat_rose = op_arg_dat_c ( dat%dataCPtr, idx, C_NULL_PTR, dat%dataPtr%dim, dat%dataPtr%type, access-1 )
       else
-        op_arg_dat = op_arg_dat_c ( dat%dataCPtr, idx-1, map%mapCPtr, dat%dataPtr%dim, dat%dataPtr%type, access-1 )
+        op_arg_dat_rose = op_arg_dat_c ( dat%dataCPtr, idx-1, map%mapCPtr, dat%dataPtr%dim, dat%dataPtr%type, access-1 )
       endif
     endif
 
-  end function op_arg_dat
+  end function op_arg_dat_rose
+
+  type(op_arg) function op_arg_dat_python (dat, idx, map, dim, type, access)
+
+    use, intrinsic :: ISO_C_BINDING
+
+    implicit none
+
+    type(op_dat) :: dat
+    integer(kind=c_int) :: idx
+    type(op_map) :: map
+    integer(kind=c_int) :: dim
+    character(kind=c_char,len=*) :: type
+    integer(kind=c_int) :: access
+
+    ! first check if the op_dat is actually declared (HYDRA feature)
+    ! If is NULL, then return an empty op_arg
+#ifdef OP2_WITH_CUDAFOR
+    if (dat%dataCPtr .eq. C_NULL_PTR) then
+#else
+    if ( isCNullPointer_c (dat%dataCPtr) .eqv. .true. ) then
+#endif
+      op_arg_dat_python = op_arg_dat_null_c (C_NULL_PTR, idx-1, C_NULL_PTR, -1, C_NULL_PTR, access-1)
+    else
+      ! warning: access and idx are in FORTRAN style, while the C style is required here
+      if ( map%mapPtr%dim .eq. 0 ) then
+        ! OP_ID case (does not decrement idx)
+        op_arg_dat_python = op_arg_dat_c ( dat%dataCPtr, idx, C_NULL_PTR,  dat%dataPtr%dim, dat%dataPtr%type, access-1 )
+      else
+        op_arg_dat_python = op_arg_dat_c ( dat%dataCPtr, idx-1, map%mapCPtr,  dat%dataPtr%dim, dat%dataPtr%type, access-1 )
+      endif
+    endif
+
+  end function op_arg_dat_python
 
   type(op_arg) function op_arg_dat_generic (dat, idx, map, dim, type, access )
 
