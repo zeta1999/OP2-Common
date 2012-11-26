@@ -99,7 +99,11 @@ void op_args_check(op_set set, int nargs, op_arg *args,
     op_arg args[N] = {ARG_ARR_LIST(N)};                                 \
     int halo = 0;                                                       \
     int n_upper;                                                        \
-    if ( set->size == 0 ) return;                                       \
+    if ( set->size == 0 ) {                                             \
+      n_upper = op_mpi_halo_exchanges_seq (set, N, args);               \
+      op_mpi_wait_all_seq (N,args);                                     \
+      return;                                                           \
+    }                                                                   \
     ALLOC_POINTER_LIST(N)                                               \
     n_upper = op_mpi_halo_exchanges_seq (set, N, args);                 \
     for ( int n=0; n<n_upper; n++ ) {                                   \

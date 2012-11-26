@@ -432,6 +432,10 @@ module OP2_Fortran_Declarations
     & op_decl_const_scalar_real_8, op_decl_const_logical
   end interface op_decl_const
 
+  interface op_decl_set_hdf5
+    module procedure op_decl_set_hdf5_noSetSize, op_decl_set_hdf5_setSize
+  end interface op_decl_set_hdf5
+
 contains
 
   subroutine op_init ( diags )
@@ -496,7 +500,7 @@ contains
 
   end subroutine op_decl_set
 
-  subroutine op_decl_set_hdf5 ( set, fileName, setName )
+  subroutine op_decl_set_hdf5_noSetSize ( set, fileName, setName )
 
     type(op_set) :: set
     character(kind=c_char,len=*) :: fileName
@@ -508,7 +512,26 @@ contains
     ! convert the generated C pointer to Fortran pointer and store it inside the op_set variable
     call c_f_pointer ( set%setCPtr, set%setPtr )
 
-  end subroutine op_decl_set_hdf5
+  end subroutine op_decl_set_hdf5_noSetSize
+
+  subroutine op_decl_set_hdf5_setSize ( setSize, set, fileName, setName )
+
+    integer(kind=c_int) :: setSize
+    type(op_set) :: set
+    character(kind=c_char,len=*) :: fileName
+    character(kind=c_char,len=*) :: setName
+
+    ! assume names are /0 terminated
+    set%setCPtr = op_decl_set_hdf5_c (fileName, setName)
+
+    ! convert the generated C pointer to Fortran pointer and store it inside the op_set variable
+    call c_f_pointer ( set%setCPtr, set%setPtr )
+
+    setSize = set%setPtr%size
+
+  end subroutine op_decl_set_hdf5_setSize
+
+
 
   subroutine op_decl_map ( from, to, mapdim, dat, map, opname )
 
