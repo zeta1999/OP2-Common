@@ -30,8 +30,8 @@ x = real(z); y = imag(z);
 % generate grid in complex square root domain
 %
 
-I = 400;
-J = 600;
+I = 200;
+J = 300;
 
 xb = linspace(-3,3,3*I+1);
 yb = zeros(size(xb));
@@ -321,7 +321,7 @@ bedge_cell = bedge_cell - 1;
 % output to grid.dat file
 %
 
-fid = fopen('new_grid.dat','wt');
+  fid = fopen('new_grid.dat','wt');
 
 fprintf(fid,' %d %d %d %d \n',nnodes, ncells, nedges, nbedges);
 

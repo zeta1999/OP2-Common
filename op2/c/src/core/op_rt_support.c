@@ -643,7 +643,7 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size,
         {
           int mask = 0;
           for ( int m = 0; m < nargs; m++ )
-            if ( inds[m] >= 0 && accs[m] == OP_INC )
+            if ( inds[m] >= 0 && (accs[m] == OP_INC || accs[m] == OP_RW) )
               mask |= work[inds[m]][maps[m]->map[idxs[m] + e * maps[m]->dim]]; /* set bits of mask
               */
 
@@ -659,7 +659,7 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size,
             ncolors = MAX ( ncolors, ncolor + color + 1 );
 
             for ( int m = 0; m < nargs; m++ )
-              if ( inds[m] >= 0 && accs[m] == OP_INC )
+              if ( inds[m] >= 0 && (accs[m] == OP_INC || accs[m] == OP_RW) )
                 work[inds[m]][maps[m]->map[idxs[m] + e * maps[m]->dim]] |= mask; /* set color bit */
           }
         }
@@ -729,7 +729,7 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size,
 
         for ( int m = 0; m < nargs; m++ )
         {
-          if ( inds[m] >= 0 && accs[m] == OP_INC )
+          if ( inds[m] >= 0 && (accs[m] == OP_INC || accs[m] == OP_RW) )
             for ( int e = prev_offset; e < next_offset; e++ )
               mask |= work[inds[m]][maps[m]->map[idxs[m] +
                 e * maps[m]->dim]]; // set bits of mask
@@ -748,7 +748,7 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size,
 
           for ( int m = 0; m < nargs; m++ )
           {
-            if ( inds[m] >= 0 && accs[m] == OP_INC )
+            if ( inds[m] >= 0 && (accs[m] == OP_INC || accs[m] == OP_RW) )
               for ( int e = prev_offset; e < next_offset; e++ )
                 work[inds[m]][maps[m]->map[idxs[m] +
                   e * maps[m]->dim]] |= mask;

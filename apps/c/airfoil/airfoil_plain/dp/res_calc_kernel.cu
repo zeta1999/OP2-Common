@@ -93,7 +93,7 @@ __global__ void op_cuda_res_calc(
     ind_arg2_s[n] = ind_arg2[n%1+ind_arg2_map[n/1]*1];
 
   for (int n=threadIdx.x; n<ind_arg3_size*4; n+=blockDim.x)
-    ind_arg3_s[n] = ZERO_double;
+    ind_arg3_s[n] = ind_arg3[n%4+ind_arg3_map[n/4]*4];
 
   __syncthreads();
 
@@ -102,59 +102,57 @@ __global__ void op_cuda_res_calc(
   for (int n=threadIdx.x; n<nelems2; n+=blockDim.x) {
     int col2 = -1;
 
-    if (n<nelem) {
-
-      // initialise local variables
-
-      for (int d=0; d<4; d++)
-        arg6_l[d] = ZERO_double;
-      for (int d=0; d<4; d++)
-        arg7_l[d] = ZERO_double;
-
-
-
-
-      // user-supplied kernel call
-
-
-      res_calc(  ind_arg0_s+arg_map[0*set_size+n+offset_b]*2,
-                 ind_arg0_s+arg_map[1*set_size+n+offset_b]*2,
-                 ind_arg1_s+arg_map[2*set_size+n+offset_b]*4,
-                 ind_arg1_s+arg_map[3*set_size+n+offset_b]*4,
-                 ind_arg2_s+arg_map[4*set_size+n+offset_b]*1,
-                 ind_arg2_s+arg_map[5*set_size+n+offset_b]*1,
-                 arg6_l,
-                 arg7_l );
-
-      col2 = colors[n+offset_b];
-    }
-
-    // store local variables
-
-      int arg6_map;
-      int arg7_map;
-
-      if (col2>=0) {
-        arg6_map = arg_map[6*set_size+n+offset_b];
-        arg7_map = arg_map[7*set_size+n+offset_b];
-      }
-
     for (int col=0; col<ncolor; col++) {
-      if (col2==col) {
-        for (int d=0; d<4; d++)
-          ind_arg3_s[d+arg6_map*4] += arg6_l[d];
-        for (int d=0; d<4; d++)
-          ind_arg3_s[d+arg7_map*4] += arg7_l[d];
+      if (n<nelem) {
+        col2 = colors[n+offset_b];
+
+        if (col2==col) {
+
+          // store local variables
+
+          int arg6_map;
+          int arg7_map;
+
+          if (col2>=0) {
+            arg6_map = arg_map[6*set_size+n+offset_b];
+            arg7_map = arg_map[7*set_size+n+offset_b];
+          }
+
+          // initialise local variables
+
+          for (int d=0; d<4; d++)
+            arg6_l[d] = ind_arg3_s[d+arg6_map*4];
+          for (int d=0; d<4; d++)
+            arg7_l[d] = ind_arg3_s[d+arg7_map*4];
+
+
+
+          // user-supplied kernel call
+
+
+          res_calc(  ind_arg0_s+arg_map[0*set_size+n+offset_b]*2,
+                     ind_arg0_s+arg_map[1*set_size+n+offset_b]*2,
+                     ind_arg1_s+arg_map[2*set_size+n+offset_b]*4,
+                     ind_arg1_s+arg_map[3*set_size+n+offset_b]*4,
+                     ind_arg2_s+arg_map[4*set_size+n+offset_b]*1,
+                     ind_arg2_s+arg_map[5*set_size+n+offset_b]*1,
+                     arg6_l,
+                     arg7_l );
+
+          for (int d=0; d<4; d++)
+            ind_arg3_s[d+arg6_map*4] = arg6_l[d];
+          for (int d=0; d<4; d++)
+            ind_arg3_s[d+arg7_map*4] = arg7_l[d];
+        }
       }
       __syncthreads();
     }
-
   }
 
   // apply pointered write/increment
 
   for (int n=threadIdx.x; n<ind_arg3_size*4; n+=blockDim.x)
-    ind_arg3[n%4+ind_arg3_map[n/4]*4] += ind_arg3_s[n];
+    ind_arg3[n%4+ind_arg3_map[n/4]*4] = ind_arg3_s[n];
 
 }
 
