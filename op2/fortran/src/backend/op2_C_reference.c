@@ -92,6 +92,9 @@ void op_args_check(op_set set, int nargs, op_arg *args,
 #define REDUCE_LIST(N) SEMI_LIST(N,REDUCE)
 #define REDUCE(x) if (arg##x->argtype == OP_ARG_GBL ) { if ( arg##x->acc == OP_INC || arg##x->acc == OP_MAX || arg##x->acc == OP_MIN ) { {if (strncmp (arg##x->type, "double", 6) == 0) {op_mpi_reduce_double(arg##x,(double *)p_a[x-1]);} else if (strncmp (arg##x->type, "float", 5) == 0) op_mpi_reduce_float(arg##x,(float *)p_a[x-1]); else if ( strncmp (arg##x->type, "int", 3) == 0 ){op_mpi_reduce_int(arg##x,(int *)p_a[x-1]);} else if ( strncmp (arg##x->type, "bool", 4) == 0 ) op_mpi_reduce_bool(arg##x,(bool *)p_a[x-1]); else { printf ("OP2 error: unrecognised type for reduction, type %s\n",arg##x->type); exit (0);}}}}
 
+//      n_upper = op_mpi_halo_exchanges_seq (set, N, args);               \
+//      op_mpi_wait_all_seq (N,args);                                     \
+
 
 #define OP_LOOP(N) \
   void op_par_loop_##N(void (*kernel)(CHARP_LIST(N)), op_set_core * set, ARG_LIST_POINTERS(N)) { \
@@ -102,6 +105,7 @@ void op_args_check(op_set set, int nargs, op_arg *args,
     if ( set->size == 0 ) {                                             \
       n_upper = op_mpi_halo_exchanges_seq (set, N, args);               \
       op_mpi_wait_all_seq (N,args);                                     \
+      op_mpi_set_dirtybit (N, args);                                    \
       return;                                                           \
     }                                                                   \
     ALLOC_POINTER_LIST(N)                                               \
