@@ -1,6 +1,6 @@
-IC = icc -O2
+IC = /home/gihan/openmpi-intel/bin/mpicc -O2
 #-debug full
-FC = ifort -O2
+FC = /opt/intel/ifort-2011.4.191/bin/ifort -O2
 #-debug full
 
 OP2_MOD = $(OP2)/fortran/mod/intel
