@@ -51,7 +51,7 @@ OP2_COMPILER ?= pgi
 
 # Common definitions
 # Uncomment -g to get debugging info on board
-DEBUG_FLAGS = -O2  #-g
+DEBUG_FLAGS = -O2 #-g
 
 #  -Werror
 

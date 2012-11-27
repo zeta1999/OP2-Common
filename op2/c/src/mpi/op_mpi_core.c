@@ -1062,15 +1062,12 @@ void op_halo_create()
     mpi_buf->r_req = (MPI_Request *)xmalloc(sizeof(MPI_Request)*
         (exec_i_list->ranks_size + nonexec_i_list->ranks_size));
 
-/*    if ( my_rank == 0 ) {
-      mypid = getpid ();
-      printf ("Rank %d pid = %d, MPI buffer exec for %s is included in pointer %p\n", my_rank, mypid,
-        dat->name, mpi_buf);
+    if ( my_rank == 10 && strcmp (dat->name, "op_dat_qrg") == 0 ) {
+      printf ("buf_nonexec for qrg is %p, with size %d\n", &mpi_buf->buf_nonexec, (nonexec_e_list->size)*dat->size);
       fflush (stdout);
-      printf ("exec e ranks = %d, nonexec e ranks = %d, exec i ranks = %d, nonexec i ranks = %d\n", exec_e_list->ranks_size, nonexec_e_list->ranks_size, exec_i_list->ranks_size, nonexec_i_list->ranks_size);
-      fflush (stdout);
+//      exit (0);
     }
-*/
+
 
     mpi_buf->s_num_req = 0;
     mpi_buf->r_num_req = 0;
@@ -2294,8 +2291,8 @@ int op_mpi_halo_exchanges_seq(op_set set, int nargs, op_arg *args) {
   for (int n=0; n<nargs; n++) {
     if(args[n].argtype == OP_ARG_DAT)
     {
-      op_exchange_halo_seq(&args[n]);
-//      op_exchange_halo(&args[n]);
+//      op_exchange_halo_seq(&args[n]);
+      op_exchange_halo(&args[n]);
       //set_dirtybit(&args[n]);
     }
     if(args[n].idx != -1 && args[n].acc != OP_READ) size = set->size + set->exec_size;
@@ -2372,8 +2369,8 @@ void op_mpi_wait_all(int nargs, op_arg *args) {
 
 void op_mpi_wait_all_seq(int nargs, op_arg *args) {
   for (int n=0; n<nargs; n++) {
-    op_wait_all_seq(&args[n]);
-//    op_wait_all(&args[n]);
+//    op_wait_all_seq(&args[n]);
+    op_wait_all(&args[n]);
   }
 }
 
