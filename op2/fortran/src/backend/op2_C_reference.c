@@ -103,8 +103,6 @@ void op_args_check(op_set set, int nargs, op_arg *args,
     op_arg args[N] = {ARG_ARR_LIST(N)};                                 \
     int halo = 0;                                                       \
     int n_upper, rank;                                                  \
-    MPI_Comm_rank (MPI_COMM_WORLD, &rank);                              \
-    if (rank == 10) printf ("before if\n");                             \
     if ( set->size == 0 ) {                                             \
       n_upper = op_mpi_halo_exchanges_seq (set, N, args);               \
       op_mpi_wait_all_seq (N,args);                                     \
@@ -112,25 +110,18 @@ void op_args_check(op_set set, int nargs, op_arg *args,
       REDUCE_LIST(N)                                                    \
       return;                                                           \
     }                                                                   \
-    if (rank == 10) printf ("before allocating pointers\n");            \
     ALLOC_POINTER_LIST(N)                                               \
-    if (rank == 10) printf ("before halo exch\n");                      \
     n_upper = op_mpi_halo_exchanges_seq (set, N, args);                 \
-    if (rank == 10) printf ("before for loop, n_upper = %d\n", n_upper);\
     for ( int n=0; n<n_upper; n++ ) {                                   \
       if ( n==set->core_size ) {                                        \
-        if (rank == 10) printf ("before wait all\n");                   \
         op_mpi_wait_all_seq (N,args);                                   \
       }                                                                 \
       if ( n==set->size) halo = 1;                                      \
       ARG_SET_LIST(N);                                                  \
       (*kernel)(PTR_LIST(N));                                           \
     }                                                                   \
-    if (rank == 10) printf ("before set dirt bit\n");                   \
     op_mpi_set_dirtybit (N, args);                                      \
-    if (rank == 10) printf ("before reduce\n");                         \
     REDUCE_LIST(N)                                                      \
-    if (rank == 10) printf ("before free\n");                           \
     FREE_LIST(N)                                                        \
  }
 
