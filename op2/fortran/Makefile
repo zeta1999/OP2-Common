@@ -6,7 +6,7 @@
 # OP2               - OP2 base directory
 #
 # Note: the CUDA library can only be built with the PGI toolchain
-
+OP2 = $(OP2_INSTALL_PATH)
 C_OP2 = $(OP2)/c
 C_OP2_INC = $(C_OP2)/include
 C_OP2_SRC = $(C_OP2)/src
@@ -86,12 +86,12 @@ ifeq ($(OP2_COMPILER),pgi)
 else
 ifeq ($(OP2_COMPILER),intel)
   F_INC_MOD       = $(F_OP2_MOD)/intel
-  CC              = icc
+  CC              = mpicc
   CFLAGS          = -std=c99 -Wall -Werror $(DEBUG_FLAGS)
-  FC              = ifort
+  FC              = /home/gihan/openmpi-intel-fortran/bin/mpif90
   FFLAGS          = -module $(F_INC_MOD) $(DEBUG_FLAGS)
   MPICC						= mpicc
-  MPIF90					= mpif90
+  MPIF90					= /home/gihan/openmpi-intel-fortran/bin/mpif90
 	NO_MPI_MACRO    = -D NO_MPI
   ALLTARGETS      = f_reference f_openmp
 else
