@@ -6,7 +6,7 @@
 # OP2               - OP2 base directory
 #
 # Note: the CUDA library can only be built with the PGI toolchain
-
+OP2 = $(OP2_INSTALL_PATH)
 C_OP2 = $(OP2)/c
 C_OP2_INC = $(C_OP2)/include
 C_OP2_SRC = $(C_OP2)/src
