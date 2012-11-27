@@ -105,7 +105,6 @@ void op_exchange_halo (op_arg* arg)
         cudaMemcpyDeviceToHost));
 
     cutilSafeCall (cudaThreadSynchronize ());
-
     for(int i=0; i<exp_exec_list->ranks_size; i++) {
       MPI_Isend(&OP_mpi_buffer_list[dat->index]->
           buf_exec[exp_exec_list->disps[i]*dat->size],
@@ -119,6 +118,8 @@ void op_exchange_halo (op_arg* arg)
 
     int init = dat->set->size*dat->size;
     for(int i=0; i < imp_exec_list->ranks_size; i++) {
+
+
       MPI_Irecv(&(OP_dat_list[dat->index]->
             data[init+imp_exec_list->disps[i]*dat->size]),
           dat->size*imp_exec_list->sizes[i],
