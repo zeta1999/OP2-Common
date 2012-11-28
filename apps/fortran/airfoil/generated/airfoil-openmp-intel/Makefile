@@ -1,8 +1,6 @@
 IC = icc
 FC = ifort
 
-SUPPORT = /work/cbertoll/AirfoilFortran/OpenMP/support
-
 
 OPENMP = -openmp
 PREPROCESSOR = -fpp
@@ -23,11 +21,11 @@ FMODS = -module $(F_OP2_MOD)
 
 all: cfunctions airfoil_seq link
 
-cfunctions: $(SUPPORT)/debug.c
-	$(IC) $(OPT) $(DEBUG) $(OPENMP) -c $(SUPPORT)/debug.c
+cfunctions: debug.c
+	$(IC) $(OPT) $(DEBUG) $(OPENMP) -c debug.c
 
-airfoil_seq: $(SUPPORT)/OP2Profiling.f90 debug_int.f90 input.f90 constvars.f90 rose_openmp_code.F90 airfoil_seqfun.f90 rose_airfoil.F90
-	$(FC) $(OPT) $(DEBUG) $(OPENMP) $(FMODS) -c  $(SUPPORT)/OP2Profiling.f90 debug_int.f90 input.f90 constvars.f90 rose_openmp_code.F90 airfoil_seqfun.f90 rose_airfoil.F90
+airfoil_seq: OP2Profiling.f90 debug_int.f90 input.f90 constvars.f90 rose_openmp_code.F90 airfoil_seqfun.f90 rose_airfoil.F90
+	$(FC) $(OPT) $(DEBUG) $(OPENMP) $(FMODS) -c OP2Profiling.f90 debug_int.f90 input.f90 constvars.f90 rose_openmp_code.F90 airfoil_seqfun.f90 rose_airfoil.F90
 
 link: debug.o OP2Profiling.o debug_int.o input.o constvars.o rose_openmp_code.o airfoil_seqfun.o rose_airfoil.o
 	$(FC) $(OPT) $(OPENMP) $(FLINK) OP2Profiling.o debug.o debug_int.o input.o constvars.o rose_openmp_code.o airfoil_seqfun.o rose_airfoil.o -o $(EXEC) -lop2_for_openmp $(HDF5_LIB) $(MPI_LIB) -lz
