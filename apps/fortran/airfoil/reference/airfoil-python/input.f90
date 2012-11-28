@@ -17,7 +17,7 @@ subroutine getSetSizes ( nnode, ncell, nedge, nbedge )
 
 	character(len=MAX_PWD_LEN) :: currDir
  
-	currDir = '/work/cbertoll/airfoil-input/new_grid.dat'
+	currDir = 'new_grid.dat'
 	! iterator for file scanning and array addressing
 	
 	! open file
