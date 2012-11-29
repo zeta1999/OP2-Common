@@ -25,22 +25,36 @@ def comm(line):
 
 def rep(line,m):
 	global dims, idxs, typs, indtyps, inddims
-	if m < len(inddims):
+
+	if FORTRAN:
+		if m < len(inddims):
+			line = re.sub('INDDIM',str(inddims[m]),line)
+			line = re.sub('INDTYP',str(indtyps[m]),line)
+
+		line = re.sub('INDARG','ind_arg'+str(m+1),line)
+		line = re.sub('DIM',str(dims[m]),line)
+		line = re.sub('ARG','arg'+str(m+1),line)
+		line = re.sub('TYP',typs[m],line)
+		line = re.sub('IDX',str(int(idxs[m])),line)
+	elif CPP:
 		line = re.sub('INDDIM',str(inddims[m]),line)
 		line = re.sub('INDTYP',str(indtyps[m]),line)
 
-	line = re.sub('INDARG','ind_arg'+str(m),line)
-	line = re.sub('DIM',str(dims[m]),line)
-	line = re.sub('ARG','arg'+str(m),line)
-	line = re.sub('TYP',typs[m],line)
-	line = re.sub('IDX',str(int(idxs[m])),line)
+		line = re.sub('INDARG','ind_arg'+str(m),line)
+		line = re.sub('DIM',str(dims[m]),line)
+		line = re.sub('ARG','arg'+str(m),line)
+		line = re.sub('TYP',typs[m],line)
+		line = re.sub('IDX',str(int(idxs[m])),line)
 	return line
 
 def code(text):
 	global file_text, FORTRAN, CPP, g_m
 	global depth
 	prefix = ' '*depth
-	file_text += prefix+rep(text,g_m)+'\n'
+	if FORTRAN:
+		file_text += prefix+rep(text,g_m)+'\n'
+	elif CPP:
+		file_text += prefix+rep(text,g_m)+'\n'
 
 def FOR(i,start,finish):
 	global file_text, FORTRAN, CPP, g_m
@@ -165,8 +179,20 @@ def op2_gen_openmp(master, date, consts, kernels):
 ##########################################################################
 		comm('x86 kernel function')
 		code('SUBROUTINE op_x86_'+name+'( &'); depth = depth + 2
-		code('!-- opDat*s -- goes here, ')
-		code('!-- ind_maps*s, &')
+
+		for g_m in range(0,ninds):
+			code('INDTYP *ind_ARG,')
+			code('int *ind_ARG_maps')
+
+		for g_m in range (0,nargs):
+			if maps[g_m] == OP_GBL and accs[g_m] == OP_READ:
+				# declared const for performance
+				code('&  ARG, '+str(g_m)+'&')
+			elif maps[g_m] == OP_ID and ninds>0:
+				code('&  ARG, '+str(g_m)+'&')
+			elif maps[g_m] == OP_GBL or maps[g_m] == OP_ID:
+				code('&  ARG, '+str(g_m)+'&')
+
 		code('!-- mappingArray*s -- goes here, ')
 		code('&  ind_arg_sizes, &')
 		code('&  ind_arg_offs,  & ')
@@ -179,8 +205,17 @@ def op2_gen_openmp(master, date, consts, kernels):
 		code('')
 
 		code('IMPLICIT NONE')
-		code('!-- REAL(kind=8), dimension(0:*) :: opDat*s -- goes here, ')
-		code('&  INTEGER(kind=4), dimension(0:), TARGET :: ind_maps*s -- goes here, ')
+		for g_m in range (0,nargs):
+			if maps[g_m] == OP_GBL and accs[g_m] == OP_READ:
+				# declared const for performance
+				code('REAL(kind=8), dimension(0:*) :: ARG, '+str(g_m))
+			elif maps[g_m] == OP_ID and ninds>0:
+				code('REAL(kind=8), dimension(0:*) :: ARG, '+str(g_m))
+			elif maps[g_m] == OP_GBL or maps[g_m] == OP_ID:
+				code('REAL(kind=8), dimension(0:*) :: ARG, '+str(g_m))
+
+
+		code('INTEGER(kind=4), dimension(0:), target :: ind_maps*s -- goes here, ')
 		code('!-- INTEGER(kind=2), dimension(0:*) :: mappingArray*s -- goes here, ')
 		code('')
 
@@ -198,19 +233,33 @@ def op2_gen_openmp(master, date, consts, kernels):
 		code('INTEGER(kind=4) :: numberOfActiveThreads')
 		code('INTEGER(kind=4) :: i1')
 		code('INTEGER(kind=4) :: i2')
-		code('REAL(kind=8), dimension(0:128000 - 1), TARGET :: sharedFloat8')
+		code('REAL(kind=8), dimension(0:128000 - 1), target :: sharedFloat8')
 		code('')
 		code('!-- INTEGER(kind=4), POINTER, dimension(:) :: opDat**IndirectionMap -- goes here,')
 		code('!-- REAL(kind=8), POINTER, dimension(:) :: opDat**SharedIndirection -- goes here,')
 
 		code('!-- INTEGER(kind=4) :: opDat**nBytes -- goes here')
-
+		code('!-- INTEGER(kind=4) :: opDat**RoundUp -- goes here')
 		code('!-- INTEGER(kind=4) :: opDat**SharedIndirectionSize -- goes here')
+		code('!-- REAL(kind=8), dimension(0:3) :: opDat**Local -- goes here')
+		code('')
+		comm('more declarations here')
 
+		depth = depth - 2
+		code('END SUBROUTINE')
+		code('')
 
 ##########################################################################
 #  Generate OpenMP hust stub
 ##########################################################################
+		code('SUBROUTINE '+name+'_host( userSubroutine, set, &'); depth = depth + 2
+		for g_m in range(0,ninds):
+			code('opArg'+str(g_m)+', &')
+		code('& ) ')
+
+
+		depth = depth - 2
+		code('END SUBROUTINE')
 
 ##########################################################################
 #  output individual kernel file
