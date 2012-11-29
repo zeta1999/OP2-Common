@@ -3,7 +3,7 @@ USE OP2_FORTRAN_DECLARATIONS
 USE OP2_FORTRAN_RT_SUPPORT
 USE ISO_C_BINDING
 #ifdef _OPENMP
-USE OMP_LIB
+  USE OMP_LIB
 #endif
 REAL(kind=8) :: alpha_OP2_CONSTANT
 REAL(kind=8) :: cfl_OP2_CONSTANT
@@ -211,8 +211,24 @@ adt = adt + abs(u * dy - v * dx) + c * sqrt(dx * dx + dy * dy)
 adt = adt / cfl_OP2_CONSTANT
 END SUBROUTINE
 
-SUBROUTINE adt_calc_kernel(opDat1,opDat5,opDat6,ind_maps1,mappingArray1,mappingArray2,mappingArray3,mappingArray4,ind_s&
-&izes,ind_offs,blkmap,offset,nelems,nthrcol,thrcol,blockOffset,blockID)
+SUBROUTINE adt_calc_kernel(  &
+  &   opDat1,   &
+  &   opDat5,   &
+  &   opDat6,   &
+&   ind_maps1,&
+&   mappingArray1,  &
+&   mappingArray2,  &
+&   mappingArray3,  &
+&   mappingArray4,  &
+&   ind_sizes,  &
+&   ind_offs, &
+&   blkmap, &
+&   offset, &
+&   nelems, &
+&   nthrcol,  &
+&   thrcol, &
+&   blockOffset,  &
+&   blockID)
 IMPLICIT NONE
 REAL(kind=8), DIMENSION(0:*) :: opDat1
 REAL(kind=8), DIMENSION(0:*) :: opDat5
