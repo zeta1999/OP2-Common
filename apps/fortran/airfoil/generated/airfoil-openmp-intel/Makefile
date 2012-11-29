@@ -23,7 +23,7 @@ MPI_LIB = -L$(MPI_INSTALL_PATH)/lib -lmpi
 FLINK = -L$(F_OP2_LIB)
 FMODS = -I$(F_OP2_MOD)
 
-all: cfunctions airfoil_seq link
+all: clean cfunctions airfoil_seq link
 
 cfunctions: debug.c
 	$(IC) $(OPT) $(DEBUG) $(OPENMP) -c debug.c
