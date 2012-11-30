@@ -975,14 +975,17 @@ typedef struct
   std::vector<int> elements;
   std::vector<op_dat> dats;
   std::vector<int> written;
+  std::vector<op_arg *> args;
   int size;
+  int ncolors;
+  std::vector<int> color_offsets;
 } op_dataset_dependency;
 
 std::vector<op_dataset_dependency> dependencies;
 std::vector<op_map> maps;
 std::vector<op_dat> dats;
 void compute_dependencies(op_kernel_descriptor *kernel);
-void do_coloring(op_kernel_descriptor *kernel);
+void do_coloring(int set_index);
 
 void op_end_superloop ( op_subset *subset, op_dat data) {
   if (data->set != subset->set) {
@@ -1005,22 +1008,22 @@ void op_end_superloop ( op_subset *subset, op_dat data) {
       dependencies[i].size = 0;
     }
   }
-  
-  maps.resize(OP_map_index, NULL);
+
   for (int i = 0; i < OP_map_index; i++) {
     //skip reverse maps
     if (OP_map_list[i]->index > OP_map_list[i]->reverse_map->index) continue;
-    maps[i] = (op_map_core *)malloc(sizeof(op_map_core));
-    maps[i]->index = OP_map_list[i]->index;
-    maps[i]->from = OP_map_list[i]->from;
-    maps[i]->to = OP_map_list[i]->to;
-    maps[i]->dim = OP_map_list[i]->dim;
-    maps[i]->name = OP_map_list[i]->name;
-    maps[i]->map = NULL;
-    maps[i]->row_offsets = NULL;
-    maps[i]->reverse_map = NULL;
-    maps[i]->user_managed = 0;
-    maps[i]->isSimple = OP_map_list[i]->isSimple;
+    op_map map = (op_map_core *)malloc(sizeof(op_map_core));
+    map->index = OP_map_list[i]->index;
+    map->from = OP_map_list[i]->from;
+    map->to = OP_map_list[i]->to;
+    map->dim = OP_map_list[i]->dim;
+    map->name = OP_map_list[i]->name;
+    map->map = NULL;
+    map->row_offsets = NULL;
+    map->reverse_map = NULL;
+    map->user_managed = 0;
+    map->isSimple = OP_map_list[i]->isSimple;
+    maps.push_back(map);
   }
   
   for (unsigned int i = 0; i < kernel_list.size(); i++) {
@@ -1036,7 +1039,7 @@ void op_end_superloop ( op_subset *subset, op_dat data) {
   double mem_execution_lists = 0.0;
   double mem_dats = 0.0;
   //populate local maps
-  for (int i = 0; i < OP_map_index; i++) {
+  for (unsigned int i = 0; i < maps.size(); i++) {
     if (maps[i]==NULL) continue;
     maps[i]->map = (int *)malloc(dependencies[maps[i]->from->index].size * maps[i]->dim*sizeof(int));
     mem_maps += (double)(dependencies[maps[i]->from->index].size * maps[i]->dim*sizeof(int));
@@ -1050,11 +1053,11 @@ void op_end_superloop ( op_subset *subset, op_dat data) {
       }
     }
   }
-
-  //Bring in dats to scratch memory
+  
+  //Create scratch memory dats
   for (int i = 0; i < OP_set_index; i++) {
     mem_set_lists += (double)(dependencies[i].size * sizeof(int));
-    //TODO: shouldn't being in read only ones? would need to use a different map though...
+    //TODO: shouldn't be reading in read only ones? would need to use a different map though...
     for (unsigned int j = 0; j < dependencies[i].dats.size(); j ++) {
       op_dat data = (op_dat)malloc(sizeof(op_dat_core));
       data->name = dependencies[i].dats[j]->name;
@@ -1064,10 +1067,6 @@ void op_end_superloop ( op_subset *subset, op_dat data) {
       data->size = dependencies[i].dats[j]->size;
       data->type = dependencies[i].dats[j]->type;
       data->data = (char *)malloc(dependencies[i].size * data->size);
-      //collect
-      for (int e = 0; e < dependencies[i].size; e++) {
-        memcpy(&data->data[e*data->size], &dependencies[i].dats[j]->data[dependencies[i].elements[e]*data->size], data->size);
-      }
       data->data_d = NULL;
       //TODO: all MPI related stuff
       dats.push_back(data);
@@ -1075,8 +1074,7 @@ void op_end_superloop ( op_subset *subset, op_dat data) {
     }
   }
   
-  
-  //renumber execution sets, substitute new maps and dats
+  //renumber execution sets, substitute new maps and dats into loop args
   for (unsigned int i = 0; i < kernel_list.size(); i++) {
     for (int e = 0; e < kernel_list[i].subset->size; e++) {
       int el = kernel_list[i].subset->elements[e];
@@ -1103,14 +1101,26 @@ void op_end_superloop ( op_subset *subset, op_dat data) {
     }
   }
   
-  for (unsigned int i = 0; i < kernel_list.size(); i++) {
-    do_coloring(&kernel_list[kernel_list.size()-1-i]);
-    mem_execution_lists += (double)(kernel_list[kernel_list.size()-1-i].subset->size * sizeof(int) + (kernel_list[kernel_list.size()-1-i].subset->ncolors+1)*sizeof(int));
+  for (int i = 0 ; i < OP_set_index; i++) {
+    do_coloring(i);
+  }
+  
+  int ctr = 0;
+  //Bring in dats to scratch memory
+  for (int i = 0; i < OP_set_index; i++) {
+    //TODO: shouldn't be reading in read only ones? would need to use a different map though...
+    for (unsigned int j = 0; j < dependencies[i].dats.size(); j ++) {
+      op_dat data = dats[ctr];
+      for (int e = 0; e < dependencies[i].size; e++) {
+        memcpy(&data->data[e*data->size], &dependencies[i].dats[j]->data[dependencies[i].elements[e]*data->size], data->size);
+      }
+      ctr++;
+    }
   }
   
   double memuse = mem_set_lists + mem_maps + mem_dats + mem_execution_lists;
   //Execute
-  printf("Executing tile, depth %d mem use: %g KB (%.2g KB setlists, %.2g KB maps, %.2g KB dats %.2g KBvjl;\ exec lists)\n", (int)kernel_list.size(), memuse/1024.0, mem_set_lists/1024.0, mem_maps/1024.0, mem_dats/1024.0, mem_execution_lists/1024.0);
+  printf("Executing tile, depth %d mem use: %g KB (%.2g KB setlists, %.2g KB maps, %.2g KB dats %.2g KB exec lists)\n", (int)kernel_list.size(), memuse/1024.0, mem_set_lists/1024.0, mem_maps/1024.0, mem_dats/1024.0, mem_execution_lists/1024.0);
   unsigned int i = 0;
   while ( i < kernel_list.size()) {
     kernel_list[i].function(&kernel_list[i]); //save_soln
@@ -1143,6 +1153,27 @@ void add_dependency(op_dat data, int written) {
     if (written) dependencies[data->set->index].written[idx] = 1;
   }
 }
+
+void add_arg_dependency(op_arg *arg, int set_index) {
+  if (arg->argtype == OP_ARG_GBL || arg->map == NULL || arg->acc == OP_READ || arg->acc == OP_WRITE) return; //for these we do not have to do coloring (no indirect OP_WRITE supported)
+  //TODO: indirect OP_RW
+  unsigned i = 0;
+  for (; i < dependencies[set_index].args.size(); i++) {
+    if (dependencies[set_index].args[i]->argtype == OP_ARG_GBL) continue;
+    if (dependencies[set_index].args[i]->map == arg->map) return;
+  }
+  dependencies[set_index].args.push_back(arg); //TODO: indexes (multi-dim maps)
+}
+
+typedef struct
+{
+  float key;
+  int value;
+  int permutation;
+} kv_sort2;
+
+inline bool kv_sort2_comp(const kv_sort2 i, const kv_sort2 j) {return i.key < j.key;}
+
 
 //first, determine what the execution set has to be so that all the already existing data dependencies are computed (OP_WRITE, OP_RW, OP_INC)
 //what if we write something that's not an output?? - I think solved by getting ignored (dependencies[idx].size will be 0, nothing will be merged in)
@@ -1241,11 +1272,15 @@ void compute_dependencies(op_kernel_descriptor *kernel) {
     if (kernel->args[arg].argtype==OP_ARG_GBL) continue;
     op_dat data = kernel->args[arg].dat;
     op_set set = data->set;
+    
+    //Add argument to coloring constraints (will only happen for indirect+OP_INC, and if it has't been added before)
+    add_arg_dependency(&kernel->args[arg], kernel->subset->set->index);
 
     //if OP_WRITE or already processed, skip
     //TODO: OP_WRITE skip or not?
-    if (/*kernel->args[arg].acc == OP_WRITE ||*/ args_done[arg]) continue;
     //TODO: indirect writes???
+    if (/*kernel->args[arg].acc == OP_WRITE ||*/ args_done[arg]) continue;
+
     
     args_done[arg] = 1;
     
@@ -1308,6 +1343,8 @@ void compute_dependencies(op_kernel_descriptor *kernel) {
     }
   }
   
+  //TODO: this may bring in additional data that may not actually be needed
+  // i.e. separate indices that we "know about" and ones for which we need data.
   //For loops such as res_calc, no direct access, edges never brought in as a dependency otherwise, couldn't renumber
   if (!own_set_added) {
     std::vector<int> temp(dependencies[kernel->set->index].elements.begin(), dependencies[kernel->set->index].elements.begin()+dependencies[kernel->set->index].size);
@@ -1315,40 +1352,54 @@ void compute_dependencies(op_kernel_descriptor *kernel) {
   }
 }
 
-void do_coloring(op_kernel_descriptor *kernel) {
+void do_coloring(int set_index) {
+  int nargs = dependencies[set_index].args.size();
   //do the coloring if necessary
   int color = 0;
-  for (int arg = 0; arg < kernel->nargs; arg++) {
-    if (kernel->args[arg].map != NULL && kernel->args[arg].acc != OP_READ) {
+  for (int arg = 0; arg < nargs; arg++) {
+    if (dependencies[set_index].args[arg]->map != NULL && dependencies[set_index].args[arg]->acc != OP_READ) { //These aren't added to the list anyway, but for clarity this check is here.
       color = 1;
       break;
     }
   }
+  
+  op_set set = dependencies[set_index].set;
+  std::vector<op_kernel_descriptor *> set_kernels(0);
+  //Look for kernels executing over this set
+  for (unsigned int i = 0; i < kernel_list.size(); i++) {
+    if (kernel_list[i].subset->set == set) {
+      set_kernels.push_back(&kernel_list[i]);
+    }
+  }
+  
+  if (set_kernels.size()==0) return; //We are done here, no need to renumber anything, we never execute on this set
+
+  //set all colors to -1 if we do coloring, otherwise to 0
+  std::vector<kv_sort2> colors(dependencies[set_index].size);
+  for (int i = 0 ; i < dependencies[set_index].size; i++) {
+    colors[i].key = color ? -1 : 0;
+    colors[i].value = dependencies[set_index].elements[i]; //global indices
+    colors[i].permutation = i;
+  }
+  int ncolors = 0;
   
   if (color) {
     //
     // Begin execution set coloring
     //
 
-    //set all colors to -1
-    //TODO: merge this dataset with the execution_set vector
-    std::vector<kv_sort> colors(kernel->subset->size);
-    for (int i = 0 ; i < kernel->subset->size; i++) {
-      colors[i].key = -1;
-      colors[i].value = kernel->subset->elements[i];
-    }
-    std::vector<int> inds(kernel->nargs, -1);
-    std::vector<op_map> maps(kernel->nargs, NULL);
+    std::vector<int> inds(nargs, -1);
+    std::vector<op_map> maps(nargs, NULL);
     
     int ninds = 0;
-    for (int i = 0; i < kernel->nargs; i++) {
-      if (kernel->args[i].map != NULL && inds[i] == -1) {
+    for (int i = 0; i < nargs; i++) {
+      if (dependencies[set_index].args[i]->map != NULL && inds[i] == -1) {
         inds[i] = ninds;
-        maps[i] = kernel->args[i].map;
-        for (int j = i+1; j<kernel->nargs; j++) {
-          if (kernel->args[i].map == kernel->args[j].map && kernel->args[i].dat == kernel->args[j].dat) {
+        maps[i] = dependencies[set_index].args[i]->map;
+        for (int j = i+1; j<nargs; j++) {
+          if (dependencies[set_index].args[i]->map == dependencies[set_index].args[j]->map && dependencies[set_index].args[i]->dat == dependencies[set_index].args[j]->dat) {
             inds[j] = ninds;
-            maps[j] = kernel->args[j].map;
+            maps[j] = dependencies[set_index].args[j]->map;
           }
         }
         ninds++;
@@ -1370,30 +1421,29 @@ void do_coloring(op_kernel_descriptor *kernel) {
     
     int repeat = 1;
     int ncolor = 0;
-    int ncolors = 0;
-    //TODO: reuse previous kernel's coloring
+
     while ( repeat )
     {
       repeat = 0;
       //TODO: vector maps support
-      for ( int m = 0; m < kernel->nargs; m++ )
+      for ( int m = 0; m < nargs; m++ )
       {
         if ( inds[m] > 0 )
-          for ( int el = 0; el < kernel->subset->size; el++ ) {
-            int e = kernel->subset->elements[el];
-            work[inds[m]][maps[m]->map[kernel->args[m].idx + e * maps[m]->dim]] = 0; // zero out color array
+          for ( int el = 0; el < dependencies[set_index].size; el++ ) {
+//            int e = dependencies[set_index].elements[el];
+            work[inds[m]][maps[m]->map[dependencies[set_index].args[m]->idx + el * maps[m]->dim]] = 0; // zero out color array
           }
       }
       
-      for ( int el = 0; el < kernel->subset->size; el++ ) {
-        int e = kernel->subset->elements[el];
+      for ( int el = 0; el < dependencies[set_index].size; el++ ) {
+//        int e = dependencies[set_index].elements[el];
         if ( colors[el].key == -1 )
         {
           //TODO: vector maps support
           int mask = 0;
-          for ( int m = 0; m < kernel->nargs; m++ )
-            if ( inds[m] >= 0 && kernel->args[m].acc == OP_INC )
-              mask |= work[inds[m]][maps[m]->map[kernel->args[m].idx + e * maps[m]->dim]]; // set bits of mask
+          for ( int m = 0; m < nargs; m++ )
+            if ( inds[m] >= 0 && dependencies[set_index].args[m]->acc == OP_INC )
+              mask |= work[inds[m]][maps[m]->map[dependencies[set_index].args[m]->idx + el * maps[m]->dim]]; // set bits of mask
 
           
           int color = ffs ( ~mask ) - 1;  // find first bit not set
@@ -1407,32 +1457,88 @@ void do_coloring(op_kernel_descriptor *kernel) {
             mask = 1 << color;
             ncolors = MAX ( ncolors, ncolor + color + 1 );
             
-            for ( int m = 0; m < kernel->nargs; m++ )
-              if ( inds[m] >= 0 && kernel->args[m].acc == OP_INC )
-                work[inds[m]][maps[m]->map[kernel->args[m].idx + e * maps[m]->dim]] |= mask; // set color bit
+            for ( int m = 0; m < nargs; m++ )
+              if ( inds[m] >= 0 && dependencies[set_index].args[m]->acc == OP_INC )
+                work[inds[m]][maps[m]->map[dependencies[set_index].args[m]->idx + el * maps[m]->dim]] |= mask; // set color bit
           }
         }
       }
       
       ncolor += 32;             // increment base level
     }
-    
-    kernel->subset->ncolors = ncolors;
-    std::sort(colors.begin(), colors.end(), kv_sort_comp);
-    kernel->subset->color_ptrs = (int *) malloc ((ncolors+1)*sizeof(int));
-    kernel->subset->elements[0] = colors[0].value;
-    kernel->subset->color_ptrs[0] = 0;
-    kernel->subset->color_ptrs[ncolors] = kernel->subset->size;
-    for (int i = 1; i < kernel->subset->size; i++) {
-      kernel->subset->elements[i] = colors[i].value;
-      if (colors[i].key != colors[i-1].key) kernel->subset->color_ptrs[colors[i].key] = i;
-    }
-    
   //
   // End Execution set coloring
   //
   } else {
-    kernel->subset->ncolors = 0;
-    kernel->subset->color_ptrs = NULL;
+    ncolors = 1;
   }
+  
+  //Now we have the number of colors (1 for sets that aren't colored)
+  for (unsigned int i = 0; i < set_kernels.size() ; i++) {
+    set_kernels[i]->subset->ncolors = ncolors;
+    set_kernels[i]->subset->color_offsets = (int *) malloc ((2*ncolors)*sizeof(int));
+    for (int j = 0; j < 2*ncolors; j++) {
+      set_kernels[i]->subset->color_offsets[j] = 0;
+    }
+  }
+  
+  //Work our way backwards to count the number of colors and amend kernel number to element colors
+  float increment = 1.0/(set_kernels.size()+1.0);
+  for (int i = set_kernels.size()-1; i >= 0 ; i--) {
+    for (int e = 0; e < set_kernels[i]->subset->size; e++) {
+      int el = set_kernels[i]->subset->elements[e];
+      set_kernels[i]->subset->color_offsets[2*(int)floor(colors[el].key)]++; //we have an element with a certain color
+      //if it hasn't been flagged as new, flag it with the current backwards loop index*increment
+      if (colors[el].key == floor(colors[el].key)) colors[el].key += increment * (set_kernels.size()-i);
+    }
+  }
+  //At this point we have for each element a color that will order them by the loop they were introduced by, and each loop knows how many elements it has by color
+  
+  //Now sort it, so we'll have the set ordered by color and within colors by the level at they were introduced, colors[].value is the global index
+  std::sort(colors.begin(), colors.end(), kv_sort2_comp);
+  dependencies[set_index].ncolors = ncolors;
+  dependencies[set_index].color_offsets.resize(ncolors+1);
+  dependencies[set_index].color_offsets[0] = 0;
+  dependencies[set_index].color_offsets[ncolors] = dependencies[set_index].size;
+  for (unsigned i = 0; i < colors.size(); i++) {
+    dependencies[set_index].elements[i] = colors[i].value; //reorder global indices mapping back from this tile
+    if (i > 0 && floor(colors[i].key) > floor(colors[i-1].key)) {
+      //We shouldn't have empty colors (when looking at the whole set)
+      dependencies[set_index].color_offsets[(int)floor(colors[i].key)] = i;
+    }
+  }
+  
+  //Let's update each loop's color offests and free the loop's execution sets
+  for (int i = set_kernels.size()-1; i >= 0 ; i--) {
+    free(set_kernels[i]->subset->elements);
+    for (int j = 0; j < ncolors; j++) {
+      int size = set_kernels[i]->subset->color_offsets[2*j];
+      set_kernels[i]->subset->color_offsets[2*j] = dependencies[set_index].color_offsets[j];
+      set_kernels[i]->subset->color_offsets[2*j+1] = dependencies[set_index].color_offsets[j] + size;
+    }
+  }
+  
+  //Get a reverse permutation: where did the item go?
+  std::vector<int> reverse_permutation(dependencies[set_index].size);
+  for (unsigned int i = 0; i < colors.size(); i++) {
+    reverse_permutation[colors[i].permutation] = i;
+  }
+  
+  for (unsigned int i = 0; i < maps.size(); i++) {
+    if (maps[i]->from == set) {
+      //this map is based on the set we just reordered, reorder it too
+      int *new_map = (int *)malloc(dependencies[set_index].size * maps[i]->dim * sizeof(int));
+      for (int j = 0; j < dependencies[set_index].size; j++) {
+        memcpy(&new_map[maps[i]->dim * reverse_permutation[j]], &maps[i]->map[maps[i]->dim * j], maps[i]->dim * sizeof(int));
+      }
+      free(maps[i]->map);
+      maps[i]->map = new_map;
+    } else if (maps[i]->to == set) {
+      //this map point to this set, renumber it
+      for (int j = 0; j < dependencies[maps[i]->from->index].size * maps[i]->dim; j++) {
+        maps[i]->map[j] = reverse_permutation[maps[i]->map[j]];
+      }
+    }
+  }
+  
 }

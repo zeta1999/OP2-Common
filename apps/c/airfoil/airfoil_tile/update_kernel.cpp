@@ -37,19 +37,21 @@ void op_par_loop_update(op_kernel_descriptor *desc ){
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
   op_timers_core(&cpu_t1, &wall_t1);
   
-  for (int i=0; i<desc->subset->size; i++) {
-    int n = desc->subset->elements[i];
-    
-    op_arg_set(n,args[0], &p_a[0],0);
-    op_arg_set(n,args[1], &p_a[1],0);
-    op_arg_set(n,args[2], &p_a[2],0);
-    op_arg_set(n,args[3], &p_a[3],0);
-    op_arg_set(n,args[4], &p_a[4],0);
-    
-    // call kernel function, passing in pointers to data
-    
-    update( (double *)p_a[0],  (double *)p_a[1],  (double *)p_a[2],  (double *)p_a[3],
+  for (int col = 0; col < desc->subset->ncolors; col++) {
+    for (int n=desc->subset->color_offsets[2*col]; n<desc->subset->color_offsets[2*col+1]; n++) {
+      
+      
+      op_arg_set(n,args[0], &p_a[0],0);
+      op_arg_set(n,args[1], &p_a[1],0);
+      op_arg_set(n,args[2], &p_a[2],0);
+      op_arg_set(n,args[3], &p_a[3],0);
+      op_arg_set(n,args[4], &p_a[4],0);
+      
+      // call kernel function, passing in pointers to data
+      
+      update( (double *)p_a[0],  (double *)p_a[1],  (double *)p_a[2],  (double *)p_a[3],
              (double *)p_a[4] );
+    }
   }
   
   // update timer record

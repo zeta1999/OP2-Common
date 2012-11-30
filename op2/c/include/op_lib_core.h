@@ -169,7 +169,7 @@ typedef struct
   int         size;       /* number of elements */
   int        *elements;   /* list of elements */
   int         ncolors;    /* number of colors */
-  int        *color_ptrs; /* offsets to first elements of each color in "elements' */
+  int        *color_offsets; /* offsets to first elements of each color in "elements' */
 } op_subset;
 
 typedef struct op_kernel_descriptor

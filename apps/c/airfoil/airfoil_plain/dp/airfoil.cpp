@@ -263,9 +263,9 @@ int main(int argc, char **argv)
   }
 
   double *data = (double *)p_q->data;
-  for (int i = 0; i < 6; i++) {
-    data = &data[p_q->dim * i];
-    printf("Set element %d value %g %g %g %g\n", i, data[0], data[1], data[2], data[3]);
+  for (int i = 155957; i < 155962; i++) {
+    double *data2 = &data[p_q->dim * i];
+    printf("Set element %d value %g %g %g %g\n", i, data2[0], data2[1], data2[2], data2[3]);
   }
   op_timers(&cpu_t2, &wall_t2);
   op_timing_output();

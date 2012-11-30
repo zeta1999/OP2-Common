@@ -311,10 +311,10 @@ int main(int argc, char **argv)
   }
   
   generate_inverse_maps();
-  int index[] = {0, 1, 2, 3, 4, 5};
+  int index[] = {155957, 155958, 155959, 155960, 155961};
   op_subset need;
   need.set = cells;
-  need.size = 6;
+  need.size = 5;
   need.elements = index;
   op_end_superloop(&need, p_q);
   
