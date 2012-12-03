@@ -166,296 +166,328 @@ END SUBROUTINE
 
 SUBROUTINE initOP2Constants(alpha,cfl,eps,gam,gm1,mach,qinf)
 IMPLICIT NONE
-REAL(kind=8) :: alpha
-REAL(kind=8) :: cfl
-REAL(kind=8) :: eps
-REAL(kind=8) :: gam
-REAL(kind=8) :: gm1
-REAL(kind=8) :: mach
-REAL(kind=8), DIMENSION(4) :: qinf
-INTEGER(kind=4) :: i1
-alpha_OP2_CONSTANT = alpha
-cfl_OP2_CONSTANT = cfl
-eps_OP2_CONSTANT = eps
-gam_OP2_CONSTANT = gam
-gm1_OP2_CONSTANT = gm1
-mach_OP2_CONSTANT = mach
-qinf_OP2_CONSTANT = qinf
+	REAL(kind=8) :: alpha
+	REAL(kind=8) :: cfl
+	REAL(kind=8) :: eps
+	REAL(kind=8) :: gam
+	REAL(kind=8) :: gm1
+	REAL(kind=8) :: mach
+	REAL(kind=8), DIMENSION(4) :: qinf
+	INTEGER(kind=4) :: i1
+	alpha_OP2_CONSTANT = alpha
+	cfl_OP2_CONSTANT = cfl
+	eps_OP2_CONSTANT = eps
+	gam_OP2_CONSTANT = gam
+	gm1_OP2_CONSTANT = gm1
+	mach_OP2_CONSTANT = mach
+	qinf_OP2_CONSTANT = qinf
 END SUBROUTINE
 
 SUBROUTINE adt_calc_modified(x1,x2,x3,x4,q,adt)
 IMPLICIT NONE
-REAL(kind=8), DIMENSION(*) :: x1
-REAL(kind=8), DIMENSION(*) :: x2
-REAL(kind=8), DIMENSION(*) :: x3
-REAL(kind=8), DIMENSION(*) :: x4
-REAL(kind=8), DIMENSION(*) :: q
-REAL(kind=8) :: adt
-REAL(kind=8) :: dx,dy,ri,u,v,c
-ri = 1.0 / q(1)
-u = ri * q(2)
-v = ri * q(3)
-c = sqrt(gam_OP2_CONSTANT * gm1_OP2_CONSTANT * (ri * q(4) - 0.5 * (u * u + v * v)))
-dx = x2(1) - x1(1)
-dy = x2(2) - x1(2)
-adt = abs(u * dy - v * dx) + c * sqrt(dx * dx + dy * dy)
-dx = x3(1) - x2(1)
-dy = x3(2) - x2(2)
-adt = adt + abs(u * dy - v * dx) + c * sqrt(dx * dx + dy * dy)
-dx = x4(1) - x3(1)
-dy = x4(2) - x3(2)
-adt = adt + abs(u * dy - v * dx) + c * sqrt(dx * dx + dy * dy)
-dx = x1(1) - x4(1)
-dy = x1(2) - x4(2)
-adt = adt + abs(u * dy - v * dx) + c * sqrt(dx * dx + dy * dy)
-adt = adt / cfl_OP2_CONSTANT
+	REAL(kind=8), DIMENSION(*) :: x1
+	REAL(kind=8), DIMENSION(*) :: x2
+	REAL(kind=8), DIMENSION(*) :: x3
+	REAL(kind=8), DIMENSION(*) :: x4
+	REAL(kind=8), DIMENSION(*) :: q
+	REAL(kind=8) :: adt
+	REAL(kind=8) :: dx,dy,ri,u,v,c
+
+	ri = 1.0 / q(1)
+	u = ri * q(2)
+	v = ri * q(3)
+	c = sqrt(gam_OP2_CONSTANT * gm1_OP2_CONSTANT * (ri * q(4) - 0.5 * (u * u + v * v)))
+	dx = x2(1) - x1(1)
+	dy = x2(2) - x1(2)
+	adt = abs(u * dy - v * dx) + c * sqrt(dx * dx + dy * dy)
+	dx = x3(1) - x2(1)
+	dy = x3(2) - x2(2)
+	adt = adt + abs(u * dy - v * dx) + c * sqrt(dx * dx + dy * dy)
+	dx = x4(1) - x3(1)
+	dy = x4(2) - x3(2)
+	adt = adt + abs(u * dy - v * dx) + c * sqrt(dx * dx + dy * dy)
+	dx = x1(1) - x4(1)
+	dy = x1(2) - x4(2)
+	adt = adt + abs(u * dy - v * dx) + c * sqrt(dx * dx + dy * dy)
+	adt = adt / cfl_OP2_CONSTANT
 END SUBROUTINE
 
 SUBROUTINE adt_calc_kernel(  &
-  &   opDat1,   &
-  &   opDat5,   &
-  &   opDat6,   &
-&   ind_maps1,&
-&   mappingArray1,  &
-&   mappingArray2,  &
-&   mappingArray3,  &
-&   mappingArray4,  &
-&   ind_sizes,  &
-&   ind_offs, &
-&   blkmap, &
-&   offset, &
-&   nelems, &
-&   nthrcol,  &
-&   thrcol, &
-&   blockOffset,  &
-&   blockID)
-IMPLICIT NONE
-REAL(kind=8), DIMENSION(0:*) :: opDat1
-REAL(kind=8), DIMENSION(0:*) :: opDat5
-REAL(kind=8), DIMENSION(0:*) :: opDat6
-INTEGER(kind=4), DIMENSION(0:), TARGET :: ind_maps1
-INTEGER(kind=2), DIMENSION(0:*) :: mappingArray1
-INTEGER(kind=2), DIMENSION(0:*) :: mappingArray2
-INTEGER(kind=2), DIMENSION(0:*) :: mappingArray3
-INTEGER(kind=2), DIMENSION(0:*) :: mappingArray4
-INTEGER(kind=4), DIMENSION(0:*) :: ind_sizes
-INTEGER(kind=4), DIMENSION(0:*) :: ind_offs
-INTEGER(kind=4), DIMENSION(0:*) :: blkmap
-INTEGER(kind=4), DIMENSION(0:*) :: offset
-INTEGER(kind=4), DIMENSION(0:*) :: nelems
-INTEGER(kind=4), DIMENSION(0:*) :: nthrcol
-INTEGER(kind=4), DIMENSION(0:*) :: thrcol
-INTEGER(kind=4) :: blockOffset
-INTEGER(kind=4) :: blockID
-INTEGER(kind=4) :: threadBlockOffset
-INTEGER(kind=4) :: threadBlockID
-INTEGER(kind=4) :: numberOfActiveThreads
-INTEGER(kind=4) :: i1
-INTEGER(kind=4) :: i2
-INTEGER(kind=4), POINTER, DIMENSION(:) :: opDat1IndirectionMap
-REAL(kind=8), POINTER, DIMENSION(:) :: opDat1SharedIndirection
-REAL(kind=8), DIMENSION(0:128000 - 1), TARGET :: sharedFloat8
-INTEGER(kind=4) :: opDat1nBytes
-INTEGER(kind=4) :: opDat1RoundUp
-INTEGER(kind=4) :: opDat1SharedIndirectionSize
-threadBlockID = blkmap(blockID + blockOffset)
-numberOfActiveThreads = nelems(threadBlockID)
-threadBlockOffset = offset(threadBlockID)
-opDat1SharedIndirectionSize = ind_sizes(0 + threadBlockID * 1)
-opDat1IndirectionMap => ind_maps1(ind_offs(0 + threadBlockID * 1):)
-opDat1nBytes = 0
-opDat1SharedIndirection => sharedFloat8(opDat1nBytes:)
+	&   opDat1,   &
+	&   opDat5,   &
+	&   opDat6,   &
+	&   ind_maps1,&
+	&   mappingArray1,  &
+	&   mappingArray2,  &
+	&   mappingArray3,  &
+	&   mappingArray4,  &
+	&   ind_sizes,  &
+	&   ind_offs, &
+	&   blkmap, &
+	&   offset, &
+	&   nelems, &
+	&   nthrcol,  &
+	&   thrcol, &
+	&   blockOffset,  &
+	&   blockID)
 
-DO i1 = 0, opDat1SharedIndirectionSize - 1, 1
+	IMPLICIT NONE
+	REAL(kind=8), DIMENSION(0:*) :: opDat1
+	REAL(kind=8), DIMENSION(0:*) :: opDat5
+	REAL(kind=8), DIMENSION(0:*) :: opDat6
 
-DO i2 = 0, 2 - 1, 1
-opDat1SharedIndirection(i2 + i1 * 2 + 1) = opDat1(i2 + opDat1IndirectionMap(i1 + 1) * 2)
-END DO
+	INTEGER(kind=4), DIMENSION(0:), TARGET :: ind_maps1
 
-END DO
+	INTEGER(kind=2), DIMENSION(0:*) :: mappingArray1
+	INTEGER(kind=2), DIMENSION(0:*) :: mappingArray2
+	INTEGER(kind=2), DIMENSION(0:*) :: mappingArray3
+	INTEGER(kind=2), DIMENSION(0:*) :: mappingArray4
 
-DO i1 = 0, numberOfActiveThreads - 1, 1
-CALL adt_calc_modified(opDat1SharedIndirection(1 + mappingArray1(i1 + threadBlockOffset) * 2:1 + mappingArray1(i1 + thr&
-&eadBlockOffset) * 2 + 2 - 1),opDat1SharedIndirection(1 + mappingArray2(i1 + threadBlockOffset) * 2:1 + mappingArray2(i&
-&1 + threadBlockOffset) * 2 + 2 - 1),opDat1SharedIndirection(1 + mappingArray3(i1 + threadBlockOffset) * 2:1 + mappingA&
-&rray3(i1 + threadBlockOffset) * 2 + 2 - 1),opDat1SharedIndirection(1 + mappingArray4(i1 + threadBlockOffset) * 2:1 + m&
-&appingArray4(i1 + threadBlockOffset) * 2 + 2 - 1),opDat5((i1 + threadBlockOffset) * 4:(i1 + threadBlockOffset) * 4 + 4&
-& - 1),opDat6((i1 + threadBlockOffset) * 1))
-END DO
+	INTEGER(kind=4), DIMENSION(0:*) :: ind_sizes
+	INTEGER(kind=4), DIMENSION(0:*) :: ind_offs
+	INTEGER(kind=4), DIMENSION(0:*) :: blkmap
+	INTEGER(kind=4), DIMENSION(0:*) :: offset
+	INTEGER(kind=4), DIMENSION(0:*) :: nelems
+	INTEGER(kind=4), DIMENSION(0:*) :: nthrcol
+	INTEGER(kind=4), DIMENSION(0:*) :: thrcol
+	INTEGER(kind=4) :: blockOffset
+	INTEGER(kind=4) :: blockID
+	INTEGER(kind=4) :: threadBlockOffset
+	INTEGER(kind=4) :: threadBlockID
+	INTEGER(kind=4) :: numberOfActiveThreads
+
+	INTEGER(kind=4) :: i1
+	INTEGER(kind=4) :: i2
+
+	INTEGER(kind=4), POINTER, DIMENSION(:) :: opDat1IndirectionMap
+	REAL(kind=8), POINTER, DIMENSION(:) :: opDat1SharedIndirection
+
+	REAL(kind=8), DIMENSION(0:128000 - 1), TARGET :: sharedFloat8
+
+	INTEGER(kind=4) :: opDat1nBytes
+	INTEGER(kind=4) :: opDat1RoundUp
+	INTEGER(kind=4) :: opDat1SharedIndirectionSize
+
+	threadBlockID = blkmap(blockID + blockOffset)
+	numberOfActiveThreads = nelems(threadBlockID)
+	threadBlockOffset = offset(threadBlockID)
+
+	opDat1SharedIndirectionSize = ind_sizes(0 + threadBlockID * 1)
+	opDat1IndirectionMap => ind_maps1(ind_offs(0 + threadBlockID * 1):)
+	opDat1nBytes = 0
+	opDat1SharedIndirection => sharedFloat8(opDat1nBytes:)
+
+	DO i1 = 0, opDat1SharedIndirectionSize - 1, 1
+		 DO i2 = 0, 2 - 1, 1
+			 opDat1SharedIndirection(i2 + i1 * 2 + 1) = opDat1(i2 + opDat1IndirectionMap(i1 + 1) * 2)
+		 END DO
+	END DO
+
+	DO i1 = 0, numberOfActiveThreads - 1, 1
+		CALL adt_calc_modified ( &
+			 &  opDat1SharedIndirection(1 + mappingArray1(i1 + threadBlockOffset) * 2:1 + mappingArray1(i1 + threadBlockOffset) * 2 + 2 - 1), &
+			 &  opDat1SharedIndirection(1 + mappingArray2(i1 + threadBlockOffset) * 2:1 + mappingArray2(i1 + threadBlockOffset) * 2 + 2 - 1), &
+			 &  opDat1SharedIndirection(1 + mappingArray3(i1 + threadBlockOffset) * 2:1 + mappingArray3(i1 + threadBlockOffset) * 2 + 2 - 1), &
+			 &  opDat1SharedIndirection(1 + mappingArray4(i1 + threadBlockOffset) * 2:1 + mappingArray4(i1 + threadBlockOffset) * 2 + 2 - 1), &
+			 &  opDat5((i1 + threadBlockOffset) * 4:(i1 + threadBlockOffset) * 4 + 4 - 1), &
+			 &  opDat6((i1 + threadBlockOffset) * 1))
+	END DO
 
 END SUBROUTINE
 
-SUBROUTINE adt_calc_host(userSubroutine,set,opArg1,opArg2,opArg3,opArg4,opArg5,opArg6)
-IMPLICIT NONE
-character(len=9), INTENT(IN) :: userSubroutine
-TYPE ( op_set ) , INTENT(IN) :: set
-TYPE ( op_arg ) , INTENT(IN) :: opArg1
-TYPE ( op_arg ) , INTENT(IN) :: opArg2
-TYPE ( op_arg ) , INTENT(IN) :: opArg3
-TYPE ( op_arg ) , INTENT(IN) :: opArg4
-TYPE ( op_arg ) , INTENT(IN) :: opArg5
-TYPE ( op_arg ) , INTENT(IN) :: opArg6
-TYPE ( op_arg ) , DIMENSION(6) :: opArgArray
-INTEGER(kind=4) :: numberOfOpDats
-INTEGER(kind=4) :: returnMPIHaloExchange
-INTEGER(kind=4) :: returnSetKernelTiming
-TYPE ( op_set_core ) , POINTER :: opSetCore
-TYPE ( op_dat_core ) , POINTER :: opDat1Core
-REAL(kind=8), POINTER, DIMENSION(:) :: opDat1Local
-INTEGER(kind=4) :: opDat1Cardinality
-TYPE ( op_set_core ) , POINTER :: opSet1Core
-TYPE ( op_map_core ) , POINTER :: opMap1Core
-TYPE ( op_dat_core ) , POINTER :: opDat2Core
-TYPE ( op_map_core ) , POINTER :: opMap2Core
-TYPE ( op_dat_core ) , POINTER :: opDat3Core
-TYPE ( op_map_core ) , POINTER :: opMap3Core
-TYPE ( op_dat_core ) , POINTER :: opDat4Core
-TYPE ( op_map_core ) , POINTER :: opMap4Core
-TYPE ( op_dat_core ) , POINTER :: opDat5Core
-REAL(kind=8), POINTER, DIMENSION(:) :: opDat5Local
-INTEGER(kind=4) :: opDat5Cardinality
-TYPE ( op_set_core ) , POINTER :: opSet5Core
-TYPE ( op_map_core ) , POINTER :: opMap5Core
-TYPE ( op_dat_core ) , POINTER :: opDat6Core
-REAL(kind=8), POINTER, DIMENSION(:) :: opDat6Local
-INTEGER(kind=4) :: opDat6Cardinality
-TYPE ( op_set_core ) , POINTER :: opSet6Core
-TYPE ( op_map_core ) , POINTER :: opMap6Core
-INTEGER(kind=4) :: threadID
-INTEGER(kind=4) :: i1
-INTEGER(kind=4) :: numberOfThreads
-INTEGER(kind=4) :: partitionSize
-INTEGER(kind=4), DIMENSION(1:6) :: opDatArray
-INTEGER(kind=4), DIMENSION(1:6) :: mappingIndicesArray
-INTEGER(kind=4), DIMENSION(1:6) :: mappingArray
-INTEGER(kind=4), DIMENSION(1:6) :: accessDescriptorArray
-INTEGER(kind=4), DIMENSION(1:6) :: indirectionDescriptorArray
-INTEGER(kind=4), DIMENSION(1:6) :: opDatTypesArray
-INTEGER(kind=4) :: numberOfIndirectOpDats
-INTEGER(kind=4) :: blockOffset
-INTEGER(kind=4) :: nblocks
-INTEGER(kind=4) :: i2
-REAL(kind=8) :: startTimeHost
-REAL(kind=8) :: endTimeHost
-REAL(kind=8) :: startTimeKernel
-REAL(kind=8) :: endTimeKernel
-REAL(kind=8) :: accumulatorHostTime
-REAL(kind=8) :: accumulatorKernelTime
-INTEGER(kind=4), DIMENSION(1:8) :: timeArrayStart
-INTEGER(kind=4), DIMENSION(1:8) :: timeArrayEnd
+SUBROUTINE adt_calc_host( userSubroutine, set, &
+	& opArg1, &
+	& opArg2, &
+	& opArg3, &
+	& opArg4, &
+	& opArg5, &
+	& opArg6)
+	IMPLICIT NONE
+	character(len=9), INTENT(IN) :: userSubroutine
+	TYPE ( op_set ) , INTENT(IN) :: set
+	TYPE ( op_arg ) , INTENT(IN) :: opArg1
+	TYPE ( op_arg ) , INTENT(IN) :: opArg2
+	TYPE ( op_arg ) , INTENT(IN) :: opArg3
+	TYPE ( op_arg ) , INTENT(IN) :: opArg4
+	TYPE ( op_arg ) , INTENT(IN) :: opArg5
+	TYPE ( op_arg ) , INTENT(IN) :: opArg6
+	TYPE ( op_arg ) , DIMENSION(6) :: opArgArray
 
-IF (set%setPtr%size .EQ. 0) THEN
-RETURN
-END IF
+	INTEGER(kind=4) :: numberOfOpDats
+	INTEGER(kind=4) :: returnMPIHaloExchange
+	INTEGER(kind=4) :: returnSetKernelTiming
+	TYPE ( op_set_core ) , POINTER :: opSetCore
+	TYPE ( op_dat_core ) , POINTER :: opDat1Core
+	REAL(kind=8), POINTER, DIMENSION(:) :: opDat1Local
+	INTEGER(kind=4) :: opDat1Cardinality
+	TYPE ( op_set_core ) , POINTER :: opSet1Core
+	TYPE ( op_map_core ) , POINTER :: opMap1Core
+	TYPE ( op_dat_core ) , POINTER :: opDat2Core
+	TYPE ( op_map_core ) , POINTER :: opMap2Core
+	TYPE ( op_dat_core ) , POINTER :: opDat3Core
+	TYPE ( op_map_core ) , POINTER :: opMap3Core
+	TYPE ( op_dat_core ) , POINTER :: opDat4Core
+	TYPE ( op_map_core ) , POINTER :: opMap4Core
+	TYPE ( op_dat_core ) , POINTER :: opDat5Core
+	REAL(kind=8), POINTER, DIMENSION(:) :: opDat5Local
+	INTEGER(kind=4) :: opDat5Cardinality
+	TYPE ( op_set_core ) , POINTER :: opSet5Core
+	TYPE ( op_map_core ) , POINTER :: opMap5Core
+	TYPE ( op_dat_core ) , POINTER :: opDat6Core
+	REAL(kind=8), POINTER, DIMENSION(:) :: opDat6Local
+	INTEGER(kind=4) :: opDat6Cardinality
+	TYPE ( op_set_core ) , POINTER :: opSet6Core
+	TYPE ( op_map_core ) , POINTER :: opMap6Core
+	INTEGER(kind=4) :: threadID
+	INTEGER(kind=4) :: i1
+	INTEGER(kind=4) :: numberOfThreads
+	INTEGER(kind=4) :: partitionSize
+	INTEGER(kind=4), DIMENSION(1:6) :: opDatArray
+	INTEGER(kind=4), DIMENSION(1:6) :: mappingIndicesArray
+	INTEGER(kind=4), DIMENSION(1:6) :: mappingArray
+	INTEGER(kind=4), DIMENSION(1:6) :: accessDescriptorArray
+	INTEGER(kind=4), DIMENSION(1:6) :: indirectionDescriptorArray
+	INTEGER(kind=4), DIMENSION(1:6) :: opDatTypesArray
+	INTEGER(kind=4) :: numberOfIndirectOpDats
+	INTEGER(kind=4) :: blockOffset
+	INTEGER(kind=4) :: nblocks
+	INTEGER(kind=4) :: i2
+	REAL(kind=8) :: startTimeHost
+	REAL(kind=8) :: endTimeHost
+	REAL(kind=8) :: startTimeKernel
+	REAL(kind=8) :: endTimeKernel
+	REAL(kind=8) :: accumulatorHostTime
+	REAL(kind=8) :: accumulatorKernelTime
+	INTEGER(kind=4), DIMENSION(1:8) :: timeArrayStart
+	INTEGER(kind=4), DIMENSION(1:8) :: timeArrayEnd
 
-numberCalledadt_calc_1379395014 = numberCalledadt_calc_1379395014 + 1
-call date_and_time(values=timeArrayStart)
-startTimeHost = 1.00000 * timeArrayStart(8) + 1000.00 * timeArrayStart(7) + 60000 * timeArrayStart(6) + 3600000 * timeA&
-&rrayStart(5)
+	IF (set%setPtr%size .EQ. 0) THEN
+		RETURN
+	END IF
+
+	numberCalledadt_calc_1379395014 = numberCalledadt_calc_1379395014 + 1
+	call date_and_time(values=timeArrayStart)
+	startTimeHost = 1.00000 * timeArrayStart(8) + 1000.00 * timeArrayStart(7) + 60000 * timeArrayStart(6) + 3600000 * timeArrayStart(5)
+
 #ifdef OP_PART_SIZE_1
-partitionSize = OP_PART_SIZE_1
+	partitionSize = OP_PART_SIZE_1
 #else
-partitionSize = 0
+	partitionSize = 0
 #endif
 #ifdef _OPENMP
-numberOfThreads = omp_get_max_threads()
+	numberOfThreads = omp_get_max_threads()
 #else
-numberOfThreads = 1
+	numberOfThreads = 1
 #endif
-numberOfOpDats = 6
-opArgArray(1) = opArg1
-opArgArray(2) = opArg2
-opArgArray(3) = opArg3
-opArgArray(4) = opArg4
-opArgArray(5) = opArg5
-opArgArray(6) = opArg6
-indirectionDescriptorArray(1) = 0
-indirectionDescriptorArray(2) = 0
-indirectionDescriptorArray(3) = 0
-indirectionDescriptorArray(4) = 0
-indirectionDescriptorArray(5) = -1
-indirectionDescriptorArray(6) = -1
-numberOfIndirectOpDats = 1
-planRet_adt_calc = FortranPlanCaller(userSubroutine,set%setCPtr,partitionSize,numberOfOpDats,opArgArray,numberOfIndirec&
-&tOpDats,indirectionDescriptorArray)
-CALL c_f_pointer(planRet_adt_calc,actualPlan_adt_calc)
-CALL c_f_pointer(actualPlan_adt_calc%nindirect,pnindirect_adt_calc,(/numberOfIndirectOpDats/))
-CALL c_f_pointer(actualPlan_adt_calc%ind_maps,ind_maps_adt_calc,(/numberOfIndirectOpDats/))
-CALL c_f_pointer(actualPlan_adt_calc%maps,mappingArray_adt_calc,(/numberOfOpDats/))
-CALL c_f_pointer(actualPlan_adt_calc%ncolblk,ncolblk_adt_calc,(/set%setPtr%size/))
-CALL c_f_pointer(actualPlan_adt_calc%ind_sizes,ind_sizes_adt_calc,(/actualPlan_adt_calc%nblocks * numberOfIndirectOpDat&
-&s/))
-CALL c_f_pointer(actualPlan_adt_calc%ind_offs,ind_offs_adt_calc,(/actualPlan_adt_calc%nblocks * numberOfIndirectOpDats/&
-&))
-CALL c_f_pointer(actualPlan_adt_calc%blkmap,blkmap_adt_calc,(/actualPlan_adt_calc%nblocks/))
-CALL c_f_pointer(actualPlan_adt_calc%offset,offset_adt_calc,(/actualPlan_adt_calc%nblocks/))
-CALL c_f_pointer(actualPlan_adt_calc%nelems,nelems_adt_calc,(/actualPlan_adt_calc%nblocks/))
-CALL c_f_pointer(actualPlan_adt_calc%nthrcol,nthrcol_adt_calc,(/actualPlan_adt_calc%nblocks/))
-CALL c_f_pointer(actualPlan_adt_calc%thrcol,thrcol_adt_calc,(/set%setPtr%size/))
-CALL c_f_pointer(ind_maps_adt_calc(1),ind_maps1_adt_calc,(/pnindirect_adt_calc(1)/))
 
-IF (indirectionDescriptorArray(1) >= 0) THEN
-CALL c_f_pointer(mappingArray_adt_calc(1),mappingArray1_adt_calc,(/set%setPtr%size/))
-END IF
+	numberOfOpDats = 6
+	opArgArray(1) = opArg1
+	opArgArray(2) = opArg2
+	opArgArray(3) = opArg3
+	opArgArray(4) = opArg4
+	opArgArray(5) = opArg5
+	opArgArray(6) = opArg6
+	indirectionDescriptorArray(1) = 0
+	indirectionDescriptorArray(2) = 0
+	indirectionDescriptorArray(3) = 0
+	indirectionDescriptorArray(4) = 0
+	indirectionDescriptorArray(5) = -1
+	indirectionDescriptorArray(6) = -1
+	numberOfIndirectOpDats = 1
+	planRet_adt_calc = FortranPlanCaller(userSubroutine,set%setCPtr,partitionSize,numberOfOpDats,opArgArray,numberOfIndirectOpDats,indirectionDescriptorArray)
 
-IF (indirectionDescriptorArray(2) >= 0) THEN
-CALL c_f_pointer(mappingArray_adt_calc(2),mappingArray2_adt_calc,(/set%setPtr%size/))
-END IF
+	CALL c_f_pointer(planRet_adt_calc,actualPlan_adt_calc)
+	CALL c_f_pointer(actualPlan_adt_calc%nindirect,pnindirect_adt_calc,(/numberOfIndirectOpDats/))
+	CALL c_f_pointer(actualPlan_adt_calc%ind_maps,ind_maps_adt_calc,(/numberOfIndirectOpDats/))
+	CALL c_f_pointer(actualPlan_adt_calc%maps,mappingArray_adt_calc,(/numberOfOpDats/))
+	CALL c_f_pointer(actualPlan_adt_calc%ncolblk,ncolblk_adt_calc,(/set%setPtr%size/))
+	CALL c_f_pointer(actualPlan_adt_calc%ind_sizes,ind_sizes_adt_calc,(/actualPlan_adt_calc%nblocks * numberOfIndirectOpDats/))
+	CALL c_f_pointer(actualPlan_adt_calc%ind_offs,ind_offs_adt_calc,(/actualPlan_adt_calc%nblocks * numberOfIndirectOpDats/))
+	CALL c_f_pointer(actualPlan_adt_calc%blkmap,blkmap_adt_calc,(/actualPlan_adt_calc%nblocks/))
+	CALL c_f_pointer(actualPlan_adt_calc%offset,offset_adt_calc,(/actualPlan_adt_calc%nblocks/))
+	CALL c_f_pointer(actualPlan_adt_calc%nelems,nelems_adt_calc,(/actualPlan_adt_calc%nblocks/))
+	CALL c_f_pointer(actualPlan_adt_calc%nthrcol,nthrcol_adt_calc,(/actualPlan_adt_calc%nblocks/))
+	CALL c_f_pointer(actualPlan_adt_calc%thrcol,thrcol_adt_calc,(/set%setPtr%size/))
+	CALL c_f_pointer(ind_maps_adt_calc(1),ind_maps1_adt_calc,(/pnindirect_adt_calc(1)/))
 
-IF (indirectionDescriptorArray(3) >= 0) THEN
-CALL c_f_pointer(mappingArray_adt_calc(3),mappingArray3_adt_calc,(/set%setPtr%size/))
-END IF
+	IF (indirectionDescriptorArray(1) >= 0) THEN
+		CALL c_f_pointer(mappingArray_adt_calc(1),mappingArray1_adt_calc,(/set%setPtr%size/))
+	END IF
 
-IF (indirectionDescriptorArray(4) >= 0) THEN
-CALL c_f_pointer(mappingArray_adt_calc(4),mappingArray4_adt_calc,(/set%setPtr%size/))
-END IF
+	IF (indirectionDescriptorArray(2) >= 0) THEN
+		CALL c_f_pointer(mappingArray_adt_calc(2),mappingArray2_adt_calc,(/set%setPtr%size/))
+	END IF
 
-opSetCore => set%setPtr
-opDat1Cardinality = opArg1%dim * getSetSizeFromOpArg(opArg1)
-opDat5Cardinality = opArg5%dim * getSetSizeFromOpArg(opArg5)
-opDat6Cardinality = opArg6%dim * getSetSizeFromOpArg(opArg6)
-CALL c_f_pointer(opArg1%data,opDat1Local,(/opDat1Cardinality/))
-CALL c_f_pointer(opArg5%data,opDat5Local,(/opDat5Cardinality/))
-CALL c_f_pointer(opArg6%data,opDat6Local,(/opDat6Cardinality/))
-call date_and_time(values=timeArrayEnd)
-endTimeHost = 1.00000 * timeArrayEnd(8) + 1000 * timeArrayEnd(7) + 60000 * timeArrayEnd(6) + 3600000 * timeArrayEnd(5)
-accumulatorHostTime = endTimeHost - startTimeHost
-loopTimeHostadt_calc_1379395014 = loopTimeHostadt_calc_1379395014 + accumulatorHostTime
-call date_and_time(values=timeArrayStart)
-startTimeKernel = 1.00000 * timeArrayStart(8) + 1000 * timeArrayStart(7) + 60000 * timeArrayStart(6) + 3600000 * timeAr&
-&rayStart(5)
-blockOffset = 0
+	IF (indirectionDescriptorArray(3) >= 0) THEN
+		CALL c_f_pointer(mappingArray_adt_calc(3),mappingArray3_adt_calc,(/set%setPtr%size/))
+	END IF
 
-DO i1 = 0, actualPlan_adt_calc%ncolors - 1, 1
-nblocks = ncolblk_adt_calc(i1 + 1)
-!$OMP PARALLEL DO private (threadID)
+	IF (indirectionDescriptorArray(4) >= 0) THEN
+		CALL c_f_pointer(mappingArray_adt_calc(4),mappingArray4_adt_calc,(/set%setPtr%size/))
+	END IF
 
-DO i2 = 0, nblocks - 1, 1
-threadID = omp_get_thread_num()
-CALL adt_calc_kernel(opDat1Local,opDat5Local,opDat6Local,ind_maps1_adt_calc,mappingArray1_adt_calc,mappingArray2_adt_ca&
-&lc,mappingArray3_adt_calc,mappingArray4_adt_calc,ind_sizes_adt_calc,ind_offs_adt_calc,blkmap_adt_calc,offset_adt_calc,&
-&nelems_adt_calc,nthrcol_adt_calc,thrcol_adt_calc,blockOffset,i2)
-END DO
+	opSetCore => set%setPtr
+	opDat1Cardinality = opArg1%dim * getSetSizeFromOpArg(opArg1)
+	opDat5Cardinality = opArg5%dim * getSetSizeFromOpArg(opArg5)
+	opDat6Cardinality = opArg6%dim * getSetSizeFromOpArg(opArg6)
 
-!$OMP END PARALLEL DO
-blockOffset = blockOffset + nblocks
-END DO
+	CALL c_f_pointer(opArg1%data,opDat1Local,(/opDat1Cardinality/))
+	CALL c_f_pointer(opArg5%data,opDat5Local,(/opDat5Cardinality/))
+	CALL c_f_pointer(opArg6%data,opDat6Local,(/opDat6Cardinality/))
 
-call date_and_time(values=timeArrayEnd)
-endTimeKernel = 1.00000 * timeArrayEnd(8) + 1000 * timeArrayEnd(7) + 60000 * timeArrayEnd(6) + 3600000 * timeArrayEnd(5&
-&)
-accumulatorKernelTime = endTimeKernel - startTimeKernel
-loopTimeKerneladt_calc_1379395014 = loopTimeKerneladt_calc_1379395014 + accumulatorKernelTime
-call date_and_time(values=timeArrayStart)
-startTimeHost = 1.00000 * timeArrayStart(8) + 1000.00 * timeArrayStart(7) + 60000 * timeArrayStart(6) + 3600000 * timeA&
-&rrayStart(5)
-call date_and_time(values=timeArrayEnd)
-endTimeHost = 1.00000 * timeArrayEnd(8) + 1000 * timeArrayEnd(7) + 60000 * timeArrayEnd(6) + 3600000 * timeArrayEnd(5)
-accumulatorHostTime = endTimeHost - startTimeHost
-loopTimeHostadt_calc_1379395014 = loopTimeHostadt_calc_1379395014 + accumulatorHostTime
-returnSetKernelTiming = setKernelTime(0,userSubroutine,accumulatorKernelTime / 1000.00,actualPlan_adt_calc%transfer,act&
-&ualPlan_adt_calc%transfer2)
+	call date_and_time(values=timeArrayEnd)
+	endTimeHost = 1.00000 * timeArrayEnd(8) + 1000 * timeArrayEnd(7) + 60000 * timeArrayEnd(6) + 3600000 * timeArrayEnd(5)
+	accumulatorHostTime = endTimeHost - startTimeHost
+	loopTimeHostadt_calc_1379395014 = loopTimeHostadt_calc_1379395014 + accumulatorHostTime
+	call date_and_time(values=timeArrayStart)
+	startTimeKernel = 1.00000 * timeArrayStart(8) + 1000 * timeArrayStart(7) + 60000 * timeArrayStart(6) + 3600000 * timeArrayStart(5)
+	blockOffset = 0
+
+	DO i1 = 0, actualPlan_adt_calc%ncolors - 1, 1
+	nblocks = ncolblk_adt_calc(i1 + 1)
+
+	!$OMP PARALLEL DO private (threadID)
+		DO i2 = 0, nblocks - 1, 1
+			threadID = omp_get_thread_num()
+			CALL adt_calc_kernel( &
+					 & opDat1Local, &
+					 & opDat5Local, &
+					 & opDat6Local, &
+					 & ind_maps1_adt_calc, &
+					 & mappingArray1_adt_calc, &
+					 & mappingArray2_adt_calc, &
+					 & mappingArray3_adt_calc, &
+					 & mappingArray4_adt_calc, &
+					 & ind_sizes_adt_calc, &
+					 & ind_offs_adt_calc, &
+					 & blkmap_adt_calc, &
+					 & offset_adt_calc, &
+					 & nelems_adt_calc, &
+					 & nthrcol_adt_calc, &
+					 & thrcol_adt_calc, &
+					 & blockOffset,i2)
+		END DO
+
+		!$OMP END PARALLEL DO
+			blockOffset = blockOffset + nblocks
+		END DO
+
+		call date_and_time(values=timeArrayEnd)
+		endTimeKernel = 1.00000 * timeArrayEnd(8) + 1000 * timeArrayEnd(7) + 60000 * timeArrayEnd(6) + 3600000 * timeArrayEnd(5)
+		accumulatorKernelTime = endTimeKernel - startTimeKernel
+		loopTimeKerneladt_calc_1379395014 = loopTimeKerneladt_calc_1379395014 + accumulatorKernelTime
+
+		call date_and_time(values=timeArrayStart)
+		startTimeHost = 1.00000 * timeArrayStart(8) + 1000.00 * timeArrayStart(7) + 60000 * timeArrayStart(6) + 3600000 * timeArrayStart(5)
+		call date_and_time(values=timeArrayEnd)
+		endTimeHost = 1.00000 * timeArrayEnd(8) + 1000 * timeArrayEnd(7) + 60000 * timeArrayEnd(6) + 3600000 * timeArrayEnd(5)
+		accumulatorHostTime = endTimeHost - startTimeHost
+		loopTimeHostadt_calc_1379395014 = loopTimeHostadt_calc_1379395014 + accumulatorHostTime
+		returnSetKernelTiming = setKernelTime(0,userSubroutine,accumulatorKernelTime / 1000.00,actualPlan_adt_calc%transfer,actualPlan_adt_calc%transfer2)
 END SUBROUTINE
+
+
+
 
 SUBROUTINE bres_calc_modified(x1,x2,q1,adt1,res1,bound)
 IMPLICIT NONE
@@ -877,178 +909,186 @@ res1(4) = res1(4) + f
 res2(4) = res2(4) - f
 END SUBROUTINE
 
-SUBROUTINE res_calc_kernel(opDat1,opDat3,opDat5,opDat7,ind_maps1,ind_maps3,ind_maps5,ind_maps7,mappingArray1,mappingArr&
-&ay2,mappingArray3,mappingArray4,mappingArray5,mappingArray6,mappingArray7,mappingArray8,ind_sizes,ind_offs,blkmap,offs&
-&et,nelems,nthrcol,thrcol,blockOffset,blockID)
-IMPLICIT NONE
-REAL(kind=8), DIMENSION(0:*) :: opDat1
-REAL(kind=8), DIMENSION(0:*) :: opDat3
-REAL(kind=8), DIMENSION(0:*) :: opDat5
-REAL(kind=8), DIMENSION(0:*) :: opDat7
-INTEGER(kind=4), DIMENSION(0:), TARGET :: ind_maps1
-INTEGER(kind=4), DIMENSION(0:), TARGET :: ind_maps3
-INTEGER(kind=4), DIMENSION(0:), TARGET :: ind_maps5
-INTEGER(kind=4), DIMENSION(0:), TARGET :: ind_maps7
-INTEGER(kind=2), DIMENSION(0:*) :: mappingArray1
-INTEGER(kind=2), DIMENSION(0:*) :: mappingArray2
-INTEGER(kind=2), DIMENSION(0:*) :: mappingArray3
-INTEGER(kind=2), DIMENSION(0:*) :: mappingArray4
-INTEGER(kind=2), DIMENSION(0:*) :: mappingArray5
-INTEGER(kind=2), DIMENSION(0:*) :: mappingArray6
-INTEGER(kind=2), DIMENSION(0:*) :: mappingArray7
-INTEGER(kind=2), DIMENSION(0:*) :: mappingArray8
-INTEGER(kind=4), DIMENSION(0:*) :: ind_sizes
-INTEGER(kind=4), DIMENSION(0:*) :: ind_offs
-INTEGER(kind=4), DIMENSION(0:*) :: blkmap
-INTEGER(kind=4), DIMENSION(0:*) :: offset
-INTEGER(kind=4), DIMENSION(0:*) :: nelems
-INTEGER(kind=4), DIMENSION(0:*) :: nthrcol
-INTEGER(kind=4), DIMENSION(0:*) :: thrcol
-INTEGER(kind=4) :: blockOffset
-INTEGER(kind=4) :: blockID
-INTEGER(kind=4) :: threadBlockOffset
-INTEGER(kind=4) :: threadBlockID
-INTEGER(kind=4) :: numberOfActiveThreads
-INTEGER(kind=4) :: i1
-INTEGER(kind=4) :: i2
-INTEGER(kind=4), POINTER, DIMENSION(:) :: opDat1IndirectionMap
-REAL(kind=8), POINTER, DIMENSION(:) :: opDat1SharedIndirection
-REAL(kind=8), DIMENSION(0:128000 - 1), TARGET :: sharedFloat8
-INTEGER(kind=4), POINTER, DIMENSION(:) :: opDat3IndirectionMap
-REAL(kind=8), POINTER, DIMENSION(:) :: opDat3SharedIndirection
-INTEGER(kind=4), POINTER, DIMENSION(:) :: opDat5IndirectionMap
-REAL(kind=8), POINTER, DIMENSION(:) :: opDat5SharedIndirection
-INTEGER(kind=4), POINTER, DIMENSION(:) :: opDat7IndirectionMap
-REAL(kind=8), POINTER, DIMENSION(:) :: opDat7SharedIndirection
-INTEGER(kind=4) :: opDat1nBytes
-INTEGER(kind=4) :: opDat3nBytes
-INTEGER(kind=4) :: opDat5nBytes
-INTEGER(kind=4) :: opDat7nBytes
-INTEGER(kind=4) :: opDat1RoundUp
-INTEGER(kind=4) :: opDat3RoundUp
-INTEGER(kind=4) :: opDat5RoundUp
-INTEGER(kind=4) :: opDat7RoundUp
-INTEGER(kind=4) :: opDat1SharedIndirectionSize
-INTEGER(kind=4) :: opDat3SharedIndirectionSize
-INTEGER(kind=4) :: opDat5SharedIndirectionSize
-INTEGER(kind=4) :: opDat7SharedIndirectionSize
-REAL(kind=8), DIMENSION(0:3) :: opDat7Local
-INTEGER(kind=4) :: opDat7Map
-REAL(kind=8), DIMENSION(0:3) :: opDat8Local
-INTEGER(kind=4) :: opDat8Map
-INTEGER(kind=4) :: numOfColours
-INTEGER(kind=4) :: numberOfActiveThreadsCeiling
-INTEGER(kind=4) :: colour1
-INTEGER(kind=4) :: colour2
-threadBlockID = blkmap(blockID + blockOffset)
-numberOfActiveThreads = nelems(threadBlockID)
-threadBlockOffset = offset(threadBlockID)
-numberOfActiveThreadsCeiling = numberOfActiveThreads
-numOfColours = nthrcol(threadBlockID)
-opDat1SharedIndirectionSize = ind_sizes(0 + threadBlockID * 4)
-opDat3SharedIndirectionSize = ind_sizes(1 + threadBlockID * 4)
-opDat5SharedIndirectionSize = ind_sizes(2 + threadBlockID * 4)
-opDat7SharedIndirectionSize = ind_sizes(3 + threadBlockID * 4)
-opDat1IndirectionMap => ind_maps1(ind_offs(0 + threadBlockID * 4):)
-opDat3IndirectionMap => ind_maps3(ind_offs(1 + threadBlockID * 4):)
-opDat5IndirectionMap => ind_maps5(ind_offs(2 + threadBlockID * 4):)
-opDat7IndirectionMap => ind_maps7(ind_offs(3 + threadBlockID * 4):)
-opDat3RoundUp = opDat1SharedIndirectionSize * 2
-opDat5RoundUp = opDat3SharedIndirectionSize * 4
-opDat7RoundUp = opDat5SharedIndirectionSize * 1
-opDat1nBytes = 0
-opDat3nBytes = opDat1nBytes + opDat3RoundUp
-opDat5nBytes = opDat3nBytes + opDat5RoundUp
-opDat7nBytes = opDat5nBytes + opDat7RoundUp
-opDat1SharedIndirection => sharedFloat8(opDat1nBytes:)
-opDat3SharedIndirection => sharedFloat8(opDat3nBytes:)
-opDat5SharedIndirection => sharedFloat8(opDat5nBytes:)
-opDat7SharedIndirection => sharedFloat8(opDat7nBytes:)
+SUBROUTINE res_calc_kernel( &
+		& opDat1, &
+		& opDat3, &
+		& opDat5, &
+		& opDat7, &
+		& ind_maps1, &
+		& ind_maps3, &
+		& ind_maps5, &
+		& ind_maps7, &
+		& mappingArray1, &
+		& mappingArray2, &
+		& mappingArray3, &
+		& mappingArray4, &
+		& mappingArray5, &
+		& mappingArray6, &
+		& mappingArray7, &
+		& mappingArray8, &
+		& ind_sizes, &
+		& ind_offs, &
+		& blkmap,offset, &
+		& nelems, &
+		& nthrcol, &
+		& thrcol, &
+		& blockOffset, &
+		& blockID)
 
-DO i1 = 0, opDat1SharedIndirectionSize - 1, 1
+		 IMPLICIT NONE
 
-DO i2 = 0, 2 - 1, 1
-opDat1SharedIndirection(i2 + i1 * 2 + 1) = opDat1(i2 + opDat1IndirectionMap(i1 + 1) * 2)
-END DO
+		 REAL(kind=8), DIMENSION(0:*) :: opDat1
+		 REAL(kind=8), DIMENSION(0:*) :: opDat3
+		 REAL(kind=8), DIMENSION(0:*) :: opDat5
+		 REAL(kind=8), DIMENSION(0:*) :: opDat7
+		 INTEGER(kind=4), DIMENSION(0:), TARGET :: ind_maps1
+		 INTEGER(kind=4), DIMENSION(0:), TARGET :: ind_maps3
+		 INTEGER(kind=4), DIMENSION(0:), TARGET :: ind_maps5
+		 INTEGER(kind=4), DIMENSION(0:), TARGET :: ind_maps7
+		 INTEGER(kind=2), DIMENSION(0:*) :: mappingArray1
+		 INTEGER(kind=2), DIMENSION(0:*) :: mappingArray2
+		 INTEGER(kind=2), DIMENSION(0:*) :: mappingArray3
+		 INTEGER(kind=2), DIMENSION(0:*) :: mappingArray4
+		 INTEGER(kind=2), DIMENSION(0:*) :: mappingArray5
+		 INTEGER(kind=2), DIMENSION(0:*) :: mappingArray6
+		 INTEGER(kind=2), DIMENSION(0:*) :: mappingArray7
+		 INTEGER(kind=2), DIMENSION(0:*) :: mappingArray8
+		 INTEGER(kind=4), DIMENSION(0:*) :: ind_sizes
+		 INTEGER(kind=4), DIMENSION(0:*) :: ind_offs
+		 INTEGER(kind=4), DIMENSION(0:*) :: blkmap
+		 INTEGER(kind=4), DIMENSION(0:*) :: offset
+		 INTEGER(kind=4), DIMENSION(0:*) :: nelems
+		 INTEGER(kind=4), DIMENSION(0:*) :: nthrcol
+		 INTEGER(kind=4), DIMENSION(0:*) :: thrcol
+		 INTEGER(kind=4) :: blockOffset
+		 INTEGER(kind=4) :: blockID
+		 INTEGER(kind=4) :: threadBlockOffset
+		 INTEGER(kind=4) :: threadBlockID
+		 INTEGER(kind=4) :: numberOfActiveThreads
+		 INTEGER(kind=4) :: i1
+		 INTEGER(kind=4) :: i2
+		 REAL(kind=8), DIMENSION(0:128000 - 1), TARGET :: sharedFloat8
 
-END DO
+		 INTEGER(kind=4), POINTER, DIMENSION(:) :: opDat1IndirectionMap
+		 REAL(kind=8), POINTER, DIMENSION(:) :: opDat1SharedIndirection
+		 INTEGER(kind=4), POINTER, DIMENSION(:) :: opDat3IndirectionMap
+		 REAL(kind=8), POINTER, DIMENSION(:) :: opDat3SharedIndirection
+		 INTEGER(kind=4), POINTER, DIMENSION(:) :: opDat5IndirectionMap
+		 REAL(kind=8), POINTER, DIMENSION(:) :: opDat5SharedIndirection
+		 INTEGER(kind=4), POINTER, DIMENSION(:) :: opDat7IndirectionMap
+		 REAL(kind=8), POINTER, DIMENSION(:) :: opDat7SharedIndirection
+		 INTEGER(kind=4) :: opDat1nBytes
+		 INTEGER(kind=4) :: opDat3nBytes
+		 INTEGER(kind=4) :: opDat5nBytes
+		 INTEGER(kind=4) :: opDat7nBytes
+		 INTEGER(kind=4) :: opDat1RoundUp
+		 INTEGER(kind=4) :: opDat3RoundUp
+		 INTEGER(kind=4) :: opDat5RoundUp
+		 INTEGER(kind=4) :: opDat7RoundUp
+		 INTEGER(kind=4) :: opDat1SharedIndirectionSize
+		 INTEGER(kind=4) :: opDat3SharedIndirectionSize
+		 INTEGER(kind=4) :: opDat5SharedIndirectionSize
+		 INTEGER(kind=4) :: opDat7SharedIndirectionSize
+		 REAL(kind=8), DIMENSION(0:3) :: opDat7Local
+		 INTEGER(kind=4) :: opDat7Map
+		 REAL(kind=8), DIMENSION(0:3) :: opDat8Local
+		 INTEGER(kind=4) :: opDat8Map
+		 INTEGER(kind=4) :: numOfColours
+		 INTEGER(kind=4) :: numberOfActiveThreadsCeiling
+		 INTEGER(kind=4) :: colour1
+		 INTEGER(kind=4) :: colour2
 
-DO i1 = 0, opDat3SharedIndirectionSize - 1, 1
+		 threadBlockID = blkmap(blockID + blockOffset)
+		 numberOfActiveThreads = nelems(threadBlockID)
+		 threadBlockOffset = offset(threadBlockID)
+		 numberOfActiveThreadsCeiling = numberOfActiveThreads
+		 numOfColours = nthrcol(threadBlockID)
+		 opDat1SharedIndirectionSize = ind_sizes(0 + threadBlockID * 4)
+		 opDat3SharedIndirectionSize = ind_sizes(1 + threadBlockID * 4)
+		 opDat5SharedIndirectionSize = ind_sizes(2 + threadBlockID * 4)
+		 opDat7SharedIndirectionSize = ind_sizes(3 + threadBlockID * 4)
+		 opDat1IndirectionMap => ind_maps1(ind_offs(0 + threadBlockID * 4):)
+		 opDat3IndirectionMap => ind_maps3(ind_offs(1 + threadBlockID * 4):)
+		 opDat5IndirectionMap => ind_maps5(ind_offs(2 + threadBlockID * 4):)
+		 opDat7IndirectionMap => ind_maps7(ind_offs(3 + threadBlockID * 4):)
+		 opDat3RoundUp = opDat1SharedIndirectionSize * 2
+		 opDat5RoundUp = opDat3SharedIndirectionSize * 4
+		 opDat7RoundUp = opDat5SharedIndirectionSize * 1
+		 opDat1nBytes = 0
+		 opDat3nBytes = opDat1nBytes + opDat3RoundUp
+		 opDat5nBytes = opDat3nBytes + opDat5RoundUp
+		 opDat7nBytes = opDat5nBytes + opDat7RoundUp
+		 opDat1SharedIndirection => sharedFloat8(opDat1nBytes:)
+		 opDat3SharedIndirection => sharedFloat8(opDat3nBytes:)
+		 opDat5SharedIndirection => sharedFloat8(opDat5nBytes:)
+		 opDat7SharedIndirection => sharedFloat8(opDat7nBytes:)
 
-DO i2 = 0, 4 - 1, 1
-opDat3SharedIndirection(i2 + i1 * 4 + 1) = opDat3(i2 + opDat3IndirectionMap(i1 + 1) * 4)
-END DO
+		 DO i1 = 0, opDat1SharedIndirectionSize - 1, 1
+			 DO i2 = 0, 2 - 1, 1
+				 opDat1SharedIndirection(i2 + i1 * 2 + 1) = opDat1(i2 + opDat1IndirectionMap(i1 + 1) * 2)
+			 END DO
+		 END DO
 
-END DO
+		 DO i1 = 0, opDat3SharedIndirectionSize - 1, 1
+			 DO i2 = 0, 4 - 1, 1
+				 opDat3SharedIndirection(i2 + i1 * 4 + 1) = opDat3(i2 + opDat3IndirectionMap(i1 + 1) * 4)
+			 END DO
+		 END DO
 
-DO i1 = 0, opDat5SharedIndirectionSize - 1, 1
+		 DO i1 = 0, opDat5SharedIndirectionSize - 1, 1
+			 DO i2 = 0, 1 - 1, 1
+				 opDat5SharedIndirection(i2 + i1 * 1 + 1) = opDat5(i2 + opDat5IndirectionMap(i1 + 1) * 1)
+			 END DO
+		 END DO
 
-DO i2 = 0, 1 - 1, 1
-opDat5SharedIndirection(i2 + i1 * 1 + 1) = opDat5(i2 + opDat5IndirectionMap(i1 + 1) * 1)
-END DO
+		 DO i1 = 0, opDat7SharedIndirectionSize - 1, 1
+			 DO i2 = 0, 4 - 1, 1
+				 opDat7SharedIndirection(i2 + i1 * 4 + 1) = 0
+			 END DO
+		 END DO
 
-END DO
+		 DO i1 = 0, numberOfActiveThreadsCeiling - 1, 1
+			 colour2 = -1
+			 IF (i1 < numberOfActiveThreads) THEN
+				 DO i2 = 0, 4 - 1, 1
+					 opDat7Local(i2) = 0
+				 END DO
 
-DO i1 = 0, opDat7SharedIndirectionSize - 1, 1
+				 DO i2 = 0, 4 - 1, 1
+					 opDat8Local(i2) = 0
+				 END DO
 
-DO i2 = 0, 4 - 1, 1
-opDat7SharedIndirection(i2 + i1 * 4 + 1) = 0
-END DO
-
-END DO
-
-DO i1 = 0, numberOfActiveThreadsCeiling - 1, 1
-colour2 = -1
-
-IF (i1 < numberOfActiveThreads) THEN
-
-DO i2 = 0, 4 - 1, 1
-opDat7Local(i2) = 0
-END DO
-
-DO i2 = 0, 4 - 1, 1
-opDat8Local(i2) = 0
-END DO
-
-CALL res_calc_modified(opDat1SharedIndirection(1 + mappingArray1(i1 + threadBlockOffset) * 2:1 + mappingArray1(i1 + thr&
+				 CALL res_calc_modified(opDat1SharedIndirection(1 + mappingArray1(i1 + threadBlockOffset) * 2:1 + mappingArray1(i1 + thr&
 &eadBlockOffset) * 2 + 2 - 1),opDat1SharedIndirection(1 + mappingArray2(i1 + threadBlockOffset) * 2:1 + mappingArray2(i&
 &1 + threadBlockOffset) * 2 + 2 - 1),opDat3SharedIndirection(1 + mappingArray3(i1 + threadBlockOffset) * 4:1 + mappingA&
 &rray3(i1 + threadBlockOffset) * 4 + 4 - 1),opDat3SharedIndirection(1 + mappingArray4(i1 + threadBlockOffset) * 4:1 + m&
 &appingArray4(i1 + threadBlockOffset) * 4 + 4 - 1),opDat5SharedIndirection(1 + mappingArray5(i1 + threadBlockOffset) * &
 &1),opDat5SharedIndirection(1 + mappingArray6(i1 + threadBlockOffset) * 1),opDat7Local,opDat8Local)
-colour2 = thrcol(i1 + threadBlockOffset)
-END IF
+				 colour2 = thrcol(i1 + threadBlockOffset)
 
-opDat7Map = mappingArray7(i1 + threadBlockOffset)
-opDat8Map = mappingArray8(i1 + threadBlockOffset)
+			 END IF
 
-DO colour1 = 0, numOfColours - 1, 1
+			 opDat7Map = mappingArray7(i1 + threadBlockOffset)
+			 opDat8Map = mappingArray8(i1 + threadBlockOffset)
 
-IF (colour2 .EQ. colour1) THEN
+			 DO colour1 = 0, numOfColours - 1, 1
+				 IF (colour2 .EQ. colour1) THEN
+					 DO i2 = 0, 4 - 1, 1
+						 opDat7SharedIndirection(1 + (i2 + opDat7Map * 4)) = opDat7SharedIndirection(1 + (i2 + opDat7Map * 4)) + opDat7Local(i2)
+					 END DO
 
-DO i2 = 0, 4 - 1, 1
-opDat7SharedIndirection(1 + (i2 + opDat7Map * 4)) = opDat7SharedIndirection(1 + (i2 + opDat7Map * 4)) + opDat7Local(i2)
-END DO
+					 DO i2 = 0, 4 - 1, 1
+						 opDat7SharedIndirection(1 + (i2 + opDat8Map * 4)) = opDat7SharedIndirection(1 + (i2 + opDat8Map * 4)) + opDat8Local(i2)
+					 END DO
+				 END IF
+			 END DO
+		 END DO
 
-DO i2 = 0, 4 - 1, 1
-opDat7SharedIndirection(1 + (i2 + opDat8Map * 4)) = opDat7SharedIndirection(1 + (i2 + opDat8Map * 4)) + opDat8Local(i2)
-END DO
-
-END IF
-
-END DO
-
-END DO
-
-DO i1 = 0, opDat7SharedIndirectionSize - 1, 1
-
-DO i2 = 0, 4 - 1, 1
-opDat7(i2 + opDat7IndirectionMap(i1 + 1) * 4) = opDat7(i2 + opDat7IndirectionMap(i1 + 1) * 4) + opDat7SharedIndirection&
-&(1 + (i2 + i1 * 4))
-END DO
-
-END DO
-
+		 DO i1 = 0, opDat7SharedIndirectionSize - 1, 1
+			 DO i2 = 0, 4 - 1, 1
+				 opDat7(i2 + opDat7IndirectionMap(i1 + 1) * 4) = opDat7(i2 + opDat7IndirectionMap(i1 + 1) * 4) + opDat7SharedIndirection(1 + (i2 + i1 * 4))
+			 END DO
+		 END DO
 END SUBROUTINE
 
 SUBROUTINE res_calc_host(userSubroutine,set,opArg1,opArg2,opArg3,opArg4,opArg5,opArg6,opArg7,opArg8)
