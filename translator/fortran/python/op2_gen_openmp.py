@@ -181,39 +181,40 @@ def op2_gen_openmp(master, date, consts, kernels):
 		code('SUBROUTINE op_x86_'+name+'( &'); depth = depth + 2
 
 		for g_m in range(0,ninds):
-			code('INDTYP *ind_ARG,')
-			code('int *ind_ARG_maps')
+			code('&  INDTYP *ind_ARG,   &')
+			code('&  int *ind_ARG_maps, &')
 
 		for g_m in range (0,nargs):
 			if maps[g_m] == OP_GBL and accs[g_m] == OP_READ:
 				# declared const for performance
-				code('&  ARG, '+str(g_m)+'&')
+				code('&  ARG, &')
 			elif maps[g_m] == OP_ID and ninds>0:
-				code('&  ARG, '+str(g_m)+'&')
+				code('&  ARG, &')
 			elif maps[g_m] == OP_GBL or maps[g_m] == OP_ID:
-				code('&  ARG, '+str(g_m)+'&')
+				code('&  ARG, &')
 
 		code('!-- mappingArray*s -- goes here, ')
 		code('&  ind_arg_sizes, &')
 		code('&  ind_arg_offs,  & ')
 		code('&  block_offset,  & ')
-		code('&  blkmap,        &')
+		code('&  blkmap,        & ')
 		code('&  offset,        & ')
 		code('&  nelems,        & ')
-		code('&  ncolors,       & ')
-		code('&  colors ) ')
+		code('&  nthrcol,       & ')
+		code('&  thrcol,        & ')
+		code('&  blockOffset,   & ')
+		code('&  blockID        ) ')
 		code('')
 
 		code('IMPLICIT NONE')
 		for g_m in range (0,nargs):
 			if maps[g_m] == OP_GBL and accs[g_m] == OP_READ:
 				# declared const for performance
-				code('REAL(kind=8), dimension(0:*) :: ARG, '+str(g_m))
+				code('REAL(kind=8), dimension(0:*) :: ARG, ')
 			elif maps[g_m] == OP_ID and ninds>0:
-				code('REAL(kind=8), dimension(0:*) :: ARG, '+str(g_m))
+				code('REAL(kind=8), dimension(0:*) :: ARG, ')
 			elif maps[g_m] == OP_GBL or maps[g_m] == OP_ID:
-				code('REAL(kind=8), dimension(0:*) :: ARG, '+str(g_m))
-
+				code('REAL(kind=8), dimension(0:*) :: ARG, ')
 
 		code('INTEGER(kind=4), dimension(0:), target :: ind_maps*s -- goes here, ')
 		code('!-- INTEGER(kind=2), dimension(0:*) :: mappingArray*s -- goes here, ')
@@ -235,15 +236,27 @@ def op2_gen_openmp(master, date, consts, kernels):
 		code('INTEGER(kind=4) :: i2')
 		code('REAL(kind=8), dimension(0:128000 - 1), target :: sharedFloat8')
 		code('')
-		code('!-- INTEGER(kind=4), POINTER, dimension(:) :: opDat**IndirectionMap -- goes here,')
-		code('!-- REAL(kind=8), POINTER, dimension(:) :: opDat**SharedIndirection -- goes here,')
 
-		code('!-- INTEGER(kind=4) :: opDat**nBytes -- goes here')
-		code('!-- INTEGER(kind=4) :: opDat**RoundUp -- goes here')
-		code('!-- INTEGER(kind=4) :: opDat**SharedIndirectionSize -- goes here')
+		for g_m in range(0,ninds):
+			code('INTEGER(kind=4), POINTER, dimension(:) :: opDatARGIndirectionMap')
+		for g_m in range(0,ninds):
+			code('REAL(kind=8), POINTER, dimension(:) :: opDatARGSharedIndirection')
+		for g_m in range(0,ninds):
+			code('INTEGER(kind=4) :: opDatARGnBytes')
+		for g_m in range(0,ninds):
+			code('INTEGER(kind=4) :: opDatARGRoundUp')
+		for g_m in range(0,ninds):
+			code('INTEGER(kind=4) :: opDatARGSharedIndirectionSize ')
+
 		code('!-- REAL(kind=8), dimension(0:3) :: opDat**Local -- goes here')
+		code('!-- INTEGER(kind=4) :: opDat7Map -- goes here')
+
 		code('')
 		comm('more declarations here')
+
+		#kernel call
+		comm('user-supplied kernel call')
+
 
 		depth = depth - 2
 		code('END SUBROUTINE')
