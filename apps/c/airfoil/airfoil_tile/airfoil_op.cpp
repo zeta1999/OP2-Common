@@ -248,7 +248,7 @@ int main(int argc, char **argv)
 
   // main time-marching loop
 
-  niter = 1;
+  niter = 2;
 
   for(int iter=1; iter<=niter; iter++) {
 
@@ -311,10 +311,13 @@ int main(int argc, char **argv)
   }
   
   generate_inverse_maps();
-  int index[] = {155957, 155958, 155959, 155960, 155961};
+  int *index = (int *)malloc(22*sizeof(int));//{0,1,2,3,4};//{155957, 155958, 155959, 155960, 155961};
+  for (int i = 0; i < 22; i++) {
+    index[i] = 19+i;
+  }
   op_subset need;
   need.set = cells;
-  need.size = 5;
+  need.size = 22;//cells->size;
   need.elements = index;
   op_end_superloop(&need, p_q);
   

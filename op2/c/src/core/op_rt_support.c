@@ -1089,7 +1089,7 @@ void op_end_superloop ( op_subset *subset, op_dat data) {
       //find local dat, substitute
       op_dat original = kernel_list[i].args[arg].dat;
       for (unsigned int j = 0; j < dats.size(); j++)
-        if (dats[j]->index == original->index) {kernel_list[i].args[arg].dat = dats[j]; break;}
+        if (dats[j]->index == original->index) {kernel_list[i].args[arg].dat = dats[j]; kernel_list[i].args[arg].data = dats[j]->data; break;}
       if (kernel_list[i].args[arg].dat == original) {
         printf("Error, local dat not found\n"); exit(-1);}//just some sanity check
       
@@ -1105,13 +1105,33 @@ void op_end_superloop ( op_subset *subset, op_dat data) {
     do_coloring(i);
   }
   
+  if (OP_diags>2) {
+    printf("Maps sanity checks...\n");
+    //Maps sanity check
+    for (unsigned int i = 0; i < maps.size(); i++) {
+      int from = maps[i]->from->index;
+      int to = maps[i]->to->index;
+      for (int e = 0; e < dependencies[from].size; e++) {
+        int gbl_from = dependencies[from].elements[e];
+        for (int d = 0; d < maps[i]->dim; d++) {
+          int gbl_to = dependencies[to].elements[maps[i]->map[e*maps[i]->dim + d]];
+          if (gbl_to != OP_map_list[maps[i]->index]->map[gbl_from * maps[i]->dim + d]) {
+            printf("Map sanity check fail: %d != %d\n", gbl_to, OP_map_list[maps[i]->index]->map[gbl_from * maps[i]->dim + d]);
+          }
+        }
+      }
+    }
+  }
+  
   int ctr = 0;
   //Bring in dats to scratch memory
   for (int i = 0; i < OP_set_index; i++) {
     //TODO: shouldn't be reading in read only ones? would need to use a different map though...
     for (unsigned int j = 0; j < dependencies[i].dats.size(); j ++) {
       op_dat data = dats[ctr];
+      if (data->index != dependencies[i].dats[j]->index) printf("Scratch bring in error\n");
       for (int e = 0; e < dependencies[i].size; e++) {
+        //printf("%s %d %g -> %d\n", data->name, dependencies[i].elements[e], *((double *)&dependencies[i].dats[j]->data[dependencies[i].elements[e]*data->size]), e);
         memcpy(&data->data[e*data->size], &dependencies[i].dats[j]->data[dependencies[i].elements[e]*data->size], data->size);
       }
       ctr++;
@@ -1350,6 +1370,11 @@ void compute_dependencies(op_kernel_descriptor *kernel) {
     std::vector<int> temp(dependencies[kernel->set->index].elements.begin(), dependencies[kernel->set->index].elements.begin()+dependencies[kernel->set->index].size);
     dependencies[kernel->set->index].size = std::set_union(temp.begin(), temp.end(), kernel->subset->elements, kernel->subset->elements+kernel->subset->size, dependencies[kernel->set->index].elements.begin()) - dependencies[kernel->set->index].elements.begin();
   }
+//  printf("Kernel %s dependency list: \n", kernel->name);
+//  for (int i = 0; i < dependencies[kernel->set->index].size; i++) {
+//    printf("%d ", dependencies[kernel->set->index].elements[i]);
+//  }
+//  printf("\n");
 }
 
 void do_coloring(int set_index) {
@@ -1492,21 +1517,39 @@ void do_coloring(int set_index) {
       if (colors[el].key == floor(colors[el].key)) colors[el].key += increment * (set_kernels.size()-i);
     }
   }
+  
+  //Put the "non-exec" halo to the very end, so as we don't execute on them (this is data elements that are brought in, but only read, i.e. the outermost ring
+  int nonexec = 0;
+  for (int i = 0; i < colors.size(); i++) {
+    if (colors[i].key == floor(colors[i].key)) {
+      colors[i].key = ncolors;
+      nonexec++;
+    }
+  }
+  
   //At this point we have for each element a color that will order them by the loop they were introduced by, and each loop knows how many elements it has by color
   
   //Now sort it, so we'll have the set ordered by color and within colors by the level at they were introduced, colors[].value is the global index
-  std::sort(colors.begin(), colors.end(), kv_sort2_comp);
+  std::stable_sort(colors.begin(), colors.end(), kv_sort2_comp);
   dependencies[set_index].ncolors = ncolors;
   dependencies[set_index].color_offsets.resize(ncolors+1);
   dependencies[set_index].color_offsets[0] = 0;
-  dependencies[set_index].color_offsets[ncolors] = dependencies[set_index].size;
+  dependencies[set_index].color_offsets[ncolors] = dependencies[set_index].size-nonexec;
+  //printf("name: %s colors: %d\n", dependencies[set_index].set->name, ncolors);
   for (unsigned i = 0; i < colors.size(); i++) {
     dependencies[set_index].elements[i] = colors[i].value; //reorder global indices mapping back from this tile
+    //printf("%d ", colors[i].value);
     if (i > 0 && floor(colors[i].key) > floor(colors[i-1].key)) {
       //We shouldn't have empty colors (when looking at the whole set)
       dependencies[set_index].color_offsets[(int)floor(colors[i].key)] = i;
     }
   }
+  //printf("\n");
+//  printf("Set %s list: \n", set->name);
+//  for (int i = 0; i < dependencies[set_index].size; i++) {
+//    printf("%d ", dependencies[set_index].elements[i]);
+//  }
+//  printf("\n");
   
   //Let's update each loop's color offests and free the loop's execution sets
   for (int i = set_kernels.size()-1; i >= 0 ; i--) {

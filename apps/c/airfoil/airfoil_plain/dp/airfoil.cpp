@@ -200,7 +200,7 @@ int main(int argc, char **argv)
 
   // main time-marching loop
 
-  niter = 1;
+  niter = 2;
 
   for(int iter=1; iter<=niter; iter++) {
 
@@ -263,7 +263,7 @@ int main(int argc, char **argv)
   }
 
   double *data = (double *)p_q->data;
-  for (int i = 155957; i < 155962; i++) {
+  for (int i = 0; i < cells->size; i++) {
     double *data2 = &data[p_q->dim * i];
     printf("Set element %d value %g %g %g %g\n", i, data2[0], data2[1], data2[2], data2[3]);
   }
