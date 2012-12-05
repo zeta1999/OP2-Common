@@ -43,6 +43,7 @@ void op_par_loop_adt_calc(op_kernel_descriptor *desc) {
   op_timers_core(&cpu_t1, &wall_t1);
   for (int col = 0; col < desc->subset->ncolors; col++) {
           //printf("kernel %s color %d from %d to %d\n", name, col, desc->subset->color_offsets[2*col], desc->subset->color_offsets[2*col+1]);
+    //#pragma omp parallel for private(p_a)
     for (int n=desc->subset->color_offsets[2*col]; n<desc->subset->color_offsets[2*col+1]; n++) {
       op_arg_set(n,args[0], &p_a[0],0);
       op_arg_set(n,args[1], &p_a[1],0);

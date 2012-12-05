@@ -969,10 +969,12 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size,
   return &( OP_plans[ip] );
 }
 
+
 typedef struct
 {
   op_set set;
   std::vector<int> elements;
+  std::vector<int> owned;
   std::vector<op_dat> dats;
   std::vector<int> written;
   std::vector<op_arg *> args;
@@ -981,31 +983,171 @@ typedef struct
   std::vector<int> color_offsets;
 } op_dataset_dependency;
 
-std::vector<op_dataset_dependency> dependencies;
-std::vector<op_map> maps;
-std::vector<op_dat> dats;
-void compute_dependencies(op_kernel_descriptor *kernel);
-void do_coloring(int set_index);
+typedef struct 
+{
+  std::vector<op_kernel_descriptor> kernels;
+  std::vector<op_dataset_dependency> dependencies;
+  std::vector<op_map> maps;
+  std::vector<op_dat> dats;
+} op_tile;
 
-void op_end_superloop ( op_subset *subset, op_dat data) {
-  if (data->set != subset->set) {
-    printf("subset must be a subset of the set the data is on\n");
-    exit(-1);
+typedef struct
+{
+  std::vector<op_tile> tiles;
+} op_tile_plan;
+
+std::vector<op_tile_plan> op_tile_plans;
+
+
+void compute_dependencies(op_kernel_descriptor *kernel, std::vector<op_dataset_dependency>& dependencies);
+void do_coloring(int set_index, std::vector<op_dataset_dependency>& dependencies, std::vector<op_map>& maps, std::vector<op_kernel_descriptor>& kernel_list);
+void execute_tile(std::vector<op_kernel_descriptor>& kernel_list, std::vector<op_dataset_dependency>& dependencies, std::vector<op_dat>& dats, std::vector<op_map>& maps);
+int construct_tile_plan(op_dat data, int num_tiles);
+void construct_tile(op_subset &subset, op_dat data, std::vector<op_dataset_dependency>& dependencies, std::vector<op_map>& maps, std::vector<op_dat>& dats, std::vector<op_kernel_descriptor> &kernel_list, int num_tiles, int tile_id);
+
+void op_end_superloop ( op_dat data, int num_tiles) {
+
+  //Look at the kernel list, determine if we have a tile plan that already doesn this
+  int found = -1;
+  for (unsigned int i = 0; i < op_tile_plans.size() && found==-1; i++) {
+    if (op_tile_plans[i].tiles[0].kernels.size() == kernel_list.size()) {
+      int match = 1;
+      for (unsigned int j = 0; j < kernel_list.size() && match; j++) {
+        if (kernel_list[j].function == op_tile_plans[i].tiles[0].kernels[j].function) { //implies that nargs is the same
+          //TODO: temp dats support
+          int match = 1;
+          for (int k = 0; k < kernel_list[j].nargs && match; k++) {
+            if (kernel_list[j].args[k].argtype == OP_ARG_GBL) {
+              //Any good way to match these?
+              if (kernel_list[j].args[k].dim != op_tile_plans[i].tiles[0].kernels[j].args[k].dim) match = 0;
+            } else {
+              if (kernel_list[j].args[k].dat->index != op_tile_plans[i].tiles[0].kernels[j].args[k].dat->index) match = 0;
+              if (kernel_list[j].args[k].map != NULL && (kernel_list[j].args[k].map->index != op_tile_plans[i].tiles[0].kernels[j].args[k].map->index)) match = 0;
+            }
+          }
+        } else match = 0;
+      }
+      if (match) found = i;
+    }
   }
+  
+  if (found==-1) {
+    found = construct_tile_plan(data, num_tiles);
+  }
+  
+  for (unsigned int i = 0; i < op_tile_plans[found].tiles.size(); i++) {
+    execute_tile(op_tile_plans[found].tiles[i].kernels, op_tile_plans[found].tiles[i].dependencies, op_tile_plans[found].tiles[i].dats, op_tile_plans[found].tiles[i].maps);
+  }
+  
+  //swapping data back
+  for (int i = 0; i < OP_set_index; i++) {
+    for (unsigned int j = 0; j < op_tile_plans[found].tiles[0].dependencies[i].dats.size(); j ++) {
+      if (op_tile_plans[found].tiles[0].dependencies[i].written[j]==0) continue;
+      if (op_tile_plans[found].tiles[0].dependencies[i].dats[j]->data_d == NULL) {printf("ERROR: data_d should not be null"); exit(-1);}
+      char *temp = op_tile_plans[found].tiles[0].dependencies[i].dats[j]->data_d;
+      op_tile_plans[found].tiles[0].dependencies[i].dats[j]->data_d = op_tile_plans[found].tiles[0].dependencies[i].dats[j]->data;
+      op_tile_plans[found].tiles[0].dependencies[i].dats[j]->data = temp;
+    }
+  }
+}
+
+int construct_tile_plan(op_dat data, int num_tiles) {
+  //create new plan object
+  op_tile_plans.resize(op_tile_plans.size()+1);
+  op_tile_plan &plan = op_tile_plans[op_tile_plans.size()-1];
+  
+  plan.tiles.resize(num_tiles);
+  for (int i = 0; i < num_tiles; i++) {
+    //make an explicit copy of the kernels to be called so we'll have separate ones for all the tiles
+    plan.tiles[i].kernels.resize(kernel_list.size());
+    std::copy(kernel_list.begin(), kernel_list.end(), plan.tiles[i].kernels.begin()); //since pointers are copied, we actually point to the same op_args, but that's fine, we allocate the subsets later, those will be separeate for all the tiles
+
+  }
+  
+  //This is where the multi-set partitioning will go
+  
+  //naive partitioning
+  op_subset subset;
+  subset.elements = (int *)malloc((data->set->size/num_tiles+1)*sizeof(int));
+  for (int i = 0; i < num_tiles; i++) {
+    subset.size = data->set->size/num_tiles;
+    if (i == num_tiles-1) subset.size += data->set->size%num_tiles;
+    for (int j = 0; j < subset.size; j++) {
+      subset.elements[j] = i * data->set->size/num_tiles + j;
+    }
+    construct_tile(subset, data, plan.tiles[i].dependencies, plan.tiles[i].maps, plan.tiles[i].dats, plan.tiles[i].kernels, num_tiles, i);
+  }
+  
+  return op_tile_plans.size()-1;
+}
+
+void construct_tile(op_subset &subset, op_dat data, std::vector<op_dataset_dependency>& dependencies, std::vector<op_map>& maps, std::vector<op_dat>& dats, std::vector<op_kernel_descriptor> &kernel_list, int num_tiles, int tile_id) {
   //Set up initial active dataset
   //TODO: more than one output dataset
   dependencies.clear();
   dependencies.resize(OP_set_index);
   for (int i = 0; i < OP_set_index; i++) {
     dependencies[i].set = OP_set_list[i];
-    dependencies[i].elements.resize(dependencies[i].set->size); //TODO: this is way too big
     if (data->set == dependencies[i].set) {
-      dependencies[i].size = subset->size;
-      std::copy(subset->elements, subset->elements+subset->size, dependencies[i].elements.begin());
+      dependencies[i].elements.resize(dependencies[i].set->size); //TODO: this is way too big
+      dependencies[i].size = subset.size;
+      std::copy(subset.elements, subset.elements+subset.size, dependencies[i].elements.begin());
+      dependencies[i].owned.resize(subset.size);
+      std::copy(subset.elements, subset.elements+subset.size, dependencies[i].owned.begin());
       dependencies[i].dats.push_back(data);
       dependencies[i].written.push_back(0);
+      printf("Base set %s size: %d\n", dependencies[i].set->name, subset.size);
     } else {
-      dependencies[i].size = 0;
+      //Multi-set partitioning
+      dependencies[i].elements.reserve(dependencies[i].set->size); //TODO: this is way too big
+      op_set from = data->set;
+      op_set to = OP_set_list[i];
+      op_map map = NULL;
+      for (int j = 0; j < OP_map_index; j++)
+        if (OP_map_list[j]->from == from && OP_map_list[j]->to == to) map = OP_map_list[j];
+      if (map == NULL) {printf("No map from %s to %s found, aborting. Implement me!\n", from->name, to->name); exit(-1);}
+      op_map rev_map = map->reverse_map;
+      //TODO: this will only work for contiguous indexing!!!!
+      for (int e = 0; e < subset.size; e++) {
+        int el = subset.elements[e];
+        if (map->isSimple) {
+          for (int d = 0; d < map->dim; d++) {
+            int e = map->map[map->dim*el+d];
+            //Check if everything pointing back is owned
+            int owned = 1;
+            if (rev_map->isSimple) {
+              for (int el2 = 0; el2 < rev_map->dim; el2++)
+                if (rev_map->map[e*rev_map->dim + el2] < subset.elements[0] || rev_map->map[e*rev_map->dim + el2] > subset.elements[subset.size-1]) owned = 0;
+            } else {
+              for (int el2 = rev_map->row_offsets[e]; el2 < rev_map->row_offsets[e+1]; el2++)
+                if (rev_map->map[el2] < subset.elements[0] || rev_map->map[el2] > subset.elements[subset.size-1]) owned = 0;
+            }
+            if (owned || (e % num_tiles)==tile_id) dependencies[i].elements.push_back(e);
+          }
+        } else {
+          for (int d = map->row_offsets[el]; d < map->row_offsets[el+1]; d++) {
+            int e = map->map[d];
+            //Check if everything pointing back is owned
+            int owned = 1;
+            if (rev_map->isSimple) {
+              for (int el2 = 0; el2 < rev_map->dim; el2++)
+                if (rev_map->map[e*rev_map->dim + el2] < subset.elements[0] || rev_map->map[e*rev_map->dim + el2] > subset.elements[subset.size-1]) owned = 0;
+            } else {
+              for (int el2 = rev_map->row_offsets[e]; el2 < rev_map->row_offsets[e+1]; el2++)
+                if (rev_map->map[el2] < subset.elements[0] || rev_map->map[el2] > subset.elements[subset.size-1]) owned = 0;
+            }
+            if (owned || (e % num_tiles)==tile_id) dependencies[i].elements.push_back(e);
+          }
+        }
+      }
+      std::sort(dependencies[i].elements.begin(), dependencies[i].elements.end());
+      int num_unique = std::unique(dependencies[i].elements.begin(), dependencies[i].elements.end()) - dependencies[i].elements.begin(); //get rid of duplicates
+      
+      dependencies[i].elements.resize(dependencies[i].set->size); //TODO: this is way too big
+      dependencies[i].size = num_unique;
+      dependencies[i].owned.resize(num_unique);
+      std::copy(dependencies[i].elements.begin(), dependencies[i].elements.begin()+num_unique, dependencies[i].owned.begin());
+      printf("Derived set %s size: %d\n", dependencies[i].set->name, num_unique);
     }
   }
 
@@ -1027,7 +1169,7 @@ void op_end_superloop ( op_subset *subset, op_dat data) {
   }
   
   for (unsigned int i = 0; i < kernel_list.size(); i++) {
-    compute_dependencies(&kernel_list[kernel_list.size()-1-i]);
+    compute_dependencies(&kernel_list[kernel_list.size()-1-i], dependencies);
   }
   
   for (int i = 0; i < OP_set_index; i++) {
@@ -1084,13 +1226,14 @@ void op_end_superloop ( op_subset *subset, op_dat data) {
         exit(-1);
       }
     }
-    for (int arg = 0; arg <kernel_list[i].nargs; arg++) {
+    /*for (int arg = 0; arg <kernel_list[i].nargs; arg++) {
       if (kernel_list[i].args[arg].argtype==OP_ARG_GBL) continue;
       //find local dat, substitute
       op_dat original = kernel_list[i].args[arg].dat;
-      for (unsigned int j = 0; j < dats.size(); j++)
+      unsigned int j = 0;
+      for (; j < dats.size(); j++)
         if (dats[j]->index == original->index) {kernel_list[i].args[arg].dat = dats[j]; kernel_list[i].args[arg].data = dats[j]->data; break;}
-      if (kernel_list[i].args[arg].dat == original) {
+      if (j == dats.size()) {
         printf("Error, local dat not found\n"); exit(-1);}//just some sanity check
       
       //find local map, substitute
@@ -1098,11 +1241,11 @@ void op_end_superloop ( op_subset *subset, op_dat data) {
         for (unsigned int j = 0; j < maps.size(); j++)
           if (maps[j]->index == kernel_list[i].args[arg].map->index) {kernel_list[i].args[arg].map = maps[j]; break;}
       }
-    }
+    }*/
   }
   
   for (int i = 0 ; i < OP_set_index; i++) {
-    do_coloring(i);
+    do_coloring(i, dependencies, maps, kernel_list);
   }
   
   if (OP_diags>2) {
@@ -1123,6 +1266,44 @@ void op_end_superloop ( op_subset *subset, op_dat data) {
     }
   }
   
+  double memuse = mem_set_lists + mem_maps + mem_dats + mem_execution_lists;
+  //Execute
+  printf("Created tile, depth %d mem use: %g KB (%.2g KB setlists, %.2g KB maps, %.2g KB dats %.2g KB exec lists)\n", (int)kernel_list.size(), memuse/1024.0, mem_set_lists/1024.0, mem_maps/1024.0, mem_dats/1024.0, mem_execution_lists/1024.0);
+  
+  //Figure out based on the owned list which data set elements (in the reordered by color dependency list) have to be written back to global
+  for (int i = 0 ; i < OP_set_index; i++) {
+    std::vector<int> owned_temp(dependencies[i].owned.size());
+    for (unsigned int e = 0; e < dependencies[i].elements.size(); e++) {
+      int el = dependencies[i].elements[e];
+      unsigned int idx = std::find(dependencies[i].owned.begin(), dependencies[i].owned.end(), el) - dependencies[i].owned.begin();
+      if (idx < dependencies[i].owned.size()) owned_temp[idx] = e;
+    }
+    std::copy(owned_temp.begin(), owned_temp.end(), dependencies[i].owned.begin());
+  }
+}
+
+void execute_tile(std::vector<op_kernel_descriptor>& kernel_list, std::vector<op_dataset_dependency>& dependencies, std::vector<op_dat>& dats, std::vector<op_map>& maps) {
+  
+  //renumber execution sets, substitute new maps and dats into loop args
+  for (unsigned int i = 0; i < kernel_list.size(); i++) {
+    for (int arg = 0; arg <kernel_list[i].nargs; arg++) {
+      if (kernel_list[i].args[arg].argtype==OP_ARG_GBL) continue;
+      //find local dat, substitute
+      op_dat original = kernel_list[i].args[arg].dat;
+      unsigned int j = 0;
+      for (; j < dats.size(); j++)
+        if (dats[j]->index == original->index) {kernel_list[i].args[arg].dat = dats[j]; kernel_list[i].args[arg].data = dats[j]->data; break;}
+      if (j == dats.size()) {
+        printf("Error, local dat not found\n"); exit(-1);}//just some sanity check
+      
+      //find local map, substitute
+      if (kernel_list[i].args[arg].map != NULL) {
+        for (unsigned int j = 0; j < maps.size(); j++)
+          if (maps[j]->index == kernel_list[i].args[arg].map->index) {kernel_list[i].args[arg].map = maps[j]; break;}
+      }
+    }
+  }
+  
   int ctr = 0;
   //Bring in dats to scratch memory
   for (int i = 0; i < OP_set_index; i++) {
@@ -1138,9 +1319,6 @@ void op_end_superloop ( op_subset *subset, op_dat data) {
     }
   }
   
-  double memuse = mem_set_lists + mem_maps + mem_dats + mem_execution_lists;
-  //Execute
-  printf("Executing tile, depth %d mem use: %g KB (%.2g KB setlists, %.2g KB maps, %.2g KB dats %.2g KB exec lists)\n", (int)kernel_list.size(), memuse/1024.0, mem_set_lists/1024.0, mem_maps/1024.0, mem_dats/1024.0, mem_execution_lists/1024.0);
   unsigned int i = 0;
   while ( i < kernel_list.size()) {
     kernel_list[i].function(&kernel_list[i]); //save_soln
@@ -1148,22 +1326,24 @@ void op_end_superloop ( op_subset *subset, op_dat data) {
   }
   
   //Put data back
-  //TODO: only write out the "owned" data on the top of the tile
   for (int i = 0; i < OP_set_index; i++) {
     for (unsigned int j = 0; j < dependencies[i].dats.size(); j ++) {
       if (dependencies[i].written[j]==0) continue;
       op_dat data = NULL;
       for (unsigned int loc = 0; loc < dats.size(); loc ++) if (dats[loc]->index == dependencies[i].dats[j]->index) data = dats[loc];
-      //put
-      for (int e = 0; e < dependencies[i].size; e++) {
-        memcpy(&dependencies[i].dats[j]->data[dependencies[i].elements[e]*data->size], &data->data[e*data->size], data->size);
+      //TODO: Malloc space to put stuff into - this should be elsewhere to be honest
+      if (dependencies[i].dats[j]->data_d == NULL) dependencies[i].dats[j]->data_d = (char*)malloc(data->set->size * data->size);
+
+      for (unsigned int el = 0; el < dependencies[i].owned.size(); el++) {
+        int e = dependencies[i].owned[el];
+        memcpy(&dependencies[i].dats[j]->data_d[dependencies[i].elements[e]*data->size], &data->data[e*data->size], data->size);
       }
     }
   }
-
+  
 }
 
-void add_dependency(op_dat data, int written) {
+void add_dependency(op_dat data, int written, std::vector<op_dataset_dependency>& dependencies) {
   //find data in set's data list (or append) and set written flag to 1
   unsigned int idx = std::find(dependencies[data->set->index].dats.begin(), dependencies[data->set->index].dats.end(), data) - dependencies[data->set->index].dats.begin();
   if (idx == dependencies[data->set->index].dats.size()) {
@@ -1174,7 +1354,7 @@ void add_dependency(op_dat data, int written) {
   }
 }
 
-void add_arg_dependency(op_arg *arg, int set_index) {
+void add_arg_dependency(op_arg *arg, int set_index, std::vector<op_dataset_dependency>& dependencies) {
   if (arg->argtype == OP_ARG_GBL || arg->map == NULL || arg->acc == OP_READ || arg->acc == OP_WRITE) return; //for these we do not have to do coloring (no indirect OP_WRITE supported)
   //TODO: indirect OP_RW
   unsigned i = 0;
@@ -1198,7 +1378,7 @@ inline bool kv_sort2_comp(const kv_sort2 i, const kv_sort2 j) {return i.key < j.
 //first, determine what the execution set has to be so that all the already existing data dependencies are computed (OP_WRITE, OP_RW, OP_INC)
 //what if we write something that's not an output?? - I think solved by getting ignored (dependencies[idx].size will be 0, nothing will be merged in)
 //second, add further dependencies based on what is read (OP_RW, OP_INC, OP_READ)
-void compute_dependencies(op_kernel_descriptor *kernel) {
+void compute_dependencies(op_kernel_descriptor *kernel, std::vector<op_dataset_dependency>& dependencies) {
   kernel->subset = (op_subset *)malloc(sizeof(op_subset));
   kernel->subset->set = kernel->set;
   //TODO reuse
@@ -1241,7 +1421,7 @@ void compute_dependencies(op_kernel_descriptor *kernel) {
     }
     
     for (int i = m; i < kernel->nargs; i++) {
-      if (kernel->args[i].map == ind_map && kernel->args[i].argtype != OP_ARG_GBL) add_dependency(kernel->args[i].dat, kernel->args[i].acc != OP_READ);
+      if (kernel->args[i].map == ind_map && kernel->args[i].argtype != OP_ARG_GBL) add_dependency(kernel->args[i].dat, kernel->args[i].acc != OP_READ, dependencies);
     }
     
     //find execution set elements required to compute values of the dataset
@@ -1294,7 +1474,7 @@ void compute_dependencies(op_kernel_descriptor *kernel) {
     op_set set = data->set;
     
     //Add argument to coloring constraints (will only happen for indirect+OP_INC, and if it has't been added before)
-    add_arg_dependency(&kernel->args[arg], kernel->subset->set->index);
+    add_arg_dependency(&kernel->args[arg], kernel->subset->set->index, dependencies);
 
     //if OP_WRITE or already processed, skip
     //TODO: OP_WRITE skip or not?
@@ -1331,7 +1511,7 @@ void compute_dependencies(op_kernel_descriptor *kernel) {
     }
     
     for (int i = arg; i < kernel->nargs; i++) {
-      if (kernel->args[i].map == ind_map && kernel->args[i].argtype != OP_ARG_GBL) add_dependency(kernel->args[i].dat, kernel->args[i].acc != OP_READ);
+      if (kernel->args[i].map == ind_map && kernel->args[i].argtype != OP_ARG_GBL) add_dependency(kernel->args[i].dat, kernel->args[i].acc != OP_READ, dependencies);
     }
     
     //find dataset elements required to execute the current execution subset
@@ -1377,7 +1557,7 @@ void compute_dependencies(op_kernel_descriptor *kernel) {
 //  printf("\n");
 }
 
-void do_coloring(int set_index) {
+void do_coloring(int set_index, std::vector<op_dataset_dependency>& dependencies, std::vector<op_map>& maps, std::vector<op_kernel_descriptor>& kernel_list) {
   int nargs = dependencies[set_index].args.size();
   //do the coloring if necessary
   int color = 0;
@@ -1414,17 +1594,17 @@ void do_coloring(int set_index) {
     //
 
     std::vector<int> inds(nargs, -1);
-    std::vector<op_map> maps(nargs, NULL);
+    std::vector<op_map> loop_maps(nargs, NULL);
     
     int ninds = 0;
     for (int i = 0; i < nargs; i++) {
       if (dependencies[set_index].args[i]->map != NULL && inds[i] == -1) {
         inds[i] = ninds;
-        maps[i] = dependencies[set_index].args[i]->map;
+        loop_maps[i] = maps[dependencies[set_index].args[i]->map->index];
         for (int j = i+1; j<nargs; j++) {
           if (dependencies[set_index].args[i]->map == dependencies[set_index].args[j]->map && dependencies[set_index].args[i]->dat == dependencies[set_index].args[j]->dat) {
             inds[j] = ninds;
-            maps[j] = dependencies[set_index].args[j]->map;
+            loop_maps[j] = maps[dependencies[set_index].args[j]->map->index]; //get local equivalent of the global map to do coloring
           }
         }
         ninds++;
@@ -1440,7 +1620,7 @@ void do_coloring(int set_index) {
       while ( inds[m2] != m )
         m2++;
       
-      int to_size = dependencies[maps[m2]->to->index].size;
+      int to_size = dependencies[loop_maps[m2]->to->index].size;
       work[m] = ( uint * )malloc( to_size * sizeof (uint));
     }
     
@@ -1450,13 +1630,13 @@ void do_coloring(int set_index) {
     while ( repeat )
     {
       repeat = 0;
-      //TODO: vector maps support
+      //TODO: vector loop_maps support
       for ( int m = 0; m < nargs; m++ )
       {
         if ( inds[m] > 0 )
           for ( int el = 0; el < dependencies[set_index].size; el++ ) {
 //            int e = dependencies[set_index].elements[el];
-            work[inds[m]][maps[m]->map[dependencies[set_index].args[m]->idx + el * maps[m]->dim]] = 0; // zero out color array
+            work[inds[m]][loop_maps[m]->map[dependencies[set_index].args[m]->idx + el * loop_maps[m]->dim]] = 0; // zero out color array
           }
       }
       
@@ -1468,7 +1648,7 @@ void do_coloring(int set_index) {
           int mask = 0;
           for ( int m = 0; m < nargs; m++ )
             if ( inds[m] >= 0 && dependencies[set_index].args[m]->acc == OP_INC )
-              mask |= work[inds[m]][maps[m]->map[dependencies[set_index].args[m]->idx + el * maps[m]->dim]]; // set bits of mask
+              mask |= work[inds[m]][loop_maps[m]->map[dependencies[set_index].args[m]->idx + el * loop_maps[m]->dim]]; // set bits of mask
 
           
           int color = ffs ( ~mask ) - 1;  // find first bit not set
@@ -1484,7 +1664,7 @@ void do_coloring(int set_index) {
             
             for ( int m = 0; m < nargs; m++ )
               if ( inds[m] >= 0 && dependencies[set_index].args[m]->acc == OP_INC )
-                work[inds[m]][maps[m]->map[dependencies[set_index].args[m]->idx + el * maps[m]->dim]] |= mask; // set color bit
+                work[inds[m]][loop_maps[m]->map[dependencies[set_index].args[m]->idx + el * loop_maps[m]->dim]] |= mask; // set color bit
           }
         }
       }
@@ -1520,7 +1700,7 @@ void do_coloring(int set_index) {
   
   //Put the "non-exec" halo to the very end, so as we don't execute on them (this is data elements that are brought in, but only read, i.e. the outermost ring
   int nonexec = 0;
-  for (int i = 0; i < colors.size(); i++) {
+  for (unsigned int i = 0; i < colors.size(); i++) {
     if (colors[i].key == floor(colors[i].key)) {
       colors[i].key = ncolors;
       nonexec++;
@@ -1554,6 +1734,7 @@ void do_coloring(int set_index) {
   //Let's update each loop's color offests and free the loop's execution sets
   for (int i = set_kernels.size()-1; i >= 0 ; i--) {
     free(set_kernels[i]->subset->elements);
+    set_kernels[i]->subset->elements = NULL;
     for (int j = 0; j < ncolors; j++) {
       int size = set_kernels[i]->subset->color_offsets[2*j];
       set_kernels[i]->subset->color_offsets[2*j] = dependencies[set_index].color_offsets[j];

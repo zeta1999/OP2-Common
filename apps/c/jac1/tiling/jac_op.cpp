@@ -146,15 +146,15 @@ int main(int argc, char **argv)
   }
   
   
-  for (int i = 0; i < nedge; i++) {
-    A[i] = i;
-  }
-  
-  for (int i = 0; i < nnode; i++) {
-    r[i] = i;
-    u[i] = i;
-    du[i] = i;
-  }
+//  for (int i = 0; i < nedge; i++) {
+//    A[i] = i;
+//  }
+//  
+//  for (int i = 0; i < nnode; i++) {
+//    r[i] = i;
+//    u[i] = i;
+//    du[i] = i;
+//  }
 
   
   // declare sets, pointers, and datasets
@@ -197,15 +197,7 @@ printf("pointer orig: %p\n", p_A->data);
   }
 
   generate_inverse_maps();
-  int *index = (int *)malloc(nnode*sizeof(int));
-  for (int i = 0; i<nnode/2; i++) {
-    index[i] = i;
-  }
-  op_subset need;
-  need.set = nodes;
-  need.size = nnode/2;
-  need.elements = index;
-  op_end_superloop(&need, p_u);
+  op_end_superloop(p_u, 2);
   
   /*for (int i = 0; i < need.size; i++) {
     double *data = (double *)p_q->data;
@@ -218,7 +210,11 @@ printf("pointer orig: %p\n", p_A->data);
   op_printf("\n  Results after %d iterations:\n\n",NITER);
 
   op_fetch_data(p_u);
-
+// THIS IS A HACK!!!!
+  
+  u = (double *)p_u->data;
+  du = (double *)p_du->data;
+  r = (double *)p_r->data;
   for (int pass=0; pass<3; pass++) {
     for (int j=NN-1; j>0; j--) {
       for (int i=1; i<NN; i++) {

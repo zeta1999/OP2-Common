@@ -32,10 +32,10 @@ void op_par_loop_update(op_kernel_descriptor *desc ){
   
   char  *p_a[5] = {0,0,0,0,0};
   
-  for (int i = 0; i < set->size; i++) {
-    printf("%g ", ((double *)args[0].dat->data)[i]);
-  }
-  printf("\n");
+//  for (int i = 0; i < set->size; i++) {
+//    printf("%g ", ((double *)args[0].dat->data)[i]);
+//  }
+//  printf("\n");
 
   
   // initialise timers

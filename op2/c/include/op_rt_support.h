@@ -92,7 +92,7 @@ op_plan * op_plan_get ( char const * name, op_set set, int part_size,
 
 void op_plan_check ( op_plan OP_plan, int ninds, int * inds );
 
-void op_end_superloop ( op_subset *subset, op_dat data);
+void op_end_superloop ( op_dat data, int num_tiles );
   
 void op_rt_exit ( void );
 

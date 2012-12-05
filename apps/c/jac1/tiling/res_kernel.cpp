@@ -30,10 +30,10 @@ void op_par_loop_res(op_kernel_descriptor *desc ){
     printf(" kernel routine with indirection: %s\n", name);
   }
 
-  for (int i = 0; i < set->size; i++) {
-    printf("%g ", ((double *)args[0].dat->data)[i]);
-  }
-  printf("\n");
+//  for (int i = 0; i < set->size; i++) {
+//    printf("%g ", ((double *)args[0].dat->data)[i]);
+//  }
+//  printf("\n");
   char  *p_a[4] = {0,0,0,0};
   
   // initialise timers

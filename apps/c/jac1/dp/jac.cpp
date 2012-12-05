@@ -121,16 +121,16 @@ int main(int argc, char **argv)
     }
   }
   
-  
-  for (int i = 0; i < nedge; i++) {
-    A[i] = i;
-  }
-  
-  for (int i = 0; i < nnode; i++) {
-    r[i] = i;
-    u[i] = i;
-    du[i] = i;
-  }
+//  
+//  for (int i = 0; i < nedge; i++) {
+//    A[i] = i;
+//  }
+//  
+//  for (int i = 0; i < nnode; i++) {
+//    r[i] = i;
+//    u[i] = i;
+//    du[i] = i;
+//  }
 
 
   // declare sets, pointers, and datasets

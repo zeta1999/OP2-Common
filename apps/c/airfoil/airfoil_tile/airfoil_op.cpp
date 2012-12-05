@@ -311,20 +311,12 @@ int main(int argc, char **argv)
   }
   
   generate_inverse_maps();
-  int *index = (int *)malloc(22*sizeof(int));//{0,1,2,3,4};//{155957, 155958, 155959, 155960, 155961};
-  for (int i = 0; i < 22; i++) {
-    index[i] = 19+i;
-  }
-  op_subset need;
-  need.set = cells;
-  need.size = 22;//cells->size;
-  need.elements = index;
-  op_end_superloop(&need, p_q);
+  op_end_superloop(p_q, 4);
   
-  for (int i = 0; i < need.size; i++) {
+  for (int i = 0; i < cells->size; i++) {
     double *data = (double *)p_q->data;
-    data = &data[p_q->dim * need.elements[i]];
-    printf("Set element %d value %g %g %g %g\n", need.elements[i], data[0], data[1], data[2], data[3]);
+    data = &data[p_q->dim * i];
+    printf("Set element %d value %g %g %g %g\n", i, data[0], data[1], data[2], data[3]);
   }
   op_timers(&cpu_t2, &wall_t2);
   op_timing_output();
