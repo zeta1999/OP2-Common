@@ -1003,21 +1003,27 @@ SUBROUTINE res_calc_kernel( &
 		 threadBlockOffset = offset(threadBlockID)
 		 numberOfActiveThreadsCeiling = numberOfActiveThreads
 		 numOfColours = nthrcol(threadBlockID)
+
 		 opDat1SharedIndirectionSize = ind_sizes(0 + threadBlockID * 4)
 		 opDat3SharedIndirectionSize = ind_sizes(1 + threadBlockID * 4)
 		 opDat5SharedIndirectionSize = ind_sizes(2 + threadBlockID * 4)
 		 opDat7SharedIndirectionSize = ind_sizes(3 + threadBlockID * 4)
+
 		 opDat1IndirectionMap => ind_maps1(ind_offs(0 + threadBlockID * 4):)
 		 opDat3IndirectionMap => ind_maps3(ind_offs(1 + threadBlockID * 4):)
 		 opDat5IndirectionMap => ind_maps5(ind_offs(2 + threadBlockID * 4):)
 		 opDat7IndirectionMap => ind_maps7(ind_offs(3 + threadBlockID * 4):)
+
 		 opDat3RoundUp = opDat1SharedIndirectionSize * 2
 		 opDat5RoundUp = opDat3SharedIndirectionSize * 4
 		 opDat7RoundUp = opDat5SharedIndirectionSize * 1
+
 		 opDat1nBytes = 0
+
 		 opDat3nBytes = opDat1nBytes + opDat3RoundUp
 		 opDat5nBytes = opDat3nBytes + opDat5RoundUp
 		 opDat7nBytes = opDat5nBytes + opDat7RoundUp
+
 		 opDat1SharedIndirection => sharedFloat8(opDat1nBytes:)
 		 opDat3SharedIndirection => sharedFloat8(opDat3nBytes:)
 		 opDat5SharedIndirection => sharedFloat8(opDat5nBytes:)
