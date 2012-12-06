@@ -216,7 +216,9 @@ def op2_gen_openmp(master, date, consts, kernels):
 			elif maps[g_m] == OP_GBL or maps[g_m] == OP_ID:
 				code('REAL(kind=8), dimension(0:*) :: ARG, ')
 
-		code('INTEGER(kind=4), dimension(0:), target :: ind_maps*s -- goes here, ')
+		for g_m in range(0,ninds):
+			code('INTEGER(kind=4), dimension(0:), target :: ind_mapsARG')
+
 		code('!-- INTEGER(kind=2), dimension(0:*) :: mappingArray*s -- goes here, ')
 		code('')
 
@@ -251,9 +253,21 @@ def op2_gen_openmp(master, date, consts, kernels):
 		code('!-- REAL(kind=8), dimension(0:3) :: opDat**Local -- goes here')
 		code('!-- INTEGER(kind=4) :: opDat7Map -- goes here')
 
+		code('INTEGER(kind=4) :: numOfColours ')
+		code('INTEGER(kind=4) :: numberOfActiveThreadsCeiling')
+		code('!-- INTEGER(kind=4) :: colour1 -- goes here')
+
 		code('')
 		comm('more declarations here')
+		code('')
 
+		code('threadBlockID = blkmap(blockID + blockOffset)')
+		code('numberOfActiveThreads = nelems(threadBlockID)')
+		code('threadBlockOffset = offset(threadBlockID)')
+		code('numberOfActiveThreadsCeiling = numberOfActiveThreads')
+		code('numOfColours = nthrcol(threadBlockID)')
+
+		code('')
 		#kernel call
 		comm('user-supplied kernel call')
 
