@@ -180,23 +180,29 @@ void op_par_loop_res_calc(op_kernel_descriptor *desc ){
   op_timers_core(&cpu_t1, &wall_t1);
   
   for (int col = 0; col < desc->subset->ncolors; col++) {
-          //printf("kernel %s color %d from %d to %d\n", name, col, desc->subset->color_offsets[2*col], desc->subset->color_offsets[2*col+1]);
-//#pragma omp parallel for private(p_a)
+        //printf("kernel %s color %d from %d to %d\n", name, col, desc->subset->color_offsets[2*col], desc->subset->color_offsets[2*col+1]);
+    #pragma omp parallel for private(p_a)
     for (int n=desc->subset->color_offsets[2*col]; n<desc->subset->color_offsets[2*col+1]; n++) {
-      
-      op_arg_set(n,args[0], &p_a[0],0);
-      op_arg_set(n,args[1], &p_a[1],0);
-      op_arg_set(n,args[2], &p_a[2],0);
-      op_arg_set(n,args[3], &p_a[3],0);
-      op_arg_set(n,args[4], &p_a[4],0);
-      op_arg_set(n,args[5], &p_a[5],0);
-      op_arg_set(n,args[6], &p_a[6],0);
-      op_arg_set(n,args[7], &p_a[7],0);
-      
+//      op_arg_set(n,args[0], &p_a[0],0);
+//      op_arg_set(n,args[1], &p_a[1],0);
+//      op_arg_set(n,args[2], &p_a[2],0);
+//      op_arg_set(n,args[3], &p_a[3],0);
+//      op_arg_set(n,args[4], &p_a[4],0);
+//      op_arg_set(n,args[5], &p_a[5],0);
+//      op_arg_set(n,args[6], &p_a[6],0);
+//      op_arg_set(n,args[7], &p_a[7],0);
+
+
       // call kernel function, passing in pointers to data
-      
-      res_calc( (double *)p_a[0],  (double *)p_a[1],  (double *)p_a[2],  (double *)p_a[3],
-               (double *)p_a[4],  (double *)p_a[5],  (double *)p_a[6],  (double *)p_a[7] );
+      //printf("%d\t%d\n", arg6.map->map[arg6.idx+n*arg6.map->dim], arg7.map->map[arg7.idx+n*arg7.map->dim]);
+      res_calc( (double *)(arg0.data + arg0.size*arg0.map->map[arg0.idx+n*arg0.map->dim]),
+               (double *)(arg1.data + arg1.size*arg1.map->map[arg1.idx+n*arg1.map->dim]),
+               (double *)(arg2.data + arg2.size*arg2.map->map[arg2.idx+n*arg2.map->dim]),
+               (double *)(arg3.data + arg3.size*arg3.map->map[arg3.idx+n*arg3.map->dim]),
+               (double *)(arg4.data + arg4.size*arg4.map->map[arg4.idx+n*arg4.map->dim]),
+               (double *)(arg5.data + arg5.size*arg5.map->map[arg5.idx+n*arg5.map->dim]),
+               (double *)(arg6.data + arg6.size*arg6.map->map[arg6.idx+n*arg6.map->dim]),
+               (double *)(arg7.data + arg7.size*arg7.map->map[arg7.idx+n*arg7.map->dim]) );
     }
   }
   

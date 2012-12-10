@@ -3,6 +3,6 @@ inline void update(double *r, double *du, double *u, double *u_sum, double *u_ma
   *du = 0.0f;
   *u_sum += (*u)*(*u);
   *u_max = MAX(*u_max,*u);
-  printf("update u %g += %g + %g * %g\n", *u, *du, alpha, *r);
+  //printf("update u %g += %g + %g * %g\n", *u, *du, alpha, *r);
 }
 

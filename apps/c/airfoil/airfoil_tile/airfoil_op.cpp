@@ -247,8 +247,8 @@ int main(int argc, char **argv)
   op_timers(&cpu_t1, &wall_t1);
 
   // main time-marching loop
-
-  niter = 2;
+  generate_inverse_maps();
+  niter = 1000;
 
   for(int iter=1; iter<=niter; iter++) {
 
@@ -308,10 +308,9 @@ int main(int argc, char **argv)
     rms = sqrt(rms/(double) op_get_size(cells));
     if (iter%100 == 0)
       op_printf(" %d  %10.5e \n",iter,rms);
+    
+    op_end_superloop(p_q, 4);
   }
-  
-  generate_inverse_maps();
-  op_end_superloop(p_q, 4);
   
   for (int i = 0; i < cells->size; i++) {
     double *data = (double *)p_q->data;

@@ -45,7 +45,7 @@ void op_par_loop_bres_calc(op_kernel_descriptor *desc ){
   
   for (int col = 0; col < desc->subset->ncolors; col++) {
           //printf("kernel %s color %d from %d to %d\n", name, col, desc->subset->color_offsets[2*col], desc->subset->color_offsets[2*col+1]);
-    //#pragma omp parallel for private(p_a)
+    #pragma omp parallel for private(p_a)
     for (int n=desc->subset->color_offsets[2*col]; n<desc->subset->color_offsets[2*col+1]; n++) {
       
       
@@ -59,7 +59,7 @@ void op_par_loop_bres_calc(op_kernel_descriptor *desc ){
       // call kernel function, passing in pointers to data
       
       bres_calc( (double *)p_a[0],  (double *)p_a[1],  (double *)p_a[2],  (double *)p_a[3],
-                (double *)p_a[4],  (int *)p_a[5] );
+                (double *)p_a[4],  (int *)(arg5.data + arg5.size*arg5.map->map[arg5.idx+n*arg5.map->dim]) );
     }
   }
   

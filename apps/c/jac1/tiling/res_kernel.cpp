@@ -41,6 +41,8 @@ void op_par_loop_res(op_kernel_descriptor *desc ){
   op_timers_core(&cpu_t1, &wall_t1);
   
   for (int col = 0; col < desc->subset->ncolors; col++) {
+    printf("Executing color %d from %d to %d\n", col, desc->subset->color_offsets[2*col], desc->subset->color_offsets[2*col+1]);
+#pragma omp parallel for private(p_a)
     for (int n=desc->subset->color_offsets[2*col]; n<desc->subset->color_offsets[2*col+1]; n++) {
       op_arg_set(n,args[0], &p_a[0],0);
       op_arg_set(n,args[1], &p_a[1],0);
@@ -48,8 +50,7 @@ void op_par_loop_res(op_kernel_descriptor *desc ){
       op_arg_set(n,args[3], &p_a[3],0);
 
       // call kernel function, passing in pointers to data
-      
-      res( (double *)p_a[0],  (double *)p_a[1],  (double *)p_a[2],  (double *)p_a[3]);
+      res( (double *)p_a[0],  (double *)p_a[1],  (double *)(arg2.data + arg2.size*arg2.map->map[arg2.idx+n*arg2.map->dim]),  (double *)p_a[3]);
     }
   }
   

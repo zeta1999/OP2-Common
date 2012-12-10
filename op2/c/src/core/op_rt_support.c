@@ -675,6 +675,7 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size,
     }
 
     OP_plans[ip].nthrcol[b] = ncolors;  /* number of thread colors in this block */
+    printf("Colors in block: %d\n", ncolors);
     total_colors += ncolors;
 
     //if(ncolors>1) printf(" number of colors in this block = %d \n",ncolors);
@@ -987,23 +988,26 @@ typedef struct
 {
   std::vector<op_kernel_descriptor> kernels;
   std::vector<op_dataset_dependency> dependencies;
-  std::vector<op_map> maps;
-  std::vector<op_dat> dats;
+  std::vector<op_map> maps;                         //Maps to scratch set
+  std::vector<op_map> gbl_ind_maps;                 //Maps to global set
+  std::vector<op_map> gbl_direct_maps;              //Special maps from_set==to_set, mapping from scratch to global (1D map, map data itself same as dependencies[set_idx].elements[])
 } op_tile;
 
 typedef struct
 {
   std::vector<op_tile> tiles;
+  std::vector<op_dat> dats;
+  std::vector<int> scratch_sizes;
 } op_tile_plan;
 
 std::vector<op_tile_plan> op_tile_plans;
 
 
 void compute_dependencies(op_kernel_descriptor *kernel, std::vector<op_dataset_dependency>& dependencies);
-void do_coloring(int set_index, std::vector<op_dataset_dependency>& dependencies, std::vector<op_map>& maps, std::vector<op_kernel_descriptor>& kernel_list);
-void execute_tile(std::vector<op_kernel_descriptor>& kernel_list, std::vector<op_dataset_dependency>& dependencies, std::vector<op_dat>& dats, std::vector<op_map>& maps);
+void do_coloring(int set_index, std::vector<op_dataset_dependency>& dependencies, std::vector<op_map>& maps, std::vector<op_map>& gbl_ind_maps, std::vector<op_kernel_descriptor>& kernel_list);
+void execute_tile(std::vector<op_kernel_descriptor>& kernel_list, std::vector<op_dataset_dependency>& dependencies, std::vector<op_dat>& dats, std::vector<op_map>& maps, std::vector<op_map>& gbl_ind_maps, std::vector<op_map>& gbl_direct_maps);
 int construct_tile_plan(op_dat data, int num_tiles);
-void construct_tile(op_subset &subset, op_dat data, std::vector<op_dataset_dependency>& dependencies, std::vector<op_map>& maps, std::vector<op_dat>& dats, std::vector<op_kernel_descriptor> &kernel_list, int num_tiles, int tile_id);
+void construct_tile(op_subset &subset, op_dat data, std::vector<op_dataset_dependency>& dependencies, std::vector<op_map>& maps, std::vector<op_map>& gbl_ind_maps, std::vector<op_map>& gbl_direct_maps, std::vector<op_dat>& dats, std::vector<int>& scratch_sizes, std::vector<op_kernel_descriptor> &kernel_list, int num_tiles, int tile_id);
 
 void op_end_superloop ( op_dat data, int num_tiles) {
 
@@ -1036,7 +1040,7 @@ void op_end_superloop ( op_dat data, int num_tiles) {
   }
   
   for (unsigned int i = 0; i < op_tile_plans[found].tiles.size(); i++) {
-    execute_tile(op_tile_plans[found].tiles[i].kernels, op_tile_plans[found].tiles[i].dependencies, op_tile_plans[found].tiles[i].dats, op_tile_plans[found].tiles[i].maps);
+    execute_tile(op_tile_plans[found].tiles[i].kernels, op_tile_plans[found].tiles[i].dependencies, op_tile_plans[found].dats, op_tile_plans[found].tiles[i].maps, op_tile_plans[found].tiles[i].gbl_ind_maps, op_tile_plans[found].tiles[i].gbl_direct_maps);
   }
   
   //swapping data back
@@ -1049,6 +1053,7 @@ void op_end_superloop ( op_dat data, int num_tiles) {
       op_tile_plans[found].tiles[0].dependencies[i].dats[j]->data = temp;
     }
   }
+  kernel_list.resize(0);
 }
 
 int construct_tile_plan(op_dat data, int num_tiles) {
@@ -1075,13 +1080,13 @@ int construct_tile_plan(op_dat data, int num_tiles) {
     for (int j = 0; j < subset.size; j++) {
       subset.elements[j] = i * data->set->size/num_tiles + j;
     }
-    construct_tile(subset, data, plan.tiles[i].dependencies, plan.tiles[i].maps, plan.tiles[i].dats, plan.tiles[i].kernels, num_tiles, i);
+    construct_tile(subset, data, plan.tiles[i].dependencies, plan.tiles[i].maps, plan.tiles[i].gbl_ind_maps, plan.tiles[i].gbl_direct_maps, plan.dats, plan.scratch_sizes, plan.tiles[i].kernels, num_tiles, i);
   }
   
   return op_tile_plans.size()-1;
 }
 
-void construct_tile(op_subset &subset, op_dat data, std::vector<op_dataset_dependency>& dependencies, std::vector<op_map>& maps, std::vector<op_dat>& dats, std::vector<op_kernel_descriptor> &kernel_list, int num_tiles, int tile_id) {
+void construct_tile(op_subset &subset, op_dat data, std::vector<op_dataset_dependency>& dependencies, std::vector<op_map>& maps, std::vector<op_map>& gbl_ind_maps, std::vector<op_map>& gbl_direct_maps, std::vector<op_dat>& dats, std::vector<int>& scratch_sizes, std::vector<op_kernel_descriptor> &kernel_list, int num_tiles, int tile_id) {
   //Set up initial active dataset
   //TODO: more than one output dataset
   dependencies.clear();
@@ -1155,6 +1160,7 @@ void construct_tile(op_subset &subset, op_dat data, std::vector<op_dataset_depen
     //skip reverse maps
     if (OP_map_list[i]->index > OP_map_list[i]->reverse_map->index) continue;
     op_map map = (op_map_core *)malloc(sizeof(op_map_core));
+    op_map map_g = (op_map_core *)malloc(sizeof(op_map_core));
     map->index = OP_map_list[i]->index;
     map->from = OP_map_list[i]->from;
     map->to = OP_map_list[i]->to;
@@ -1166,6 +1172,19 @@ void construct_tile(op_subset &subset, op_dat data, std::vector<op_dataset_depen
     map->user_managed = 0;
     map->isSimple = OP_map_list[i]->isSimple;
     maps.push_back(map);
+    
+    map_g->index = OP_map_list[i]->index;
+    map_g->from = OP_map_list[i]->from;
+    map_g->to = OP_map_list[i]->to;
+    map_g->dim = OP_map_list[i]->dim;
+    map_g->name = OP_map_list[i]->name;
+    map_g->map = NULL;
+    map_g->row_offsets = NULL;
+    map_g->reverse_map = NULL;
+    map_g->user_managed = 0;
+    map_g->isSimple = OP_map_list[i]->isSimple;
+    gbl_ind_maps.push_back(map_g);
+
   }
   
   for (unsigned int i = 0; i < kernel_list.size(); i++) {
@@ -1184,35 +1203,60 @@ void construct_tile(op_subset &subset, op_dat data, std::vector<op_dataset_depen
   for (unsigned int i = 0; i < maps.size(); i++) {
     if (maps[i]==NULL) continue;
     maps[i]->map = (int *)malloc(dependencies[maps[i]->from->index].size * maps[i]->dim*sizeof(int));
+    gbl_ind_maps[i]->map = (int *)malloc(dependencies[maps[i]->from->index].size * maps[i]->dim*sizeof(int));
     mem_maps += (double)(dependencies[maps[i]->from->index].size * maps[i]->dim*sizeof(int));
     for (int e = 0; e < dependencies[maps[i]->from->index].size; e++) {
       int el = dependencies[maps[i]->from->index].elements[e];
       for (int d = 0; d < maps[i]->dim; d++) {
         int gbl = OP_map_list[i]->map[el*maps[i]->dim + d];
+        //map pointing to scratch set
         maps[i]->map[e*maps[i]->dim + d] = std::find(dependencies[maps[i]->to->index].elements.begin(), dependencies[maps[i]->to->index].elements.end(), gbl) - dependencies[maps[i]->to->index].elements.begin();
+        //map pointing to global set
+        gbl_ind_maps[i]->map[e*maps[i]->dim +d] = gbl;
         //DEBUG: guaranteed segfault, it is okay if we don't find the global index in the other set, but in that case we must never use that map (i.e. this set element cannot be part of any execution set)
         if (maps[i]->map[e*maps[i]->dim + d] == dependencies[maps[i]->to->index].size) maps[i]->map[e*maps[i]->dim + d] = 0xFFFFFFFF;
       }
     }
   }
   
-  //Create scratch memory dats
-  for (int i = 0; i < OP_set_index; i++) {
-    mem_set_lists += (double)(dependencies[i].size * sizeof(int));
-    //TODO: shouldn't be reading in read only ones? would need to use a different map though...
-    for (unsigned int j = 0; j < dependencies[i].dats.size(); j ++) {
-      op_dat data = (op_dat)malloc(sizeof(op_dat_core));
-      data->name = dependencies[i].dats[j]->name;
-      data->index = dependencies[i].dats[j]->index;
-      data->set = dependencies[i].dats[j]->set;
-      data->dim = dependencies[i].dats[j]->dim;
-      data->size = dependencies[i].dats[j]->size;
-      data->type = dependencies[i].dats[j]->type;
-      data->data = (char *)malloc(dependencies[i].size * data->size);
-      data->data_d = NULL;
-      //TODO: all MPI related stuff
-      dats.push_back(data);
-      mem_dats += (double)(data->size * dependencies[i].size);
+  if (dats.size()==0) { //If this is the first tile and scratch dats haven't been created yet
+    //Create scratch memory dats
+    for (int i = 0; i < OP_set_index; i++) {
+      mem_set_lists += (double)((dependencies[i].size+dependencies[i].owned.size()) * sizeof(int));
+      for (unsigned int j = 0; j < dependencies[i].dats.size(); j ++) {
+        op_dat data = (op_dat)malloc(sizeof(op_dat_core));
+        data->name = dependencies[i].dats[j]->name;
+        data->index = dependencies[i].dats[j]->index;
+        data->set = dependencies[i].dats[j]->set;
+        data->dim = dependencies[i].dats[j]->dim;
+        data->size = dependencies[i].dats[j]->size;
+        data->type = dependencies[i].dats[j]->type;
+        if (dependencies[i].written[j]) {
+          data->data = (char *)malloc(dependencies[i].size * data->size);
+        } else {
+          data->data = NULL;
+        }
+        data->data_d = NULL;
+        //TODO: all MPI related stuff
+        dats.push_back(data);
+        scratch_sizes.push_back(dependencies[i].size * data->size);
+        mem_dats += (double)(data->size * dependencies[i].size);
+      }
+    }
+  } else { //otherwise just make sure it's big enough and count memory footprint of current tile
+    int ctr = 0;
+    for (int i = 0; i < OP_set_index; i++) {
+      mem_set_lists += (double)((dependencies[i].size+dependencies[i].owned.size()) * sizeof(int));
+      for (unsigned int j = 0; j < dependencies[i].dats.size(); j ++) {
+        op_dat data = dats[ctr];
+        if (dependencies[i].size * data->size > scratch_sizes[ctr] && dependencies[i].written[j]) {
+          scratch_sizes[ctr] = dependencies[i].size * data->size;
+          free(data->data);
+          data->data = (char *)malloc(dependencies[i].size * data->size);
+        }
+        mem_dats += (double)(data->size * dependencies[i].size);
+        ctr++;
+      }
     }
   }
   
@@ -1245,7 +1289,21 @@ void construct_tile(op_subset &subset, op_dat data, std::vector<op_dataset_depen
   }
   
   for (int i = 0 ; i < OP_set_index; i++) {
-    do_coloring(i, dependencies, maps, kernel_list);
+    do_coloring(i, dependencies, maps, gbl_ind_maps, kernel_list);
+    //create a map that maps the scratch set back to the original (this is a horribly invalid op_map, only for internal use!)
+    op_map map = (op_map_core *)malloc(sizeof(op_map_core));
+    map->index = OP_set_list[i]->index;
+    map->from = OP_set_list[i];
+    map->to = OP_set_list[i];
+    map->dim = 1;
+    map->name = OP_set_list[i]->name;
+    map->map = &dependencies[i].elements[0]; //The map data itself is just the dependency list (which is now ordered by color)
+    map->row_offsets = NULL;
+    map->reverse_map = NULL;
+    map->user_managed = 0;
+    map->isSimple = OP_map_list[i]->isSimple;
+    gbl_direct_maps.push_back(map);
+
   }
   
   if (OP_diags>2) {
@@ -1282,24 +1340,42 @@ void construct_tile(op_subset &subset, op_dat data, std::vector<op_dataset_depen
   }
 }
 
-void execute_tile(std::vector<op_kernel_descriptor>& kernel_list, std::vector<op_dataset_dependency>& dependencies, std::vector<op_dat>& dats, std::vector<op_map>& maps) {
+void execute_tile(std::vector<op_kernel_descriptor>& kernel_list, std::vector<op_dataset_dependency>& dependencies, std::vector<op_dat>& dats, std::vector<op_map>& maps, std::vector<op_map>& gbl_ind_maps, std::vector<op_map>& gbl_direct_maps) {
   
-  //renumber execution sets, substitute new maps and dats into loop args
+  //TODO: only do this once, kernel_list is tile specific already
+  //substitute new maps and dats into loop args
   for (unsigned int i = 0; i < kernel_list.size(); i++) {
     for (int arg = 0; arg <kernel_list[i].nargs; arg++) {
       if (kernel_list[i].args[arg].argtype==OP_ARG_GBL) continue;
       //find local dat, substitute
       op_dat original = kernel_list[i].args[arg].dat;
       unsigned int j = 0;
-      for (; j < dats.size(); j++)
-        if (dats[j]->index == original->index) {kernel_list[i].args[arg].dat = dats[j]; kernel_list[i].args[arg].data = dats[j]->data; break;}
-      if (j == dats.size()) {
-        printf("Error, local dat not found\n"); exit(-1);}//just some sanity check
+      int written = -1; //TODO: This is just too complicated, should store inside op_dat? or along with dats[]?
+      for (; j < dependencies[original->set->index].dats.size(); j++) {
+        if (dependencies[original->set->index].dats[j]->index == original->index) {
+          written = dependencies[original->set->index].written[j];
+        }
+      }
       
-      //find local map, substitute
-      if (kernel_list[i].args[arg].map != NULL) {
-        for (unsigned int j = 0; j < maps.size(); j++)
-          if (maps[j]->index == kernel_list[i].args[arg].map->index) {kernel_list[i].args[arg].map = maps[j]; break;}
+      if (written) {
+        for (j = 0; j < dats.size(); j++)
+          if (dats[j]->index == original->index) {kernel_list[i].args[arg].dat = dats[j]; kernel_list[i].args[arg].data = dats[j]->data; break;}
+        if (j == dats.size()) {
+          printf("Error, local dat not found\n"); exit(-1);}//just some sanity checks
+        //find local map, substitute
+        if (kernel_list[i].args[arg].map != NULL) {
+          for (unsigned int j = 0; j < maps.size(); j++)
+            if (maps[j]->index == kernel_list[i].args[arg].map->index) {kernel_list[i].args[arg].map = maps[j]; break;}
+        }
+      } else if (kernel_list[i].args[arg].dat->set->index == kernel_list[i].subset->set->index){ //Directly accessed data, read-only is read from the global dataset (through indirection)
+        kernel_list[i].args[arg].idx = 0;
+        kernel_list[i].args[arg].map = gbl_direct_maps[kernel_list[i].subset->set->index];
+      } else {
+        //find local to global map, substitute
+        if (kernel_list[i].args[arg].map != NULL) {
+          for (j = 0; j < maps.size(); j++)
+            if (gbl_ind_maps[j]->index == kernel_list[i].args[arg].map->index) {kernel_list[i].args[arg].map = gbl_ind_maps[j]; break;}
+        }
       }
     }
   }
@@ -1307,8 +1383,8 @@ void execute_tile(std::vector<op_kernel_descriptor>& kernel_list, std::vector<op
   int ctr = 0;
   //Bring in dats to scratch memory
   for (int i = 0; i < OP_set_index; i++) {
-    //TODO: shouldn't be reading in read only ones? would need to use a different map though...
     for (unsigned int j = 0; j < dependencies[i].dats.size(); j ++) {
+      if (dependencies[i].written[j] == 0) {ctr++; continue;}
       op_dat data = dats[ctr];
       if (data->index != dependencies[i].dats[j]->index) printf("Scratch bring in error\n");
       for (int e = 0; e < dependencies[i].size; e++) {
@@ -1333,7 +1409,6 @@ void execute_tile(std::vector<op_kernel_descriptor>& kernel_list, std::vector<op
       for (unsigned int loc = 0; loc < dats.size(); loc ++) if (dats[loc]->index == dependencies[i].dats[j]->index) data = dats[loc];
       //TODO: Malloc space to put stuff into - this should be elsewhere to be honest
       if (dependencies[i].dats[j]->data_d == NULL) dependencies[i].dats[j]->data_d = (char*)malloc(data->set->size * data->size);
-
       for (unsigned int el = 0; el < dependencies[i].owned.size(); el++) {
         int e = dependencies[i].owned[el];
         memcpy(&dependencies[i].dats[j]->data_d[dependencies[i].elements[e]*data->size], &data->data[e*data->size], data->size);
@@ -1360,7 +1435,7 @@ void add_arg_dependency(op_arg *arg, int set_index, std::vector<op_dataset_depen
   unsigned i = 0;
   for (; i < dependencies[set_index].args.size(); i++) {
     if (dependencies[set_index].args[i]->argtype == OP_ARG_GBL) continue;
-    if (dependencies[set_index].args[i]->map == arg->map) return;
+    if (dependencies[set_index].args[i]->map == arg->map && dependencies[set_index].args[i]->idx == arg->idx) return;
   }
   dependencies[set_index].args.push_back(arg); //TODO: indexes (multi-dim maps)
 }
@@ -1557,8 +1632,9 @@ void compute_dependencies(op_kernel_descriptor *kernel, std::vector<op_dataset_d
 //  printf("\n");
 }
 
-void do_coloring(int set_index, std::vector<op_dataset_dependency>& dependencies, std::vector<op_map>& maps, std::vector<op_kernel_descriptor>& kernel_list) {
+void do_coloring(int set_index, std::vector<op_dataset_dependency>& dependencies, std::vector<op_map>& maps, std::vector<op_map>& gbl_ind_maps, std::vector<op_kernel_descriptor>& kernel_list) {
   int nargs = dependencies[set_index].args.size();
+  printf("nargs for coloring %d\n", nargs);
   //do the coloring if necessary
   int color = 0;
   for (int arg = 0; arg < nargs; arg++) {
@@ -1630,7 +1706,7 @@ void do_coloring(int set_index, std::vector<op_dataset_dependency>& dependencies
     while ( repeat )
     {
       repeat = 0;
-      //TODO: vector loop_maps support
+      //TODO: vector maps support
       for ( int m = 0; m < nargs; m++ )
       {
         if ( inds[m] > 0 )
@@ -1715,7 +1791,7 @@ void do_coloring(int set_index, std::vector<op_dataset_dependency>& dependencies
   dependencies[set_index].color_offsets.resize(ncolors+1);
   dependencies[set_index].color_offsets[0] = 0;
   dependencies[set_index].color_offsets[ncolors] = dependencies[set_index].size-nonexec;
-  //printf("name: %s colors: %d\n", dependencies[set_index].set->name, ncolors);
+  printf("name: %s colors: %d\n", dependencies[set_index].set->name, ncolors);
   for (unsigned i = 0; i < colors.size(); i++) {
     dependencies[set_index].elements[i] = colors[i].value; //reorder global indices mapping back from this tile
     //printf("%d ", colors[i].value);
@@ -1752,11 +1828,15 @@ void do_coloring(int set_index, std::vector<op_dataset_dependency>& dependencies
     if (maps[i]->from == set) {
       //this map is based on the set we just reordered, reorder it too
       int *new_map = (int *)malloc(dependencies[set_index].size * maps[i]->dim * sizeof(int));
+      int *new_map2 = (int *)malloc(dependencies[set_index].size * maps[i]->dim * sizeof(int));
       for (int j = 0; j < dependencies[set_index].size; j++) {
         memcpy(&new_map[maps[i]->dim * reverse_permutation[j]], &maps[i]->map[maps[i]->dim * j], maps[i]->dim * sizeof(int));
+        memcpy(&new_map2[maps[i]->dim * reverse_permutation[j]], &gbl_ind_maps[i]->map[maps[i]->dim * j], maps[i]->dim * sizeof(int));
       }
       free(maps[i]->map);
+      free(gbl_ind_maps[i]->map);
       maps[i]->map = new_map;
+      gbl_ind_maps[i]->map = new_map2;
     } else if (maps[i]->to == set) {
       //this map point to this set, renumber it
       for (int j = 0; j < dependencies[maps[i]->from->index].size * maps[i]->dim; j++) {
