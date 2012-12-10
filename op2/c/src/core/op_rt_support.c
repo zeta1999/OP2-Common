@@ -1005,11 +1005,11 @@ std::vector<op_tile_plan> op_tile_plans;
 
 void compute_dependencies(op_kernel_descriptor *kernel, std::vector<op_dataset_dependency>& dependencies);
 void do_coloring(int set_index, std::vector<op_dataset_dependency>& dependencies, std::vector<op_map>& maps, std::vector<op_map>& gbl_ind_maps, std::vector<op_kernel_descriptor>& kernel_list);
-void execute_tile(std::vector<op_kernel_descriptor>& kernel_list, std::vector<op_dataset_dependency>& dependencies, std::vector<op_dat>& dats, std::vector<op_map>& maps, std::vector<op_map>& gbl_ind_maps, std::vector<op_map>& gbl_direct_maps);
-int construct_tile_plan(op_dat data, int num_tiles);
-void construct_tile(op_subset &subset, op_dat data, std::vector<op_dataset_dependency>& dependencies, std::vector<op_map>& maps, std::vector<op_map>& gbl_ind_maps, std::vector<op_map>& gbl_direct_maps, std::vector<op_dat>& dats, std::vector<int>& scratch_sizes, std::vector<op_kernel_descriptor> &kernel_list, int num_tiles, int tile_id);
+void execute_tile(std::vector<op_kernel_descriptor>& kernel_list, std::vector<op_dataset_dependency>& dependencies, std::vector<op_dat>& dats, std::vector<op_map>& maps, std::vector<op_map>& gbl_ind_maps, std::vector<op_map>& gbl_direct_maps, op_dat *discard, int n_discard);
+int construct_tile_plan(op_set base_set, int num_tiles);
+void construct_tile(op_subset &subset, std::vector<op_dataset_dependency>& dependencies, std::vector<op_map>& maps, std::vector<op_map>& gbl_ind_maps, std::vector<op_map>& gbl_direct_maps, std::vector<op_dat>& dats, std::vector<int>& scratch_sizes, std::vector<op_kernel_descriptor> &kernel_list, int num_tiles, int tile_id);
 
-void op_end_superloop ( op_dat data, int num_tiles) {
+void op_end_superloop ( op_set base_set, int num_tiles, op_dat *discard, int n_discard ) {
 
   //Look at the kernel list, determine if we have a tile plan that already doesn this
   int found = -1;
@@ -1036,18 +1036,25 @@ void op_end_superloop ( op_dat data, int num_tiles) {
   }
   
   if (found==-1) {
-    found = construct_tile_plan(data, num_tiles);
+    //TODO: take discard sets into account somehow - they aren't outputs, nothing should depend on them (at the end)
+    found = construct_tile_plan(base_set, num_tiles);
   }
   
   for (unsigned int i = 0; i < op_tile_plans[found].tiles.size(); i++) {
-    execute_tile(op_tile_plans[found].tiles[i].kernels, op_tile_plans[found].tiles[i].dependencies, op_tile_plans[found].dats, op_tile_plans[found].tiles[i].maps, op_tile_plans[found].tiles[i].gbl_ind_maps, op_tile_plans[found].tiles[i].gbl_direct_maps);
+    execute_tile(op_tile_plans[found].tiles[i].kernels, op_tile_plans[found].tiles[i].dependencies, op_tile_plans[found].dats, op_tile_plans[found].tiles[i].maps, op_tile_plans[found].tiles[i].gbl_ind_maps, op_tile_plans[found].tiles[i].gbl_direct_maps, discard, n_discard);
   }
   
   //swapping data back
   for (int i = 0; i < OP_set_index; i++) {
     for (unsigned int j = 0; j < op_tile_plans[found].tiles[0].dependencies[i].dats.size(); j ++) {
       if (op_tile_plans[found].tiles[0].dependencies[i].written[j]==0) continue;
-      if (op_tile_plans[found].tiles[0].dependencies[i].dats[j]->data_d == NULL) {printf("ERROR: data_d should not be null"); exit(-1);}
+      
+      //See if data is part of the discard dats
+      int discard_dat = 0;
+      for (int k = 0; k < n_discard; k++) if (op_tile_plans[found].tiles[0].dependencies[i].dats[j]->index == discard[k]->index) discard_dat = 1;
+      if (discard_dat) continue;
+      
+      if (op_tile_plans[found].tiles[0].dependencies[i].dats[j]->data_d == NULL) {printf("ERROR: data_d should not be null\n"); exit(-1);}
       char *temp = op_tile_plans[found].tiles[0].dependencies[i].dats[j]->data_d;
       op_tile_plans[found].tiles[0].dependencies[i].dats[j]->data_d = op_tile_plans[found].tiles[0].dependencies[i].dats[j]->data;
       op_tile_plans[found].tiles[0].dependencies[i].dats[j]->data = temp;
@@ -1056,7 +1063,7 @@ void op_end_superloop ( op_dat data, int num_tiles) {
   kernel_list.resize(0);
 }
 
-int construct_tile_plan(op_dat data, int num_tiles) {
+int construct_tile_plan(op_set base_set, int num_tiles) {
   //create new plan object
   op_tile_plans.resize(op_tile_plans.size()+1);
   op_tile_plan &plan = op_tile_plans[op_tile_plans.size()-1];
@@ -1073,39 +1080,38 @@ int construct_tile_plan(op_dat data, int num_tiles) {
   
   //naive partitioning
   op_subset subset;
-  subset.elements = (int *)malloc((data->set->size/num_tiles+1)*sizeof(int));
+  subset.set = base_set;
+  subset.elements = (int *)malloc((base_set->size/num_tiles+1)*sizeof(int));
   for (int i = 0; i < num_tiles; i++) {
-    subset.size = data->set->size/num_tiles;
-    if (i == num_tiles-1) subset.size += data->set->size%num_tiles;
+    subset.size = base_set->size/num_tiles;
+    if (i == num_tiles-1) subset.size += base_set->size%num_tiles;
     for (int j = 0; j < subset.size; j++) {
-      subset.elements[j] = i * data->set->size/num_tiles + j;
+      subset.elements[j] = i * base_set->size/num_tiles + j;
     }
-    construct_tile(subset, data, plan.tiles[i].dependencies, plan.tiles[i].maps, plan.tiles[i].gbl_ind_maps, plan.tiles[i].gbl_direct_maps, plan.dats, plan.scratch_sizes, plan.tiles[i].kernels, num_tiles, i);
+    construct_tile(subset, plan.tiles[i].dependencies, plan.tiles[i].maps, plan.tiles[i].gbl_ind_maps, plan.tiles[i].gbl_direct_maps, plan.dats, plan.scratch_sizes, plan.tiles[i].kernels, num_tiles, i);
   }
   
   return op_tile_plans.size()-1;
 }
 
-void construct_tile(op_subset &subset, op_dat data, std::vector<op_dataset_dependency>& dependencies, std::vector<op_map>& maps, std::vector<op_map>& gbl_ind_maps, std::vector<op_map>& gbl_direct_maps, std::vector<op_dat>& dats, std::vector<int>& scratch_sizes, std::vector<op_kernel_descriptor> &kernel_list, int num_tiles, int tile_id) {
+void construct_tile(op_subset &subset, std::vector<op_dataset_dependency>& dependencies, std::vector<op_map>& maps, std::vector<op_map>& gbl_ind_maps, std::vector<op_map>& gbl_direct_maps, std::vector<op_dat>& dats, std::vector<int>& scratch_sizes, std::vector<op_kernel_descriptor> &kernel_list, int num_tiles, int tile_id) {
   //Set up initial active dataset
   //TODO: more than one output dataset
   dependencies.clear();
   dependencies.resize(OP_set_index);
   for (int i = 0; i < OP_set_index; i++) {
     dependencies[i].set = OP_set_list[i];
-    if (data->set == dependencies[i].set) {
+    if (subset.set == dependencies[i].set) {
       dependencies[i].elements.resize(dependencies[i].set->size); //TODO: this is way too big
       dependencies[i].size = subset.size;
       std::copy(subset.elements, subset.elements+subset.size, dependencies[i].elements.begin());
       dependencies[i].owned.resize(subset.size);
       std::copy(subset.elements, subset.elements+subset.size, dependencies[i].owned.begin());
-      dependencies[i].dats.push_back(data);
-      dependencies[i].written.push_back(0);
       printf("Base set %s size: %d\n", dependencies[i].set->name, subset.size);
     } else {
       //Multi-set partitioning
       dependencies[i].elements.reserve(dependencies[i].set->size); //TODO: this is way too big
-      op_set from = data->set;
+      op_set from = subset.set;
       op_set to = OP_set_list[i];
       op_map map = NULL;
       for (int j = 0; j < OP_map_index; j++)
@@ -1232,7 +1238,7 @@ void construct_tile(op_subset &subset, op_dat data, std::vector<op_dataset_depen
         data->size = dependencies[i].dats[j]->size;
         data->type = dependencies[i].dats[j]->type;
         if (dependencies[i].written[j]) {
-          data->data = (char *)malloc(dependencies[i].size * data->size);
+          data->data = (char *)calloc(dependencies[i].size * data->size, 1);
         } else {
           data->data = NULL;
         }
@@ -1252,7 +1258,7 @@ void construct_tile(op_subset &subset, op_dat data, std::vector<op_dataset_depen
         if (dependencies[i].size * data->size > scratch_sizes[ctr] && dependencies[i].written[j]) {
           scratch_sizes[ctr] = dependencies[i].size * data->size;
           free(data->data);
-          data->data = (char *)malloc(dependencies[i].size * data->size);
+          data->data = (char *)calloc(dependencies[i].size * data->size, 1);
         }
         mem_dats += (double)(data->size * dependencies[i].size);
         ctr++;
@@ -1340,7 +1346,7 @@ void construct_tile(op_subset &subset, op_dat data, std::vector<op_dataset_depen
   }
 }
 
-void execute_tile(std::vector<op_kernel_descriptor>& kernel_list, std::vector<op_dataset_dependency>& dependencies, std::vector<op_dat>& dats, std::vector<op_map>& maps, std::vector<op_map>& gbl_ind_maps, std::vector<op_map>& gbl_direct_maps) {
+void execute_tile(std::vector<op_kernel_descriptor>& kernel_list, std::vector<op_dataset_dependency>& dependencies, std::vector<op_dat>& dats, std::vector<op_map>& maps, std::vector<op_map>& gbl_ind_maps, std::vector<op_map>& gbl_direct_maps, op_dat *discard, int n_discard ) {
   
   //TODO: only do this once, kernel_list is tile specific already
   //substitute new maps and dats into loop args
@@ -1384,8 +1390,15 @@ void execute_tile(std::vector<op_kernel_descriptor>& kernel_list, std::vector<op
   //Bring in dats to scratch memory
   for (int i = 0; i < OP_set_index; i++) {
     for (unsigned int j = 0; j < dependencies[i].dats.size(); j ++) {
+      //if it's read-only, we'll address it in global memory
       if (dependencies[i].written[j] == 0) {ctr++; continue;}
       op_dat data = dats[ctr];
+
+      //See if data is part of the discard dats
+      int discard_dat = 0;
+      for (int k = 0; k < n_discard; k++) if (data->index == discard[k]->index) discard_dat = 1;
+      if (discard_dat) {memset(data->data, 0, dependencies[i].size*data->size); ctr++; continue;}
+      
       if (data->index != dependencies[i].dats[j]->index) printf("Scratch bring in error\n");
       for (int e = 0; e < dependencies[i].size; e++) {
         //printf("%s %d %g -> %d\n", data->name, dependencies[i].elements[e], *((double *)&dependencies[i].dats[j]->data[dependencies[i].elements[e]*data->size]), e);
@@ -1397,22 +1410,31 @@ void execute_tile(std::vector<op_kernel_descriptor>& kernel_list, std::vector<op
   
   unsigned int i = 0;
   while ( i < kernel_list.size()) {
-    kernel_list[i].function(&kernel_list[i]); //save_soln
+    kernel_list[i].function(&kernel_list[i]);
     i++;
   }
   
+  ctr = 0;
   //Put data back
   for (int i = 0; i < OP_set_index; i++) {
     for (unsigned int j = 0; j < dependencies[i].dats.size(); j ++) {
-      if (dependencies[i].written[j]==0) continue;
-      op_dat data = NULL;
-      for (unsigned int loc = 0; loc < dats.size(); loc ++) if (dats[loc]->index == dependencies[i].dats[j]->index) data = dats[loc];
+      //if it's read-only
+      if (dependencies[i].written[j] == 0) {ctr++; continue;}
+      op_dat data = dats[ctr];
+      
+      //See if data is part of the discard dats
+      int discard_dat = 0;
+      for (int k = 0; k < n_discard; k++) if (data->index == discard[k]->index) discard_dat = 1;
+      if (discard_dat) {ctr++; continue;}
+      
+      if (data->index != dependencies[i].dats[j]->index) printf("Scratch bring in error\n");
       //TODO: Malloc space to put stuff into - this should be elsewhere to be honest
       if (dependencies[i].dats[j]->data_d == NULL) dependencies[i].dats[j]->data_d = (char*)malloc(data->set->size * data->size);
       for (unsigned int el = 0; el < dependencies[i].owned.size(); el++) {
         int e = dependencies[i].owned[el];
         memcpy(&dependencies[i].dats[j]->data_d[dependencies[i].elements[e]*data->size], &data->data[e*data->size], data->size);
       }
+      ctr++;
     }
   }
   

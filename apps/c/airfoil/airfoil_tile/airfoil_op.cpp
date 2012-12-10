@@ -119,7 +119,7 @@ void op_par_loop_update_enqueue(char const *, op_set,
 int main(int argc, char **argv)
 {
   // OP initialisation
-  op_init(argc,argv,2);
+  op_init(argc,argv,3);
 
   int    *becell, *ecell,  *bound, *bedge, *edge, *cell;
   double  *x, *q, *qold, *adt, *res;
@@ -249,7 +249,7 @@ int main(int argc, char **argv)
   // main time-marching loop
   generate_inverse_maps();
   niter = 1000;
-
+  op_dat discard[] = {p_qold, p_adt, p_res};
   for(int iter=1; iter<=niter; iter++) {
 
     // save old flow solution
@@ -303,21 +303,22 @@ int main(int argc, char **argv)
                  op_arg_dat(p_adt,-1,OP_ID,1,"double",OP_READ),
                  op_arg_gbl(&rms,1,"double",OP_INC));
     }
-
+    
+    op_end_superloop(cells, 4, discard, 3);
     // print iteration history
     rms = sqrt(rms/(double) op_get_size(cells));
     if (iter%100 == 0)
       op_printf(" %d  %10.5e \n",iter,rms);
     
-    op_end_superloop(p_q, 4);
   }
+  op_timers(&cpu_t2, &wall_t2);
   
   for (int i = 0; i < cells->size; i++) {
     double *data = (double *)p_q->data;
     data = &data[p_q->dim * i];
     printf("Set element %d value %g %g %g %g\n", i, data[0], data[1], data[2], data[3]);
   }
-  op_timers(&cpu_t2, &wall_t2);
+  
   op_timing_output();
   op_printf("Max total runtime = \n%f\n",wall_t2-wall_t1);
 

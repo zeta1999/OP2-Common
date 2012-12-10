@@ -261,13 +261,13 @@ int main(int argc, char **argv)
     if (iter%100 == 0)
       op_printf(" %d  %10.5e \n",iter,rms);
   }
-
+  op_timers(&cpu_t2, &wall_t2);
   double *data = (double *)p_q->data;
   for (int i = 0; i < cells->size; i++) {
     double *data2 = &data[p_q->dim * i];
     printf("Set element %d value %g %g %g %g\n", i, data2[0], data2[1], data2[2], data2[3]);
   }
-  op_timers(&cpu_t2, &wall_t2);
+  
   op_timing_output();
   op_printf("Max total runtime = \n%f\n",wall_t2-wall_t1);
 
