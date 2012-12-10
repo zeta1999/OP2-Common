@@ -48,7 +48,7 @@
  */
 
 void op_init ( int argc, char ** argv, int diags )
-{
+{  
   int flag = 0;
   MPI_Initialized(&flag);
   if(!flag)

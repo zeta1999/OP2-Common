@@ -52,7 +52,7 @@ OP2_COMPILER ?= pgi
 
 # Common definitions
 # Uncomment -g to get debugging info on board
-DEBUG_FLAGS = -O2 #-g
+DEBUG_FLAGS = -O2 #-g 
 
 #  -Werror
 
@@ -683,5 +683,6 @@ clean:
 	-rm -if $(F_OP2_SRC)/backend/op2_for_reference.c
 	-rm -if $(F_OP2_SRC)/backend/op2_cpp_reference.F90
 	-rm -if $(F_OP2_MOD)/*.mod
+	-rm -if $(F_INC_MOD)/*.mod
 	-rm -if $(F_OP2)/*~
 
