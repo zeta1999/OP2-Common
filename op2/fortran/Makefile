@@ -86,12 +86,12 @@ ifeq ($(OP2_COMPILER),pgi)
 else
 ifeq ($(OP2_COMPILER),intel)
   F_INC_MOD       = $(F_OP2_MOD)/intel
-  CC              = mpicc
+  CC              = icc
   CFLAGS          = -std=c99 -Wall -Werror $(DEBUG_FLAGS)
-  FC              = /home/gihan/openmpi-intel-fortran/bin/mpif90
+  FC              = ifort
   FFLAGS          = -module $(F_INC_MOD) $(DEBUG_FLAGS)
   MPICC						= mpicc
-  MPIF90					= /home/gihan/openmpi-intel-fortran/bin/mpif90
+  MPIF90					= mpif90
 	NO_MPI_MACRO    = -D NO_MPI
   ALLTARGETS      = f_reference f_openmp
 else
