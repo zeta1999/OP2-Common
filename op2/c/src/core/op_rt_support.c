@@ -1371,7 +1371,7 @@ void construct_tile(op_subset &subset, std::vector<op_dataset_dependency>& depen
   double memuse = mem_set_lists + mem_maps + mem_dats + mem_execution_lists;
   //Execute
   printf("Created tile, depth %d mem use: %g KB (%.2g KB setlists, %.2g KB maps, %.2g KB dats %.2g KB exec lists)\n", (int)kernel_list.size(), memuse/1024.0, mem_set_lists/1024.0, mem_maps/1024.0, mem_dats/1024.0, mem_execution_lists/1024.0);
-  printf("Tile %d/%d form stats:\n", tile_id, num_tiles);
+  printf("Tile %d/%d form stats:\n", tile_id+1, num_tiles);
   for (int i = 0 ; i < OP_set_index; i++) {
     printf("Set %s owned: %d incl. halo: %d\n", OP_set_list[i]->name, (int)dependencies[i].owned.size(), dependencies[i].size);
   }
@@ -1698,7 +1698,6 @@ void compute_dependencies(op_kernel_descriptor *kernel, std::vector<op_dataset_d
 
 void do_coloring(int set_index, std::vector<op_dataset_dependency>& dependencies, std::vector<op_map>& maps, std::vector<op_map>& gbl_ind_maps, std::vector<op_kernel_descriptor>& kernel_list) {
   int nargs = dependencies[set_index].args.size();
-  printf("nargs for coloring %d\n", nargs);
   //do the coloring if necessary
   int color = 0;
   for (int arg = 0; arg < nargs; arg++) {
