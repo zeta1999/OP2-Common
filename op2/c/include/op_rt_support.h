@@ -94,6 +94,8 @@ void op_plan_check ( op_plan OP_plan, int ninds, int * inds );
 
 void op_end_superloop ( op_set base_set, int num_tiles, op_dat *discard, int n_discard );
   
+void op_superloop_timing_output();
+  
 void op_rt_exit ( void );
 
 #ifdef __cplusplus

@@ -30,8 +30,8 @@ x = real(z); y = imag(z);
 % generate grid in complex square root domain
 %
 
-I = 400;
-J = 600;
+I = 100;
+J = 150;
 
 xb = linspace(-3,3,3*I+1);
 yb = zeros(size(xb));

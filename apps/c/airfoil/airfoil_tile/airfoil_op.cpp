@@ -119,7 +119,7 @@ void op_par_loop_update_enqueue(char const *, op_set,
 int main(int argc, char **argv)
 {
   // OP initialisation
-  op_init(argc,argv,3);
+  op_init(argc,argv,2);
 
   int    *becell, *ecell,  *bound, *bedge, *edge, *cell;
   double  *x, *q, *qold, *adt, *res;
@@ -319,9 +319,11 @@ int main(int argc, char **argv)
     printf("Set element %d value %g %g %g %g\n", i, data[0], data[1], data[2], data[3]);
   }
   
+  op_superloop_timing_output();
   op_timing_output();
   op_printf("Max total runtime = \n%f\n",wall_t2-wall_t1);
 
+  
   op_exit();
 
   free(cell);
