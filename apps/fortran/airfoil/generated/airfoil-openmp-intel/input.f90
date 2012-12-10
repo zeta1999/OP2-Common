@@ -19,7 +19,7 @@ subroutine getSetSizes ( nnode, ncell, nedge, nbedge )
   !call get_environment_variable ( "WORK", currDir )
   call get_environment_variable ( "PWD", currDir )
 
-  currDir = '/work/cbertoll/airfoil-input/new_grid.dat'
+  currDir = 'new_grid.dat'
 
   ! open file
 

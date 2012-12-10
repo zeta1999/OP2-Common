@@ -1,8 +1,10 @@
-IC = icc
-FC = ifort
+#IC = icc
+#FC = ifort
 
+IC = pgcc
+FC = pgfortran
 
-OPENMP = -openmp
+OPENMP = -mp
 PREPROCESSOR = -fpp
 
 EXEC = airfoil_openmp_$(PART_SIZE_ENV)
@@ -10,16 +12,18 @@ EXEC = airfoil_openmp_$(PART_SIZE_ENV)
 CPPLINK = -lstdc++
 OPT = -DOP_PART_SIZE_1=$(PART_SIZE_ENV) -O2
 
-F_OP2_MOD = $(OP2)/fortran/mod/intel
+OP2 = $(OP2_INSTALL_PATH)
+
+F_OP2_MOD = $(OP2)/fortran/mod/pgi
 F_OP2_LIB = $(OP2)/fortran/lib
 
 HDF5_LIB = -L$(HDF5_INSTALL_PATH)/lib -lhdf5
 MPI_LIB = -L$(MPI_INSTALL_PATH)/lib -lmpi
 
 FLINK = -L$(F_OP2_LIB)
-FMODS = -module $(F_OP2_MOD)
+FMODS = -I$(F_OP2_MOD)
 
-all: cfunctions airfoil_seq link
+all: clean cfunctions airfoil_seq link
 
 cfunctions: debug.c
 	$(IC) $(OPT) $(DEBUG) $(OPENMP) -c debug.c
