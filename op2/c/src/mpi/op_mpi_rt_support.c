@@ -94,12 +94,14 @@ void op_exchange_halo(op_arg* arg)
     MPI_Abort(OP_MPI_WORLD, 2);
   }
 
-//  if ( rank == D_RANK ) printf ("Inside op_exchange_halo for %s\n", dat->name);
+
 
   if(arg->dat != NULL && //(arg->idx != -1) &&
      (arg->acc == OP_READ || arg->acc == OP_RW /* good for debug || arg->acc == OP_INC*/) &&
      (dat->dirtybit == 1))
   {
+//  if ( rank == D_RANK )
+//      printf ("Inside op_exchange_halo for %s\n", dat->name);
 //    OP_mpi_buffer_list[dat->index]->s_num_req = 0;
 
 //    if ( rank == D_RANK ) printf ("%s: set halo lists\n", dat->name);
@@ -360,7 +362,7 @@ void op_monitor_dat_mpi(op_dat dat, int original_g_index)
       printf("op_dat %s element %d located on mpi rank %d at local index: %d value: ",
         dat->name, original_g_index, my_rank, local_index);
       for(int i = 0; i<dat->dim; i++)
-        printf("%lf ",value[i]);
+        printf("%.10lf ",value[i]);
       printf("\n");
       free(value);
     }
