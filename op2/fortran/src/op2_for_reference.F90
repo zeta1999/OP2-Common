@@ -1,7 +1,7 @@
 ! This module defikernels/flux/SRC_NOMZONE_INC.F95kernels/flux/SRC_NOMZONE_INC.F95kernels/flux/SRC_NOMZONE_INC.F95kernels/flux/SRC_NOMZONE_INC.F95nes the Fortran interface towards C reference implementation
 ! of op_par_loop functions
 
-#include "../../include/op2_reference_macros.h"
+#include "../include/op2_reference_macros.h"
 
 module OP2_Fortran_Reference
 

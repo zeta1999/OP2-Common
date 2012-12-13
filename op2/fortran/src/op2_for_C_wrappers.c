@@ -18,7 +18,7 @@
 #include <op_mpi_core.h>
 #endif
 
-#include "../../include/op2_for_C_wrappers.h"
+#include "../include/op2_for_C_wrappers.h"
 
 op_kernel * OP_kernels;
 
