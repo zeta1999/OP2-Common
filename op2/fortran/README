@@ -7,6 +7,6 @@ To compile it it is required to:
 
        export CUDA_INSTALL_PATH = /apps/cuda/4.0.11
 
-2. Set the OP2 environment variable to the op2 base directory
+2. Set the OP2_INSTALL_PATH environment variable to the op2 base directory
    which corresponds to the one containing the "c" and "fortran"
    directories.
