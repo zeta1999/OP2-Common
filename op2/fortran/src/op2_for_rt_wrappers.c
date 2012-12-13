@@ -1,3 +1,32 @@
+/*  Open source copyright declaration based on BSD open source template:
+ *  http://www.opensource.org/licenses/bsd-license.php
+ * 
+ * Copyright (c) 2011-2012, Carlo Bertolli, Florian Rathgeber
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ * Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ * Redistributions in binary form must reproduce the above copyright
+ * notice, this list of conditions and the following disclaimer in the
+ * documentation and/or other materials provided with the distribution.
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+
 #include <op_lib_core.h>
 #include <op_rt_support.h>
 #include <op_lib_c.h>
@@ -12,24 +41,6 @@ extern op_plan * OP_plans;
 
 void op_partition_wrapper (const char* lib_name, const char* lib_routine,
   op_set prime_set, op_map prime_map, op_dat coords) {
-
-  /* // copying and decrementing map */
-  /* op_map newMap = (op_map) calloc (1, sizeof (op_map_core)); */
-
-  /* // warning: the new map is an exact replica of the original map */
-  /* // except that it's a 0->N-1 mapping */
-  /* newMap->index = prime_map->index; */
-  /* newMap->from = prime_map->from; */
-  /* newMap->to = prime_map->to; */
-  /* newMap->dim = prime_map->dim; */
-  /* newMap->name = prime_map->name; */
-  /* newMap->user_managed = prime_map->user_managed; */
-
-  /* newMap->map = (int *) calloc (prime_map->from->size * prime_map->dim, sizeof (int)); */
-  
-  /* for ( int i = 0; i < prime_map->from->size * prime_map->dim; i++ ) { */
-  /*   newMap->map[i] = prime_map->map[i] - 1; */
-  /* } */
   
   op_partition (lib_name, lib_routine, prime_set, prime_map, coords);
 }
@@ -54,7 +65,6 @@ void FortranToCMapping (op_arg * arg) {
 }
 
 void checkCMapping (op_arg arg) {
-//  printf ("Now checking mapping %s\n", arg.map->name);
   for ( int i = 0; i < arg.map->from->size * arg.map->dim; i++ ) {
     if ( arg.map->map[i] >= arg.map->to->size ) {
       printf ("Invalid mapping 1\n");
@@ -65,7 +75,6 @@ void checkCMapping (op_arg arg) {
       exit (0);
     }
   }
-//  printf ("Mapping %s is fine\n", arg.map->name);
 }
 
 op_plan * checkExistingPlan (char name[], op_set set,
@@ -123,18 +132,6 @@ op_plan * FortranPlanCaller (char name[], op_set set,
   int nameLen = strlen (name);
   char * heapName = (char *) calloc (nameLen, sizeof(char));
   strncpy (heapName, name, nameLen);
-
-/*   for ( int i = 0; i < argsNumber; i++ ) { */
-/*     if ( inds[i] != -1 ) { */
-/*       if ( args[i].map == NULL) { */
-/*         printf ("Null map\n"); */
-/*         exit (0); */
-/*       } */
-/* //      printf ("Now checking argument %d\n", i); */
-/*       FortranToCMapping (&args[i]); */
-/*       checkCMapping (args[i]); */
-/*     } */
-/*   } */
 
   /* call the C OP2 function */
   generatedPlan = op_plan_get (heapName, set, partitionSize,
