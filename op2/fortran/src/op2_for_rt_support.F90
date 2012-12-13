@@ -30,7 +30,6 @@
 ! SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 !
 
-
 ! This module defines the interoperable data structures of the OP2 RT support
 ! (i.e. plan struct) and defines the interface for the C plan function
 

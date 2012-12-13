@@ -36,6 +36,8 @@
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
 
+/* Functions with a different implementation in CUDA than other backends */
+
 void
 op_get_dat (op_dat dat) {
   cudaMemcpy (dat->data, dat->data_d,

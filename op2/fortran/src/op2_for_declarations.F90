@@ -505,16 +505,6 @@ contains
     OP_ID%mapPtr => idPtr
     OP_GBL%mapPtr => gblPtr
 
-!#ifdef OP2_WITH_CUDAFOR
-    ! support for GTX
-
-!    setDevReturnVal = cudaSetDevice ( 2 )
-!    devPropRetVal = cudaGetDeviceProperties ( deviceProperties, 2 )
-
-!    print *, 'Using: ', deviceProperties%name
-!#endif
-
-
     call op_init_c ( argc, C_NULL_PTR, diags )
 
   end subroutine op_init

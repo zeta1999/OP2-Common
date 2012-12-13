@@ -30,10 +30,11 @@
 ! SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 !
 
-! of op_par_loop functions
+! Implementation of serial reference op_par_loop functions
 
 #include "../include/op2_reference_macros.h"
 
+! FORTRAN interface of C-based reference implementation
 module OP2_Fortran_Reference
 
   use OP2_Fortran_Declarations

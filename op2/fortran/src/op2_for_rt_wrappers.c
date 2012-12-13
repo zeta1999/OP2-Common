@@ -67,7 +67,6 @@ void FortranToCMapping (op_arg * arg) {
 }
 
 void checkCMapping (op_arg arg) {
-//  printf ("Now checking mapping %s\n", arg.map->name);
   for ( int i = 0; i < arg.map->from->size * arg.map->dim; i++ ) {
     if ( arg.map->map[i] >= arg.map->to->size ) {
       printf ("Invalid mapping 1\n");
@@ -78,7 +77,6 @@ void checkCMapping (op_arg arg) {
       exit (0);
     }
   }
-//  printf ("Mapping %s is fine\n", arg.map->name);
 }
 
 op_plan * checkExistingPlan (char name[], op_set set,
