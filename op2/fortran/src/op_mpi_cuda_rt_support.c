@@ -63,7 +63,7 @@ int** export_exec_list_d;
 int** export_nonexec_list_d;
 
 // USED by MPI+CUDA
-void op_exchange_halo (op_arg* arg)
+void op_exchange_halo(op_arg* arg)
 {
   op_dat dat = arg->dat;
 
@@ -71,7 +71,7 @@ void op_exchange_halo (op_arg* arg)
   if((arg->acc == OP_READ || arg->acc == OP_RW /* good for debug || arg->acc == OP_INC*/) &&
       (dat->dirtybit == 1)) {
 
-//    printf("Exchanging Halo of data array %10s\n",dat->name);
+    //printf("Exchanging Halo of data array %10s\n",dat->name);
     halo_list imp_exec_list = OP_import_exec_list[dat->set->index];
     halo_list imp_nonexec_list = OP_import_nonexec_list[dat->set->index];
 
@@ -195,13 +195,11 @@ void op_exchange_halo_seq(op_arg* arg)
     MPI_Abort(OP_MPI_WORLD, 2);
   }
 
-
-
-  if(arg->dat != NULL && //(arg->idx != -1) &&
-     (arg->acc == OP_READ || arg->acc == OP_RW /* good for debug || arg->acc == OP_INC*/) &&
+  //need to exchange both direct and indirect data sets if they are dirty
+  if((arg->acc == OP_READ || arg->acc == OP_RW /* good for debug || arg->acc == OP_INC*/) &&
      (dat->dirtybit == 1))
   {
-
+    //printf("Exchanging Halo of data array %10s\n",dat->name);
     halo_list imp_exec_list = OP_import_exec_list[dat->set->index];
     halo_list imp_nonexec_list = OP_import_nonexec_list[dat->set->index];
 
@@ -242,6 +240,7 @@ void op_exchange_halo_seq(op_arg* arg)
           s_req[((op_mpi_buffer)(dat->mpi_buffer))->s_num_req++]);
     }
 
+
     int init = dat->set->size*dat->size;
     for(int i=0; i < imp_exec_list->ranks_size; i++) {
      // printf("import on to %d from %d data %10s, number of elements of size %d | recieving:\n ",
@@ -254,7 +253,6 @@ void op_exchange_halo_seq(op_arg* arg)
           r_req[((op_mpi_buffer)(dat->mpi_buffer))->r_num_req++]);
     }
 
-
     //-----second exchange nonexec elements related to this data array------
     //sanity checks
     if(compare_sets(imp_nonexec_list->set,dat->set) == 0)
@@ -268,48 +266,10 @@ void op_exchange_halo_seq(op_arg* arg)
       MPI_Abort(OP_MPI_WORLD, 2);
     }
 
-    for(int i=0; i<exp_nonexec_list->ranks_size; i++) {
-
-      for(int j = 0; j < exp_nonexec_list->sizes[i]; j++) {
-        set_elem_index = exp_nonexec_list->list[exp_nonexec_list->disps[i]+j];
-
-
-      MPI_Isend(&OP_mpi_buffer_list[dat->index]->
-          buf_exec[exp_exec_list->disps[i]*dat->size],
-          dat->size*exp_exec_list->sizes[i],
-          MPI_CHAR, exp_exec_list->ranks[i],
-          dat->index, OP_MPI_WORLD,
-          &OP_mpi_buffer_list[dat->index]->
-          s_req[OP_mpi_buffer_list[dat->index]->s_num_req++]);
-    }
-
-
-    int init = dat->set->size*dat->size;
-    for(int i=0; i < imp_exec_list->ranks_size; i++) {
-      MPI_Irecv(&(OP_dat_list[dat->index]->
-            data[init+imp_exec_list->disps[i]*dat->size]),
-          dat->size*imp_exec_list->sizes[i],
-          MPI_CHAR, imp_exec_list->ranks[i],
-          dat->index, OP_MPI_WORLD,
-          &OP_mpi_buffer_list[dat->index]->
-          r_req[OP_mpi_buffer_list[dat->index]->r_num_req++]);
-    }
-
-    //-----second exchange nonexec elements related to this data array------
-    //sanity checks
-    if(compare_sets(imp_nonexec_list->set,dat->set) == 0)
-    {
-      printf("Error: Non-Import list and set mismatch");
-      MPI_Abort(OP_MPI_WORLD, 2);
-    }
-    if(compare_sets(exp_nonexec_list->set,dat->set)==0)
-    {
-      printf("Error: Non-Export list and set mismatch");
-      MPI_Abort(OP_MPI_WORLD, 2);
-    }
 
     for(int i=0; i<exp_nonexec_list->ranks_size; i++) {
-      for(int j = 0; j < exp_nonexec_list->sizes[i]; j++) {
+      for(int j = 0; j < exp_nonexec_list->sizes[i]; j++)
+      {
         set_elem_index = exp_nonexec_list->list[exp_nonexec_list->disps[i]+j];
         memcpy(&((op_mpi_buffer)(dat->mpi_buffer))->
             buf_nonexec[exp_nonexec_list->disps[i]*dat->size+j*dat->size],
@@ -342,6 +302,10 @@ void op_exchange_halo_seq(op_arg* arg)
     arg->sent = 1;
   }
 }
+
+/*******************************************************************************
+ * MPI Halo Exchange Wait-all Function (to complete the non-blocking comms)
+ *******************************************************************************/
 
 // USED by MPI+CUDA
 void op_wait_all(op_arg* arg)
@@ -385,10 +349,6 @@ void op_wait_all(op_arg* arg)
 // USED by MPI+SEQ
 void op_wait_all_seq(op_arg* arg)
 {
-  int rank;
-
-  MPI_Comm_rank (MPI_COMM_WORLD, &rank);
-
   if(arg->argtype == OP_ARG_DAT && arg->sent == 1)
   {
     op_dat dat = arg->dat;
@@ -425,127 +385,4 @@ void op_partition(const char* lib_name, const char* lib_routine,
 
   op_mv_halo_list_device();
 
-}
-
-/*******************************************************************************
-* Monitor/Print the Contents/Original Global Index/Current Index/Rank of an
-* element in op_dat
-*******************************************************************************/
-void op_monitor_dat_mpi(op_dat dat, int original_g_index)
-{
-  int my_rank, comm_size;
-  MPI_Comm_rank(OP_MPI_WORLD, &my_rank);
-  MPI_Comm_size(OP_MPI_WORLD, &comm_size);
-
-  //check if the element requested is held in local mpi process
-  int local_index = linear_search(OP_part_list[dat->set->index]->g_index,
-    original_g_index, 0, dat->set->size - 1);
-
-  if(local_index >= 0)
-  {
-    if(strcmp(dat->type,"double") == 0)
-    {
-      double* value = (double *)xmalloc(sizeof(double)*dat->dim);
-      memcpy(value, (void *)(&dat->data[local_index*dat->size]), sizeof(double)*dat->dim);
-      printf("op_dat %s element %d located on mpi rank %d at local index: %d value: ",
-        dat->name, original_g_index, my_rank, local_index);
-      for(int i = 0; i<dat->dim; i++)
-        printf("%lf ",value[i]);
-      printf("\n");
-      free(value);
-    }
-    else if(strcmp(dat->type,"float") == 0)
-    {
-      float* value = (float *)xmalloc(sizeof(float)*dat->dim);
-      memcpy(value, (void *)(&dat->data[local_index*dat->size]), sizeof(float)*dat->dim);
-      printf("op_dat %s element %d located on mpi rank %d at local index: %d value: ",
-        dat->name, original_g_index, my_rank, local_index);
-      for(int i = 0; i<dat->dim; i++)
-        printf("%f ",value[i]);
-      printf("\n");
-      free(value);
-    }
-    else if(strcmp(dat->type,"int") == 0)
-    {
-      int* value = (int *)xmalloc(sizeof(int)*dat->dim);
-      memcpy(value, (void *)(&dat->data[local_index*dat->size]), sizeof(int)*dat->dim);
-      printf("op_dat %s element %d located on mpi rank %d at local index: %d value: ",
-        dat->name, original_g_index, my_rank, local_index);
-      for(int i = 0; i<dat->dim; i++)
-        printf("%d ",value[i]);
-      printf("\n");
-      free(value);
-    }
-    if(strcmp(dat->type,"long") == 0)
-    {
-      long* value = (long *)xmalloc(sizeof(long)*dat->dim);
-      memcpy(value, (void *)(&dat->data[local_index*dat->size]), sizeof(long)*dat->dim);
-      printf("op_dat %s element %d located on mpi rank %d at local index: %d value: ",
-        dat->name, original_g_index, my_rank, local_index);
-      for(int i = 0; i<dat->dim; i++)
-        printf("%ld ",value[i]);
-      printf("\n");
-      free(value);
-    }
-  }
-}
-
-
-void op_monitor_map_mpi(op_map map, int original_g_index)
-{
-  int my_rank, comm_size;
-  MPI_Comm_rank(OP_MPI_WORLD, &my_rank);
-  MPI_Comm_size(OP_MPI_WORLD, &comm_size);
-
-  /* Compute global partition range information for each set*/
-  int** part_range = (int **)xmalloc(OP_set_index*sizeof(int*));
-  get_part_range(part_range,my_rank,comm_size, MPI_COMM_WORLD);
-
-  //check if the element requested is held in local mpi process
-  int local_index = linear_search(OP_part_list[map->from->index]->g_index,
-    original_g_index, 0, map->from->size - 1);
-
-  if(local_index >= 0)
-  {
-    int* value_c_l = (int *)xmalloc(sizeof(int)*map->dim);
-    memcpy(value_c_l, (void *)(&map->map[local_index*map->dim]), sizeof(int)*map->dim);
-
-    int* value_c_g = (int *)xmalloc(sizeof(int)*map->dim);
-    for(int i = 0; i<map->dim; i++)
-      value_c_g[i] = get_global_index(value_c_l[i], my_rank, part_range[map->to->index],comm_size);
-
-    int* value_o_l = (int *)xmalloc(sizeof(int)*map->dim);
-    int* orig_rank = (int *)xmalloc(sizeof(int)*map->dim);
-
-    int* value_o_g = (int *)xmalloc(sizeof(int)*map->dim);
-    for(int i = 0; i<map->dim; i++)
-      value_o_g[i] = OP_part_list[map->to->index]->g_index[value_c_l[i]];
-
-    for(int i = 0; i<map->dim; i++)
-      orig_rank[i] = get_partition(value_o_g[i], orig_part_range[map->to->index],
-        &value_o_l[i], comm_size);
-
-    printf("op_map %s element (from %s to %s) at original global index %d ",
-      map->name, map->from->name, map->to->name, original_g_index);
-    printf("is now located on mpi rank %d at local index: %d \n",
-      my_rank, local_index);
-
-    printf("points to current to-set elements : \n");
-    for(int i = 0; i<map->dim; i++)
-    {
-      printf("-> with curr local index: %d curr global index: %d ",value_c_l[i], value_c_g[i]);
-      printf("originally located on mpi rank %d, ",orig_rank[i]);
-      printf("orig local index: %d orig global index: %d\n",value_o_l[i], value_o_g[i]);
-    }
-    printf("\n");
-    fflush(stdout);
-
-    free(value_c_l);
-    free(value_c_g);
-    free(value_o_l);
-    free(value_o_g);
-    free(orig_rank);
-  }
-
-  for(int i = 0; i<OP_set_index; i++)free(part_range[i]);free(part_range);
 }
