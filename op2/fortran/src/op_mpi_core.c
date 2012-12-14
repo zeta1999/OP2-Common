@@ -2293,14 +2293,6 @@ void op_mpi_wait_all_seq(int nargs, op_arg *args) {
   }
 }
 
-
-void op_mpi_wait_all_seq(int nargs, op_arg *args) {
-  for (int n=0; n<nargs; n++) {
-//    op_wait_all_seq(&args[n]);
-    op_wait_all(&args[n]);
-  }
-}
-
 void op_mpi_reset_halos(int nargs, op_arg *args) {
   for (int n=0; n<nargs; n++) {
     op_reset_halo(&args[n]);
