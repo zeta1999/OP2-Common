@@ -1068,10 +1068,11 @@ void op_end_superloop ( op_set base_set, int num_tiles, op_dat *discard, int n_d
   
 #ifdef OP2_ONETHREAD
 #pragma omp parallel for
+#endif
   for (unsigned int i = 0; i < op_tile_plans[found].tiles.size(); i++) {
     execute_tile(op_tile_plans[found].tiles[i].kernels, op_tile_plans[found].tiles[i].dependencies, op_tile_plans[found].dats, op_tile_plans[found].tiles[i].maps, op_tile_plans[found].tiles[i].gbl_ind_maps, op_tile_plans[found].tiles[i].gbl_direct_maps, discard, n_discard, &op_tile_plans[found].tiles[i].timing[0], op_tile_plans[found].thread_dat_ptrs);
   }
-#endif
+
   
   //swapping data back
   for (int i = 0; i < OP_set_index; i++) {
@@ -1762,7 +1763,7 @@ void do_coloring(int set_index, std::vector<op_dataset_dependency>& dependencies
   int nargs = dependencies[set_index].args.size();
   //do the coloring if necessary
   int color = 0;
-#ifdef OP2_ONETHREAD
+#ifndef OP2_ONETHREAD
   for (int arg = 0; arg < nargs; arg++) {
     if (dependencies[set_index].args[arg]->map != NULL && dependencies[set_index].args[arg]->acc != OP_READ) { //These aren't added to the list anyway, but for clarity this check is here.
       color = 1;
