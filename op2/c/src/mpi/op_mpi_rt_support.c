@@ -50,8 +50,6 @@
 #include <op_rt_support.h>
 #include <op_lib_mpi.h>
 
-#define D_RANK 10
-
 
 // //
 // //MPI Halo related global variables
@@ -92,11 +90,6 @@ void op_exchange_halo(op_arg* arg)
      (arg->acc == OP_READ || arg->acc == OP_RW /* good for debug || arg->acc == OP_INC*/) &&
      (dat->dirtybit == 1))
   {
-//  if ( rank == D_RANK )
-//      printf ("Inside op_exchange_halo for %s\n", dat->name);
-//    OP_mpi_buffer_list[dat->index]->s_num_req = 0;
-
-//    if ( rank == D_RANK ) printf ("%s: set halo lists\n", dat->name);
 
     halo_list imp_exec_list = OP_import_exec_list[dat->set->index];
     halo_list imp_nonexec_list = OP_import_nonexec_list[dat->set->index];
@@ -118,8 +111,6 @@ void op_exchange_halo(op_arg* arg)
       MPI_Abort(OP_MPI_WORLD, 2);
     }
 
-//    if ( rank == D_RANK ) printf ("%s: export exec\n", dat->name);
-
     int set_elem_index;
     for(int i=0; i<exp_exec_list->ranks_size; i++) {
       for(int j = 0; j < exp_exec_list->sizes[i]; j++)
@@ -139,9 +130,6 @@ void op_exchange_halo(op_arg* arg)
           &((op_mpi_buffer)(dat->mpi_buffer))->
           s_req[((op_mpi_buffer)(dat->mpi_buffer))->s_num_req++]);
     }
-
-//    if ( rank == D_RANK )
-//    printf ("%s: import exec\n", dat->name);
 
     int init = dat->set->size*dat->size;
     for(int i=0; i < imp_exec_list->ranks_size; i++) {
@@ -169,17 +157,7 @@ void op_exchange_halo(op_arg* arg)
       MPI_Abort(OP_MPI_WORLD, 2);
     }
 
-//    if ( rank == D_RANK ) printf ("%s: export nonexec\n", dat->name);
-
     for(int i=0; i<exp_nonexec_list->ranks_size; i++) {
-
-/*        if ( strcmp (dat->name, "op_dat_qrg") == 0 )
-        {
-          printf("export from %d to %d data %10s, number of elements of size %d | sending: number of neighbours is %d\n ",
-            my_rank, exp_nonexec_list->ranks[i], dat->name,exp_nonexec_list->sizes[i], exp_nonexec_list->ranks_size);
-          fflush (stdout);
-        }
-      */
 
       for(int j = 0; j < exp_nonexec_list->sizes[i]; j++) {
         set_elem_index = exp_nonexec_list->list[exp_nonexec_list->disps[i]+j];
@@ -255,98 +233,6 @@ void op_exchange_halo(op_arg* arg)
 }
 
 
-void op_exchange_halo_real(op_arg* arg)
-{
-  int rank;
-  op_dat dat = arg->dat;
-
-  MPI_Comm_rank (MPI_COMM_WORLD, &rank);
-
-  if ( rank != 0 )
-    MPI_Barrier (MPI_COMM_WORLD);
-
-  if(arg->sent == 1) {
-    printf("Error: Halo exchange already in flight for dat %s\n", dat->name);
-    fflush(stdout);
-    MPI_Abort(OP_MPI_WORLD, 2);
-  }
-
-  if(arg->dat != NULL && //(arg->idx != -1) &&
-     (arg->acc == OP_READ || arg->acc == OP_RW /* good for debug || arg->acc == OP_INC*/) &&
-     (dat->dirtybit == 1))
-  {
-      if ( rank == D_RANK )
-      {
-        printf("export from %d to %d data %10s, number of elements of size %d | sending:\n ",
-          my_rank, exp_nonexec_list->ranks[i], dat->name,exp_nonexec_list->sizes[i]);
-        fflush (stdout);
-      }
-      MPI_Isend(&OP_mpi_buffer_list[dat->index]->
-          buf_nonexec[exp_nonexec_list->disps[i]*dat->size],
-          dat->size*exp_nonexec_list->sizes[i],
-          MPI_CHAR, exp_nonexec_list->ranks[i],
-          dat->index, OP_MPI_WORLD,
-          &OP_mpi_buffer_list[dat->index]->
-          s_req[OP_mpi_buffer_list[dat->index]->s_num_req++]);
-    }
-
-//    if ( rank == D_RANK )
-//    printf ("%s: import nonexec\n", dat->name);
-
-/*  if ( rank == 10 ) // && strcmp (dat->name, "op_dat_qo") == 0 )
-  {
-    printf("recv nonexec for %s: s_req = %d r_req = %d, ranks_size = %d\n", arg->dat->name, OP_mpi_buffer_list[dat->index]->s_num_req, OP_mpi_buffer_list[dat->index]->r_num_req, imp_nonexec_list->ranks_size);
-    fflush (stdout);
-  }
-*/
-
-    int nonexec_init = (dat->set->size+imp_exec_list->size)*dat->size;
-    for(int i=0; i<imp_nonexec_list->ranks_size; i++) {
-//    if ( rank == D_RANK )
-//    {
-//      if ( strcmp (dat->name, "op_dat_qrg") == 0 )
-//        printf("import on to %d from %d data %10s, number of elements of size %d each of size %d in bytes | receiving:\n ",
-//          my_rank, imp_nonexec_list->ranks[i], dat->name, imp_nonexec_list->sizes[i], dat->size);
-//      printf("pointers are: buffer = %p, req =  %p\n", &(OP_dat_list[dat->index]->
-//            data[nonexec_init+imp_nonexec_list->disps[i]*dat->size]), &OP_mpi_buffer_list[dat->index]->
-//          r_req[OP_mpi_buffer_list[dat->index]->r_num_req]);
-//      printf ("Size of the receive buffer is %d, from base index %d and there are %d neighbour (this is the %d-th)\n", imp_nonexec_list->sizes[i], nonexec_init+imp_nonexec_list->disps[i]*dat->size, imp_nonexec_list->ranks_size, i);
-//      fflush (stdout);
-//    }
-      MPI_Irecv(&(OP_dat_list[dat->index]->
-            data[nonexec_init+imp_nonexec_list->disps[i]*dat->size]),
-          dat->size*imp_nonexec_list->sizes[i],
-          MPI_CHAR, imp_nonexec_list->ranks[i],
-          dat->index, OP_MPI_WORLD,
-          &OP_mpi_buffer_list[dat->index]->
-          r_req[OP_mpi_buffer_list[dat->index]->r_num_req++]);
-
-/*      if ( rank == 10 && OP_mpi_buffer_list[dat->index]->r_num_req > imp_nonexec_list->ranks_size+1 )
-      {
-        printf ("Rank = %d: Receiving nonexec for %s, r_req = %d > %d, too many pending comms\n", my_rank, dat->name, OP_mpi_buffer_list[dat->index]->r_num_req, imp_nonexec_list->ranks_size);
-        fflush (stdout);
-        exit (0);
-      }
-*/
-    }
-
-/*    if ( rank == 10 ) //&& strcmp (dat->name, "op_dat_qo") == 0 )
-    {
-      printf ("After recv nonexec for %s, r_req = %d, exec number = %d, nonexec number = %d, sum = %d\n",
-        dat->name,
-        OP_mpi_buffer_list[dat->index]->r_num_req,
-        imp_nonexec_list->ranks_size,
-        imp_exec_list->ranks_size, imp_nonexec_list->ranks_size+imp_exec_list->ranks_size);
-      fflush (stdout);
-    }
-*/
-    //clear dirty bit
-    dat->dirtybit = 0;
-    arg->sent = 1;
-  }
-}
-
-
 /*******************************************************************************
  * MPI Halo Exchange Wait-all Function (to complete the non-blocking comms)
  *******************************************************************************/
@@ -357,12 +243,6 @@ void op_wait_all(op_arg* arg)
 
   MPI_Comm_rank (MPI_COMM_WORLD, &rank);
 
-/*  if ( rank == 10 && arg->argtype == OP_ARG_DAT )
-  {
-    printf("wait all for %s: arg->sent == %d\n", arg->dat->name, arg->sent);
-    fflush (stdout);
-  }
-*/
   if(arg->argtype == OP_ARG_DAT && arg->sent == 1)
   {
     op_dat dat = arg->dat;
