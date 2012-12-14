@@ -304,7 +304,7 @@ int main(int argc, char **argv)
                  op_arg_gbl(&rms,1,"double",OP_INC));
     }
     
-    op_end_superloop(cells, 4, discard, 3);
+    op_end_superloop(cells, 80, discard, 3);
     // print iteration history
     rms = sqrt(rms/(double) op_get_size(cells));
     if (iter%100 == 0)

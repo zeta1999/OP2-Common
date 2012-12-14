@@ -1126,12 +1126,12 @@ int construct_tile_plan(op_set base_set, int num_tiles) {
   //naive partitioning
   op_subset subset;
   subset.set = base_set;
-  subset.elements = (int *)malloc((base_set->size/num_tiles+1)*sizeof(int));
+  subset.elements = (int *)malloc((base_set->size/num_tiles+base_set->size%num_tiles)*sizeof(int));
   for (int i = 0; i < num_tiles; i++) {
     subset.size = base_set->size/num_tiles;
     if (i == num_tiles-1) subset.size += base_set->size%num_tiles;
     for (int j = 0; j < subset.size; j++) {
-      subset.elements[j] = i * base_set->size/num_tiles + j;
+      subset.elements[j] = i * (base_set->size/num_tiles) + j;
     }
     construct_tile(subset, plan.tiles[i].dependencies, plan.tiles[i].maps, plan.tiles[i].gbl_ind_maps, plan.tiles[i].gbl_direct_maps, plan.dats, plan.scratch_sizes, plan.tiles[i].kernels, num_tiles, i);
   }
