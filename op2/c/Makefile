@@ -27,9 +27,9 @@ CUDA_INC = -I$(CUDA_INSTALL_PATH)/include
 
 ifeq ($(OP2_COMPILER),gnu)
 	CC       := gcc
-	CCFLAGS  := -fPIC -DUNIX -Wall -arch x86_64 -g -O0
+	CCFLAGS  := -fPIC -fopenmp -DUNIX -Wall -arch x86_64 -g -O0
 	CXX      := g++
-	CXXFLAGS := -fPIC -DUNIX -Wall -g -arch x86_64 -O0 -Wextra
+	CXXFLAGS := -fPIC -fopenmp -DUNIX -Wall -g -arch x86_64 -O0 -Wextra
 	MPICXX   := mpic++
 	MPIFLAGS := $(CXXFLAGS)
 else

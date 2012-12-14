@@ -24,7 +24,7 @@ ifeq ($(OP2_COMPILER),gnu)
   CPP		= g++
   CPPFLAGS	= -g -fPIC -DUNIX -Wall #-Wextra
   OMPFLAGS	= -fopenmp
-  MPICPP	= /usr/bin/mpiCC
+  MPICPP	= mpic++
   MPIFLAGS	= $(CCFLAGS)
 else
 ifeq ($(OP2_COMPILER),intel)
