@@ -273,7 +273,7 @@ def op2_gen_openmp(master, date, consts, kernels):
     code('')
 
     for g_m in range(0,ninds):
-      code('opDat'+str(invinds[g_m]+1)+'SharedIndirectionSize = ind_sizes('+str(g_m)+' + threadBlockID * 4)')
+      code('opDat'+str(invinds[g_m]+1)+'SharedIndirectionSize = ind_sizes('+str(g_m)+' + threadBlockID * '+inddims[g_m]+')')
     code('')
 
     for g_m in range(0,ninds):
@@ -320,51 +320,25 @@ def op2_gen_openmp(master, date, consts, kernels):
           code('    END DO')
 
     #kernel call
-    code('')
-    comm('----------------kernel call---------------------')
-    code('    CALL '+name+'( &')
-    for g_m in range(0,ninds):
-      for m in range (0,int(idxs[invinds[g_m]+1])):
-        if accs[invinds[g_m]] == OP_READ:
-          if int(dims[invinds[g_m]+1]) > 1:
-            code('    & opDat'+str(invinds[g_m]+1)+'SharedIndirection(1 +  mappingArray'+str(invinds[g_m]+m+1)+'(i1 + threadBlockOffset) *'+inddims[g_m]+
-            ':1 mappingArray'+str(invinds[g_m]+m+1)+'(i1 + threadBlockOffset) * '+dims[invinds[g_m]+1]+' + '+dims[invinds[g_m]+1]+' - 1), &')
-          else:
-            code('    & opDat'+str(invinds[g_m]+1)+'SharedIndirection(1 +  mappingArray'+str(invinds[g_m]+m+1)+'(i1 + threadBlockOffset) *'+inddims[g_m]+', &')
-      if accs[invinds[g_m]] == OP_INC:
-        for m in range (0,int(idxs[g_m])):
-          code('    & opDat'+str(invinds[g_m]+1+m)+'Local, &')
-
-    for g_m in range(0,nargs):
-      if maps[g_m] == OP_ID:
-        code('    & opDat'+str(g_m+1)+'((i1 + threadBlockOffset) * 1)) &')
-
-    code('    & )')
-    code('    colour2 = thrcol(i1 + threadBlockOffset)')
-    code('  END IF')
-
 
     code('')
-    comm('----------------kernel call alternate---------------------')
     code('    CALL '+name+'( &')
-    code('    indaccs[]  '+str(indaccs))
-    code('    idx[]  '+str(idxs))
-    code('    inds[]  '+str(inds))
-    code('    dims[]  '+str(dims))
-    code('    invinds[]  '+str(invinds))
-
-
-    for g_m in range(0,ninds):
-      if int(idxs[g_m])>0:
-        code('    & opDat'+str(inds[g_m])+'SharedIndirection(1 +  mappingArray'+str(invinds[g_m]+m+1)+'(i1 + threadBlockOffset) *'+dims[g_m]+', &')
-
     for g_m in range(0,nargs):
       if maps[g_m] == OP_ID:
         if int(dims[g_m]) > 1:
           code('    & opDat'+str(g_m+1)+'((i1 + threadBlockOffset) * '+dims[g_m]+':(i1 + threadBlockOffset) * '+dims[g_m]+' + '+dims[g_m]+' - 1), &')
         else:
           code('    & opDat'+str(g_m+1)+'((i1 + threadBlockOffset) * 1)) &')
-
+      if maps[g_m] == OP_MAP and accs[g_m] == OP_READ:
+        if int(dims[g_m]) > 1:
+          code('    & opDat'+str(invinds[inds[g_m]-1]+1)+'SharedIndirection(1 + mappingArray'+str(g_m+1)+'(i1 + threadBlockOffset) * '+dims[g_m]+':1 + mappingArray'+str(g_m+1)+'(i1 + threadBlockOffset) * '+dims[g_m]+' + '+dims[g_m]+' - 1), &')
+        else:
+          code('    & opDat'+str(invinds[inds[g_m]-1]+1)+'SharedIndirection(1 + mappingArray'+str(g_m+1)+'(i1 + threadBlockOffset) * 1), &')
+      elif maps[g_m] == OP_MAP and (accs[g_m] == OP_INC or accs[g_m] == OP_RW):
+        code('    & opDat'+str(g_m+1)+'Local, &')
+    code('    & )')
+    code('    colour2 = thrcol(i1 + threadBlockOffset)')
+    code('  END IF')
 
     code('')
     for g_m in range(0,ninds):
