@@ -274,22 +274,18 @@ def op2_gen_openmp(master, date, consts, kernels):
 
     for g_m in range(0,ninds):
       code('opDat'+str(invinds[g_m]+1)+'SharedIndirectionSize = ind_sizes('+str(g_m)+' + threadBlockID * '+inddims[g_m]+')')
-    code('')
 
     for g_m in range(0,ninds):
       code('opDat'+str(invinds[g_m]+1)+'IndirectionMap => ind_maps1('+str(g_m)+' + threadBlockID * 4):')
-    code('')
 
     for g_m in range(1,ninds):
       code('opDat'+str(invinds[g_m]+1)+'RoundUp = opDat1SharedIndirectionSize * '+inddims[g_m-1])
-    code('')
 
     for g_m in range(0,ninds):
       if g_m == 0:
         code('opDat'+str(invinds[g_m]+1)+'nBytes = 0')
       else:
         code('opDat'+str(invinds[g_m]+1)+'nBytes = opDat'+str(invinds[g_m]-1)+'nBytes + opDat'+str(invinds[g_m]+1)+'RoundUp')
-    code('')
 
     for g_m in range(0,ninds):
       code('opDat'+str(invinds[g_m]+1)+'SharedIndirection => sharedFloat8(opDat'+str(invinds[g_m]+1)+'nBytes:)')
@@ -349,12 +345,26 @@ def op2_gen_openmp(master, date, consts, kernels):
     code('')
     code('  DO colour1 = 0, numOfColours - 1, 1')
     code('    IF (colour2 .EQ. colour1) THEN')
-    code('      ! More content to be generated here')
+
+    for g_m in range(0,ninds):
+      if accs[invinds[g_m]] == OP_INC:
+        for m in range (0,int(idxs[g_m])):
+          code('      DO i2 = 0, '+dims[g_m]+' - 1, 1')
+          code('        opDat'+str(invinds[g_m]+1)+'SharedIndirection(1 + (i2 + opDat'+str(invinds[g_m]+1+m)+'Map * '+dims[g_m]+')) = opDat7SharedIndirection(1 + (i2 + opDat'+str(invinds[g_m]+1+m)+'Map * '+dims[g_m]+')) + opDat'+str(invinds[g_m]+1+m)+'Local(i2)')
+          code('      END DO')
+          code('')
+
     code('    END IF')
     code('  END DO')
     code('END DO')
     code('')
-    comm('More content to be generated here')
+    for g_m in range(0,ninds):
+      if accs[invinds[g_m]] == OP_INC:
+        code('DO i1 = 0, opDat7SharedIndirectionSize - 1, 1')
+        code('  DO i2 = 0, '+dims[g_m]+' - 1, 1')
+        code('    opDat'+str(invinds[g_m]+1)+'(i2 + opDat'+str(invinds[g_m]+1)+'IndirectionMap(i1 + 1) * '+dims[g_m]+') = opDat'+str(invinds[g_m]+1)+'(i2 + opDat7IndirectionMap(i1 + 1) * '+dims[g_m]+') + opDat'+str(invinds[g_m]+1)+'SharedIndirection(1 + (i2 + i1 * '+dims[g_m]+'))')
+        code('  END DO')
+        code('END DO')
     depth = depth - 2
     code('END SUBROUTINE')
     code('')
