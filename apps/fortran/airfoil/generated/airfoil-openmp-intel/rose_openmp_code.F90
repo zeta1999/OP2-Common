@@ -302,6 +302,7 @@ SUBROUTINE adt_calc_host( userSubroutine, set, &
   IMPLICIT NONE
   character(len=9), INTENT(IN) :: userSubroutine
   TYPE ( op_set ) , INTENT(IN) :: set
+
   TYPE ( op_arg ) , INTENT(IN) :: opArg1
   TYPE ( op_arg ) , INTENT(IN) :: opArg2
   TYPE ( op_arg ) , INTENT(IN) :: opArg3
@@ -363,8 +364,10 @@ SUBROUTINE adt_calc_host( userSubroutine, set, &
   END IF
 
   numberCalledadt_calc_1379395014 = numberCalledadt_calc_1379395014 + 1
+
   call date_and_time(values=timeArrayStart)
-  startTimeHost = 1.00000 * timeArrayStart(8) + 1000.00 * timeArrayStart(7) + 60000 * timeArrayStart(6) + 3600000 * timeArrayStart(5)
+  startTimeHost = 1.00000 * timeArrayStart(8) + 1000.00 * timeArrayStart(7) + &
+                  & 60000 * timeArrayStart(6) + 3600000 * timeArrayStart(5)
 
 #ifdef OP_PART_SIZE_1
   partitionSize = OP_PART_SIZE_1
@@ -1139,9 +1142,7 @@ SUBROUTINE res_calc_kernel( &
      END DO
 END SUBROUTINE
 
-SUBROUTINE res_calc_host( &
-  & userSubroutine, &
-  & set, &
+SUBROUTINE res_calc_host( userSubroutine, set, &
   & opArg1, &
   & opArg2, &
   & opArg3, &
@@ -1169,39 +1170,43 @@ SUBROUTINE res_calc_host( &
   INTEGER(kind=4) :: returnMPIHaloExchange
   INTEGER(kind=4) :: returnSetKernelTiming
   TYPE ( op_set_core ) , POINTER :: opSetCore
-  TYPE ( op_dat_core ) , POINTER :: opDat1Core
+
+  TYPE ( op_set_core ) , POINTER :: opSet1Core
   REAL(kind=8), POINTER, DIMENSION(:) :: opDat1Local
   INTEGER(kind=4) :: opDat1Cardinality
 
-  TYPE ( op_set_core ) , POINTER :: opSet1Core
-  TYPE ( op_map_core ) , POINTER :: opMap1Core
-  TYPE ( op_dat_core ) , POINTER :: opDat2Core
-  TYPE ( op_map_core ) , POINTER :: opMap2Core
-  TYPE ( op_dat_core ) , POINTER :: opDat3Core
   TYPE ( op_set_core ) , POINTER :: opSet3Core
-  TYPE ( op_map_core ) , POINTER :: opMap3Core
-  TYPE ( op_dat_core ) , POINTER :: opDat4Core
-  TYPE ( op_map_core ) , POINTER :: opMap4Core
-  TYPE ( op_dat_core ) , POINTER :: opDat5Core
-  TYPE ( op_set_core ) , POINTER :: opSet5Core
-  TYPE ( op_map_core ) , POINTER :: opMap5Core
-  TYPE ( op_dat_core ) , POINTER :: opDat6Core
-  TYPE ( op_map_core ) , POINTER :: opMap6Core
-  TYPE ( op_dat_core ) , POINTER :: opDat7Core
-  TYPE ( op_set_core ) , POINTER :: opSet7Core
-  TYPE ( op_map_core ) , POINTER :: opMap7Core
-  TYPE ( op_dat_core ) , POINTER :: opDat8Core
-  TYPE ( op_map_core ) , POINTER :: opMap8Core
-
   REAL(kind=8), POINTER, DIMENSION(:) :: opDat3Local
   INTEGER(kind=4) :: opDat3Cardinality
+
+  TYPE ( op_set_core ) , POINTER :: opSet5Core
   REAL(kind=8), POINTER, DIMENSION(:) :: opDat5Local
   INTEGER(kind=4) :: opDat5Cardinality
+
+  TYPE ( op_set_core ) , POINTER :: opSet7Core
   REAL(kind=8), POINTER, DIMENSION(:) :: opDat7Local
   INTEGER(kind=4) :: opDat7Cardinality
 
+  TYPE ( op_map_core ) , POINTER :: opMap1Core
+  TYPE ( op_map_core ) , POINTER :: opMap2Core
+  TYPE ( op_map_core ) , POINTER :: opMap3Core
+  TYPE ( op_map_core ) , POINTER :: opMap4Core
+  TYPE ( op_map_core ) , POINTER :: opMap5Core
+  TYPE ( op_map_core ) , POINTER :: opMap6Core
+  TYPE ( op_map_core ) , POINTER :: opMap7Core
+  TYPE ( op_map_core ) , POINTER :: opMap8Core
+
+  TYPE ( op_dat_core ) , POINTER :: opDat1Core
+  TYPE ( op_dat_core ) , POINTER :: opDat2Core
+  TYPE ( op_dat_core ) , POINTER :: opDat3Core
+  TYPE ( op_dat_core ) , POINTER :: opDat4Core
+  TYPE ( op_dat_core ) , POINTER :: opDat5Core
+  TYPE ( op_dat_core ) , POINTER :: opDat6Core
+  TYPE ( op_dat_core ) , POINTER :: opDat7Core
+  TYPE ( op_dat_core ) , POINTER :: opDat8Core
+
+
   INTEGER(kind=4) :: threadID
-  INTEGER(kind=4) :: i1
   INTEGER(kind=4) :: numberOfThreads
   INTEGER(kind=4) :: partitionSize
   INTEGER(kind=4), DIMENSION(1:8) :: opDatArray
@@ -1210,18 +1215,19 @@ SUBROUTINE res_calc_host( &
   INTEGER(kind=4), DIMENSION(1:8) :: accessDescriptorArray
   INTEGER(kind=4), DIMENSION(1:8) :: indirectionDescriptorArray
   INTEGER(kind=4), DIMENSION(1:8) :: opDatTypesArray
+  INTEGER(kind=4), DIMENSION(1:8) :: timeArrayStart
+  INTEGER(kind=4), DIMENSION(1:8) :: timeArrayEnd
   INTEGER(kind=4) :: numberOfIndirectOpDats
   INTEGER(kind=4) :: blockOffset
   INTEGER(kind=4) :: nblocks
-  INTEGER(kind=4) :: i2
   REAL(kind=8) :: startTimeHost
   REAL(kind=8) :: endTimeHost
   REAL(kind=8) :: startTimeKernel
   REAL(kind=8) :: endTimeKernel
   REAL(kind=8) :: accumulatorHostTime
   REAL(kind=8) :: accumulatorKernelTime
-  INTEGER(kind=4), DIMENSION(1:8) :: timeArrayStart
-  INTEGER(kind=4), DIMENSION(1:8) :: timeArrayEnd
+  INTEGER(kind=4) :: i1
+  INTEGER(kind=4) :: i2
 
   IF (set%setPtr%size .EQ. 0) THEN
     RETURN
@@ -1231,7 +1237,7 @@ SUBROUTINE res_calc_host( &
 
   call date_and_time(values=timeArrayStart)
   startTimeHost = 1.00000 * timeArrayStart(8) + 1000.00 * timeArrayStart(7) + &
-                  &  60000 * timeArrayStart(6) + 3600000 * timeArrayStart(5)
+                  & 60000 * timeArrayStart(6) + 3600000 * timeArrayStart(5)
 
 #ifdef OP_PART_SIZE_1
     partitionSize = OP_PART_SIZE_1
@@ -1268,13 +1274,13 @@ SUBROUTINE res_calc_host( &
   numberOfIndirectOpDats = 4
 
   planRet_res_calc = FortranPlanCaller( &
-                      & userSubroutine, &
-                      & set%setCPtr, &
-                      & partitionSize, &
-                      & numberOfOpDats, &
-                      & opArgArray, &
-                      & numberOfIndirectOpDats, &
-                      & indirectionDescriptorArray)
+  & userSubroutine, &
+  & set%setCPtr, &
+  & partitionSize, &
+  & numberOfOpDats, &
+  & opArgArray, &
+  & numberOfIndirectOpDats, &
+  & indirectionDescriptorArray)
 
   CALL c_f_pointer(planRet_res_calc,actualPlan_res_calc)
 
@@ -1340,12 +1346,20 @@ SUBROUTINE res_calc_host( &
   CALL c_f_pointer(opArg7%data,opDat7Local,(/opDat7Cardinality/))
 
   call date_and_time(values=timeArrayEnd)
-  endTimeHost = 1.00000 * timeArrayEnd(8) + 1000 * timeArrayEnd(7) + 60000 * timeArrayEnd(6) + 3600000 * timeArrayEnd(5)
+  endTimeHost = 1.00000 * timeArrayEnd(8) + &
+  & 1000 * timeArrayEnd(7)  + &
+  & 60000 * timeArrayEnd(6) + &
+  & 3600000 * timeArrayEnd(5)
+
   accumulatorHostTime = endTimeHost - startTimeHost
   loopTimeHostres_calc_3884922247 = loopTimeHostres_calc_3884922247 + accumulatorHostTime
 
   call date_and_time(values=timeArrayStart)
-  startTimeKernel = 1.00000 * timeArrayStart(8) + 1000 * timeArrayStart(7) + 60000 * timeArrayStart(6) + 3600000 * timeArrayStart(5)
+  startTimeKernel = 1.00000 * timeArrayStart(8) + &
+  & 1000 * timeArrayStart(7) + &
+  & 60000 * timeArrayStart(6) + &
+  & 3600000 * timeArrayStart(5)
+
   blockOffset = 0
 
   DO i1 = 0, actualPlan_res_calc%ncolors - 1, 1
@@ -1384,19 +1398,27 @@ SUBROUTINE res_calc_host( &
   END DO
 
   call date_and_time(values=timeArrayEnd)
-  endTimeKernel = 1.00000 * timeArrayEnd(8) + 1000 * timeArrayEnd(7) + 60000 * timeArrayEnd(6) + 3600000 * timeArrayEnd(5)
+  endTimeKernel = 1.00000 * timeArrayEnd(8) + &
+  & 1000 * timeArrayEnd(7) + &
+  & 60000 * timeArrayEnd(6) + &
+  & 3600000 * timeArrayEnd(5)
+
   accumulatorKernelTime = endTimeKernel - startTimeKernel
   loopTimeKernelres_calc_3884922247 = loopTimeKernelres_calc_3884922247 + accumulatorKernelTime
 
   call date_and_time(values=timeArrayStart)
-  startTimeHost = 1.00000 * timeArrayStart(8) + 1000.00 * timeArrayStart(7) + 60000 * timeArrayStart(6) + 3600000 * timeArrayStart(5)
+  startTimeHost = 1.00000 * timeArrayStart(8) + &
+  & 1000.00 * timeArrayStart(7) + &
+  & 60000 * timeArrayStart(6) + &
+  & 3600000 * timeArrayStart(5)
 
   call date_and_time(values=timeArrayEnd)
   endTimeHost = 1.00000 * timeArrayEnd(8) + 1000 * timeArrayEnd(7) + 60000 * timeArrayEnd(6) + 3600000 * timeArrayEnd(5)
 
   accumulatorHostTime = endTimeHost - startTimeHost
   loopTimeHostres_calc_3884922247 = loopTimeHostres_calc_3884922247 + accumulatorHostTime
-  returnSetKernelTiming = setKernelTime(1, userSubroutine, accumulatorKernelTime / 1000.00,actualPlan_res_calc%transfer,actualPlan_res_calc%transfer2)
+  returnSetKernelTiming = setKernelTime(1, userSubroutine,&
+  & accumulatorKernelTime / 1000.00,actualPlan_res_calc%transfer,actualPlan_res_calc%transfer2)
 
 END SUBROUTINE
 
@@ -1540,20 +1562,32 @@ END DO
 
 END SUBROUTINE
 
-SUBROUTINE update_kernel(opDat1,opDat2,opDat3,opDat4,opDat5,sliceStart,sliceEnd)
-IMPLICIT NONE
-REAL(kind=8), DIMENSION(0:*) :: opDat1
-REAL(kind=8), DIMENSION(0:*) :: opDat2
-REAL(kind=8), DIMENSION(0:*) :: opDat3
-REAL(kind=8), DIMENSION(0:*) :: opDat4
-REAL(kind=8) :: opDat5
-INTEGER(kind=4) :: sliceStart
-INTEGER(kind=4) :: sliceEnd
-INTEGER(kind=4) :: i1
+SUBROUTINE update_kernel( &
+  & opDat1, &
+  & opDat2, &
+  & opDat3, &
+  & opDat4, &
+  & opDat5, &
+  & sliceStart, &
+  & sliceEnd)
 
-DO i1 = sliceStart, sliceEnd - 1, 1
-CALL update_modified(opDat1(i1 * 4:i1 * 4 + 4 - 1),opDat2(i1 * 4:i1 * 4 + 4 - 1),opDat3(i1 * 4:i1 * 4 + 4 - 1),opDat4(i&
-&1 * 1),opDat5)
+  IMPLICIT NONE
+  REAL(kind=8), DIMENSION(0:*) :: opDat1
+  REAL(kind=8), DIMENSION(0:*) :: opDat2
+  REAL(kind=8), DIMENSION(0:*) :: opDat3
+  REAL(kind=8), DIMENSION(0:*) :: opDat4
+  REAL(kind=8) :: opDat5
+  INTEGER(kind=4) :: sliceStart
+  INTEGER(kind=4) :: sliceEnd
+  INTEGER(kind=4) :: i1
+
+  DO i1 = sliceStart, sliceEnd - 1, 1
+    CALL update_modified( &
+    & opDat1(i1 * 4:i1 * 4 + 4 - 1), &
+    & opDat2(i1 * 4:i1 * 4 + 4 - 1), &
+    & opDat3(i1 * 4:i1 * 4 + 4 - 1), &
+    & opDat4(i1 * 1), &
+    & opDat5)
 END DO
 
 END SUBROUTINE
@@ -1658,7 +1692,14 @@ SUBROUTINE update_host(userSubroutine,set,opArg1,opArg2,opArg3,opArg4,opArg5)
     sliceStart = opSetCore%size * i1 / numberOfThreads
     sliceEnd = opSetCore%size * (i1 + 1) / numberOfThreads
     threadID = omp_get_thread_num()
-    CALL update_kernel(opDat1Local,opDat2Local,opDat3Local,opDat4Local,reductionArrayHost5(threadID * 1 + 1),sliceStart,sliceEnd)
+    CALL update_kernel( &
+    & opDat1Local, &
+    & opDat2Local, &
+    & opDat3Local, &
+    & opDat4Local, &
+    & reductionArrayHost5(threadID * 1 + 1), &
+    & sliceStart, &
+    & sliceEnd)
   END DO
   !$OMP END PARALLEL DO
 
