@@ -83,12 +83,12 @@ ifeq ($(OP2_COMPILER),intel)
   F_INC_MOD       = $(F_OP2_MOD)/intel
   CC              = icc
   CFLAGS          = -std=c99 -Wall -Werror $(DEBUG_FLAGS)
-  FC              = ifort
+  FC              = /opt/intel/Compiler/11.1/064/bin/intel64/ifort
   FFLAGS          = -module $(F_INC_MOD) $(DEBUG_FLAGS)
   MPICC						= mpicc
   MPIF90					= mpif90
 	NO_MPI_MACRO    = -D NO_MPI
-#  ALLTARGETS      = f_reference f_openmp
+  ALLTARGETS      = f_reference f_openmp
 else
 print:
 	@echo "unrecognised value for OP2_COMPILER"

@@ -22,11 +22,11 @@ ifeq ($(OP2_COMPILER),gnu)
   FFLAGS = -J$(F_OP2_MOD) -g -O4 -Wall -Werror -pedantic -pipe
   OPENMP = -fopenmp
 else
-ifeq ($(OP2_COMPILER),pgi)
+ifeq ($(OP2_COMPILER),intel)
   F_OP2_MOD = $(F_OP2)/mod/intel
   CC		= icc
   CFLAGS	= -g -O3 -std=c99 -Wall -Werror -vec-report -xSSE4.2
-  FC      = ifort
+  FC      = /opt/intel/Compiler/11.1/064/bin/intel64/ifort
   FFLAGS  = -module $(F_OP2_MOD) -g -O3 -vec-report -xSSE4.2
   DEBUG = -debug full
   OPENMP = -openmp
