@@ -381,7 +381,7 @@ def op2_gen_openmp(master, date, consts, kernels):
 
     code('')
     code('IMPLICIT NONE')
-    code('character(len=9), INTENT(IN) :: userSubroutine')
+    code('character(len='+str(len(name)+1)+'), INTENT(IN) :: userSubroutine')
     code('type ( op_set ) , INTENT(IN) :: set')
     code('')
 
@@ -398,9 +398,22 @@ def op2_gen_openmp(master, date, consts, kernels):
 
     for g_m in range(0,ninds):
       code('type ( op_set_core ) , POINTER :: opSet'+str(invinds[g_m]+1)+'Core')
-      code('REAL(kind=8), POINTER, DIMENSION(:) :: opDat'+str(invinds[g_m]+1)+'Local')
+      if typs[invinds[g_m]] == 'double':
+          code('REAL(kind=8), POINTER, dimension(:) :: opDat'+str(invinds[g_m]+1)+'Local')
+      elif typs[invinds[g_m]] == 'int':
+          code('INTEGER(kind=4), POINTER, dimension(:) :: opDat'+str(invinds[g_m]+1)+'Local')
       code('INTEGER(kind=4) :: opDat'+str(invinds[g_m]+1)+'Cardinality')
       code('')
+    for g_m in range(0,nargs):
+      if maps[g_m] == OP_ID:
+        code('type ( op_set_core ) , POINTER :: opSet'+str(g_m+1)+'Core')
+        if typs[g_m] == 'double':
+          code('REAL(kind=8), POINTER, dimension(:) :: opDat'+str(g_m+1)+'Local')
+        elif typs[g_m] == 'int':
+          code('INTEGER(kind=4), POINTER, dimension(:) :: opDat'+str(g_m+1)+'Local')
+        code('INTEGER(kind=4) :: opDat'+str(g_m+1)+'Cardinality')
+        code('')
+
 
     for g_m in range(0,nargs):
       code('type ( op_map_core ) , POINTER :: opMap'+str(g_m+1)+'Core')
@@ -441,9 +454,9 @@ def op2_gen_openmp(master, date, consts, kernels):
     code('')
     code('call date_and_time(values=timeArrayStart)')
     code('startTimeHost = 1.00000 * timeArrayStart(8) + ')
-    code('              & 1000.00 * timeArrayStart(7) + ')
-    code('              & 60000 * timeArrayStart(6) + ')
-    code('              & 3600000 * timeArrayStart(5)')
+    code('& 1000.00 * timeArrayStart(7) + ')
+    code('& 60000 * timeArrayStart(6) + ')
+    code('& 3600000 * timeArrayStart(5)')
     code('')
     depth = depth - 2
     code('#ifdef OP_PART_SIZE_1')
@@ -467,7 +480,7 @@ def op2_gen_openmp(master, date, consts, kernels):
       code('opArgArray(1) = opArg'+str(g_m+1)+')')
     code('')
     for g_m in range(0,nargs):
-      code('indirectionDescriptorArray('+str(g_m+1)+') = 0')
+      code('indirectionDescriptorArray('+str(g_m+1)+') = '+str(inds[g_m]-1))
     code('')
 
     if ninds > 0:
@@ -500,18 +513,26 @@ def op2_gen_openmp(master, date, consts, kernels):
       code('CALL c_f_pointer(ind_maps_'+name+'('+str(g_m+1)+'),ind_maps'+str(invinds[g_m]+1)+'_'+name+',(/pnindirect_res_calc('+str(g_m+1)+')/))')
     code('')
     for g_m in range(0,nargs):
-      code('IF (indirectionDescriptorArray('+str(g_m+1)+') >= 0) THEN')
-      code('  CALL c_f_pointer(mappingArray_res_calc('+str(g_m+1)+'),mappingArray'+str(g_m+1)+'_'+name+',(/set%setPtr%size/))')
-      code('END IF')
-      code('')
+      if maps[g_m] == OP_MAP:
+        code('IF (indirectionDescriptorArray('+str(g_m+1)+') >= 0) THEN')
+        code('  CALL c_f_pointer(mappingArray_'+name+'('+str(g_m+1)+'),mappingArray'+str(g_m+1)+'_'+name+',(/set%setPtr%size/))')
+        code('END IF')
+        code('')
     code('')
     code('opSetCore => set%setPtr')
     code('')
     for g_m in range(0,ninds):
       code('opDat'+str(invinds[g_m]+1)+'Cardinality = opArg'+str(invinds[g_m]+1)+'%dim * getSetSizeFromOpArg(opArg'+str(invinds[g_m]+1)+')')
+    for g_m in range(0,nargs):
+      if maps[g_m] == OP_ID:
+        code('opDat'+str(invinds[g_m]+1)+'Cardinality = opArg'+str(g_m+1)+'%dim * getSetSizeFromOpArg(opArg'+str(g_m+1)+')')
+
     code('')
     for g_m in range(0,ninds):
       code('CALL c_f_pointer(opArg'+str(invinds[g_m]+1)+'%data,opDat'+str(invinds[g_m]+1)+'Local,(/opDat1Cardinality/))')
+    for g_m in range(0,nargs):
+      if maps[g_m] == OP_ID:
+        code('CALL c_f_pointer(opArg'+str(g_m+1)+'%data,opDat'+str(g_m+1)+'Local,(/opDat1Cardinality/))')
     code('')
 
     code('call date_and_time(values=timeArrayEnd)')
@@ -541,10 +562,15 @@ def op2_gen_openmp(master, date, consts, kernels):
 
     for g_m in range(0,ninds):
       code('    & opDat'+str(invinds[g_m]+1)+'Local, &')
+    for g_m in range(0,nargs):
+      if maps[g_m] == OP_ID:
+        code('    & opDat'+str(g_m+1)+'Local, &')
+
     for g_m in range(0,ninds):
       code('    & ind_maps'+str(invinds[g_m]+1)+'_'+name+', &')
     for g_m in range(0,nargs):
-      code('    & mappingArray'+str(g_m+1)+'_'+name+', &')
+      if maps[g_m] == OP_MAP:
+        code('    & mappingArray'+str(g_m+1)+'_'+name+', &')
 
     code('    & ind_sizes_res_calc, &')
     code('    & ind_offs_res_calc, &')

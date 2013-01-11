@@ -692,9 +692,7 @@ SUBROUTINE bres_calc_kernel( &
   END DO
 END SUBROUTINE
 
-SUBROUTINE bres_calc_host( &
-  & userSubroutine, &
-  & set, &
+SUBROUTINE bres_calc_host( userSubroutine, set, &
   & opArg1, &
   & opArg2, &
   & opArg3, &
@@ -705,46 +703,56 @@ SUBROUTINE bres_calc_host( &
   IMPLICIT NONE
   character(len=10), INTENT(IN) :: userSubroutine
   TYPE ( op_set ) , INTENT(IN) :: set
+
   TYPE ( op_arg ) , INTENT(IN) :: opArg1
   TYPE ( op_arg ) , INTENT(IN) :: opArg2
   TYPE ( op_arg ) , INTENT(IN) :: opArg3
   TYPE ( op_arg ) , INTENT(IN) :: opArg4
   TYPE ( op_arg ) , INTENT(IN) :: opArg5
   TYPE ( op_arg ) , INTENT(IN) :: opArg6
+
   TYPE ( op_arg ) , DIMENSION(6) :: opArgArray
   INTEGER(kind=4) :: numberOfOpDats
   INTEGER(kind=4) :: returnMPIHaloExchange
   INTEGER(kind=4) :: returnSetKernelTiming
   TYPE ( op_set_core ) , POINTER :: opSetCore
-  TYPE ( op_dat_core ) , POINTER :: opDat1Core
+
+  TYPE ( op_set_core ) , POINTER :: opSet1Core
   REAL(kind=8), POINTER, DIMENSION(:) :: opDat1Local
   INTEGER(kind=4) :: opDat1Cardinality
-  TYPE ( op_set_core ) , POINTER :: opSet1Core
-  TYPE ( op_map_core ) , POINTER :: opMap1Core
-  TYPE ( op_dat_core ) , POINTER :: opDat2Core
-  TYPE ( op_map_core ) , POINTER :: opMap2Core
-  TYPE ( op_dat_core ) , POINTER :: opDat3Core
+
+  TYPE ( op_set_core ) , POINTER :: opSet3Core
   REAL(kind=8), POINTER, DIMENSION(:) :: opDat3Local
   INTEGER(kind=4) :: opDat3Cardinality
-  TYPE ( op_set_core ) , POINTER :: opSet3Core
-  TYPE ( op_map_core ) , POINTER :: opMap3Core
-  TYPE ( op_dat_core ) , POINTER :: opDat4Core
+
+  TYPE ( op_set_core ) , POINTER :: opSet4Core
   REAL(kind=8), POINTER, DIMENSION(:) :: opDat4Local
   INTEGER(kind=4) :: opDat4Cardinality
-  TYPE ( op_set_core ) , POINTER :: opSet4Core
-  TYPE ( op_map_core ) , POINTER :: opMap4Core
-  TYPE ( op_dat_core ) , POINTER :: opDat5Core
+
+  TYPE ( op_set_core ) , POINTER :: opSet5Core
   REAL(kind=8), POINTER, DIMENSION(:) :: opDat5Local
   INTEGER(kind=4) :: opDat5Cardinality
-  TYPE ( op_set_core ) , POINTER :: opSet5Core
-  TYPE ( op_map_core ) , POINTER :: opMap5Core
-  TYPE ( op_dat_core ) , POINTER :: opDat6Core
+
+  TYPE ( op_set_core ) , POINTER :: opSet6Core
   INTEGER(kind=4), POINTER, DIMENSION(:) :: opDat6Local
   INTEGER(kind=4) :: opDat6Cardinality
-  TYPE ( op_set_core ) , POINTER :: opSet6Core
+
+  TYPE ( op_map_core ) , POINTER :: opMap1Core
+  TYPE ( op_map_core ) , POINTER :: opMap2Core
+  TYPE ( op_map_core ) , POINTER :: opMap3Core
+  TYPE ( op_map_core ) , POINTER :: opMap4Core
+  TYPE ( op_map_core ) , POINTER :: opMap5Core
   TYPE ( op_map_core ) , POINTER :: opMap6Core
+
+  TYPE ( op_dat_core ) , POINTER :: opDat1Core
+  TYPE ( op_dat_core ) , POINTER :: opDat2Core
+  TYPE ( op_dat_core ) , POINTER :: opDat3Core
+  TYPE ( op_dat_core ) , POINTER :: opDat4Core
+  TYPE ( op_dat_core ) , POINTER :: opDat5Core
+  TYPE ( op_dat_core ) , POINTER :: opDat6Core
+
+
   INTEGER(kind=4) :: threadID
-  INTEGER(kind=4) :: i1
   INTEGER(kind=4) :: numberOfThreads
   INTEGER(kind=4) :: partitionSize
   INTEGER(kind=4), DIMENSION(1:6) :: opDatArray
@@ -753,18 +761,20 @@ SUBROUTINE bres_calc_host( &
   INTEGER(kind=4), DIMENSION(1:6) :: accessDescriptorArray
   INTEGER(kind=4), DIMENSION(1:6) :: indirectionDescriptorArray
   INTEGER(kind=4), DIMENSION(1:6) :: opDatTypesArray
+  INTEGER(kind=4), DIMENSION(1:8) :: timeArrayStart
+  INTEGER(kind=4), DIMENSION(1:8) :: timeArrayEnd
   INTEGER(kind=4) :: numberOfIndirectOpDats
   INTEGER(kind=4) :: blockOffset
   INTEGER(kind=4) :: nblocks
-  INTEGER(kind=4) :: i2
   REAL(kind=8) :: startTimeHost
   REAL(kind=8) :: endTimeHost
   REAL(kind=8) :: startTimeKernel
   REAL(kind=8) :: endTimeKernel
   REAL(kind=8) :: accumulatorHostTime
   REAL(kind=8) :: accumulatorKernelTime
-  INTEGER(kind=4), DIMENSION(1:8) :: timeArrayStart
-  INTEGER(kind=4), DIMENSION(1:8) :: timeArrayEnd
+  INTEGER(kind=4) :: i1
+  INTEGER(kind=4) :: i2
+
 
   IF (set%setPtr%size .EQ. 0) THEN
     RETURN
@@ -773,8 +783,10 @@ SUBROUTINE bres_calc_host( &
   numberCalledbres_calc_3019043301 = numberCalledbres_calc_3019043301 + 1
 
   call date_and_time(values=timeArrayStart)
-  startTimeHost = 1.00000 * timeArrayStart(8) + 1000.00 * timeArrayStart(7) + &
-                & 60000 * timeArrayStart(6) + 3600000 * timeArrayStart(5)
+  startTimeHost = 1.00000 * timeArrayStart(8) + &
+  & 1000.00 * timeArrayStart(7) + &
+  & 60000 * timeArrayStart(6) + &
+  & 3600000 * timeArrayStart(5)
 
 #ifdef OP_PART_SIZE_1
   partitionSize = OP_PART_SIZE_1
@@ -789,18 +801,21 @@ SUBROUTINE bres_calc_host( &
 #endif
 
   numberOfOpDats = 6
+
   opArgArray(1) = opArg1
   opArgArray(2) = opArg2
   opArgArray(3) = opArg3
   opArgArray(4) = opArg4
   opArgArray(5) = opArg5
   opArgArray(6) = opArg6
+
   indirectionDescriptorArray(1) = 0
   indirectionDescriptorArray(2) = 0
   indirectionDescriptorArray(3) = 1
   indirectionDescriptorArray(4) = 2
   indirectionDescriptorArray(5) = 3
   indirectionDescriptorArray(6) = -1
+
   numberOfIndirectOpDats = 4
 
   planRet_bres_calc = FortranPlanCaller( &
@@ -824,6 +839,7 @@ SUBROUTINE bres_calc_host( &
    CALL c_f_pointer(actualPlan_bres_calc%nelems,nelems_bres_calc,(/actualPlan_bres_calc%nblocks/))
    CALL c_f_pointer(actualPlan_bres_calc%nthrcol,nthrcol_bres_calc,(/actualPlan_bres_calc%nblocks/))
    CALL c_f_pointer(actualPlan_bres_calc%thrcol,thrcol_bres_calc,(/set%setPtr%size/))
+
    CALL c_f_pointer(ind_maps_bres_calc(1),ind_maps1_bres_calc,(/pnindirect_bres_calc(1)/))
    CALL c_f_pointer(ind_maps_bres_calc(2),ind_maps3_bres_calc,(/pnindirect_bres_calc(2)/))
    CALL c_f_pointer(ind_maps_bres_calc(3),ind_maps4_bres_calc,(/pnindirect_bres_calc(3)/))
@@ -850,23 +866,34 @@ SUBROUTINE bres_calc_host( &
   END IF
 
   opSetCore => set%setPtr
+
   opDat1Cardinality = opArg1%dim * getSetSizeFromOpArg(opArg1)
   opDat3Cardinality = opArg3%dim * getSetSizeFromOpArg(opArg3)
   opDat4Cardinality = opArg4%dim * getSetSizeFromOpArg(opArg4)
   opDat5Cardinality = opArg5%dim * getSetSizeFromOpArg(opArg5)
   opDat6Cardinality = opArg6%dim * getSetSizeFromOpArg(opArg6)
+
   CALL c_f_pointer(opArg1%data,opDat1Local,(/opDat1Cardinality/))
   CALL c_f_pointer(opArg3%data,opDat3Local,(/opDat3Cardinality/))
   CALL c_f_pointer(opArg4%data,opDat4Local,(/opDat4Cardinality/))
   CALL c_f_pointer(opArg5%data,opDat5Local,(/opDat5Cardinality/))
   CALL c_f_pointer(opArg6%data,opDat6Local,(/opDat6Cardinality/))
-  call date_and_time(values=timeArrayEnd)
 
-  endTimeHost = 1.00000 * timeArrayEnd(8) + 1000 * timeArrayEnd(7) + 60000 * timeArrayEnd(6) + 3600000 * timeArrayEnd(5)
+  call date_and_time(values=timeArrayEnd)
+  endTimeHost = 1.00000 * timeArrayEnd(8) + &
+  & 1000 * timeArrayEnd(7) + &
+  & 60000 * timeArrayEnd(6) + &
+  & 3600000 * timeArrayEnd(5)
+
   accumulatorHostTime = endTimeHost - startTimeHost
   loopTimeHostbres_calc_3019043301 = loopTimeHostbres_calc_3019043301 + accumulatorHostTime
+
   call date_and_time(values=timeArrayStart)
-  startTimeKernel = 1.00000 * timeArrayStart(8) + 1000 * timeArrayStart(7) + 60000 * timeArrayStart(6) + 3600000 * timeArrayStart(5)
+  startTimeKernel = 1.00000 * timeArrayStart(8) + &
+  & 1000 * timeArrayStart(7) + &
+  & 60000 * timeArrayStart(6) + &
+  & 3600000 * timeArrayStart(5)
+
   blockOffset = 0
 
   DO i1 = 0, actualPlan_bres_calc%ncolors - 1, 1
@@ -874,7 +901,8 @@ SUBROUTINE bres_calc_host( &
     !$OMP PARALLEL DO private (threadID)
     DO i2 = 0, nblocks - 1, 1
       threadID = omp_get_thread_num()
-      CALL bres_calc_kernel(opDat1Local, &
+      CALL bres_calc_kernel( &
+           & opDat1Local, &
            & opDat3Local, &
            & opDat4Local, &
            & opDat5Local, &
@@ -904,18 +932,30 @@ SUBROUTINE bres_calc_host( &
   END DO
 
   call date_and_time(values=timeArrayEnd)
-  endTimeKernel = 1.00000 * timeArrayEnd(8) + 1000 * timeArrayEnd(7) + 60000 * timeArrayEnd(6) + 3600000 * timeArrayEnd(5)
+  endTimeKernel = 1.00000 * timeArrayEnd(8) + &
+  & 1000 * timeArrayEnd(7) + &
+  & 60000 * timeArrayEnd(6) + &
+  & 3600000 * timeArrayEnd(5)
+
   accumulatorKernelTime = endTimeKernel - startTimeKernel
   loopTimeKernelbres_calc_3019043301 = loopTimeKernelbres_calc_3019043301 + accumulatorKernelTime
 
   call date_and_time(values=timeArrayStart)
-  startTimeHost = 1.00000 * timeArrayStart(8) + 1000.00 * timeArrayStart(7) + 60000 * timeArrayStart(6) + 3600000 * timeArrayStart(5)
+  startTimeHost = 1.00000 * timeArrayStart(8) + &
+  & 1000.00 * timeArrayStart(7) + &
+  & 60000 * timeArrayStart(6) + &
+  & 3600000 * timeArrayStart(5)
 
   call date_and_time(values=timeArrayEnd)
-  endTimeHost = 1.00000 * timeArrayEnd(8) + 1000 * timeArrayEnd(7) + 60000 * timeArrayEnd(6) + 3600000 * timeArrayEnd(5)
+  endTimeHost = 1.00000 * timeArrayEnd(8) + &
+  & 1000 * timeArrayEnd(7) + &
+  & 60000 * timeArrayEnd(6) + &
+  & 3600000 * timeArrayEnd(5)
+
   accumulatorHostTime = endTimeHost - startTimeHost
   loopTimeHostbres_calc_3019043301 = loopTimeHostbres_calc_3019043301 + accumulatorHostTime
-  returnSetKernelTiming = setKernelTime(2,userSubroutine,accumulatorKernelTime / 1000.00,actualPlan_bres_calc%transfer,actualPlan_bres_calc%transfer2)
+  returnSetKernelTiming = setKernelTime(2,userSubroutine, &
+  & accumulatorKernelTime / 1000.00,actualPlan_bres_calc%transfer,actualPlan_bres_calc%transfer2)
 END SUBROUTINE
 
 SUBROUTINE res_calc_modified(x1,x2,q1,q2,adt1,adt2,res1,res2)
