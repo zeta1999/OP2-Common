@@ -5,6 +5,7 @@ USE ISO_C_BINDING
 #ifdef _OPENMP
   USE OMP_LIB
 #endif
+
 REAL(kind=8) :: alpha_OP2_CONSTANT
 REAL(kind=8) :: cfl_OP2_CONSTANT
 REAL(kind=8) :: eps_OP2_CONSTANT
@@ -12,9 +13,11 @@ REAL(kind=8) :: gam_OP2_CONSTANT
 REAL(kind=8) :: gm1_OP2_CONSTANT
 REAL(kind=8) :: mach_OP2_CONSTANT
 REAL(kind=8), DIMENSION(4) :: qinf_OP2_CONSTANT
+
 REAL(kind=4) :: loopTimeHostadt_calc_1379395014
 REAL(kind=4) :: loopTimeKerneladt_calc_1379395014
 INTEGER(kind=4) :: numberCalledadt_calc_1379395014
+
 LOGICAL :: firstTime_adt_calc = .TRUE.
 TYPE ( c_ptr )  :: planRet_adt_calc
 TYPE ( op_plan ) , POINTER :: actualPlan_adt_calc
@@ -45,6 +48,8 @@ INTEGER(kind=4), POINTER, DIMENSION(:) :: thrcol_adt_calc
 INTEGER(kind=4) :: thrcolSize_adt_calc
 INTEGER(kind=4), POINTER, DIMENSION(:) :: ncolblk_adt_calc
 INTEGER(kind=4), POINTER, DIMENSION(:) :: pnindirect_adt_calc
+
+
 REAL(kind=4) :: loopTimeHostbres_calc_3019043301
 REAL(kind=4) :: loopTimeKernelbres_calc_3019043301
 INTEGER(kind=4) :: numberCalledbres_calc_3019043301
@@ -83,6 +88,8 @@ INTEGER(kind=4), POINTER, DIMENSION(:) :: thrcol_bres_calc
 INTEGER(kind=4) :: thrcolSize_bres_calc
 INTEGER(kind=4), POINTER, DIMENSION(:) :: ncolblk_bres_calc
 INTEGER(kind=4), POINTER, DIMENSION(:) :: pnindirect_bres_calc
+
+
 REAL(kind=4) :: loopTimeHostres_calc_3884922247
 REAL(kind=4) :: loopTimeKernelres_calc_3884922247
 INTEGER(kind=4) :: numberCalledres_calc_3884922247
@@ -127,9 +134,11 @@ INTEGER(kind=4), POINTER, DIMENSION(:) :: thrcol_res_calc
 INTEGER(kind=4) :: thrcolSize_res_calc
 INTEGER(kind=4), POINTER, DIMENSION(:) :: ncolblk_res_calc
 INTEGER(kind=4), POINTER, DIMENSION(:) :: pnindirect_res_calc
+
 REAL(kind=4) :: loopTimeHostsave_soln_qdim_2320554256
 REAL(kind=4) :: loopTimeKernelsave_soln_qdim_2320554256
 INTEGER(kind=4) :: numberCalledsave_soln_qdim_2320554256
+
 REAL(kind=4) :: loopTimeHostupdate_2692987784
 REAL(kind=4) :: loopTimeKernelupdate_2692987784
 INTEGER(kind=4) :: numberCalledupdate_2692987784
@@ -139,25 +148,23 @@ SUBROUTINE printProfInfo()
 print *, 'loopTimeHostadt_calc_1379395014 = ', loopTimeHostadt_calc_1379395014
 print *, 'loopTimeKerneladt_calc_1379395014 = ', loopTimeKerneladt_calc_1379395014
 print *, 'loopTimeHostadt_calc_1379395014 Average = ', loopTimeHostadt_calc_1379395014/numberCalledadt_calc_1379395014
-print *, 'loopTimeKerneladt_calc_1379395014 Average = ', loopTimeKerneladt_calc_1379395014/numberCalledadt_calc_1379395&
-&014
+print *, 'loopTimeKerneladt_calc_1379395014 Average = ', loopTimeKerneladt_calc_1379395014/numberCalledadt_calc_1379395014
+
 print *, 'loopTimeHostbres_calc_3019043301 = ', loopTimeHostbres_calc_3019043301
 print *, 'loopTimeKernelbres_calc_3019043301 = ', loopTimeKernelbres_calc_3019043301
-print *, 'loopTimeHostbres_calc_3019043301 Average = ', loopTimeHostbres_calc_3019043301/numberCalledbres_calc_30190433&
-&01
-print *, 'loopTimeKernelbres_calc_3019043301 Average = ', loopTimeKernelbres_calc_3019043301/numberCalledbres_calc_3019&
-&043301
+print *, 'loopTimeHostbres_calc_3019043301 Average = ', loopTimeHostbres_calc_3019043301/numberCalledbres_calc_3019043301
+print *, 'loopTimeKernelbres_calc_3019043301 Average = ', loopTimeKernelbres_calc_3019043301/numberCalledbres_calc_3019043301
+
 print *, 'loopTimeHostres_calc_3884922247 = ', loopTimeHostres_calc_3884922247
 print *, 'loopTimeKernelres_calc_3884922247 = ', loopTimeKernelres_calc_3884922247
 print *, 'loopTimeHostres_calc_3884922247 Average = ', loopTimeHostres_calc_3884922247/numberCalledres_calc_3884922247
-print *, 'loopTimeKernelres_calc_3884922247 Average = ', loopTimeKernelres_calc_3884922247/numberCalledres_calc_3884922&
-&247
+print *, 'loopTimeKernelres_calc_3884922247 Average = ', loopTimeKernelres_calc_3884922247/numberCalledres_calc_3884922247
+
 print *, 'loopTimeHostsave_soln_qdim_2320554256 = ', loopTimeHostsave_soln_qdim_2320554256
 print *, 'loopTimeKernelsave_soln_qdim_2320554256 = ', loopTimeKernelsave_soln_qdim_2320554256
-print *, 'loopTimeHostsave_soln_qdim_2320554256 Average = ', loopTimeHostsave_soln_qdim_2320554256/numberCalledsave_sol&
-&n_qdim_2320554256
-print *, 'loopTimeKernelsave_soln_qdim_2320554256 Average = ', loopTimeKernelsave_soln_qdim_2320554256/numberCalledsave&
-&_soln_qdim_2320554256
+print *, 'loopTimeHostsave_soln_qdim_2320554256 Average = ', loopTimeHostsave_soln_qdim_2320554256/numberCalledsave_soln_qdim_2320554256
+print *, 'loopTimeKernelsave_soln_qdim_2320554256 Average = ', loopTimeKernelsave_soln_qdim_2320554256/numberCalledsave_soln_qdim_2320554256
+
 print *, 'loopTimeHostupdate_2692987784 = ', loopTimeHostupdate_2692987784
 print *, 'loopTimeKernelupdate_2692987784 = ', loopTimeKernelupdate_2692987784
 print *, 'loopTimeHostupdate_2692987784 Average = ', loopTimeHostupdate_2692987784/numberCalledupdate_2692987784
@@ -1074,6 +1081,7 @@ SUBROUTINE res_calc_kernel( &
      INTEGER(kind=2), DIMENSION(0:*) :: mappingArray6
      INTEGER(kind=2), DIMENSION(0:*) :: mappingArray7
      INTEGER(kind=2), DIMENSION(0:*) :: mappingArray8
+
      INTEGER(kind=4), DIMENSION(0:*) :: ind_sizes
      INTEGER(kind=4), DIMENSION(0:*) :: ind_offs
      INTEGER(kind=4), DIMENSION(0:*) :: blkmap
@@ -1491,7 +1499,10 @@ SUBROUTINE res_calc_host( userSubroutine, set, &
   & 3600000 * timeArrayStart(5)
 
   call date_and_time(values=timeArrayEnd)
-  endTimeHost = 1.00000 * timeArrayEnd(8) + 1000 * timeArrayEnd(7) + 60000 * timeArrayEnd(6) + 3600000 * timeArrayEnd(5)
+  endTimeHost = 1.00000 * timeArrayEnd(8) + &
+  & 1000 * timeArrayEnd(7) + &
+  & 60000 * timeArrayEnd(6) + &
+  & 3600000 * timeArrayEnd(5)
 
   accumulatorHostTime = endTimeHost - startTimeHost
   loopTimeHostres_calc_3884922247 = loopTimeHostres_calc_3884922247 + accumulatorHostTime
@@ -1666,60 +1677,75 @@ SUBROUTINE update_kernel( &
     & opDat3(i1 * 4:i1 * 4 + 4 - 1), &
     & opDat4(i1 * 1), &
     & opDat5)
-END DO
-
+  END DO
 END SUBROUTINE
 
-SUBROUTINE update_host(userSubroutine,set,opArg1,opArg2,opArg3,opArg4,opArg5)
+SUBROUTINE update_host( userSubroutine, set, &
+  & opArg1, &
+  & opArg2, &
+  & opArg3, &
+  & opArg4, &
+  & opArg5 )
+
   IMPLICIT NONE
   character(len=7), INTENT(IN) :: userSubroutine
   TYPE ( op_set ) , INTENT(IN) :: set
+
   TYPE ( op_arg ) , INTENT(IN) :: opArg1
   TYPE ( op_arg ) , INTENT(IN) :: opArg2
   TYPE ( op_arg ) , INTENT(IN) :: opArg3
   TYPE ( op_arg ) , INTENT(IN) :: opArg4
   TYPE ( op_arg ) , INTENT(IN) :: opArg5
-  TYPE ( op_set_core ) , POINTER :: opSetCore
-  TYPE ( op_dat_core ) , POINTER :: opDat1Core
-  REAL(kind=8), POINTER, DIMENSION(:) :: opDat1Local
-  INTEGER(kind=4) :: opDat1Cardinality
-  TYPE ( op_set_core ) , POINTER :: opSet1Core
-  TYPE ( op_dat_core ) , POINTER :: opDat2Core
-  REAL(kind=8), POINTER, DIMENSION(:) :: opDat2Local
-  INTEGER(kind=4) :: opDat2Cardinality
-  TYPE ( op_set_core ) , POINTER :: opSet2Core
-  TYPE ( op_dat_core ) , POINTER :: opDat3Core
-  REAL(kind=8), POINTER, DIMENSION(:) :: opDat3Local
-  INTEGER(kind=4) :: opDat3Cardinality
-  TYPE ( op_set_core ) , POINTER :: opSet3Core
-  TYPE ( op_dat_core ) , POINTER :: opDat4Core
-  REAL(kind=8), POINTER, DIMENSION(:) :: opDat4Local
-  INTEGER(kind=4) :: opDat4Cardinality
-  TYPE ( op_set_core ) , POINTER :: opSet4Core
-  TYPE ( op_dat_core ) , POINTER :: opDat5Core
-  REAL(kind=8), POINTER :: opDat5Local
-  INTEGER(kind=4) :: opDat5Cardinality
-  INTEGER(kind=4) :: threadID
-  INTEGER(kind=4) :: i1
-  INTEGER(kind=4) :: numberOfThreads
-  INTEGER(kind=4) :: sliceStart
-  INTEGER(kind=4) :: sliceEnd
-  INTEGER(kind=4) :: partitionSize
+
   TYPE ( op_arg ) , DIMENSION(5) :: opArgArray
   INTEGER(kind=4) :: numberOfOpDats
   INTEGER(kind=4) :: returnMPIHaloExchange
   INTEGER(kind=4) :: returnSetKernelTiming
-  INTEGER(kind=4) :: i10
-  INTEGER(kind=4) :: i11
-  REAL(kind=8), DIMENSION(:), ALLOCATABLE :: reductionArrayHost5
+  TYPE ( op_set_core ) , POINTER :: opSetCore
+
+  TYPE ( op_set_core ) , POINTER :: opSet1Core
+  REAL(kind=8), POINTER, DIMENSION(:) :: opDat1Local
+  INTEGER(kind=4) :: opDat1Cardinality
+
+  TYPE ( op_set_core ) , POINTER :: opSet2Core
+  REAL(kind=8), POINTER, DIMENSION(:) :: opDat2Local
+  INTEGER(kind=4) :: opDat2Cardinality
+
+  TYPE ( op_set_core ) , POINTER :: opSet3Core
+  REAL(kind=8), POINTER, DIMENSION(:) :: opDat3Local
+  INTEGER(kind=4) :: opDat3Cardinality
+
+  TYPE ( op_set_core ) , POINTER :: opSet4Core
+  REAL(kind=8), POINTER, DIMENSION(:) :: opDat4Local
+  INTEGER(kind=4) :: opDat4Cardinality
+
+  REAL(kind=8), POINTER :: opDat5Local
+  INTEGER(kind=4) :: opDat5Cardinality
+
+  TYPE ( op_dat_core ) , POINTER :: opDat1Core
+  TYPE ( op_dat_core ) , POINTER :: opDat2Core
+  TYPE ( op_dat_core ) , POINTER :: opDat3Core
+  TYPE ( op_dat_core ) , POINTER :: opDat4Core
+  TYPE ( op_dat_core ) , POINTER :: opDat5Core
+
+  INTEGER(kind=4) :: threadID
+  INTEGER(kind=4) :: numberOfThreads
+  INTEGER(kind=4) :: sliceStart
+  INTEGER(kind=4) :: sliceEnd
+  INTEGER(kind=4) :: partitionSize
+  INTEGER(kind=4), DIMENSION(1:8) :: timeArrayStart
+  INTEGER(kind=4), DIMENSION(1:8) :: timeArrayEnd
   REAL(kind=8) :: startTimeHost
   REAL(kind=8) :: endTimeHost
   REAL(kind=8) :: startTimeKernel
   REAL(kind=8) :: endTimeKernel
   REAL(kind=8) :: accumulatorHostTime
   REAL(kind=8) :: accumulatorKernelTime
-  INTEGER(kind=4), DIMENSION(1:8) :: timeArrayStart
-  INTEGER(kind=4), DIMENSION(1:8) :: timeArrayEnd
+  INTEGER(kind=4) :: i1
+  INTEGER(kind=4) :: i10
+  INTEGER(kind=4) :: i11
+
+  REAL(kind=8), DIMENSION(:), ALLOCATABLE :: reductionArrayHost5
 
   IF (set%setPtr%size .EQ. 0) THEN
     RETURN
@@ -1727,7 +1753,10 @@ SUBROUTINE update_host(userSubroutine,set,opArg1,opArg2,opArg3,opArg4,opArg5)
 
   numberCalledupdate_2692987784 = numberCalledupdate_2692987784 + 1
   call date_and_time(values=timeArrayStart)
-  startTimeHost = 1.00000 * timeArrayStart(8) + 1000.00 * timeArrayStart(7) + 60000 * timeArrayStart(6) + 3600000 * timeArrayStart(5)
+  startTimeHost = 1.00000 * timeArrayStart(8) + &
+  & 1000.00 * timeArrayStart(7) + &
+  & 60000 * timeArrayStart(6) + &
+  & 3600000 * timeArrayStart(5)
 
 #ifdef _OPENMP
     numberOfThreads = omp_get_max_threads()
@@ -1750,7 +1779,6 @@ SUBROUTINE update_host(userSubroutine,set,opArg1,opArg2,opArg3,opArg4,opArg5)
   CALL c_f_pointer(opArg5%data,opDat5Local)
 
   allocate( reductionArrayHost5(numberOfThreads * 1) )
-
   DO i10 = 1, numberOfThreads, 1
     DO i11 = 1, 1, 1
       reductionArrayHost5((i10 - 1) * 1 + i11) = 0
@@ -1758,12 +1786,19 @@ SUBROUTINE update_host(userSubroutine,set,opArg1,opArg2,opArg3,opArg4,opArg5)
   END DO
 
   call date_and_time(values=timeArrayEnd)
-  endTimeHost = 1.00000 * timeArrayEnd(8) + 1000 * timeArrayEnd(7) + 60000 * timeArrayEnd(6) + 3600000 * timeArrayEnd(5)
+  endTimeHost = 1.00000 * timeArrayEnd(8) + &
+  & 1000 * timeArrayEnd(7) + &
+  & 60000 * timeArrayEnd(6) + &
+  & 3600000 * timeArrayEnd(5)
+
   accumulatorHostTime = endTimeHost - startTimeHost
   loopTimeHostupdate_2692987784 = loopTimeHostupdate_2692987784 + accumulatorHostTime
 
   call date_and_time(values=timeArrayStart)
-  startTimeKernel = 1.00000 * timeArrayStart(8) + 1000 * timeArrayStart(7) + 60000 * timeArrayStart(6) + 3600000 * timeArrayStart(5)
+  startTimeKernel = 1.00000 * timeArrayStart(8) + &
+  & 1000 * timeArrayStart(7) + &
+  & 60000 * timeArrayStart(6) + &
+  & 3600000 * timeArrayStart(5)
 
   !$OMP PARALLEL DO private (sliceStart,sliceEnd,i1,threadID)
   DO i1 = 0, numberOfThreads - 1, 1
@@ -1782,13 +1817,19 @@ SUBROUTINE update_host(userSubroutine,set,opArg1,opArg2,opArg3,opArg4,opArg5)
   !$OMP END PARALLEL DO
 
   call date_and_time(values=timeArrayEnd)
+  endTimeKernel = 1.00000 * timeArrayEnd(8) + &
+  & 1000 * timeArrayEnd(7) + &
+  & 60000 * timeArrayEnd(6) + &
+  & 3600000 * timeArrayEnd(5)
 
-  endTimeKernel = 1.00000 * timeArrayEnd(8) + 1000 * timeArrayEnd(7) + 60000 * timeArrayEnd(6) + 3600000 * timeArrayEnd(5)
   accumulatorKernelTime = endTimeKernel - startTimeKernel
   loopTimeKernelupdate_2692987784 = loopTimeKernelupdate_2692987784 + accumulatorKernelTime
 
   call date_and_time(values=timeArrayStart)
-  startTimeHost = 1.00000 * timeArrayStart(8) + 1000.00 * timeArrayStart(7) + 60000 * timeArrayStart(6) + 3600000 * timeArrayStart(5)
+  startTimeHost = 1.00000 * timeArrayStart(8) + &
+  & 1000.00 * timeArrayStart(7) + &
+  & 60000 * timeArrayStart(6) + &
+  & 3600000 * timeArrayStart(5)
 
   DO i10 = 1, numberOfThreads, 1
     DO i11 = 1, 1, 1
@@ -1797,11 +1838,17 @@ SUBROUTINE update_host(userSubroutine,set,opArg1,opArg2,opArg3,opArg4,opArg5)
   END DO
 
   deallocate( reductionArrayHost5 )
+
   call date_and_time(values=timeArrayEnd)
-  endTimeHost = 1.00000 * timeArrayEnd(8) + 1000 * timeArrayEnd(7) + 60000 * timeArrayEnd(6) + 3600000 * timeArrayEnd(5)
+  endTimeHost = 1.00000 * timeArrayEnd(8) + &
+  & 1000 * timeArrayEnd(7) + &
+  & 60000 * timeArrayEnd(6) + &
+  & 3600000 * timeArrayEnd(5)
+
   accumulatorHostTime = endTimeHost - startTimeHost
   loopTimeHostupdate_2692987784 = loopTimeHostupdate_2692987784 + accumulatorHostTime
-  returnSetKernelTiming = setKernelTime(3,userSubroutine,accumulatorKernelTime / 1000.00,0.00000,0.00000)
+  returnSetKernelTiming = setKernelTime(3,userSubroutine, &
+  & accumulatorKernelTime / 1000.00,0.00000,0.00000)
 END SUBROUTINE
 
 END MODULE GENERATED_MODULE
