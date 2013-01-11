@@ -309,35 +309,40 @@ SUBROUTINE adt_calc_host( userSubroutine, set, &
   TYPE ( op_arg ) , INTENT(IN) :: opArg4
   TYPE ( op_arg ) , INTENT(IN) :: opArg5
   TYPE ( op_arg ) , INTENT(IN) :: opArg6
-  TYPE ( op_arg ) , DIMENSION(6) :: opArgArray
 
+  TYPE ( op_arg ) , DIMENSION(6) :: opArgArray
   INTEGER(kind=4) :: numberOfOpDats
   INTEGER(kind=4) :: returnMPIHaloExchange
   INTEGER(kind=4) :: returnSetKernelTiming
   TYPE ( op_set_core ) , POINTER :: opSetCore
-  TYPE ( op_dat_core ) , POINTER :: opDat1Core
+
+  TYPE ( op_set_core ) , POINTER :: opSet1Core
   REAL(kind=8), POINTER, DIMENSION(:) :: opDat1Local
   INTEGER(kind=4) :: opDat1Cardinality
-  TYPE ( op_set_core ) , POINTER :: opSet1Core
-  TYPE ( op_map_core ) , POINTER :: opMap1Core
-  TYPE ( op_dat_core ) , POINTER :: opDat2Core
-  TYPE ( op_map_core ) , POINTER :: opMap2Core
-  TYPE ( op_dat_core ) , POINTER :: opDat3Core
-  TYPE ( op_map_core ) , POINTER :: opMap3Core
-  TYPE ( op_dat_core ) , POINTER :: opDat4Core
-  TYPE ( op_map_core ) , POINTER :: opMap4Core
-  TYPE ( op_dat_core ) , POINTER :: opDat5Core
+
+  TYPE ( op_set_core ) , POINTER :: opSet5Core
   REAL(kind=8), POINTER, DIMENSION(:) :: opDat5Local
   INTEGER(kind=4) :: opDat5Cardinality
-  TYPE ( op_set_core ) , POINTER :: opSet5Core
-  TYPE ( op_map_core ) , POINTER :: opMap5Core
-  TYPE ( op_dat_core ) , POINTER :: opDat6Core
+
+  TYPE ( op_set_core ) , POINTER :: opSet6Core
   REAL(kind=8), POINTER, DIMENSION(:) :: opDat6Local
   INTEGER(kind=4) :: opDat6Cardinality
-  TYPE ( op_set_core ) , POINTER :: opSet6Core
+
+  TYPE ( op_map_core ) , POINTER :: opMap1Core
+  TYPE ( op_map_core ) , POINTER :: opMap2Core
+  TYPE ( op_map_core ) , POINTER :: opMap3Core
+  TYPE ( op_map_core ) , POINTER :: opMap4Core
+  TYPE ( op_map_core ) , POINTER :: opMap5Core
   TYPE ( op_map_core ) , POINTER :: opMap6Core
+
+  TYPE ( op_dat_core ) , POINTER :: opDat1Core
+  TYPE ( op_dat_core ) , POINTER :: opDat2Core
+  TYPE ( op_dat_core ) , POINTER :: opDat3Core
+  TYPE ( op_dat_core ) , POINTER :: opDat4Core
+  TYPE ( op_dat_core ) , POINTER :: opDat5Core
+  TYPE ( op_dat_core ) , POINTER :: opDat6Core
+
   INTEGER(kind=4) :: threadID
-  INTEGER(kind=4) :: i1
   INTEGER(kind=4) :: numberOfThreads
   INTEGER(kind=4) :: partitionSize
   INTEGER(kind=4), DIMENSION(1:6) :: opDatArray
@@ -346,18 +351,19 @@ SUBROUTINE adt_calc_host( userSubroutine, set, &
   INTEGER(kind=4), DIMENSION(1:6) :: accessDescriptorArray
   INTEGER(kind=4), DIMENSION(1:6) :: indirectionDescriptorArray
   INTEGER(kind=4), DIMENSION(1:6) :: opDatTypesArray
+  INTEGER(kind=4), DIMENSION(1:8) :: timeArrayStart
+  INTEGER(kind=4), DIMENSION(1:8) :: timeArrayEnd
   INTEGER(kind=4) :: numberOfIndirectOpDats
   INTEGER(kind=4) :: blockOffset
   INTEGER(kind=4) :: nblocks
-  INTEGER(kind=4) :: i2
   REAL(kind=8) :: startTimeHost
   REAL(kind=8) :: endTimeHost
   REAL(kind=8) :: startTimeKernel
   REAL(kind=8) :: endTimeKernel
   REAL(kind=8) :: accumulatorHostTime
   REAL(kind=8) :: accumulatorKernelTime
-  INTEGER(kind=4), DIMENSION(1:8) :: timeArrayStart
-  INTEGER(kind=4), DIMENSION(1:8) :: timeArrayEnd
+  INTEGER(kind=4) :: i1
+  INTEGER(kind=4) :: i2
 
   IF (set%setPtr%size .EQ. 0) THEN
     RETURN
@@ -366,8 +372,10 @@ SUBROUTINE adt_calc_host( userSubroutine, set, &
   numberCalledadt_calc_1379395014 = numberCalledadt_calc_1379395014 + 1
 
   call date_and_time(values=timeArrayStart)
-  startTimeHost = 1.00000 * timeArrayStart(8) + 1000.00 * timeArrayStart(7) + &
-                  & 60000 * timeArrayStart(6) + 3600000 * timeArrayStart(5)
+  startTimeHost = 1.00000 * timeArrayStart(8) + &
+  & 1000.00 * timeArrayStart(7) + &
+  & 60000 * timeArrayStart(6) + &
+  & 3600000 * timeArrayStart(5)
 
 #ifdef OP_PART_SIZE_1
   partitionSize = OP_PART_SIZE_1
@@ -381,20 +389,31 @@ SUBROUTINE adt_calc_host( userSubroutine, set, &
 #endif
 
   numberOfOpDats = 6
+
   opArgArray(1) = opArg1
   opArgArray(2) = opArg2
   opArgArray(3) = opArg3
   opArgArray(4) = opArg4
   opArgArray(5) = opArg5
   opArgArray(6) = opArg6
+
   indirectionDescriptorArray(1) = 0
   indirectionDescriptorArray(2) = 0
   indirectionDescriptorArray(3) = 0
   indirectionDescriptorArray(4) = 0
   indirectionDescriptorArray(5) = -1
   indirectionDescriptorArray(6) = -1
+
   numberOfIndirectOpDats = 1
-  planRet_adt_calc = FortranPlanCaller(userSubroutine,set%setCPtr,partitionSize,numberOfOpDats,opArgArray,numberOfIndirectOpDats,indirectionDescriptorArray)
+
+  planRet_adt_calc = FortranPlanCaller( &
+  & userSubroutine, &
+  & set%setCPtr, &
+  & partitionSize, &
+  & numberOfOpDats, &
+  & opArgArray, &
+  & numberOfIndirectOpDats, &
+  & indirectionDescriptorArray)
 
   CALL c_f_pointer(planRet_adt_calc,actualPlan_adt_calc)
   CALL c_f_pointer(actualPlan_adt_calc%nindirect,pnindirect_adt_calc,(/numberOfIndirectOpDats/))
@@ -408,6 +427,7 @@ SUBROUTINE adt_calc_host( userSubroutine, set, &
   CALL c_f_pointer(actualPlan_adt_calc%nelems,nelems_adt_calc,(/actualPlan_adt_calc%nblocks/))
   CALL c_f_pointer(actualPlan_adt_calc%nthrcol,nthrcol_adt_calc,(/actualPlan_adt_calc%nblocks/))
   CALL c_f_pointer(actualPlan_adt_calc%thrcol,thrcol_adt_calc,(/set%setPtr%size/))
+
   CALL c_f_pointer(ind_maps_adt_calc(1),ind_maps1_adt_calc,(/pnindirect_adt_calc(1)/))
 
   IF (indirectionDescriptorArray(1) >= 0) THEN
@@ -436,17 +456,26 @@ SUBROUTINE adt_calc_host( userSubroutine, set, &
   CALL c_f_pointer(opArg6%data,opDat6Local,(/opDat6Cardinality/))
 
   call date_and_time(values=timeArrayEnd)
-  endTimeHost = 1.00000 * timeArrayEnd(8) + 1000 * timeArrayEnd(7) + 60000 * timeArrayEnd(6) + 3600000 * timeArrayEnd(5)
+  endTimeHost = 1.00000 * timeArrayEnd(8) + &
+  & 1000 * timeArrayEnd(7) + &
+  & 60000 * timeArrayEnd(6) + &
+  & 3600000 * timeArrayEnd(5)
+
   accumulatorHostTime = endTimeHost - startTimeHost
   loopTimeHostadt_calc_1379395014 = loopTimeHostadt_calc_1379395014 + accumulatorHostTime
+
   call date_and_time(values=timeArrayStart)
-  startTimeKernel = 1.00000 * timeArrayStart(8) + 1000 * timeArrayStart(7) + 60000 * timeArrayStart(6) + 3600000 * timeArrayStart(5)
+  startTimeKernel = 1.00000 * timeArrayStart(8) + &
+  & 1000 * timeArrayStart(7) + &
+  & 60000 * timeArrayStart(6) + &
+  & 3600000 * timeArrayStart(5)
+
   blockOffset = 0
 
   DO i1 = 0, actualPlan_adt_calc%ncolors - 1, 1
-  nblocks = ncolblk_adt_calc(i1 + 1)
+    nblocks = ncolblk_adt_calc(i1 + 1)
 
-  !$OMP PARALLEL DO private (threadID)
+    !$OMP PARALLEL DO private (threadID)
     DO i2 = 0, nblocks - 1, 1
       threadID = omp_get_thread_num()
       CALL adt_calc_kernel( &
@@ -466,24 +495,33 @@ SUBROUTINE adt_calc_host( userSubroutine, set, &
            & nthrcol_adt_calc, &
            & thrcol_adt_calc, &
            & blockOffset,i2)
-    END DO
-
-    !$OMP END PARALLEL DO
+      END DO
+      !$OMP END PARALLEL DO
       blockOffset = blockOffset + nblocks
     END DO
 
     call date_and_time(values=timeArrayEnd)
-    endTimeKernel = 1.00000 * timeArrayEnd(8) + 1000 * timeArrayEnd(7) + 60000 * timeArrayEnd(6) + 3600000 * timeArrayEnd(5)
+    endTimeKernel = 1.00000 * timeArrayEnd(8) + &
+    & 1000 * timeArrayEnd(7) + &
+    & 60000 * timeArrayEnd(6) + &
+    & 3600000 * timeArrayEnd(5)
+
     accumulatorKernelTime = endTimeKernel - startTimeKernel
     loopTimeKerneladt_calc_1379395014 = loopTimeKerneladt_calc_1379395014 + accumulatorKernelTime
 
     call date_and_time(values=timeArrayStart)
     startTimeHost = 1.00000 * timeArrayStart(8) + 1000.00 * timeArrayStart(7) + 60000 * timeArrayStart(6) + 3600000 * timeArrayStart(5)
+
     call date_and_time(values=timeArrayEnd)
-    endTimeHost = 1.00000 * timeArrayEnd(8) + 1000 * timeArrayEnd(7) + 60000 * timeArrayEnd(6) + 3600000 * timeArrayEnd(5)
+    endTimeHost = 1.00000 * timeArrayEnd(8) + &
+    & 1000 * timeArrayEnd(7) + &
+    & 60000 * timeArrayEnd(6) + &
+    & 3600000 * timeArrayEnd(5)
+
     accumulatorHostTime = endTimeHost - startTimeHost
     loopTimeHostadt_calc_1379395014 = loopTimeHostadt_calc_1379395014 + accumulatorHostTime
-    returnSetKernelTiming = setKernelTime(0,userSubroutine,accumulatorKernelTime / 1000.00,actualPlan_adt_calc%transfer,actualPlan_adt_calc%transfer2)
+    returnSetKernelTiming = setKernelTime(0, userSubroutine, &
+    & accumulatorKernelTime / 1000.00,actualPlan_adt_calc%transfer,actualPlan_adt_calc%transfer2)
 END SUBROUTINE
 
 
