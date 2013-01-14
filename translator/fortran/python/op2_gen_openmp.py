@@ -748,8 +748,9 @@ def op2_gen_openmp(master, date, consts, kernels):
         code('  END DO')
         code('END DO')
         code('deallocate( reductionArrayHost'+str(g_m+1)+' )')
+        code('')
 
-    code('')
+
     code('call date_and_time(values=timeArrayEnd)')
     code('endTimeHost = 1.00000 * timeArrayEnd(8) + &')
     code('1000 * timeArrayEnd(7) + &')
@@ -758,9 +759,15 @@ def op2_gen_openmp(master, date, consts, kernels):
     code('')
     code('accumulatorHostTime = endTimeHost - startTimeHost')
     code('loopTimeHost'+name+' = loopTimeHost'+name+' + accumulatorHostTime')
-    code('returnSetKernelTiming = setKernelTime(1 , userSubroutine, &')
-    code('& accumulatorKernelTime / 1000.00,actualPlan_'+name+'%transfer,actualPlan_'+name+'%transfer2)')
+    code('')
+    code('returnSetKernelTiming = setKernelTime(NUMBER , userSubroutine, &')
 
+    if ninds > 0:
+      code('& accumulatorKernelTime / 1000.00,actualPlan_'+name+'%transfer,actualPlan_'+name+'%transfer2)')
+    else:
+      code('& accumulatorKernelTime / 1000.00,0.00000,0.00000)')
+
+    code('')
     depth = depth - 2
     code('END SUBROUTINE')
     code('END MODULE '+name.upper()+'_MODULE')
