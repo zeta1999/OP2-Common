@@ -160,6 +160,7 @@ def op2_gen_openmp(master, date, consts, kernels):
     code('USE OP2_FORTRAN_DECLARATIONS')
     code('USE OP2_FORTRAN_RT_SUPPORT')
     code('USE ISO_C_BINDING')
+    code('USE OP2_CONSTANTS')
     code('')
     code('#ifdef _OPENMP'); depth = depth + 2
     code('USE OMP_LIB'); depth = depth - 2
@@ -173,13 +174,51 @@ def op2_gen_openmp(master, date, consts, kernels):
     code('REAL(kind=4) :: loopTimeHost'+name)
     code('REAL(kind=4) :: loopTimeKernel'+name)
     code('INTEGER(kind=4) :: numberCalled'+name)
+    code('')
+
+    if ninds > 0: #if indirect loop
+      code('LOGICAL :: firstTime_'+name+' = .TRUE.')
+      code('type ( c_ptr )  :: planRet_'+name)
+      code('type ( op_plan ) , POINTER :: actualPlan_'+name)
+      code('type ( c_ptr ) , POINTER, dimension(:) :: ind_maps_'+name)
+      code('type ( c_ptr ) , POINTER, dimension(:) :: mappingArray_'+name)
+      code('')
+      for g_m in range(0,ninds):
+        code('INTEGER(kind=4), POINTER, dimension(:) :: ind_maps'+str(invinds[g_m]+1)+'_'+name)
+      code('')
+      for g_m in range(0,nargs):
+        if maps[g_m] == OP_MAP:
+          code('INTEGER(kind=2), POINTER, dimension(:) :: mappingArray'+str(g_m+1)+'_'+name)
+      code('')
+      for g_m in range(0,nargs):
+        if maps[g_m] == OP_MAP:
+          code('INTEGER(kind=4) :: mappingArray'+str(g_m+1)+'Size_'+name)
+      code('')
+      code('INTEGER(kind=4), POINTER, dimension(:) :: blkmap_'+name)
+      code('INTEGER(kind=4) :: blkmapSize_'+name)
+      code('INTEGER(kind=4), POINTER, dimension(:) :: ind_offs_'+name)
+      code('INTEGER(kind=4) :: ind_offsSize_'+name)
+      code('INTEGER(kind=4), POINTER, dimension(:) :: ind_sizes_'+name)
+      code('INTEGER(kind=4) :: ind_sizesSize_'+name)
+      code('INTEGER(kind=4), POINTER, dimension(:) :: nelems_'+name)
+      code('INTEGER(kind=4) :: nelemsSize_'+name)
+      code('INTEGER(kind=4), POINTER, dimension(:) :: nthrcol_'+name)
+      code('INTEGER(kind=4) :: nthrcolSize_'+name)
+      code('INTEGER(kind=4), POINTER, dimension(:) :: offset_'+name)
+      code('INTEGER(kind=4) :: offsetSize_'+name)
+      code('INTEGER(kind=4), POINTER, dimension(:) :: thrcol_'+name)
+      code('INTEGER(kind=4) :: thrcolSize_'+name)
+      code('INTEGER(kind=4), POINTER, dimension(:) :: ncolblk_'+name)
+      code('INTEGER(kind=4), POINTER, dimension(:) :: pnindirect_'+name)
 
 ##########################################################################
 #  Inline user kernel function
 ##########################################################################
     code('')
+    code('CONTAINS')
+    code('')
     comm('user function')
-    code('include '+name+'.inc')
+    code('include "'+name+'.inc"')
     code('')
     code('')
 
@@ -206,7 +245,6 @@ def op2_gen_openmp(master, date, consts, kernels):
           code('&  mappingArray'+str(g_m+1)+', &')
       code('&  ind_sizes, &')
       code('&  ind_offs,  & ')
-      code('&  block_offset,  & ')
       code('&  blkmap,        & ')
       code('&  offset,        & ')
       code('&  nelems,        & ')
@@ -234,20 +272,27 @@ def op2_gen_openmp(master, date, consts, kernels):
           code('REAL(kind=8), dimension(0:*) :: opDat'+str(invinds[g_m]+1))
         elif typs[g_m] == 'int':
           code('INTEGER(kind=4), dimension(0:*) :: opDat'+str(invinds[g_m]+1))
-
+      for g_m in range(0,nargs):
+        if maps[g_m] == OP_ID:
+          if typs[g_m] == 'double':
+            code('REAL(kind=8), dimension(0:*) :: opDat'+str(g_m+1))
+          elif typs[g_m] == 'int':
+            code('INTEGER(kind=4), dimension(0:*) :: opDat'+str(g_m+1))
+      code('')
       for g_m in range(0,ninds):
         code('INTEGER(kind=4), dimension(0:), target :: ind_maps'+str(invinds[g_m]+1))
-
-      for g_m in range(0,nargs):
-        code('INTEGER(kind=2), dimension(0:*) :: mappingArray'+str(g_m+1))
       code('')
-      code('INTEGER(kind=4), dimension(0:*) :: ind_arg_sizes')
-      code('INTEGER(kind=4), dimension(0:*) :: ind_arg_offs')
+      for g_m in range(0,nargs):
+        if maps[g_m] == OP_MAP:
+          code('INTEGER(kind=2), dimension(0:*) :: mappingArray'+str(g_m+1))
+      code('')
+      code('INTEGER(kind=4), dimension(0:*) :: ind_sizes')
+      code('INTEGER(kind=4), dimension(0:*) :: ind_offs')
       code('INTEGER(kind=4), dimension(0:*) :: blkmap')
       code('INTEGER(kind=4), dimension(0:*) :: offset')
       code('INTEGER(kind=4), dimension(0:*) :: nelems')
-      code('INTEGER(kind=4), dimension(0:*) :: ncolors')
-      code('INTEGER(kind=4), dimension(0:*) :: colors')
+      code('INTEGER(kind=4), dimension(0:*) :: nthrcol')
+      code('INTEGER(kind=4), dimension(0:*) :: thrcol')
       code('INTEGER(kind=4) :: blockOffset')
       code('INTEGER(kind=4) :: blockID')
       code('INTEGER(kind=4) :: threadBlockOffset')
@@ -291,10 +336,10 @@ def op2_gen_openmp(master, date, consts, kernels):
       code('')
 
       for g_m in range(0,ninds):
-        code('opDat'+str(invinds[g_m]+1)+'SharedIndirectionSize = ind_sizes('+str(g_m)+' + threadBlockID * '+inddims[g_m]+')')
+        code('opDat'+str(invinds[g_m]+1)+'SharedIndirectionSize = ind_sizes('+str(g_m)+' + threadBlockID * '+str(ninds)+')')
 
       for g_m in range(0,ninds):
-        code('opDat'+str(invinds[g_m]+1)+'IndirectionMap => ind_maps1('+str(g_m)+' + threadBlockID * 4):')
+        code('opDat'+str(invinds[g_m]+1)+'IndirectionMap => ind_maps1(ind_offs('+str(g_m)+' + threadBlockID * '+str(ninds)+'):)')
 
       for g_m in range(1,ninds):
         code('opDat'+str(invinds[g_m]+1)+'RoundUp = opDat1SharedIndirectionSize * '+inddims[g_m-1])
@@ -303,7 +348,7 @@ def op2_gen_openmp(master, date, consts, kernels):
         if g_m == 0:
           code('opDat'+str(invinds[g_m]+1)+'nBytes = 0')
         else:
-          code('opDat'+str(invinds[g_m]+1)+'nBytes = opDat'+str(invinds[g_m]-1)+'nBytes + opDat'+str(invinds[g_m]+1)+'RoundUp')
+          code('opDat'+str(invinds[g_m]+1)+'nBytes = opDat'+str(invinds[g_m]+1)+'nBytes + opDat'+str(invinds[g_m]+1)+'RoundUp')
 
       for g_m in range(0,ninds):
         code('opDat'+str(invinds[g_m]+1)+'SharedIndirection => sharedFloat8(opDat'+str(invinds[g_m]+1)+'nBytes:)')
@@ -330,7 +375,7 @@ def op2_gen_openmp(master, date, consts, kernels):
         if accs[invinds[g_m]] == OP_INC:
           for m in range (0,int(idxs[g_m])):
             code('    DO i2 = 0, '+inddims[g_m]+' - 1, 1')
-            code('      opDat'+str(invinds[g_m]+1+m)+'(i2) = 0')
+            code('      opDat'+str(invinds[g_m]+1+m)+'Local(i2) = 0')
             code('    END DO')
 
 
@@ -365,7 +410,7 @@ def op2_gen_openmp(master, date, consts, kernels):
           if int(dims[g_m]) > 1:
             code('    & opDat'+str(g_m+1)+'((i1 + threadBlockOffset) * '+dims[g_m]+':(i1 + threadBlockOffset) * '+dims[g_m]+' + '+dims[g_m]+' - 1), &')
           else:
-            code('    & opDat'+str(g_m+1)+'((i1 + threadBlockOffset) * 1)) &')
+            code('    & opDat'+str(g_m+1)+'((i1 + threadBlockOffset) * 1), &')
         if maps[g_m] == OP_MAP and accs[g_m] == OP_READ:
           if int(dims[g_m]) > 1:
             code('    & opDat'+str(invinds[inds[g_m]-1]+1)+'SharedIndirection(1 + mappingArray'+str(g_m+1)+'(i1 + threadBlockOffset) * '+dims[g_m]+':1 + mappingArray'+str(g_m+1)+'(i1 + threadBlockOffset) * '+dims[g_m]+' + '+dims[g_m]+' - 1), &')
@@ -382,16 +427,16 @@ def op2_gen_openmp(master, date, consts, kernels):
         if accs[invinds[g_m]] == OP_INC:
           for m in range (0,int(idxs[g_m])):
             code('  opDat'+str(invinds[g_m]+1+m)+'Map = mappingArray'+str(invinds[g_m]+1+m)+'(i1 + threadBlockOffset)')
-
       code('')
+
       code('  DO colour1 = 0, numOfColours - 1, 1')
       code('    IF (colour2 .EQ. colour1) THEN')
 
       for g_m in range(0,ninds):
         if accs[invinds[g_m]] == OP_INC:
           for m in range (0,int(idxs[g_m])):
-            code('      DO i2 = 0, '+dims[g_m]+' - 1, 1')
-            code('        opDat'+str(invinds[g_m]+1)+'SharedIndirection(1 + (i2 + opDat'+str(invinds[g_m]+1+m)+'Map * '+dims[g_m]+')) = opDat7SharedIndirection(1 + (i2 + opDat'+str(invinds[g_m]+1+m)+'Map * '+dims[g_m]+')) + opDat'+str(invinds[g_m]+1+m)+'Local(i2)')
+            code('      DO i2 = 0, '+inddims[g_m]+' - 1, 1')
+            code('        opDat'+str(invinds[g_m]+1)+'SharedIndirection(1 + (i2 + opDat'+str(invinds[g_m]+1+m)+'Map * '+inddims[g_m]+')) = opDat'+str(invinds[g_m]+1)+'SharedIndirection(1 + (i2 + opDat'+str(invinds[g_m]+1+m)+'Map * '+dims[g_m]+')) + opDat'+str(invinds[g_m]+1+m)+'Local(i2)')
             code('      END DO')
             code('')
 
@@ -401,9 +446,9 @@ def op2_gen_openmp(master, date, consts, kernels):
       code('')
       for g_m in range(0,ninds):
         if accs[invinds[g_m]] == OP_INC:
-          code('DO i1 = 0, opDat7SharedIndirectionSize - 1, 1')
-          code('  DO i2 = 0, '+dims[g_m]+' - 1, 1')
-          code('    opDat'+str(invinds[g_m]+1)+'(i2 + opDat'+str(invinds[g_m]+1)+'IndirectionMap(i1 + 1) * '+dims[g_m]+') = opDat'+str(invinds[g_m]+1)+'(i2 + opDat7IndirectionMap(i1 + 1) * '+dims[g_m]+') + opDat'+str(invinds[g_m]+1)+'SharedIndirection(1 + (i2 + i1 * '+dims[g_m]+'))')
+          code('DO i1 = 0, opDat'+str(invinds[g_m]+1)+'SharedIndirectionSize - 1, 1')
+          code('  DO i2 = 0, '+inddims[g_m]+' - 1, 1')
+          code('    opDat'+str(invinds[g_m]+1)+'(i2 + opDat'+str(invinds[g_m]+1)+'IndirectionMap(i1 + 1) * '+inddims[g_m]+') = opDat'+str(invinds[g_m]+1)+'(i2 + opDat'+str(invinds[g_m]+1)+'IndirectionMap(i1 + 1) * '+inddims[g_m]+') + opDat'+str(invinds[g_m]+1)+'SharedIndirection(1 + (i2 + i1 * '+inddims[g_m]+'))')
           code('  END DO')
           code('END DO')
 
@@ -414,7 +459,7 @@ def op2_gen_openmp(master, date, consts, kernels):
       code('  CALL '+name+'( &')
       for g_m in range(0,nargs):
         if maps[g_m] == OP_GBL:
-          code('  & opDat'+str(g_m+1)+' &')
+          code('  & opDat'+str(g_m+1)+', &')
         else:
           if int(dims[g_m]) == 1:
             code('  & opDat'+str(g_m+1)+'(i1 * '+dims[g_m]+'), &')
@@ -533,9 +578,9 @@ def op2_gen_openmp(master, date, consts, kernels):
     for g_m in range(0,nargs):
       if maps[g_m] == OP_GBL:
         if typs[g_m] == 'double':
-          code('REAL(kind=8), DIMENSION(:), ALLOCATABLE :: reductionArrayHost'+str(g_m+1))
+          code('REAL(kind=8), dimension(:), ALLOCATABLE :: reductionArrayHost'+str(g_m+1))
         elif typs[g_m] == 'int':
-          code('INTEGER(kind=4), DIMENSION(:), ALLOCATABLE :: reductionArrayHost'+str(g_m+1))
+          code('INTEGER(kind=4), dimension(:), ALLOCATABLE :: reductionArrayHost'+str(g_m+1))
 
     code('')
     code('IF (set%setPtr%size .EQ. 0) THEN')
@@ -547,8 +592,8 @@ def op2_gen_openmp(master, date, consts, kernels):
     code('')
     code('call date_and_time(values=timeArrayStart)')
     code('startTimeHost = 1.00000 * timeArrayStart(8) + &')
-    code('& 1000.00 * timeArrayStart(7) + ')
-    code('& 60000 * timeArrayStart(6) + ')
+    code('& 1000.00 * timeArrayStart(7) + &')
+    code('& 60000 * timeArrayStart(6) + &')
     code('& 3600000 * timeArrayStart(5)')
 
     depth = depth - 2
@@ -569,13 +614,13 @@ def op2_gen_openmp(master, date, consts, kernels):
     depth = depth + 2
 
 
-    if ninds > 1:
+    if ninds > 0:
       code('')
       code('numberOfOpDats = '+str(nargs))
       code('')
 
       for g_m in range(0,nargs):
-        code('opArgArray(1) = opArg'+str(g_m+1)+')')
+        code('opArgArray(1) = opArg'+str(g_m+1))
       code('')
       for g_m in range(0,nargs):
         code('indirectionDescriptorArray('+str(g_m+1)+') = '+str(inds[g_m]-1))
@@ -594,7 +639,7 @@ def op2_gen_openmp(master, date, consts, kernels):
       code('& numberOfIndirectOpDats, &')
       code('& indirectionDescriptorArray)')
       code('')
-      code('CALL c_f_pointer(planRet_res_calc,actualPlan_'+name+')')
+      code('CALL c_f_pointer(planRet_'+name+',actualPlan_'+name+')')
       code('CALL c_f_pointer(actualPlan_'+name+'%nindirect,pnindirect_'+name+',(/numberOfIndirectOpDats/))')
       code('CALL c_f_pointer(actualPlan_'+name+'%ind_maps,ind_maps_'+name+',(/numberOfIndirectOpDats/))')
       code('CALL c_f_pointer(actualPlan_'+name+'%maps,mappingArray_'+name+',(/numberOfOpDats/))')
@@ -608,7 +653,7 @@ def op2_gen_openmp(master, date, consts, kernels):
       code('CALL c_f_pointer(actualPlan_'+name+'%thrcol,thrcol_'+name+',(/set%setPtr%size/))')
       code('')
       for g_m in range(0,ninds):
-        code('CALL c_f_pointer(ind_maps_'+name+'('+str(g_m+1)+'),ind_maps'+str(invinds[g_m]+1)+'_'+name+',(/pnindirect_res_calc('+str(g_m+1)+')/))')
+        code('CALL c_f_pointer(ind_maps_'+name+'('+str(g_m+1)+'),ind_maps'+str(invinds[g_m]+1)+'_'+name+',(/pnindirect_'+name+'('+str(g_m+1)+')/))')
       code('')
       for g_m in range(0,nargs):
         if maps[g_m] == OP_MAP:
@@ -657,16 +702,16 @@ def op2_gen_openmp(master, date, consts, kernels):
     code('& 3600000 * timeArrayEnd(5)')
     code('')
     code('accumulatorHostTime = endTimeHost - startTimeHost')
-    code('loopTimeHostres_calc_3884922247 = loopTimeHostres_calc_3884922247 + accumulatorHostTime')
+    code('loopTimeHost'+name+' = loopTimeHost'+name+' + accumulatorHostTime')
     code('')
     code('call date_and_time(values=timeArrayStart)')
     code('startTimeKernel = 1.00000 * timeArrayStart(8) + &')
-    code('& 1000 * timeArrayStart(7) + ')
+    code('& 1000 * timeArrayStart(7) + &')
     code('& 60000 * timeArrayStart(6) + &')
     code('& 3600000 * timeArrayStart(5)')
     code('')
 
-    if ninds > 1: #indirect loop host stub call
+    if ninds > 0: #indirect loop host stub call
       code('blockOffset = 0')
       code('')
       code('DO i1 = 0, actualPlan_'+name+'%ncolors - 1, 1')
@@ -688,13 +733,13 @@ def op2_gen_openmp(master, date, consts, kernels):
         if maps[g_m] == OP_MAP:
           code('    & mappingArray'+str(g_m+1)+'_'+name+', &')
 
-      code('    & ind_sizes_res_calc, &')
-      code('    & ind_offs_res_calc, &')
-      code('    & blkmap_res_calc, &')
-      code('    & offset_res_calc, &')
-      code('    & nelems_res_calc, &')
-      code('    & nthrcol_res_calc, &')
-      code('    & thrcol_res_calc, &')
+      code('    & ind_sizes_'+name+', &')
+      code('    & ind_offs_'+name+', &')
+      code('    & blkmap_'+name+', &')
+      code('    & offset_'+name+', &')
+      code('    & nelems_'+name+', &')
+      code('    & nthrcol_'+name+', &')
+      code('    & thrcol_'+name+', &')
       code('    & blockOffset,i2)')
 
       code('  END DO')
@@ -760,7 +805,7 @@ def op2_gen_openmp(master, date, consts, kernels):
     code('accumulatorHostTime = endTimeHost - startTimeHost')
     code('loopTimeHost'+name+' = loopTimeHost'+name+' + accumulatorHostTime')
     code('')
-    code('returnSetKernelTiming = setKernelTime(NUMBER , userSubroutine, &')
+    code('returnSetKernelTiming = setKernelTime('+str(nk)+' , userSubroutine, &')
 
     if ninds > 0:
       code('& accumulatorKernelTime / 1000.00,actualPlan_'+name+'%transfer,actualPlan_'+name+'%transfer2)')
@@ -777,6 +822,6 @@ def op2_gen_openmp(master, date, consts, kernels):
 ##########################################################################
     fid = open(name+'_kernel.F90','w')
     date = datetime.datetime.now()
-    fid.write('//\n// auto-generated by op2.py on '+date.strftime("%Y-%m-%d %H:%M")+'\n//\n\n')
+    fid.write('!\n! auto-generated by op2.py on '+date.strftime("%Y-%m-%d %H:%M")+'\n!\n\n')
     fid.write(file_text)
     fid.close()

@@ -23,15 +23,19 @@ TYPE ( c_ptr )  :: planRet_adt_calc
 TYPE ( op_plan ) , POINTER :: actualPlan_adt_calc
 TYPE ( c_ptr ) , POINTER, DIMENSION(:) :: ind_maps_adt_calc
 TYPE ( c_ptr ) , POINTER, DIMENSION(:) :: mappingArray_adt_calc
+
 INTEGER(kind=4), POINTER, DIMENSION(:) :: ind_maps1_adt_calc
+
 INTEGER(kind=2), POINTER, DIMENSION(:) :: mappingArray1_adt_calc
 INTEGER(kind=2), POINTER, DIMENSION(:) :: mappingArray2_adt_calc
 INTEGER(kind=2), POINTER, DIMENSION(:) :: mappingArray3_adt_calc
 INTEGER(kind=2), POINTER, DIMENSION(:) :: mappingArray4_adt_calc
+
 INTEGER(kind=4) :: mappingArray1Size_adt_calc
 INTEGER(kind=4) :: mappingArray2Size_adt_calc
 INTEGER(kind=4) :: mappingArray3Size_adt_calc
 INTEGER(kind=4) :: mappingArray4Size_adt_calc
+
 INTEGER(kind=4), POINTER, DIMENSION(:) :: blkmap_adt_calc
 INTEGER(kind=4) :: blkmapSize_adt_calc
 INTEGER(kind=4), POINTER, DIMENSION(:) :: ind_offs_adt_calc
@@ -98,10 +102,12 @@ TYPE ( c_ptr )  :: planRet_res_calc
 TYPE ( op_plan ) , POINTER :: actualPlan_res_calc
 TYPE ( c_ptr ) , POINTER, DIMENSION(:) :: ind_maps_res_calc
 TYPE ( c_ptr ) , POINTER, DIMENSION(:) :: mappingArray_res_calc
+
 INTEGER(kind=4), POINTER, DIMENSION(:) :: ind_maps1_res_calc
 INTEGER(kind=4), POINTER, DIMENSION(:) :: ind_maps3_res_calc
 INTEGER(kind=4), POINTER, DIMENSION(:) :: ind_maps5_res_calc
 INTEGER(kind=4), POINTER, DIMENSION(:) :: ind_maps7_res_calc
+
 INTEGER(kind=2), POINTER, DIMENSION(:) :: mappingArray1_res_calc
 INTEGER(kind=2), POINTER, DIMENSION(:) :: mappingArray2_res_calc
 INTEGER(kind=2), POINTER, DIMENSION(:) :: mappingArray3_res_calc
@@ -110,6 +116,7 @@ INTEGER(kind=2), POINTER, DIMENSION(:) :: mappingArray5_res_calc
 INTEGER(kind=2), POINTER, DIMENSION(:) :: mappingArray6_res_calc
 INTEGER(kind=2), POINTER, DIMENSION(:) :: mappingArray7_res_calc
 INTEGER(kind=2), POINTER, DIMENSION(:) :: mappingArray8_res_calc
+
 INTEGER(kind=4) :: mappingArray1Size_res_calc
 INTEGER(kind=4) :: mappingArray2Size_res_calc
 INTEGER(kind=4) :: mappingArray3Size_res_calc
@@ -118,6 +125,7 @@ INTEGER(kind=4) :: mappingArray5Size_res_calc
 INTEGER(kind=4) :: mappingArray6Size_res_calc
 INTEGER(kind=4) :: mappingArray7Size_res_calc
 INTEGER(kind=4) :: mappingArray8Size_res_calc
+
 INTEGER(kind=4), POINTER, DIMENSION(:) :: blkmap_res_calc
 INTEGER(kind=4) :: blkmapSize_res_calc
 INTEGER(kind=4), POINTER, DIMENSION(:) :: ind_offs_res_calc
