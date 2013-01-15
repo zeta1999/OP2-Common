@@ -9,6 +9,7 @@ SUBROUTINE res_calc(x1,x2,q1,q2,adt1,adt2,res1,res2)
   REAL(kind=8), DIMENSION(4) :: res1
   REAL(kind=8), DIMENSION(4) :: res2
   REAL(kind=8) :: dx,dy,mu,ri,p1,vol1,p2,vol2,f
+
   dx = x1(1) - x2(1)
   dy = x1(2) - x2(2)
   ri = 1.0 / q1(1)

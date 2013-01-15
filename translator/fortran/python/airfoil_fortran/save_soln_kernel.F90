@@ -65,14 +65,18 @@ SUBROUTINE save_soln_host( userSubroutine, set, &
   type ( op_arg ) , INTENT(IN) :: opArg2
   type ( op_arg ) , INTENT(IN) :: opArg3
 
-  type ( op_arg ) , dimension(3) :: opArgArray
+  !type ( op_arg ) , dimension(3) :: opArgArray
   INTEGER(kind=4) :: numberOfOpDats
   INTEGER(kind=4) :: returnMPIHaloExchange
   INTEGER(kind=4) :: returnSetKernelTiming
+
   type ( op_set_core ) , POINTER :: opSetCore
 
+  !check in code generator
+  TYPE ( op_set_core ) , POINTER :: opSet1Core
   INTEGER(kind=4), POINTER :: opDat1Local
   INTEGER(kind=4) :: opDat1Cardinality
+
   type ( op_set_core ) , POINTER :: opSet2Core
   REAL(kind=8), POINTER, dimension(:) :: opDat2Local
   INTEGER(kind=4) :: opDat2Cardinality
@@ -80,7 +84,6 @@ SUBROUTINE save_soln_host( userSubroutine, set, &
   type ( op_set_core ) , POINTER :: opSet3Core
   REAL(kind=8), POINTER, dimension(:) :: opDat3Local
   INTEGER(kind=4) :: opDat3Cardinality
-
 
   type ( op_dat_core ) , POINTER :: opDat1Core
   type ( op_dat_core ) , POINTER :: opDat2Core
@@ -126,19 +129,19 @@ SUBROUTINE save_soln_host( userSubroutine, set, &
   opSetCore => set%setPtr
 
   opDat1Cardinality = opArg1%dim
-  opDat1Cardinality = opArg2%dim * getSetSizeFromOpArg(opArg2)
-  opDat1Cardinality = opArg3%dim * getSetSizeFromOpArg(opArg3)
+  opDat2Cardinality = opArg2%dim * getSetSizeFromOpArg(opArg2)
+  opDat3Cardinality = opArg3%dim * getSetSizeFromOpArg(opArg3)
 
   CALL c_f_pointer(opArg1%data,opDat1Local)
-  CALL c_f_pointer(opArg2%data,opDat2Local,(/opDat1Cardinality/))
-  CALL c_f_pointer(opArg3%data,opDat3Local,(/opDat1Cardinality/))
+  CALL c_f_pointer(opArg2%data,opDat2Local,(/opDat2Cardinality/))
+  CALL c_f_pointer(opArg3%data,opDat3Local,(/opDat3Cardinality/))
 
-  allocate( reductionArrayHost1(numberOfThreads * 1) )
-  DO i10 = 1, numberOfThreads, 1
-    DO i11 = 1, 1, 1
-      reductionArrayHost1((i10 - 1) * 1 + i11) = 0
-    END DO
-  END DO
+  !allocate( reductionArrayHost1(numberOfThreads * 1) )
+  !DO i10 = 1, numberOfThreads, 1
+  !  DO i11 = 1, 1, 1
+  !    reductionArrayHost1((i10 - 1) * 1 + i11) = 0
+  !  END DO
+  !END DO
 
   call date_and_time(values=timeArrayEnd)
   endTimeHost = 1.00000 * timeArrayEnd(8) + &
@@ -161,7 +164,8 @@ SUBROUTINE save_soln_host( userSubroutine, set, &
     sliceEnd = opSetCore%size * (i1 + 1) / numberOfThreads
     threadID = omp_get_thread_num()
     CALL op_x86_save_soln( &
-      & reductionArrayHost1(threadID * 1 + 1), &
+      !& reductionArrayHost1(threadID * 1 + 1), &
+      & opDat1Local, &
       & opDat2Local, &
       & opDat3Local, &
       & sliceStart, &
@@ -184,12 +188,12 @@ SUBROUTINE save_soln_host( userSubroutine, set, &
   & 60000 * timeArrayStart(6) + &
   & 3600000 * timeArrayStart(5)
 
-  DO i10 = 1, numberOfThreads, 1
-    DO i11 = 1, 1, 1
-      opDat1Local = opDat1Local + reductionArrayHost1((i10 - 1) * 1 + i11)
-    END DO
-  END DO
-  deallocate( reductionArrayHost1 )
+  !DO i10 = 1, numberOfThreads, 1
+  !  DO i11 = 1, 1, 1
+  !    opDat1Local = opDat1Local + reductionArrayHost1((i10 - 1) * 1 + i11)
+  !  END DO
+  !END DO
+  !deallocate( reductionArrayHost1 )
 
   call date_and_time(values=timeArrayEnd)
   endTimeHost = 1.00000 * timeArrayEnd(8) + &

@@ -321,8 +321,8 @@ SUBROUTINE adt_calc_host( userSubroutine, set, &
   opSetCore => set%setPtr
 
   opDat1Cardinality = opArg1%dim * getSetSizeFromOpArg(opArg1)
-  opDat1Cardinality = opArg5%dim * getSetSizeFromOpArg(opArg5)
-  opDat1Cardinality = opArg6%dim * getSetSizeFromOpArg(opArg6)
+  opDat5Cardinality = opArg5%dim * getSetSizeFromOpArg(opArg5)
+  opDat6Cardinality = opArg6%dim * getSetSizeFromOpArg(opArg6)
 
   CALL c_f_pointer(opArg1%data,opDat1Local,(/opDat1Cardinality/))
   CALL c_f_pointer(opArg5%data,opDat5Local,(/opDat5Cardinality/))

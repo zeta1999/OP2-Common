@@ -3,13 +3,13 @@
 !
 
 program AIRFOIL
+  use OP2_CONSTANTS
   use SAVE_SOLN_MODULE
   use ADT_CALC_MODULE
   use BRES_CALC_MODULE
   use RES_CALC_MODULE
   use UPDATE_MODULE
   use OP2_FORTRAN_DECLARATIONS
-  use OP2_CONSTANTS
   use input
   use, intrinsic :: ISO_C_BINDING
 
@@ -40,7 +40,7 @@ program AIRFOIL
   ! arrays used in data
   integer(4), dimension(:), allocatable, target :: ecell, bound, edge, bedge, becell, cell
   real(8), dimension(:), allocatable, target :: x, q, qold, adt, res
-  real(8) :: rms
+  REAL(kind=8) :: rms
 
   character(kind=c_char,len=10) :: savesolnName = 'save_soln'//C_NULL_CHAR
   character(kind=c_char, len=9) :: adtcalcName  = 'adt_calc' // C_NULL_CHAR
@@ -145,7 +145,9 @@ program AIRFOIL
   qdim = 4
 
 
-    ! main time-marching loop
+  ! main time-marching loop
+
+  !call initOP2Constants(alpha,cfl,eps,gam,gm1,mach,qinf)
 
   do niter = 1, iterationNumber
 

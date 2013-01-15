@@ -1,5 +1,5 @@
-IC = icc -g
-FC = /opt/intel/Compiler/11.1/064/bin/intel64/ifort -g
+IC = icc
+FC = /opt/intel/Compiler/11.1/064/bin/intel64/ifort -O2
 
 #IC = pgcc
 #FC = pgfortran
@@ -10,7 +10,7 @@ PREPROCESSOR = -fpp
 EXEC = airfoil_openmp_$(PART_SIZE_ENV)
 
 CPPLINK = -lstdc++
-OPT = -DOP_PART_SIZE_1=$(PART_SIZE_ENV) -O0
+OPT = -DOP_PART_SIZE_1=$(PART_SIZE_ENV) -O2
 
 OP2 = $(OP2_INSTALL_PATH)
 

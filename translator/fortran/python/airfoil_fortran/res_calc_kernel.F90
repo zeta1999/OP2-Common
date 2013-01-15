@@ -354,8 +354,6 @@ SUBROUTINE res_calc_host( userSubroutine, set, &
   INTEGER(kind=4) :: i1
   INTEGER(kind=4) :: i2
 
-
-
   IF (set%setPtr%size .EQ. 0) THEN
     RETURN
   END IF

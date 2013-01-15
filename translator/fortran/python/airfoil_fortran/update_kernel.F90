@@ -146,15 +146,15 @@ SUBROUTINE update_host( userSubroutine, set, &
   opSetCore => set%setPtr
 
   opDat1Cardinality = opArg1%dim * getSetSizeFromOpArg(opArg1)
-  opDat1Cardinality = opArg2%dim * getSetSizeFromOpArg(opArg2)
-  opDat1Cardinality = opArg3%dim * getSetSizeFromOpArg(opArg3)
-  opDat1Cardinality = opArg4%dim * getSetSizeFromOpArg(opArg4)
+  opDat2Cardinality = opArg2%dim * getSetSizeFromOpArg(opArg2)
+  opDat3Cardinality = opArg3%dim * getSetSizeFromOpArg(opArg3)
+  opDat4Cardinality = opArg4%dim * getSetSizeFromOpArg(opArg4)
   opDat5Cardinality = opArg5%dim
 
   CALL c_f_pointer(opArg1%data,opDat1Local,(/opDat1Cardinality/))
-  CALL c_f_pointer(opArg2%data,opDat2Local,(/opDat1Cardinality/))
-  CALL c_f_pointer(opArg3%data,opDat3Local,(/opDat1Cardinality/))
-  CALL c_f_pointer(opArg4%data,opDat4Local,(/opDat1Cardinality/))
+  CALL c_f_pointer(opArg2%data,opDat2Local,(/opDat2Cardinality/))
+  CALL c_f_pointer(opArg3%data,opDat3Local,(/opDat3Cardinality/))
+  CALL c_f_pointer(opArg4%data,opDat4Local,(/opDat4Cardinality/))
   CALL c_f_pointer(opArg5%data,opDat5Local)
 
   allocate( reductionArrayHost5(numberOfThreads * 1) )
@@ -195,6 +195,8 @@ SUBROUTINE update_host( userSubroutine, set, &
   END DO
   !$OMP END PARALLEL DO
 
+
+
   call date_and_time(values=timeArrayEnd)
   endTimeKernel = 1.00000 * timeArrayEnd(8) + &
   & 1000 * timeArrayEnd(7) + &
@@ -216,6 +218,8 @@ SUBROUTINE update_host( userSubroutine, set, &
     END DO
   END DO
   deallocate( reductionArrayHost5 )
+
+  !print *, "=====> Iteration result ", opDat5Local
 
   call date_and_time(values=timeArrayEnd)
   endTimeHost = 1.00000 * timeArrayEnd(8) + &
