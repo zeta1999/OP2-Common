@@ -165,8 +165,8 @@ IMPLICIT NONE
 TYPE ( op_set )  :: set
 INTEGER(kind=4) :: qdim
 TYPE ( op_dat )  :: src,dest
-CALL save_soln_qdim_host("save_soln_qdim" // CHAR(0),set,
-  op_arg_gbl(qdim,OP_READ),
-  op_arg_dat_generic(src,-1,OP_ID,4,"real8",OP_READ),
-  op_arg_dat_generic(dest,-1,OP_ID,4,"real8",OP_WRITE))
+  CALL save_soln_qdim_host("save_soln_qdim" // CHAR(0),set, &
+  & op_arg_gbl(qdim,OP_READ), &
+  & op_arg_dat_generic(src,-1,OP_ID,4,"real8",OP_READ), &
+  & op_arg_dat_generic(dest,-1,OP_ID,4,"real8",OP_WRITE))
 END SUBROUTINE
