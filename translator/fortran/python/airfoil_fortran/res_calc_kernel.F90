@@ -174,17 +174,22 @@ SUBROUTINE op_x86_res_calc( &
   opDat3SharedIndirectionSize = ind_sizes(1 + threadBlockID * 4)
   opDat5SharedIndirectionSize = ind_sizes(2 + threadBlockID * 4)
   opDat7SharedIndirectionSize = ind_sizes(3 + threadBlockID * 4)
+
   opDat1IndirectionMap => ind_maps1(ind_offs(0 + threadBlockID * 4):)
-  opDat3IndirectionMap => ind_maps1(ind_offs(1 + threadBlockID * 4):)
-  opDat5IndirectionMap => ind_maps1(ind_offs(2 + threadBlockID * 4):)
-  opDat7IndirectionMap => ind_maps1(ind_offs(3 + threadBlockID * 4):)
+  opDat3IndirectionMap => ind_maps3(ind_offs(1 + threadBlockID * 4):)
+  opDat5IndirectionMap => ind_maps5(ind_offs(2 + threadBlockID * 4):)
+  opDat7IndirectionMap => ind_maps7(ind_offs(3 + threadBlockID * 4):)
+
   opDat3RoundUp = opDat1SharedIndirectionSize * 2
-  opDat5RoundUp = opDat1SharedIndirectionSize * 4
-  opDat7RoundUp = opDat1SharedIndirectionSize * 1
+  opDat5RoundUp = opDat3SharedIndirectionSize * 4
+  opDat7RoundUp = opDat5SharedIndirectionSize * 1
+
   opDat1nBytes = 0
-  opDat3nBytes = opDat3nBytes + opDat3RoundUp
-  opDat5nBytes = opDat5nBytes + opDat5RoundUp
-  opDat7nBytes = opDat7nBytes + opDat7RoundUp
+
+  opDat3nBytes = opDat1nBytes + opDat3RoundUp
+  opDat5nBytes = opDat3nBytes + opDat5RoundUp
+  opDat7nBytes = opDat5nBytes + opDat7RoundUp
+
   opDat1SharedIndirection => sharedFloat8(opDat1nBytes:)
   opDat3SharedIndirection => sharedFloat8(opDat3nBytes:)
   opDat5SharedIndirection => sharedFloat8(opDat5nBytes:)
@@ -377,13 +382,13 @@ SUBROUTINE res_calc_host( userSubroutine, set, &
   numberOfOpDats = 8
 
   opArgArray(1) = opArg1
-  opArgArray(1) = opArg2
-  opArgArray(1) = opArg3
-  opArgArray(1) = opArg4
-  opArgArray(1) = opArg5
-  opArgArray(1) = opArg6
-  opArgArray(1) = opArg7
-  opArgArray(1) = opArg8
+  opArgArray(2) = opArg2
+  opArgArray(3) = opArg3
+  opArgArray(4) = opArg4
+  opArgArray(5) = opArg5
+  opArgArray(6) = opArg6
+  opArgArray(7) = opArg7
+  opArgArray(8) = opArg8
 
   indirectionDescriptorArray(1) = 0
   indirectionDescriptorArray(2) = 0
@@ -465,9 +470,9 @@ SUBROUTINE res_calc_host( userSubroutine, set, &
   opDat7Cardinality = opArg7%dim * getSetSizeFromOpArg(opArg7)
 
   CALL c_f_pointer(opArg1%data,opDat1Local,(/opDat1Cardinality/))
-  CALL c_f_pointer(opArg3%data,opDat3Local,(/opDat1Cardinality/))
-  CALL c_f_pointer(opArg5%data,opDat5Local,(/opDat1Cardinality/))
-  CALL c_f_pointer(opArg7%data,opDat7Local,(/opDat1Cardinality/))
+  CALL c_f_pointer(opArg3%data,opDat3Local,(/opDat3Cardinality/))
+  CALL c_f_pointer(opArg5%data,opDat5Local,(/opDat5Cardinality/))
+  CALL c_f_pointer(opArg7%data,opDat7Local,(/opDat7Cardinality/))
 
 
   call date_and_time(values=timeArrayEnd)

@@ -260,7 +260,7 @@ SUBROUTINE adt_calc_host( userSubroutine, set, &
   numberOfThreads = 1
 #endif
 
-numberOfOpDats = 6
+  numberOfOpDats = 6
 
   opArgArray(1) = opArg1
   opArgArray(2) = opArg2
@@ -325,8 +325,8 @@ numberOfOpDats = 6
   opDat1Cardinality = opArg6%dim * getSetSizeFromOpArg(opArg6)
 
   CALL c_f_pointer(opArg1%data,opDat1Local,(/opDat1Cardinality/))
-  CALL c_f_pointer(opArg5%data,opDat5Local,(/opDat1Cardinality/))
-  CALL c_f_pointer(opArg6%data,opDat6Local,(/opDat1Cardinality/))
+  CALL c_f_pointer(opArg5%data,opDat5Local,(/opDat5Cardinality/))
+  CALL c_f_pointer(opArg6%data,opDat6Local,(/opDat6Cardinality/))
 
 
   call date_and_time(values=timeArrayEnd)

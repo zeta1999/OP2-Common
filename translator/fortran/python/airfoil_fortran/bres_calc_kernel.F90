@@ -170,9 +170,9 @@ SUBROUTINE op_x86_bres_calc( &
   opDat4RoundUp = opDat1SharedIndirectionSize * 4
   opDat5RoundUp = opDat1SharedIndirectionSize * 1
   opDat1nBytes = 0
-  opDat3nBytes = opDat3nBytes + opDat3RoundUp
-  opDat4nBytes = opDat4nBytes + opDat4RoundUp
-  opDat5nBytes = opDat5nBytes + opDat5RoundUp
+  opDat3nBytes = opDat1nBytes + opDat3RoundUp
+  opDat4nBytes = opDat3nBytes + opDat4RoundUp
+  opDat5nBytes = opDat4nBytes + opDat5RoundUp
   opDat1SharedIndirection => sharedFloat8(opDat1nBytes:)
   opDat3SharedIndirection => sharedFloat8(opDat3nBytes:)
   opDat4SharedIndirection => sharedFloat8(opDat4nBytes:)
@@ -351,11 +351,11 @@ SUBROUTINE bres_calc_host( userSubroutine, set, &
   numberOfOpDats = 6
 
   opArgArray(1) = opArg1
-  opArgArray(1) = opArg2
-  opArgArray(1) = opArg3
-  opArgArray(1) = opArg4
-  opArgArray(1) = opArg5
-  opArgArray(1) = opArg6
+  opArgArray(2) = opArg2
+  opArgArray(3) = opArg3
+  opArgArray(4) = opArg4
+  opArgArray(5) = opArg5
+  opArgArray(6) = opArg6
 
   indirectionDescriptorArray(1) = 0
   indirectionDescriptorArray(2) = 0
@@ -423,10 +423,10 @@ SUBROUTINE bres_calc_host( userSubroutine, set, &
   opDat1Cardinality = opArg6%dim * getSetSizeFromOpArg(opArg6)
 
   CALL c_f_pointer(opArg1%data,opDat1Local,(/opDat1Cardinality/))
-  CALL c_f_pointer(opArg3%data,opDat3Local,(/opDat1Cardinality/))
-  CALL c_f_pointer(opArg4%data,opDat4Local,(/opDat1Cardinality/))
-  CALL c_f_pointer(opArg5%data,opDat5Local,(/opDat1Cardinality/))
-  CALL c_f_pointer(opArg6%data,opDat6Local,(/opDat1Cardinality/))
+  CALL c_f_pointer(opArg3%data,opDat3Local,(/opDat3Cardinality/))
+  CALL c_f_pointer(opArg4%data,opDat4Local,(/opDat4Cardinality/))
+  CALL c_f_pointer(opArg5%data,opDat5Local,(/opDat5Cardinality/))
+  CALL c_f_pointer(opArg6%data,opDat6Local,(/opDat6Cardinality/))
 
 
   call date_and_time(values=timeArrayEnd)

@@ -339,16 +339,16 @@ def op2_gen_openmp(master, date, consts, kernels):
         code('opDat'+str(invinds[g_m]+1)+'SharedIndirectionSize = ind_sizes('+str(g_m)+' + threadBlockID * '+str(ninds)+')')
 
       for g_m in range(0,ninds):
-        code('opDat'+str(invinds[g_m]+1)+'IndirectionMap => ind_maps1(ind_offs('+str(g_m)+' + threadBlockID * '+str(ninds)+'):)')
+        code('opDat'+str(invinds[g_m]+1)+'IndirectionMap => ind_maps'+str(invinds[g_m]+1)+'(ind_offs('+str(g_m)+' + threadBlockID * '+str(ninds)+'):)')
 
       for g_m in range(1,ninds):
-        code('opDat'+str(invinds[g_m]+1)+'RoundUp = opDat1SharedIndirectionSize * '+inddims[g_m-1])
+        code('opDat'+str(invinds[g_m]+1)+'RoundUp = opDat'+str(invinds[g_m]+1)+'SharedIndirectionSize * '+inddims[g_m-1])
 
       for g_m in range(0,ninds):
         if g_m == 0:
           code('opDat'+str(invinds[g_m]+1)+'nBytes = 0')
         else:
-          code('opDat'+str(invinds[g_m]+1)+'nBytes = opDat'+str(invinds[g_m]+1)+'nBytes + opDat'+str(invinds[g_m]+1)+'RoundUp')
+          code('opDat'+str(invinds[g_m]+1)+'nBytes = opDat'+str(invinds[g_m])+'nBytes + opDat'+str(invinds[g_m]+1)+'RoundUp')
 
       for g_m in range(0,ninds):
         code('opDat'+str(invinds[g_m]+1)+'SharedIndirection => sharedFloat8(opDat'+str(invinds[g_m]+1)+'nBytes:)')
@@ -620,7 +620,7 @@ def op2_gen_openmp(master, date, consts, kernels):
       code('')
 
       for g_m in range(0,nargs):
-        code('opArgArray(1) = opArg'+str(g_m+1))
+        code('opArgArray('+str(g_m+1)+') = opArg'+str(g_m+1))
       code('')
       for g_m in range(0,nargs):
         code('indirectionDescriptorArray('+str(g_m+1)+') = '+str(inds[g_m]-1))
@@ -676,10 +676,10 @@ def op2_gen_openmp(master, date, consts, kernels):
 
     code('')
     for g_m in range(0,ninds):
-      code('CALL c_f_pointer(opArg'+str(invinds[g_m]+1)+'%data,opDat'+str(invinds[g_m]+1)+'Local,(/opDat1Cardinality/))')
+      code('CALL c_f_pointer(opArg'+str(invinds[g_m]+1)+'%data,opDat'+str(invinds[g_m]+1)+'Local,(/opDat'+str(invinds[g_m]+1)+'Cardinality/))')
     for g_m in range(0,nargs):
       if maps[g_m] == OP_ID:
-        code('CALL c_f_pointer(opArg'+str(g_m+1)+'%data,opDat'+str(g_m+1)+'Local,(/opDat1Cardinality/))')
+        code('CALL c_f_pointer(opArg'+str(g_m+1)+'%data,opDat'+str(g_m+1)+'Local,(/opDat'+str(g_m+1)+'Cardinality/))')
       elif maps[g_m] == OP_GBL:
         code('CALL c_f_pointer(opArg'+str(g_m+1)+'%data,opDat'+str(g_m+1)+'Local)')
     code('')
