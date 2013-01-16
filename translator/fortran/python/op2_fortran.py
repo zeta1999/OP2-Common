@@ -620,18 +620,16 @@ for a in range(1,len(sys.argv)):
 			 endofcall = text.find('\n\n', locs[loc])
 			 curr_loop = loc_loops.index(locs[loc])
 			 name = loop_args[curr_loop]['name1']
-			 line = str(' op_par_loop_'+name+'('+loop_args[curr_loop]['name1']+','+
+			 line = str(' '+name+'_host("'+loop_args[curr_loop]['name1']+'",'+
 							loop_args[curr_loop]['set']+', &\n')
 
 			 for arguments in range(0,loop_args[curr_loop]['nargs']):
 				 elem = loop_args[curr_loop]['args'][arguments]
 				 if elem['type'] == 'op_arg_dat':
 						line = line + indent + elem['type'] + '(' + elem['dat'] + ','+ elem['idx'] \
-						+ ','+ elem['map'] + ','+ elem['dim'] + ','+ elem['typ'] + ',' \
-						+ elem['acc']
+						+ ','+ elem['map'] + ','+ elem['acc']
 				 elif elem['type'] == 'op_arg_gbl':
-						line = line + indent + elem['type'] + '(' + elem['data'] + ','+ elem['dim'] \
-						+ ','+ elem['typ'] + ','+ elem['acc']
+						line = line + indent + elem['type'] + '(' + elem['data'] + ','+ elem['acc']
 
 				 if arguments <> loop_args[curr_loop]['nargs'] - 1:
 					 line = line + '), &\n'
