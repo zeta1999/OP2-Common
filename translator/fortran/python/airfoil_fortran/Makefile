@@ -1,10 +1,10 @@
-IC = icc
-FC = /opt/intel/Compiler/11.1/064/bin/intel64/ifort -O2
+#IC = icc
+#FC = /opt/intel/Compiler/11.1/064/bin/intel64/ifort -O2
 
-#IC = pgcc
-#FC = pgfortran
+IC = pgcc
+FC = pgfortran
 
-OPENMP = -openmp #-mp
+OPENMP = -mp #-openmp #-mp
 PREPROCESSOR = -fpp
 
 EXEC = airfoil_openmp_$(PART_SIZE_ENV)
@@ -14,7 +14,8 @@ OPT = -DOP_PART_SIZE_1=$(PART_SIZE_ENV) -O2
 
 OP2 = $(OP2_INSTALL_PATH)
 
-F_OP2_MOD = $(OP2)/fortran/mod/intel
+#F_OP2_MOD = $(OP2)/fortran/mod/intel
+F_OP2_MOD = $(OP2)/fortran/mod/pgi
 F_OP2_LIB = $(OP2)/fortran/lib
 
 HDF5_LIB = -L$(HDF5_INSTALL_PATH)/lib -lhdf5

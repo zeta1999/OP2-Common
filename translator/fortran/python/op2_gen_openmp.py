@@ -244,14 +244,14 @@ def op2_gen_openmp(master, date, consts, kernels):
         if maps[g_m] <> OP_ID:
           code('&  mappingArray'+str(g_m+1)+', &')
       code('&  ind_sizes, &')
-      code('&  ind_offs,  & ')
-      code('&  blkmap,        & ')
-      code('&  offset,        & ')
-      code('&  nelems,        & ')
-      code('&  nthrcol,       & ')
-      code('&  thrcol,        & ')
-      code('&  blockOffset,   & ')
-      code('&  blockID ) ')
+      code('&  ind_offs,  &')
+      code('&  blkmap,        &')
+      code('&  offset,        &')
+      code('&  nelems,        &')
+      code('&  nthrcol,       &')
+      code('&  thrcol,        &')
+      code('&  blockOffset,   &')
+      code('&  blockID )')
       code('')
     else: #direct loop
       code('& sliceStart, &')
@@ -314,7 +314,7 @@ def op2_gen_openmp(master, date, consts, kernels):
       for g_m in range(0,ninds):
         code('INTEGER(kind=4) :: opDat'+str(invinds[g_m]+1)+'RoundUp')
       for g_m in range(0,ninds):
-        code('INTEGER(kind=4) :: opDat'+str(invinds[g_m]+1)+'SharedIndirectionSize ')
+        code('INTEGER(kind=4) :: opDat'+str(invinds[g_m]+1)+'SharedIndirectionSize')
 
       for g_m in range(0,ninds):
         if accs[invinds[g_m]] == OP_INC:
@@ -323,7 +323,7 @@ def op2_gen_openmp(master, date, consts, kernels):
             code('INTEGER(kind=4) :: opDat'+str(invinds[g_m]+1+m)+'Map')
 
 
-      code('INTEGER(kind=4) :: numOfColours ')
+      code('INTEGER(kind=4) :: numOfColours')
       code('INTEGER(kind=4) :: numberOfActiveThreadsCeiling')
       code('INTEGER(kind=4) :: colour1')
       code('INTEGER(kind=4) :: colour2')
@@ -342,13 +342,13 @@ def op2_gen_openmp(master, date, consts, kernels):
         code('opDat'+str(invinds[g_m]+1)+'IndirectionMap => ind_maps'+str(invinds[g_m]+1)+'(ind_offs('+str(g_m)+' + threadBlockID * '+str(ninds)+'):)')
 
       for g_m in range(1,ninds):
-        code('opDat'+str(invinds[g_m]+1)+'RoundUp = opDat'+str(invinds[g_m])+'SharedIndirectionSize * '+inddims[g_m-1])
+        code('opDat'+str(invinds[g_m]+1)+'RoundUp = opDat'+str(invinds[g_m-1]+1)+'SharedIndirectionSize * '+inddims[g_m-1])
 
       for g_m in range(0,ninds):
         if g_m == 0:
           code('opDat'+str(invinds[g_m]+1)+'nBytes = 0')
         else:
-          code('opDat'+str(invinds[g_m]+1)+'nBytes = opDat'+str(invinds[g_m])+'nBytes + opDat'+str(invinds[g_m]+1)+'RoundUp')
+          code('opDat'+str(invinds[g_m]+1)+'nBytes = opDat'+str(invinds[g_m-1]+1)+'nBytes + opDat'+str(invinds[g_m]+1)+'RoundUp')
 
       for g_m in range(0,ninds):
         code('opDat'+str(invinds[g_m]+1)+'SharedIndirection => sharedFloat8(opDat'+str(invinds[g_m]+1)+'nBytes:)')
@@ -405,20 +405,27 @@ def op2_gen_openmp(master, date, consts, kernels):
       code('')
       comm('kernel call')
       code('    CALL '+name+'( &')
+      line = ''
       for g_m in range(0,nargs):
         if maps[g_m] == OP_ID:
           if int(dims[g_m]) > 1:
-            code('    & opDat'+str(g_m+1)+'((i1 + threadBlockOffset) * '+dims[g_m]+':(i1 + threadBlockOffset) * '+dims[g_m]+' + '+dims[g_m]+' - 1), &')
+            line = line + '      & opDat'+str(g_m+1)+'((i1 + threadBlockOffset) * '+dims[g_m]+':(i1 + threadBlockOffset) * '+dims[g_m]+' + '+dims[g_m]+' - 1)'
           else:
-            code('    & opDat'+str(g_m+1)+'((i1 + threadBlockOffset) * 1), &')
+            line = line + '      & opDat'+str(g_m+1)+'((i1 + threadBlockOffset) * 1)'
         if maps[g_m] == OP_MAP and accs[g_m] == OP_READ:
           if int(dims[g_m]) > 1:
-            code('    & opDat'+str(invinds[inds[g_m]-1]+1)+'SharedIndirection(1 + mappingArray'+str(g_m+1)+'(i1 + threadBlockOffset) * '+dims[g_m]+':1 + mappingArray'+str(g_m+1)+'(i1 + threadBlockOffset) * '+dims[g_m]+' + '+dims[g_m]+' - 1), &')
+            line = line +'      & opDat'+str(invinds[inds[g_m]-1]+1)+'SharedIndirection(1 + mappingArray'+str(g_m+1)+'(i1 + threadBlockOffset) * '+dims[g_m]+':1 + mappingArray'+str(g_m+1)+'(i1 + threadBlockOffset) * '+dims[g_m]+' + '+dims[g_m]+' - 1)'
           else:
-            code('    & opDat'+str(invinds[inds[g_m]-1]+1)+'SharedIndirection(1 + mappingArray'+str(g_m+1)+'(i1 + threadBlockOffset) * 1), &')
+            line = line +'      & opDat'+str(invinds[inds[g_m]-1]+1)+'SharedIndirection(1 + mappingArray'+str(g_m+1)+'(i1 + threadBlockOffset) * 1)'
         elif maps[g_m] == OP_MAP and (accs[g_m] == OP_INC or accs[g_m] == OP_RW):
-          code('    & opDat'+str(g_m+1)+'Local, &')
-      code('    & )')
+          line = line +'      & opDat'+str(g_m+1)+'Local'
+        if g_m < nargs-1:
+          line = line + ', &\n'
+        else:
+           line = line + ' &\n'
+      depth = depth - 2
+      code(line + '      & )')
+      depth = depth + 2
       code('    colour2 = thrcol(i1 + threadBlockOffset)')
       code('  END IF')
 
@@ -457,15 +464,22 @@ def op2_gen_openmp(master, date, consts, kernels):
       comm('kernel call')
       code('DO i1 = sliceStart, sliceEnd - 1, 1')
       code('  CALL '+name+'( &')
+      line = ''
       for g_m in range(0,nargs):
         if maps[g_m] == OP_GBL:
-          code('  & opDat'+str(g_m+1)+', &')
+          line = line +'    & opDat'+str(g_m+1)
         else:
           if int(dims[g_m]) == 1:
-            code('  & opDat'+str(g_m+1)+'(i1 * '+dims[g_m]+'), &')
+            line = line +'    & opDat'+str(g_m+1)+'(i1 * '+dims[g_m]+')'
           else:
-            code('  & opDat'+str(g_m+1)+'(i1 * '+dims[g_m]+':i1 * '+dims[g_m]+' + '+dims[g_m]+' - 1), &')
-      code('  & )')
+            line = line +'    & opDat'+str(g_m+1)+'(i1 * '+dims[g_m]+':i1 * '+dims[g_m]+' + '+dims[g_m]+' - 1)'
+        if g_m < nargs-1:
+          line = line + ', &\n'
+        else:
+           line = line + ' &\n'
+      depth = depth - 2
+      code(line + '    & )')
+      depth = depth + 2
       code('END DO')
 
     depth = depth - 2
@@ -686,7 +700,7 @@ def op2_gen_openmp(master, date, consts, kernels):
 
     #reductions
     for g_m in range(0,nargs):
-      if maps[g_m] == OP_GBL:
+      if maps[g_m] == OP_GBL and accs[g_m] == OP_INC:
         code('allocate( reductionArrayHost'+str(g_m+1)+'(numberOfThreads * 1) )')
         code('DO i10 = 1, numberOfThreads, 1')
         code('  DO i11 = 1, 1, 1')
@@ -719,7 +733,7 @@ def op2_gen_openmp(master, date, consts, kernels):
       code('  !$OMP PARALLEL DO private (threadID)')
       code('  DO i2 = 0, nblocks - 1, 1')
       code('    threadID = omp_get_thread_num()')
-      code('    CALL '+name+'_kernel( &')
+      code('    CALL op_x86_'+name+'( &')
 
       for g_m in range(0,ninds):
         code('    & opDat'+str(invinds[g_m]+1)+'Local, &')
@@ -755,12 +769,14 @@ def op2_gen_openmp(master, date, consts, kernels):
       code('  sliceStart = opSetCore%size * i1 / numberOfThreads')
       code('  sliceEnd = opSetCore%size * (i1 + 1) / numberOfThreads')
       code('  threadID = omp_get_thread_num()')
-      code('  CALL '+name+'_kernel( &')
+      code('  CALL op_x86_'+name+'( &')
       for g_m in range(0,nargs):
         if maps[g_m] == OP_ID:
           code('    & opDat'+str(g_m+1)+'Local, &')
-        if maps[g_m] == OP_GBL:
+        if maps[g_m] == OP_GBL and accs[g_m] == OP_INC:
           code('    & reductionArrayHost'+str(g_m+1)+'(threadID * 1 + 1), &')
+        elif maps[g_m] == OP_GBL and accs[g_m] == OP_READ:
+          code('    & opDat'+str(g_m+1)+'Local, &')
       code('    & sliceStart, &')
       code('    & sliceEnd)')
       code('END DO')
@@ -786,7 +802,7 @@ def op2_gen_openmp(master, date, consts, kernels):
 
     #reductions
     for g_m in range(0,nargs):
-      if maps[g_m] == OP_GBL:
+      if maps[g_m] == OP_GBL and accs[g_m] == OP_INC:
         code('DO i10 = 1, numberOfThreads, 1')
         code('  DO i11 = 1, 1, 1')
         code('    opDat'+str(g_m+1)+'Local = opDat'+str(g_m+1)+'Local + reductionArrayHost'+str(g_m+1)+'((i10 - 1) * 1 + i11)')
@@ -812,7 +828,7 @@ def op2_gen_openmp(master, date, consts, kernels):
     else:
       code('& accumulatorKernelTime / 1000.00,0.00000,0.00000)')
 
-    code('')
+
     depth = depth - 2
     code('END SUBROUTINE')
     code('END MODULE '+name.upper()+'_MODULE')
