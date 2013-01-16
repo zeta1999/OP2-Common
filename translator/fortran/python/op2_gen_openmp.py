@@ -342,7 +342,7 @@ def op2_gen_openmp(master, date, consts, kernels):
         code('opDat'+str(invinds[g_m]+1)+'IndirectionMap => ind_maps'+str(invinds[g_m]+1)+'(ind_offs('+str(g_m)+' + threadBlockID * '+str(ninds)+'):)')
 
       for g_m in range(1,ninds):
-        code('opDat'+str(invinds[g_m]+1)+'RoundUp = opDat'+str(invinds[g_m]+1)+'SharedIndirectionSize * '+inddims[g_m-1])
+        code('opDat'+str(invinds[g_m]+1)+'RoundUp = opDat'+str(invinds[g_m])+'SharedIndirectionSize * '+inddims[g_m-1])
 
       for g_m in range(0,ninds):
         if g_m == 0:

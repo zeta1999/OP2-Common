@@ -36,8 +36,9 @@ SUBROUTINE op_x86_save_soln( &
 
 ! local variables
   INTEGER(kind=4) :: opDat1
-  REAL(kind=8), dimension(0:*) :: opDat2
-  REAL(kind=8), dimension(0:*) :: opDat3
+! chekch DOUBLE PRECISION generation in code generator
+  DOUBLE PRECISION, dimension(0:*) :: opDat2
+  DOUBLE PRECISION, dimension(0:*) :: opDat3
   INTEGER(kind=4) :: sliceStart
   INTEGER(kind=4) :: sliceEnd
   INTEGER(kind=4) :: i1

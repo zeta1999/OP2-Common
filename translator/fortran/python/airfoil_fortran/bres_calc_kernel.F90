@@ -163,12 +163,12 @@ SUBROUTINE op_x86_bres_calc( &
   opDat4SharedIndirectionSize = ind_sizes(2 + threadBlockID * 4)
   opDat5SharedIndirectionSize = ind_sizes(3 + threadBlockID * 4)
   opDat1IndirectionMap => ind_maps1(ind_offs(0 + threadBlockID * 4):)
-  opDat3IndirectionMap => ind_maps1(ind_offs(1 + threadBlockID * 4):)
-  opDat4IndirectionMap => ind_maps1(ind_offs(2 + threadBlockID * 4):)
-  opDat5IndirectionMap => ind_maps1(ind_offs(3 + threadBlockID * 4):)
+  opDat3IndirectionMap => ind_maps3(ind_offs(1 + threadBlockID * 4):)
+  opDat4IndirectionMap => ind_maps4(ind_offs(2 + threadBlockID * 4):)
+  opDat5IndirectionMap => ind_maps5(ind_offs(3 + threadBlockID * 4):)
   opDat3RoundUp = opDat1SharedIndirectionSize * 2
-  opDat4RoundUp = opDat1SharedIndirectionSize * 4
-  opDat5RoundUp = opDat1SharedIndirectionSize * 1
+  opDat4RoundUp = opDat3SharedIndirectionSize * 4
+  opDat5RoundUp = opDat4SharedIndirectionSize * 1
   opDat1nBytes = 0
   opDat3nBytes = opDat1nBytes + opDat3RoundUp
   opDat4nBytes = opDat3nBytes + opDat4RoundUp

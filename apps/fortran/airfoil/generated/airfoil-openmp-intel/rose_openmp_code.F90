@@ -1549,9 +1549,11 @@ SUBROUTINE save_soln_qdim_host(userSubroutine,set,opArg1,opArg2,opArg3)
   IMPLICIT NONE
   character(len=15), INTENT(IN) :: userSubroutine
   TYPE ( op_set ) , INTENT(IN) :: set
+
   TYPE ( op_arg ) , INTENT(IN) :: opArg1
   TYPE ( op_arg ) , INTENT(IN) :: opArg2
   TYPE ( op_arg ) , INTENT(IN) :: opArg3
+
   TYPE ( op_set_core ) , POINTER :: opSetCore
   TYPE ( op_dat_core ) , POINTER :: opDat1Core
   INTEGER(kind=4), POINTER :: opDat1Local
