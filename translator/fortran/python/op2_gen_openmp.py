@@ -436,7 +436,7 @@ def op2_gen_openmp(master, date, consts, kernels):
         if accs[invinds[g_m]] == OP_INC:
           for m in range (0,int(idxs[g_m])):
             code('      DO i2 = 0, '+inddims[g_m]+' - 1, 1')
-            code('        opDat'+str(invinds[g_m]+1)+'SharedIndirection(1 + (i2 + opDat'+str(invinds[g_m]+1+m)+'Map * '+inddims[g_m]+')) = opDat'+str(invinds[g_m]+1)+'SharedIndirection(1 + (i2 + opDat'+str(invinds[g_m]+1+m)+'Map * '+dims[g_m]+')) + opDat'+str(invinds[g_m]+1+m)+'Local(i2)')
+            code('        opDat'+str(invinds[g_m]+1)+'SharedIndirection(1 + (i2 + opDat'+str(invinds[g_m]+1+m)+'Map * '+inddims[g_m]+')) = opDat'+str(invinds[g_m]+1)+'SharedIndirection(1 + (i2 + opDat'+str(invinds[g_m]+1+m)+'Map * '+inddims[g_m]+')) + opDat'+str(invinds[g_m]+1+m)+'Local(i2)')
             code('      END DO')
             code('')
 

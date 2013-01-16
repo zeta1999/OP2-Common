@@ -15,7 +15,4 @@ SUBROUTINE update(qold,q,res,adt,rms)
     res(i) = 0.0
     rms(1) = rms(1) + del * del
   END DO
-
-  !PRINT *, "==============>  rms",rms
-
 END SUBROUTINE

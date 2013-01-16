@@ -113,14 +113,6 @@ qdim = 4
 
 call initOP2Constants(alpha,cfl,eps,gam,gm1,mach,qinf)
 
-  PRINT *, "constant gam",gam
-  PRINT *, "constant gm1",gm1
-  PRINT *, "constant cfl",cfl
-  PRINT *, "constant eps",eps
-  PRINT *, "constant mach",mach
-  PRINT *, "constant alpha",alpha
-  PRINT *, "constant qinf",qinf
-
 DO niter = 1, iterationNumber
 CALL save_soln_subroutine(cells,qdim,p_q,p_qold)
 !     call op_par_loop_2 ( save_soln, cells, &

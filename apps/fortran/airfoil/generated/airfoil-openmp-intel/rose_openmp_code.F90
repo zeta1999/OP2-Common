@@ -609,15 +609,18 @@ SUBROUTINE bres_calc_kernel( &
   REAL(kind=8), DIMENSION(0:*) :: opDat4
   REAL(kind=8), DIMENSION(0:*) :: opDat5
   INTEGER(kind=4), DIMENSION(0:*) :: opDat6
+
   INTEGER(kind=4), DIMENSION(0:), TARGET :: ind_maps1
   INTEGER(kind=4), DIMENSION(0:), TARGET :: ind_maps3
   INTEGER(kind=4), DIMENSION(0:), TARGET :: ind_maps4
   INTEGER(kind=4), DIMENSION(0:), TARGET :: ind_maps5
+
   INTEGER(kind=2), DIMENSION(0:*) :: mappingArray1
   INTEGER(kind=2), DIMENSION(0:*) :: mappingArray2
   INTEGER(kind=2), DIMENSION(0:*) :: mappingArray3
   INTEGER(kind=2), DIMENSION(0:*) :: mappingArray4
   INTEGER(kind=2), DIMENSION(0:*) :: mappingArray5
+
   INTEGER(kind=4), DIMENSION(0:*) :: ind_sizes
   INTEGER(kind=4), DIMENSION(0:*) :: ind_offs
   INTEGER(kind=4), DIMENSION(0:*) :: blkmap

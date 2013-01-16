@@ -226,7 +226,7 @@ SUBROUTINE op_x86_bres_calc( &
     DO colour1 = 0, numOfColours - 1, 1
       IF (colour2 .EQ. colour1) THEN
         DO i2 = 0, 4 - 1, 1
-          opDat5SharedIndirection(1 + (i2 + opDat5Map * 4)) = opDat5SharedIndirection(1 + (i2 + opDat5Map * 1)) + opDat5Local(i2)
+          opDat5SharedIndirection(1 + (i2 + opDat5Map * 4)) = opDat5SharedIndirection(1 + (i2 + opDat5Map * 4)) + opDat5Local(i2)
         END DO
 
       END IF
