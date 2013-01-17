@@ -8,8 +8,6 @@ OPENMP = -openmp
 #OPENMP = -mp
 PREPROCESSOR = -fpp
 
-EXEC = airfoil_openmp_$(PART_SIZE_ENV)
-
 CPPLINK = -lstdc++
 OPT = -DOP_PART_SIZE_1=$(PART_SIZE_ENV) -O2
 
@@ -25,22 +23,25 @@ MPI_LIB = -L$(MPI_INSTALL_PATH)/lib -lmpi
 FLINK = -L$(F_OP2_LIB)
 FMODS = -I$(F_OP2_MOD)
 
-all: clean cfunctions compile airfoil_openmp_$(PART_SIZE_ENV)
+all: clean cfunctions compile_seq airfoil_seq compile_openmp airfoil_openmp_$(PART_SIZE_ENV)
 
 cfunctions: debug.c
-	$(IC) $(OPT) $(DEBUG) $(OPENMP) -c debug.c
+	$(IC) $(OPT) $(DEBUG) -c debug.c
 
-compile:  airfoil_op.F90 save_soln_kernel.F90 adt_calc_kernel.F90 \
+compile_seq: airfoil_seqfun.F90 airfoil.F90
+	$(FC) $(OPT) $(FMODS) -c constants.F90 airfoil_seqfun.F90 airfoil.F90
+
+airfoil_seq: debug.o constants.o
+	$(FC) $(OPT) $(FLINK) debug.o constants.o airfoil.o airfoil_seqfun.o -o airfoil_seq -lop2_for_reference $(HDF5_LIB) $(MPI_LIB) -lz
+
+compile_openmp:  airfoil_op.F90 save_soln_kernel.F90 adt_calc_kernel.F90 \
 	  res_calc_kernel.F90 bres_calc_kernel.F90 update_kernel.F90
 	$(FC) $(OPT) $(OPENMP) $(FMODS) -c constants.F90 input.F90 \
 	save_soln_kernel.F90 update_kernel.F90 bres_calc_kernel.F90 \
-	res_calc_kernel.F90 adt_calc_kernel.F90 airfoil_op.F90
+	res_calc_kernel.F90 adt_calc_kernel.F90 airfoil_op.F90 airfoil_seqfun.F90 airfoil.F90
 
-airfoil_seq: airfoil.o input.o debug.o constants.o
-	$(FC) $(OPT) $(FLINK) debug.o input.o constants.o airfoil.o
-
-
-airfoil_openmp_$(PART_SIZE_ENV): debug.o input.o constants.o airfoil_op.o
+airfoil_openmp_$(PART_SIZE_ENV): airfoil_op.F90 save_soln_kernel.F90 adt_calc_kernel.F90 \
+	  res_calc_kernel.F90 bres_calc_kernel.F90 update_kernel.F90
 	$(FC) $(OPT) $(OPENMP) $(FLINK) debug.o input.o constants.o \
 	save_soln_kernel.o adt_calc_kernel.o res_calc_kernel.o \
 	bres_calc_kernel.o update_kernel.o airfoil_op.o -o airfoil_openmp_$(PART_SIZE_ENV) -lop2_for_openmp $(HDF5_LIB) $(MPI_LIB) -lz
@@ -50,3 +51,5 @@ clean:
 	rm -f *.mod
 	rm -f $(EXEC)
 	rm -f *~
+	rm -f airfoil_seq
+	rm -f airfoil_openmp_$(PART_SIZE_ENV)

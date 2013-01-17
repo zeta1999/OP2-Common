@@ -293,15 +293,15 @@ def op2_gen_openmp(master, date, consts, kernels):
     comm('local variables')
     if ninds > 0: #indirect loop
       for g_m in range(0,ninds):
-        if typs[g_m] == 'double':
+        if typs[g_m] == 'REAL8':
           code('REAL(kind=8), DIMENSION(0:*) :: opDat'+str(invinds[g_m]+1))
-        elif typs[g_m] == 'int':
+        elif typs[g_m] == 'INT4':
           code('INTEGER(kind=4), DIMENSION(0:*) :: opDat'+str(invinds[g_m]+1))
       for g_m in range(0,nargs):
         if maps[g_m] == OP_ID:
-          if typs[g_m] == 'double':
+          if typs[g_m] == 'REAL8':
             code('REAL(kind=8), DIMENSION(0:*) :: opDat'+str(g_m+1))
-          elif typs[g_m] == 'int':
+          elif typs[g_m] == 'INT4':
             code('INTEGER(kind=4), DIMENSION(0:*) :: opDat'+str(g_m+1))
       code('')
       for g_m in range(0,ninds):
@@ -330,7 +330,7 @@ def op2_gen_openmp(master, date, consts, kernels):
 
       for g_m in range(0,ninds):
         code('INTEGER(kind=4), POINTER, DIMENSION(:) :: opDat'+str(invinds[g_m]+1)+'IndirectionMap')
-        if typs[g_m] == 'double':
+        if typs[g_m] == 'REAL8':
           code('REAL(kind=8), POINTER, DIMENSION(:) :: opDat'+str(invinds[g_m]+1)+'SharedIndirection')
 
       for g_m in range(0,ninds):
@@ -407,14 +407,14 @@ def op2_gen_openmp(master, date, consts, kernels):
     else: #direct loop
       for g_m in range(0,nargs):
         if maps[g_m] <> OP_GBL:
-          if typs[g_m] == 'double':
+          if typs[g_m] == 'REAL8':
             code('REAL(kind=8), DIMENSION(0:*) :: opDat'+str(g_m+1))
-          elif typs[g_m] == 'int':
+          elif typs[g_m] == 'INT4':
             code('INTEGER(kind=4), DIMENSION(0:*) :: opDat'+str(g_m+1))
         else: #global arg
-          if typs[g_m] == 'double':
+          if typs[g_m] == 'REAL8':
             code('REAL(kind=8) :: opDat'+str(g_m+1))
-          elif typs[g_m] == 'int':
+          elif typs[g_m] == 'INT4':
             code('INTEGER(kind=4) :: opDat'+str(g_m+1))
 
       code('INTEGER(kind=4) :: sliceStart')
@@ -538,25 +538,25 @@ def op2_gen_openmp(master, date, consts, kernels):
 
     for g_m in range(0,ninds):
       code('type ( op_set_core ) , POINTER :: opSet'+str(invinds[g_m]+1)+'Core')
-      if typs[invinds[g_m]] == 'double':
+      if typs[invinds[g_m]] == 'REAL8':
           code('REAL(kind=8), POINTER, DIMENSION(:) :: opDat'+str(invinds[g_m]+1)+'Local')
-      elif typs[invinds[g_m]] == 'int':
+      elif typs[invinds[g_m]] == 'INT4':
           code('INTEGER(kind=4), POINTER, DIMENSION(:) :: opDat'+str(invinds[g_m]+1)+'Local')
       code('INTEGER(kind=4) :: opDat'+str(invinds[g_m]+1)+'Cardinality')
       code('')
     for g_m in range(0,nargs):
       if maps[g_m] == OP_ID:
         code('type ( op_set_core ) , POINTER :: opSet'+str(g_m+1)+'Core')
-        if typs[g_m] == 'double':
+        if typs[g_m] == 'REAL8':
           code('REAL(kind=8), POINTER, DIMENSION(:) :: opDat'+str(g_m+1)+'Local')
-        elif typs[g_m] == 'int':
+        elif typs[g_m] == 'INT4':
           code('INTEGER(kind=4), POINTER, DIMENSION(:) :: opDat'+str(g_m+1)+'Local')
         code('INTEGER(kind=4) :: opDat'+str(g_m+1)+'Cardinality')
         code('')
       if maps[g_m] == OP_GBL:
-        if typs[g_m] == 'double':
+        if typs[g_m] == 'REAL8':
           code('REAL(kind=8), POINTER :: opDat'+str(g_m+1)+'Local')
-        elif typs[g_m] == 'int':
+        elif typs[g_m] == 'INT4':
           code('INTEGER(kind=4), POINTER :: opDat'+str(g_m+1)+'Local')
         code('INTEGER(kind=4) :: opDat'+str(g_m+1)+'Cardinality')
 
@@ -614,9 +614,9 @@ def op2_gen_openmp(master, date, consts, kernels):
     code('')
     for g_m in range(0,nargs):
       if maps[g_m] == OP_GBL:
-        if typs[g_m] == 'double':
+        if typs[g_m] == 'REAL8':
           code('REAL(kind=8), DIMENSION(:), ALLOCATABLE :: reductionArrayHost'+str(g_m+1))
-        elif typs[g_m] == 'int':
+        elif typs[g_m] == 'INT4':
           code('INTEGER(kind=4), DIMENSION(:), ALLOCATABLE :: reductionArrayHost'+str(g_m+1))
 
     IF('set%setPtr%size .EQ. 0')
