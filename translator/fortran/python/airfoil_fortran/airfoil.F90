@@ -1,8 +1,9 @@
 program AIRFOIL
   use OP2_FORTRAN_DECLARATIONS
   use OP2_CONSTANTS
-  !use AIRFOIL_SEQ
-  use intrinsic :: ISO_C_BINDING
+  use input
+  use AIRFOIL_SEQ
+  use, intrinsic :: ISO_C_BINDING
 
   implicit none
 
@@ -100,7 +101,7 @@ program AIRFOIL
 
   ! OP initialisation
   print *, "Initialising OP2"
-  call op_init (7)
+  call op_init (0)
 
   ! declare sets, pointers, datasets and global constants (for now, no new partition info)
   print *, "Declaring OP2 sets"

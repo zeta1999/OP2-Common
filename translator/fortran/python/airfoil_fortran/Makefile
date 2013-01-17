@@ -25,16 +25,25 @@ MPI_LIB = -L$(MPI_INSTALL_PATH)/lib -lmpi
 FLINK = -L$(F_OP2_LIB)
 FMODS = -I$(F_OP2_MOD)
 
-all: clean cfunctions compile link
+all: clean cfunctions compile airfoil_openmp_$(PART_SIZE_ENV)
 
 cfunctions: debug.c
 	$(IC) $(OPT) $(DEBUG) $(OPENMP) -c debug.c
 
-compile:  airfoil_op.F90 save_soln_kernel.F90 adt_calc_kernel.F90 res_calc_kernel.F90 bres_calc_kernel.F90 update_kernel.F90
-	$(FC) $(OPT) $(OPENMP) $(FMODS) -c constants.F90 input.F90 save_soln_kernel.F90 update_kernel.F90 bres_calc_kernel.F90 res_calc_kernel.F90 adt_calc_kernel.F90 airfoil_op.F90
+compile:  airfoil_op.F90 save_soln_kernel.F90 adt_calc_kernel.F90 \
+	  res_calc_kernel.F90 bres_calc_kernel.F90 update_kernel.F90
+	$(FC) $(OPT) $(OPENMP) $(FMODS) -c constants.F90 input.F90 \
+	save_soln_kernel.F90 update_kernel.F90 bres_calc_kernel.F90 \
+	res_calc_kernel.F90 adt_calc_kernel.F90 airfoil_op.F90
 
-link: debug.o input.o constants.o airfoil_op.o
-	$(FC) $(OPT) $(OPENMP) $(FLINK) debug.o input.o constants.o save_soln_kernel.o adt_calc_kernel.o res_calc_kernel.o bres_calc_kernel.o update_kernel.o airfoil_op.o -o $(EXEC) -lop2_for_openmp $(HDF5_LIB) $(MPI_LIB) -lz
+airfoil_seq: airfoil.o input.o debug.o constants.o
+	$(FC) $(OPT) $(FLINK) debug.o input.o constants.o airfoil.o
+
+
+airfoil_openmp_$(PART_SIZE_ENV): debug.o input.o constants.o airfoil_op.o
+	$(FC) $(OPT) $(OPENMP) $(FLINK) debug.o input.o constants.o \
+	save_soln_kernel.o adt_calc_kernel.o res_calc_kernel.o \
+	bres_calc_kernel.o update_kernel.o airfoil_op.o -o airfoil_openmp_$(PART_SIZE_ENV) -lop2_for_openmp $(HDF5_LIB) $(MPI_LIB) -lz
 
 clean:
 	rm -f *.o

@@ -7,12 +7,13 @@
 #
 # Note: the CUDA library can only be built with the PGI toolchain
 
+OP2 = $(OP2_INSTALL_PATH)
 F_OP2 = $(OP2)/fortran
 F_OP2_INC = $(F_OP2)/include
 F_OP2_SRC = $(F_OP2)/src
 F_OP2_OBJ = $(F_OP2)/obj
 F_OP2_LIB = $(F_OP2)/lib
-F_OP2_MOD = $(F_OP2)/mod
+F_OP2_MOD = $(F_OP2)/mod/intel
 
 #
 # compiler settings
@@ -24,11 +25,11 @@ ifeq ($(OP2_COMPILER),gnu)
   FC = gfortran
   FFLAGS = -J$(F_OP2_MOD) -O4 -Wall -Werror -pedantic -pipe
 else
-ifeq ($(OP2_COMPILER),pgi)
+ifeq ($(OP2_COMPILER),intel)
   F_OP2_MOD = $(F_OP2)/mod/intel
   CC		= icc
   CFLAGS	= -g -O3 -std=c99 -Wall -Werror -vec-report -xSSE4.2
-  FC      = ifort
+  FC      = /opt/intel/Compiler/11.1/064/bin/intel64/ifort -O2
   FFLAGS  = -module $(F_OP2_MOD) -g -O3 -vec-report -xSSE4.2
 else
 print:
