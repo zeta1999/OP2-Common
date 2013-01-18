@@ -293,16 +293,12 @@ def op2_gen_openmp(master, date, consts, kernels):
     comm('local variables')
     if ninds > 0: #indirect loop
       for g_m in range(0,ninds):
-        if typs[g_m] == 'REAL8':
-          code('REAL(kind=8), DIMENSION(0:*) :: opDat'+str(invinds[g_m]+1))
-        elif typs[g_m] == 'INT4':
-          code('INTEGER(kind=4), DIMENSION(0:*) :: opDat'+str(invinds[g_m]+1))
+        code(typs[g_m]+', DIMENSION(0:*) :: opDat'+str(invinds[g_m]+1))
+
       for g_m in range(0,nargs):
         if maps[g_m] == OP_ID:
-          if typs[g_m] == 'REAL8':
-            code('REAL(kind=8), DIMENSION(0:*) :: opDat'+str(g_m+1))
-          elif typs[g_m] == 'INT4':
-            code('INTEGER(kind=4), DIMENSION(0:*) :: opDat'+str(g_m+1))
+          code(typs[g_m]+', DIMENSION(0:*) :: opDat'+str(g_m+1))
+
       code('')
       for g_m in range(0,ninds):
         code('INTEGER(kind=4), DIMENSION(0:), target :: ind_maps'+str(invinds[g_m]+1))
@@ -330,8 +326,7 @@ def op2_gen_openmp(master, date, consts, kernels):
 
       for g_m in range(0,ninds):
         code('INTEGER(kind=4), POINTER, DIMENSION(:) :: opDat'+str(invinds[g_m]+1)+'IndirectionMap')
-        if typs[g_m] == 'REAL8':
-          code('REAL(kind=8), POINTER, DIMENSION(:) :: opDat'+str(invinds[g_m]+1)+'SharedIndirection')
+        code(typs[g_m]+', POINTER, DIMENSION(:) :: opDat'+str(invinds[g_m]+1)+'SharedIndirection')
 
       for g_m in range(0,ninds):
         code('INTEGER(kind=4) :: opDat'+str(invinds[g_m]+1)+'nBytes')
@@ -407,15 +402,9 @@ def op2_gen_openmp(master, date, consts, kernels):
     else: #direct loop
       for g_m in range(0,nargs):
         if maps[g_m] <> OP_GBL:
-          if typs[g_m] == 'REAL8':
-            code('REAL(kind=8), DIMENSION(0:*) :: opDat'+str(g_m+1))
-          elif typs[g_m] == 'INT4':
-            code('INTEGER(kind=4), DIMENSION(0:*) :: opDat'+str(g_m+1))
+          code(typs[g_m]+', DIMENSION(0:*) :: opDat'+str(g_m+1))
         else: #global arg
-          if typs[g_m] == 'REAL8':
-            code('REAL(kind=8) :: opDat'+str(g_m+1))
-          elif typs[g_m] == 'INT4':
-            code('INTEGER(kind=4) :: opDat'+str(g_m+1))
+          code(typs[g_m]+' :: opDat'+str(g_m+1))
 
       code('INTEGER(kind=4) :: sliceStart')
       code('INTEGER(kind=4) :: sliceEnd')
@@ -538,26 +527,17 @@ def op2_gen_openmp(master, date, consts, kernels):
 
     for g_m in range(0,ninds):
       code('type ( op_set_core ) , POINTER :: opSet'+str(invinds[g_m]+1)+'Core')
-      if typs[invinds[g_m]] == 'REAL8':
-          code('REAL(kind=8), POINTER, DIMENSION(:) :: opDat'+str(invinds[g_m]+1)+'Local')
-      elif typs[invinds[g_m]] == 'INT4':
-          code('INTEGER(kind=4), POINTER, DIMENSION(:) :: opDat'+str(invinds[g_m]+1)+'Local')
+      code(typs[invinds[g_m]]+', POINTER, DIMENSION(:) :: opDat'+str(invinds[g_m]+1)+'Local')
       code('INTEGER(kind=4) :: opDat'+str(invinds[g_m]+1)+'Cardinality')
       code('')
     for g_m in range(0,nargs):
       if maps[g_m] == OP_ID:
         code('type ( op_set_core ) , POINTER :: opSet'+str(g_m+1)+'Core')
-        if typs[g_m] == 'REAL8':
-          code('REAL(kind=8), POINTER, DIMENSION(:) :: opDat'+str(g_m+1)+'Local')
-        elif typs[g_m] == 'INT4':
-          code('INTEGER(kind=4), POINTER, DIMENSION(:) :: opDat'+str(g_m+1)+'Local')
+        code(typs[g_m]+', POINTER, DIMENSION(:) :: opDat'+str(g_m+1)+'Local')
         code('INTEGER(kind=4) :: opDat'+str(g_m+1)+'Cardinality')
         code('')
       if maps[g_m] == OP_GBL:
-        if typs[g_m] == 'REAL8':
-          code('REAL(kind=8), POINTER :: opDat'+str(g_m+1)+'Local')
-        elif typs[g_m] == 'INT4':
-          code('INTEGER(kind=4), POINTER :: opDat'+str(g_m+1)+'Local')
+        code(typs[g_m]+', POINTER :: opDat'+str(g_m+1)+'Local')
         code('INTEGER(kind=4) :: opDat'+str(g_m+1)+'Cardinality')
 
     code('')
@@ -614,10 +594,7 @@ def op2_gen_openmp(master, date, consts, kernels):
     code('')
     for g_m in range(0,nargs):
       if maps[g_m] == OP_GBL:
-        if typs[g_m] == 'REAL8':
-          code('REAL(kind=8), DIMENSION(:), ALLOCATABLE :: reductionArrayHost'+str(g_m+1))
-        elif typs[g_m] == 'INT4':
-          code('INTEGER(kind=4), DIMENSION(:), ALLOCATABLE :: reductionArrayHost'+str(g_m+1))
+        code(typs[g_m]+', DIMENSION(:), ALLOCATABLE :: reductionArrayHost'+str(g_m+1))
 
     IF('set%setPtr%size .EQ. 0')
     code('RETURN')

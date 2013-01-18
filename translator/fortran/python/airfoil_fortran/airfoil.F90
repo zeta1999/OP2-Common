@@ -142,8 +142,8 @@ program AIRFOIL
   do niter = 1, iterationNumber
 
      call op_par_loop_2 ( save_soln, cells, &
-                       & op_arg_dat (p_q,    -1, OP_ID, 4,"REAL8", OP_READ), &
-                       & op_arg_dat (p_qold, -1, OP_ID, 4,"REAL8", OP_WRITE))
+                       & op_arg_dat (p_q,    -1, OP_ID, 4,"real(8)", OP_READ), &
+                       & op_arg_dat (p_qold, -1, OP_ID, 4,"real(8)", OP_WRITE))
 
     ! predictor/corrector update loop
 
@@ -151,42 +151,42 @@ program AIRFOIL
 
       ! calculate area/timstep
       call op_par_loop_6 ( adt_calc, cells, &
-                         & op_arg_dat (p_x,    1, pcell, 2,"REAL8", OP_READ), &
-                         & op_arg_dat (p_x,    2, pcell, 2,"REAL8", OP_READ), &
-                         & op_arg_dat (p_x,    3, pcell, 2,"REAL8", OP_READ), &
-                         & op_arg_dat (p_x,    4, pcell, 2,"REAL8", OP_READ), &
-                         & op_arg_dat (p_q,   -1, OP_ID, 4,"REAL8", OP_READ), &
-                         & op_arg_dat (p_adt, -1, OP_ID, 1,"REAL8", OP_WRITE))
+                         & op_arg_dat (p_x,    1, pcell, 2,"real(8)", OP_READ), &
+                         & op_arg_dat (p_x,    2, pcell, 2,"real(8)", OP_READ), &
+                         & op_arg_dat (p_x,    3, pcell, 2,"real(8)", OP_READ), &
+                         & op_arg_dat (p_x,    4, pcell, 2,"real(8)", OP_READ), &
+                         & op_arg_dat (p_q,   -1, OP_ID, 4,"real(8)", OP_READ), &
+                         & op_arg_dat (p_adt, -1, OP_ID, 1,"real(8)", OP_WRITE))
 
       ! calculate flux residual
       call op_par_loop_8 ( res_calc, edges, &
-                         & op_arg_dat (p_x,    1, pedge, 2,"REAL8",  OP_READ), &
-                         & op_arg_dat (p_x,    2, pedge, 2,"REAL8",  OP_READ), &
-                         & op_arg_dat (p_q,    1, pecell, 4,"REAL8", OP_READ), &
-                         & op_arg_dat (p_q,    2, pecell, 4,"REAL8", OP_READ), &
-                         & op_arg_dat (p_adt,  1, pecell, 1,"REAL8", OP_READ), &
-                         & op_arg_dat (p_adt,  2, pecell, 1,"REAL8", OP_READ), &
-                         & op_arg_dat (p_res,  1, pecell, 4,"REAL8", OP_INC),  &
-                         & op_arg_dat (p_res,  2, pecell, 4,"REAL8", OP_INC))
+                         & op_arg_dat (p_x,    1, pedge, 2,"real(8)",  OP_READ), &
+                         & op_arg_dat (p_x,    2, pedge, 2,"real(8)",  OP_READ), &
+                         & op_arg_dat (p_q,    1, pecell, 4,"real(8)", OP_READ), &
+                         & op_arg_dat (p_q,    2, pecell, 4,"real(8)", OP_READ), &
+                         & op_arg_dat (p_adt,  1, pecell, 1,"real(8)", OP_READ), &
+                         & op_arg_dat (p_adt,  2, pecell, 1,"real(8)", OP_READ), &
+                         & op_arg_dat (p_res,  1, pecell, 4,"real(8)", OP_INC),  &
+                         & op_arg_dat (p_res,  2, pecell, 4,"real(8)", OP_INC))
 
       call op_par_loop_6 ( bres_calc, bedges, &
-                         & op_arg_dat (p_x,      1, pbedge, 2,"REAL8",  OP_READ), &
-                         & op_arg_dat (p_x,      2, pbedge, 2,"REAL8",  OP_READ), &
-                         & op_arg_dat (p_q,      1, pbecell, 4,"REAL8", OP_READ), &
-                         & op_arg_dat (p_adt,    1, pbecell, 1,"REAL8", OP_READ), &
-                         & op_arg_dat (p_res,    1, pbecell, 4,"REAL8", OP_INC),  &
-                         & op_arg_dat (p_bound, -1, OP_ID, 1,"INT4", OP_READ))
+                         & op_arg_dat (p_x,      1, pbedge, 2,"real(8)",  OP_READ), &
+                         & op_arg_dat (p_x,      2, pbedge, 2,"real(8)",  OP_READ), &
+                         & op_arg_dat (p_q,      1, pbecell, 4,"real(8)", OP_READ), &
+                         & op_arg_dat (p_adt,    1, pbecell, 1,"real(8)", OP_READ), &
+                         & op_arg_dat (p_res,    1, pbecell, 4,"real(8)", OP_INC),  &
+                         & op_arg_dat (p_bound, -1, OP_ID, 1,"integer(4)", OP_READ))
 
       ! update flow field
 
       rms = 0.0
 
       call op_par_loop_5 ( update, cells, &
-                         & op_arg_dat (p_qold, -1, OP_ID, 4,"REAL8",  OP_READ),  &
-                         & op_arg_dat (p_q,    -1, OP_ID, 4,"REAL8",  OP_WRITE), &
-                         & op_arg_dat (p_res,  -1, OP_ID, 4,"REAL8",  OP_RW),    &
-                         & op_arg_dat (p_adt,  -1, OP_ID, 1,"REAL8",  OP_READ),  &
-                         & op_arg_gbl (rms, OP_INC))
+                         & op_arg_dat (p_qold, -1, OP_ID, 4,"real(8)",  OP_READ),  &
+                         & op_arg_dat (p_q,    -1, OP_ID, 4,"real(8)",  OP_WRITE), &
+                         & op_arg_dat (p_res,  -1, OP_ID, 4,"real(8)",  OP_RW),    &
+                         & op_arg_dat (p_adt,  -1, OP_ID, 1,"real(8)",  OP_READ),  &
+                         & op_arg_gbl (rms, 1, "real(8)", OP_INC))
 
 
     end do ! internal loop

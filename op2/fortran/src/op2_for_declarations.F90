@@ -456,7 +456,7 @@ module OP2_Fortran_Declarations
   interface op_arg_gbl
     module procedure op_arg_gbl_real_8_scalar, op_arg_gbl_real_8, op_arg_gbl_real_8_2, &
                    & op_arg_gbl_integer_4_scalar, op_arg_gbl_integer_4, op_arg_gbl_integer_4_2, &
-		   & op_arg_gbl_logical_scalar, op_arg_gbl_logical
+       & op_arg_gbl_logical_scalar, op_arg_gbl_logical, op_arg_gbl_python
   end interface op_arg_gbl
 
   interface op_decl_const
@@ -923,6 +923,26 @@ contains
 
   end function op_arg_gbl_real_8
 
+  type(op_arg) function op_arg_gbl_python ( dat, dim, type, access )
+
+    use, intrinsic :: ISO_C_BINDING
+
+    implicit none
+
+    real(8), target :: dat
+    integer(kind=c_int) :: dim
+    integer(kind=c_int) :: access
+    character(kind=c_char,len=*) :: type
+
+    ! warning: access is in FORTRAN style, while the C style is required here
+    op_arg_gbl_python = op_arg_gbl_c ( c_loc (dat), dim, C_CHAR_'double'//C_NULL_CHAR, 8, access-1 )
+    !op_arg_dat_python = op_arg_gbl_c ( dat%dataCPtr, dat%dataPtr%dim, dat%dataPtr%type, access-1 )
+
+  end function op_arg_gbl_python
+
+
+
+
   type(op_arg) function op_arg_gbl_real_8_2 ( dat, dim, access )
 
     use, intrinsic :: ISO_C_BINDING
@@ -983,6 +1003,7 @@ contains
     op_arg_gbl_integer_4_2 = op_arg_gbl_integer_4 ( dat, dim, access )
 
   end function op_arg_gbl_integer_4_2
+
 
   type(op_arg) function op_arg_gbl_logical_scalar ( dat, access )
 
