@@ -36,13 +36,13 @@ airfoil_seq: debug.o constants.o
 
 compile_openmp:  airfoil_op.F90 save_soln_kernel.F90 adt_calc_kernel.F90 \
 	  res_calc_kernel.F90 bres_calc_kernel.F90 update_kernel.F90
-	$(FC) $(OPT) $(OPENMP) $(FMODS) -c constants.F90 input.F90 \
+	$(FC) $(OPT) $(OPENMP) $(FMODS) -c constants.F90 airfoil_seqfun.F90 \
 	save_soln_kernel.F90 update_kernel.F90 bres_calc_kernel.F90 \
 	res_calc_kernel.F90 adt_calc_kernel.F90 airfoil_op.F90 airfoil_seqfun.F90 airfoil.F90
 
 airfoil_openmp_$(PART_SIZE_ENV): airfoil_op.F90 save_soln_kernel.F90 adt_calc_kernel.F90 \
 	  res_calc_kernel.F90 bres_calc_kernel.F90 update_kernel.F90
-	$(FC) $(OPT) $(OPENMP) $(FLINK) debug.o input.o constants.o \
+	$(FC) $(OPT) $(OPENMP) $(FLINK) debug.o constants.o airfoil_seqfun.o \
 	save_soln_kernel.o adt_calc_kernel.o res_calc_kernel.o \
 	bres_calc_kernel.o update_kernel.o airfoil_op.o -o airfoil_openmp_$(PART_SIZE_ENV) -lop2_for_openmp $(HDF5_LIB) $(MPI_LIB) -lz
 

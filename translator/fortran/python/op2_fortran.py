@@ -577,7 +577,7 @@ for a in range(1,len(sys.argv)):
 
   loc_old = 0
   #read original file and locate header location
-  loc_header = [text.find('use AIRFOIL_SEQ')]
+  loc_header = [text.find('use OP2_Fortran_Reference')]
 
   #get locations of all op_decl_consts
   n_consts = len(const_args)
@@ -615,7 +615,7 @@ for a in range(1,len(sys.argv)):
         line = line +'\n'+'  use ' + kernels[nk]['name'].upper()+'_MODULE'
 
       fid.write(line[2:len(line)]);
-      loc_old = locs[loc]+15
+      loc_old = locs[loc]+25
       continue
 
     if locs[loc] in loc_loops:

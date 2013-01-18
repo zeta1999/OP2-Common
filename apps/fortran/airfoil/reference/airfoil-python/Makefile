@@ -1,13 +1,13 @@
-IC = pgcc
+IC = icc
 #/home/gihan/openmpi-intel/bin/mpicc -O2
 #-debug full
-FC = pgfortran
+FC = /opt/intel/Compiler/11.1/064/bin/intel64/ifort -O2 #pgfortran
 #/opt/intel/ifort-2011.4.191/bin/ifort -O2
 #-debug full
 
 OP2 = $(OP2_INSTALL_PATH)
 
-OP2_MOD = $(OP2)/fortran/mod/pgi
+OP2_MOD = $(OP2)/fortran/mod/intel
 OP2_LIB = $(OP2)/fortran/lib
 
 PROF=../OpenMP/support

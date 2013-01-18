@@ -1,6 +1,7 @@
 program AIRFOIL
   use OP2_FORTRAN_DECLARATIONS
   use OP2_Fortran_Reference
+  use OP2_CONSTANTS
   use AIRFOIL_SEQ
   use, intrinsic :: ISO_C_BINDING
 
@@ -140,8 +141,7 @@ program AIRFOIL
 
   do niter = 1, iterationNumber
 
-     call op_par_loop_3 ( save_soln, cells, &
-                       & op_arg_gbl (qdim, OP_READ), &
+     call op_par_loop_2 ( save_soln, cells, &
                        & op_arg_dat (p_q,    -1, OP_ID, 4,"REAL8", OP_READ), &
                        & op_arg_dat (p_qold, -1, OP_ID, 4,"REAL8", OP_WRITE))
 

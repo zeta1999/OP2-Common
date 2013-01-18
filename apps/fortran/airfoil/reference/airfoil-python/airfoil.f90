@@ -18,28 +18,28 @@ use airfoil_seq
 
   integer(4) :: iter, k, i
 
-	! debug variables
-	integer(c_int) :: retDebug, dataSize
-	character(kind=c_char) :: debfilename(20)
-	real(c_double) :: datad
-	integer(4) :: debugiter
+  ! debug variables
+  integer(c_int) :: retDebug, dataSize
+  character(kind=c_char) :: debfilename(20)
+  real(c_double) :: datad
+  integer(4) :: debugiter
 
 
   integer(4), parameter :: maxnode = 9900
   integer(4), parameter :: maxcell = (9702+1)
   integer(4), parameter :: maxedge = 19502
 
-	integer(4), parameter :: iterationNumber = 1000
+  integer(4), parameter :: iterationNumber = 1000
 
 
   integer(4) :: nnode, ncell, nbedge, nedge, niter
   real(8) :: ncellr
 
 
-	! profiling
-	real :: startTime, endTime
+  ! profiling
+  real :: startTime, endTime
 
-	type(c_funptr) :: save_soln_cptr
+  type(c_funptr) :: save_soln_cptr
 
   ! integer references (valid inside the OP2 library) for op_set
   type(op_set) :: nodes, edges, bedges, cells
@@ -54,60 +54,60 @@ use airfoil_seq
   integer(4), dimension(:), allocatable, target :: ecell, bound, edge, bedge, becell, cell
   real(8), dimension(:), allocatable, target :: x, q, qold, adt, res, rms
 
-	type(c_ptr) :: c_edge, c_ecell, c_bedge, c_becell, c_cell, c_bound, c_x, c_q, c_qold, c_adt, c_res, c_rms
+  type(c_ptr) :: c_edge, c_ecell, c_bedge, c_becell, c_cell, c_bound, c_x, c_q, c_qold, c_adt, c_res, c_rms
 
-	! names of sets, maps and dats
-	character(kind=c_char,len=6) :: nodesName =	C_CHAR_'nodes'//C_NULL_CHAR
-	character(kind=c_char,len=6) :: edgesName =	C_CHAR_'edges'//C_NULL_CHAR
-	character(kind=c_char,len=7) :: bedgesName = C_CHAR_'bedges'//C_NULL_CHAR
-	character(kind=c_char,len=6) :: cellsName =	C_CHAR_'cells'//C_NULL_CHAR
+  ! names of sets, maps and dats
+  character(kind=c_char,len=6) :: nodesName =	C_CHAR_'nodes'//C_NULL_CHAR
+  character(kind=c_char,len=6) :: edgesName =	C_CHAR_'edges'//C_NULL_CHAR
+  character(kind=c_char,len=7) :: bedgesName = C_CHAR_'bedges'//C_NULL_CHAR
+  character(kind=c_char,len=6) :: cellsName =	C_CHAR_'cells'//C_NULL_CHAR
 
-	character(kind=c_char,len=6) :: pedgeName =	C_CHAR_'pedge'//C_NULL_CHAR
-	character(kind=c_char,len=7) :: pecellName = C_CHAR_'pecell'//C_NULL_CHAR
-	character(kind=c_char,len=6) :: pcellName =	C_CHAR_'pcell'//C_NULL_CHAR
-	character(kind=c_char,len=7) :: pbedgeName =	C_CHAR_'pbedge'//C_NULL_CHAR
-	character(kind=c_char,len=8) :: pbecellName =	C_CHAR_'pbecell'//C_NULL_CHAR
+  character(kind=c_char,len=6) :: pedgeName =	C_CHAR_'pedge'//C_NULL_CHAR
+  character(kind=c_char,len=7) :: pecellName = C_CHAR_'pecell'//C_NULL_CHAR
+  character(kind=c_char,len=6) :: pcellName =	C_CHAR_'pcell'//C_NULL_CHAR
+  character(kind=c_char,len=7) :: pbedgeName =	C_CHAR_'pbedge'//C_NULL_CHAR
+  character(kind=c_char,len=8) :: pbecellName =	C_CHAR_'pbecell'//C_NULL_CHAR
 
-	character(kind=c_char,len=6) :: boundName =	C_CHAR_'bound'//C_NULL_CHAR
-	character(kind=c_char,len=2) :: xName =	C_CHAR_'x'//C_NULL_CHAR
-	character(kind=c_char,len=2) :: qName =	C_CHAR_'q'//C_NULL_CHAR
-	character(kind=c_char,len=5) :: qoldName =	C_CHAR_'qold'//C_NULL_CHAR
-	character(kind=c_char,len=4) :: adtName =	C_CHAR_'adt'//C_NULL_CHAR
-	character(kind=c_char,len=4) :: resName =	C_CHAR_'res'//C_NULL_CHAR
+  character(kind=c_char,len=6) :: boundName =	C_CHAR_'bound'//C_NULL_CHAR
+  character(kind=c_char,len=2) :: xName =	C_CHAR_'x'//C_NULL_CHAR
+  character(kind=c_char,len=2) :: qName =	C_CHAR_'q'//C_NULL_CHAR
+  character(kind=c_char,len=5) :: qoldName =	C_CHAR_'qold'//C_NULL_CHAR
+  character(kind=c_char,len=4) :: adtName =	C_CHAR_'adt'//C_NULL_CHAR
+  character(kind=c_char,len=4) :: resName =	C_CHAR_'res'//C_NULL_CHAR
 
  integer(4) :: retDump
  type(op_arg) :: argtmp
 
  ! OP initialisation
- call op_init(10)
+ call op_init(0)
 
 
-	! read set sizes from input file (input is subdivided in two routines as we cannot allocate arrays in subroutines in
-	! fortran 90)
-	call getSetSizes ( nnode, ncell, nedge, nbedge )
+  ! read set sizes from input file (input is subdivided in two routines as we cannot allocate arrays in subroutines in
+  ! fortran 90)
+  call getSetSizes ( nnode, ncell, nedge, nbedge )
 
-	! allocate sets (cannot allocate variables in a subroutine in F90)
-	allocate ( cell ( 4 * ncell ) )
-	allocate ( edge ( 2 * nedge ) )
-	allocate ( ecell ( 2 * nedge ) )
-	allocate ( bedge ( 2 * nbedge ) )
-	allocate ( becell ( nbedge ) )
-	allocate ( bound ( nbedge ) )
+  ! allocate sets (cannot allocate variables in a subroutine in F90)
+  allocate ( cell ( 4 * ncell ) )
+  allocate ( edge ( 2 * nedge ) )
+  allocate ( ecell ( 2 * nedge ) )
+  allocate ( bedge ( 2 * nbedge ) )
+  allocate ( becell ( nbedge ) )
+  allocate ( bound ( nbedge ) )
 
-	allocate ( x ( 2 * nnode ) )
-	allocate ( q ( 4 * ncell ) )
-	allocate ( qold ( 4 * ncell ) )
-	allocate ( res ( 4 * ncell ) )
-	allocate ( adt ( ncell ) )
+  allocate ( x ( 2 * nnode ) )
+  allocate ( q ( 4 * ncell ) )
+  allocate ( qold ( 4 * ncell ) )
+  allocate ( res ( 4 * ncell ) )
+  allocate ( adt ( ncell ) )
 
-	allocate ( rms ( 1 ) )
+  allocate ( rms ( 1 ) )
 
 
-	! fill up arrays from file
-	call getSetInfo ( nnode, ncell, nedge, nbedge, cell, edge, ecell, bedge, becell, bound, x, q, qold, res, adt )
+  ! fill up arrays from file
+  call getSetInfo ( nnode, ncell, nedge, nbedge, cell, edge, ecell, bedge, becell, bound, x, q, qold, res, adt )
 
   ! set constants and initialise flow field and residual
-	call initialise_flow_field ( ncell, q, res )
+  call initialise_flow_field ( ncell, q, res )
 
   do iter = 1, 4*ncell
     res(iter) = 0.0
@@ -116,29 +116,29 @@ use airfoil_seq
   ! declare sets, pointers, datasets and global constants (for now, no new partition info)
   call op_decl_set ( nnode, nodes, nodesName )
   call op_decl_set ( nedge, edges, edgesName )
-	call op_decl_set ( nbedge, bedges, bedgesName )
+  call op_decl_set ( nbedge, bedges, bedgesName )
   call op_decl_set ( ncell, cells, cellsName )
 
   call op_decl_map ( edges, nodes, 2, edge, pedge, pedgeName )
   call op_decl_map ( edges, cells, 2, ecell, pecell, pecellName )
-	call op_decl_map ( bedges, nodes, 2, bedge, pbedge, pbedgeName )
-	call op_decl_map ( bedges, cells, 1, becell, pbecell, pecellName )
+  call op_decl_map ( bedges, nodes, 2, bedge, pbedge, pbedgeName )
+  call op_decl_map ( bedges, cells, 1, becell, pbecell, pecellName )
   call op_decl_map ( cells, nodes, 4, cell, pcell, pcellName )
 
   call op_decl_dat ( bedges, 1, bound, p_bound, boundName )
   call op_decl_dat ( nodes, 2, x, p_x, xName )
   call op_decl_dat ( cells, 4, q, p_q, qName )
-	call op_decl_dat ( cells, 4, qold, p_qold, qoldName )
+  call op_decl_dat ( cells, 4, qold, p_qold, qoldName )
   call op_decl_dat ( cells, 1, adt, p_adt, adtName )
   call op_decl_dat ( cells, 4, res, p_res, resName )
 
 !	call op_decl_gbl ( rms, 1, p_rms )
 
 
-	! start timer
-	call cpu_time ( startTime )
+  ! start timer
+  call cpu_time ( startTime )
 
-	! main time-marching loop
+  ! main time-marching loop
 
 !  print *, 'Before main time marching loop'
 
@@ -147,7 +147,7 @@ use airfoil_seq
 
   do niter = 1, iterationNumber
 
-		! save old flow solution
+    ! save old flow solution
 
     call op_par_loop_2 ( save_soln, cells, &
                        & op_arg_dat (p_q, -1, OP_ID, 4, "double", OP_READ), &
@@ -158,7 +158,7 @@ use airfoil_seq
 !        retDump = dumpOpDat (p_qold, "qold_opargs_1.txt" // C_NULL_CHAR)
 !        stop
 
-		! predictor/corrector update loop
+    ! predictor/corrector update loop
 
     do k = 1, 2
 
@@ -199,7 +199,7 @@ use airfoil_seq
 !        retDump = dumpOpDat (p_res, "res_opargs_1.txt" // C_NULL_CHAR)
 !        stop
 
-			! update flow field
+      ! update flow field
 
       rms(1) = 0.0
 
@@ -221,13 +221,14 @@ use airfoil_seq
     ncellr = real ( ncell )
     rms(1) = sqrt ( rms(1) / ncellr )
 
-    if ( mod (niter, 100) .eq. 0) print *, niter, rms(1)
+    !if ( mod (niter, 100) .eq. 0) print *, niter, rms(1)
+    if (mod(niter,100) .eq. 0) print *, "=====> Iteration result ", rms
 
   end do ! external loop
 
-	call cpu_time ( endTime )
+  call cpu_time ( endTime )
 
-	write (*,*), 'Time elapsed is ', endTime - startTime, ' seconds'
+  write (*,*), 'Time elapsed is ', endTime - startTime, ' seconds'
 
   !if ( niter .eq. 500 ) then
     call op_print_dat_to_binfile (p_q, "q_final_seq" // CHAR(0))
@@ -242,14 +243,14 @@ use airfoil_seq
 ! Uncomment to obtain the result
 !
 !  retDump = dumpOpDat (p_q, "q_opargs.txt" // C_NULL_CHAR)
-	! retDebug = openfile ( C_CHAR_"/work/cbertoll/AirfoilFortran/SEQ/airfoil_opargs/q.txt"//C_NULL_CHAR )
+  ! retDebug = openfile ( C_CHAR_"/work/cbertoll/AirfoilFortran/SEQ/airfoil_opargs/q.txt"//C_NULL_CHAR )
 
-	! do debugiter = 1, 4*ncell
+  ! do debugiter = 1, 4*ncell
 
-	! 	datad = q(debugiter)
-	! 	retDebug = writeRealToFile ( datad )
-	! end do
+  ! 	datad = q(debugiter)
+  ! 	retDebug = writeRealToFile ( datad )
+  ! end do
 
-	! retDebug = closefile ()
+  ! retDebug = closefile ()
 
 end program airfoil
