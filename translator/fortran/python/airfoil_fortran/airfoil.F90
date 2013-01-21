@@ -198,11 +198,11 @@ program AIRFOIL
     ncellr = real ( ncell )
     rms = sqrt ( rms / ncellr )
 
-    if (mod(niter,100) .eq. 0) print *, "=====> Iteration result ", rms
+    if (mod(niter,100) .eq. 0)  write (*,*), niter,"  ",rms
 
   end do ! external loop
 
   call op_timers ( endTime )
-  write (*,*), 'Time elapsed is ', endTime - startTime, ' seconds'
+  write (*,*), 'Max total runtime =', endTime - startTime,'seconds'
 
 end program AIRFOIL
