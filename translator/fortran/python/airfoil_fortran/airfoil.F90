@@ -20,6 +20,10 @@ program AIRFOIL
   integer(4) :: nnode, ncell, nbedge, nedge, niter, qdim
   real(8) :: ncellr
 
+  ! profiling
+  real(kind=c_double) :: startTime = 0
+  real(kind=c_double) :: endTime = 0
+
   ! integer references (valid inside the OP2 library) for op_set
   type(op_set) :: nodes, edges, bedges, cells
 
@@ -134,10 +138,10 @@ program AIRFOIL
   call op_decl_const (alpha, 1, alphaName)
   call op_decl_const (qinf, 4, qinfName)
 
-  qdim = 4
+  ! start timer
+  call op_timers ( startTime )
 
-
-    ! main time-marching loop
+  ! main time-marching loop
 
   do niter = 1, iterationNumber
 
@@ -197,5 +201,8 @@ program AIRFOIL
     if (mod(niter,100) .eq. 0) print *, "=====> Iteration result ", rms
 
   end do ! external loop
+
+  call op_timers ( endTime )
+  write (*,*), 'Time elapsed is ', endTime - startTime, ' seconds'
 
 end program AIRFOIL

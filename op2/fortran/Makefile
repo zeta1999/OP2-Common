@@ -47,7 +47,7 @@ MPI_LIB = $(MPI_INSTALL_PATH)/lib
 
 # Common definitions
 # Uncomment -g to get debugging info on board
-DEBUG_FLAGS = -O2
+# DEBUG_FLAGS = -O2
 
 #  -Werror
 
@@ -58,36 +58,37 @@ ifeq ($(OP2_COMPILER),gnu)
   CFLAGS          = -std=c99 -Wall -fPIC -pedantic -pipe $(DEBUG_FLAGS)
   FC              = gfortran
   FFLAGS          = -J$(F_INC_MOD) -Wall -pedantic -pipe $(DEBUG_FLAGS)
-	MPICC						= $(CC) -I$(MPI_INC) -L$(MPI_LIB)
-	MPIF90					= $(FC) -I$(MPI_INC) -L$(MPI_LIB)
-	NO_MPI_MACRO    = -DNO_MPI
-#  ALLTARGETS      = f_reference f_openmp
+  MPICC 	  = $(CC) -I$(MPI_INC) -L$(MPI_LIB)
+  MPIF90  	  = $(FC) -I$(MPI_INC) -L$(MPI_LIB)
+  NO_MPI_MACRO    = -DNO_MPI
+  ALLTARGETS      = f_reference f_openmp
 else
 ifeq ($(OP2_COMPILER),pgi)
   F_INC_MOD       = $(F_OP2_MOD)/pgi
-	CC							= nvcc
-	FC							= pgfortran
-	FFLAGS          = -module $(F_INC_MOD) $(DEBUG_FLAGS)
+  CC	   	  = nvcc
+  FC		  = pgfortran
+  FFLAGS          = -module $(F_INC_MOD) $(DEBUG_FLAGS)
   NVCC            = nvcc
   PGCC            = pgcc
   PGCFLAGS        = -Xcompiler="-std=c99 -Wall -fPIC -pedantic -pipe" $(DEBUG_FLAGS)
   PGFC            = pgfortran
   PGFFLAGS        = -module $(F_INC_MOD) -Mcuda=cuda4.0 -Minform=inform -DOP2_WITH_CUDAFOR $(DEBUG_FLAGS) -Mvect –Mvect=cachesize:12288
-	CFLAGS          = $(PGCFLAGS)
-	MPICC						= $(CC) -I$(MPI_INC) -L$(MPI_LIB)
-	MPIF90					= $(FC) -I$(MPI_INC) -L$(MPI_LIB)
-	NO_MPI_MACRO    = -DNO_MPI
+  CFLAGS          = $(PGCFLAGS)
+  MPICC	  	  = $(CC) -I$(MPI_INC) -L$(MPI_LIB)
+  MPIF90	  = $(FC) -I$(MPI_INC) -L$(MPI_LIB)
+  NO_MPI_MACRO    = -DNO_MPI
   ALLTARGETS      = f_reference f_openmp #f_cuda
 else
 ifeq ($(OP2_COMPILER),intel)
   F_INC_MOD       = $(F_OP2_MOD)/intel
-  CC              = icc
+  OPT		  = -O3 -xSSE4.2 -vec-report
+  CC              = icc -O3 -xSSE4.2 -vec-report
   CFLAGS          = -std=c99 -Wall -Werror $(DEBUG_FLAGS)
-  FC              = /opt/intel/Compiler/11.1/064/bin/intel64/ifort
+  FC              = /opt/intel/Compiler/11.1/064/bin/intel64/ifort $(OPT)
   FFLAGS          = -module $(F_INC_MOD) $(DEBUG_FLAGS)
-  MPICC						= mpicc
-  MPIF90					= mpif90
-	NO_MPI_MACRO    = -D NO_MPI
+  MPICC	  	  = mpicc $(OPT)
+  MPIF90	  = mpif90 $(OPT)
+  NO_MPI_MACRO    = -D NO_MPI
   ALLTARGETS      = f_reference f_openmp
 else
 print:

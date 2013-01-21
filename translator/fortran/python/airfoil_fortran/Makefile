@@ -1,5 +1,5 @@
 IC = icc
-FC = /opt/intel/Compiler/11.1/064/bin/intel64/ifort -O2
+FC = /opt/intel/Compiler/11.1/064/bin/intel64/ifort
 
 #IC = pgcc
 #FC = pgfortran
@@ -9,8 +9,7 @@ OPENMP = -openmp
 PREPROCESSOR = -fpp
 
 CPPLINK = -lstdc++
-OPT = -DOP_PART_SIZE_1=$(PART_SIZE_ENV) -O2
-
+OPT = -DOP_PART_SIZE_1=$(PART_SIZE_ENV) -O2 -xSSE4.2 -vec-report
 OP2 = $(OP2_INSTALL_PATH)
 
 F_OP2_MOD = $(OP2)/fortran/mod/intel
@@ -23,7 +22,7 @@ MPI_LIB = -L$(MPI_INSTALL_PATH)/lib -lmpi
 FLINK = -L$(F_OP2_LIB)
 FMODS = -I$(F_OP2_MOD)
 
-all: clean cfunctions compile_seq airfoil_seq compile_openmp airfoil_openmp_$(PART_SIZE_ENV)
+all: clean cfunctions  airfoil_seq  airfoil_openmp_$(PART_SIZE_ENV)
 
 cfunctions: debug.c
 	$(IC) $(OPT) $(DEBUG) -c debug.c
@@ -31,7 +30,7 @@ cfunctions: debug.c
 compile_seq: airfoil_seqfun.F90 airfoil.F90
 	$(FC) $(OPT) $(FMODS) -c constants.F90 airfoil_seqfun.F90 airfoil.F90
 
-airfoil_seq: debug.o constants.o
+airfoil_seq: compile_seq debug.o constants.o
 	$(FC) $(OPT) $(FLINK) debug.o constants.o airfoil.o airfoil_seqfun.o -o airfoil_seq -lop2_for_reference $(HDF5_LIB) $(MPI_LIB) -lz
 
 compile_openmp:  airfoil_op.F90 save_soln_kernel.F90 adt_calc_kernel.F90 \
@@ -40,7 +39,7 @@ compile_openmp:  airfoil_op.F90 save_soln_kernel.F90 adt_calc_kernel.F90 \
 	save_soln_kernel.F90 update_kernel.F90 bres_calc_kernel.F90 \
 	res_calc_kernel.F90 adt_calc_kernel.F90 airfoil_op.F90 airfoil_seqfun.F90 airfoil.F90
 
-airfoil_openmp_$(PART_SIZE_ENV): airfoil_op.F90 save_soln_kernel.F90 adt_calc_kernel.F90 \
+airfoil_openmp_$(PART_SIZE_ENV): compile_openmp airfoil_op.F90 save_soln_kernel.F90 adt_calc_kernel.F90 \
 	  res_calc_kernel.F90 bres_calc_kernel.F90 update_kernel.F90
 	$(FC) $(OPT) $(OPENMP) $(FLINK) debug.o constants.o airfoil_seqfun.o \
 	save_soln_kernel.o adt_calc_kernel.o res_calc_kernel.o \
