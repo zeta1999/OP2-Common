@@ -629,7 +629,7 @@ for a in range(1,len(sys.argv)):
        for arguments in range(0,loop_args[curr_loop]['nargs']):
          elem = loop_args[curr_loop]['args'][arguments]
          if elem['type'] == 'op_arg_dat':
-            line = line + indent + elem['type'] + '(' + elem['dat'] + ','+ elem['idx'] \
+            line = line + indent + '& ' + elem['type'] + '(' + elem['dat'] + ','+ elem['idx'] \
             + ','+ elem['map'] + ','+ elem['acc']
          elif elem['type'] == 'op_arg_gbl':
             line = line + indent + elem['type'] + '(' + elem['data'] + ','+ elem['acc']

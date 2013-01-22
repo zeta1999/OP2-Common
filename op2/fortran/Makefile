@@ -16,7 +16,7 @@ F_OP2_INC = $(F_OP2)/include
 F_OP2_SRC = $(F_OP2)/src
 F_OP2_OBJ = $(F_OP2)/obj
 F_OP2_LIB = $(F_OP2)/lib
-F_OP2_MOD = $(F_OP2)/mod
+F_OP2_MOD = $(F_OP2)/mod/pgi
 
 PARMETIS_INCLUDE_PATH ?= $(PARMETIS_INSTALL_PATH)/include
 PARMETIS_LIB_PATH ?= $(PARMETIS_INSTALL_PATH)
@@ -77,7 +77,7 @@ ifeq ($(OP2_COMPILER),pgi)
   MPICC	  	  = $(CC) -I$(MPI_INC) -L$(MPI_LIB)
   MPIF90	  = $(FC) -I$(MPI_INC) -L$(MPI_LIB)
   NO_MPI_MACRO    = -DNO_MPI
-  ALLTARGETS      = f_reference f_openmp #f_cuda
+  ALLTARGETS      = f_reference f_openmp f_cuda
 else
 ifeq ($(OP2_COMPILER),intel)
   F_INC_MOD       = $(F_OP2_MOD)/intel
@@ -89,7 +89,7 @@ ifeq ($(OP2_COMPILER),intel)
   MPICC	  	  = mpicc $(OPT)
   MPIF90	  = mpif90 $(OPT)
   NO_MPI_MACRO    = -D NO_MPI
-  ALLTARGETS      = f_reference_hdf5 f_openmp_hdf5
+  ALLTARGETS      = f_reference f_openmp f_cuda
 else
 print:
 	@echo "unrecognised value for OP2_COMPILER"

@@ -1,273 +1,263 @@
 MODULE GENERATED_MODULE
-USE OP2_FORTRAN_DECLARATIONS
-USE OP2_FORTRAN_RT_SUPPORT
-USE ISO_C_BINDING
-USE CUDAFOR
-USE CUDACONFIGURATIONPARAMS
-REAL(kind=8), CONSTANT :: alpha_OP2_CONSTANT
-REAL(kind=8), CONSTANT :: cfl_OP2_CONSTANT
-REAL(kind=8), CONSTANT :: eps_OP2_CONSTANT
-REAL(kind=8), CONSTANT :: gam_OP2_CONSTANT
-REAL(kind=8), CONSTANT :: gm1_OP2_CONSTANT
-REAL(kind=8), CONSTANT :: mach_OP2_CONSTANT
-REAL(kind=8), DIMENSION(4), DEVICE :: qinf_OP2_CONSTANT
-TYPE  :: adt_calc_opDatDimensions
-INTEGER(kind=4) :: opDat1Dimension
-INTEGER(kind=4) :: opDat2Dimension
-INTEGER(kind=4) :: opDat3Dimension
-INTEGER(kind=4) :: opDat4Dimension
-INTEGER(kind=4) :: opDat5Dimension
-INTEGER(kind=4) :: opDat6Dimension
-END TYPE adt_calc_opDatDimensions
+  USE OP2_FORTRAN_DECLARATIONS
+  USE OP2_FORTRAN_RT_SUPPORT
+  USE ISO_C_BINDING
+  USE CUDAFOR
+  USE CUDACONFIGURATIONPARAMS
 
-TYPE  :: adt_calc_opDatCardinalities
-INTEGER(kind=4) :: opDat1Cardinality
-INTEGER(kind=4) :: opDat5Cardinality
-INTEGER(kind=4) :: opDat6Cardinality
-INTEGER(kind=4) :: ind_maps1Size
-INTEGER(kind=4) :: mappingArray1Size
-INTEGER(kind=4) :: mappingArray2Size
-INTEGER(kind=4) :: mappingArray3Size
-INTEGER(kind=4) :: mappingArray4Size
-INTEGER(kind=4) :: pblkMapSize
-INTEGER(kind=4) :: pindOffsSize
-INTEGER(kind=4) :: pindSizesSize
-INTEGER(kind=4) :: pnelemsSize
-INTEGER(kind=4) :: pnthrcolSize
-INTEGER(kind=4) :: poffsetSize
-INTEGER(kind=4) :: pthrcolSize
-END TYPE adt_calc_opDatCardinalities
+  REAL(kind=8), CONSTANT :: alpha_OP2_CONSTANT
+  REAL(kind=8), CONSTANT :: cfl_OP2_CONSTANT
+  REAL(kind=8), CONSTANT :: eps_OP2_CONSTANT
+  REAL(kind=8), CONSTANT :: gam_OP2_CONSTANT
+  REAL(kind=8), CONSTANT :: gm1_OP2_CONSTANT
+  REAL(kind=8), CONSTANT :: mach_OP2_CONSTANT
+  REAL(kind=8), DIMENSION(4), DEVICE :: qinf_OP2_CONSTANT
 
-TYPE  :: bres_calc_opDatDimensions
-INTEGER(kind=4) :: opDat1Dimension
-INTEGER(kind=4) :: opDat2Dimension
-INTEGER(kind=4) :: opDat3Dimension
-INTEGER(kind=4) :: opDat4Dimension
-INTEGER(kind=4) :: opDat5Dimension
-INTEGER(kind=4) :: opDat6Dimension
-END TYPE bres_calc_opDatDimensions
+  TYPE  :: adt_calc_opDatDimensions
+  INTEGER(kind=4) :: opDat1Dimension
+  INTEGER(kind=4) :: opDat2Dimension
+  INTEGER(kind=4) :: opDat3Dimension
+  INTEGER(kind=4) :: opDat4Dimension
+  INTEGER(kind=4) :: opDat5Dimension
+  INTEGER(kind=4) :: opDat6Dimension
+  END TYPE adt_calc_opDatDimensions
+  TYPE  :: adt_calc_opDatCardinalities
+  INTEGER(kind=4) :: opDat1Cardinality
+  INTEGER(kind=4) :: opDat5Cardinality
+  INTEGER(kind=4) :: opDat6Cardinality
+  INTEGER(kind=4) :: ind_maps1Size
+  INTEGER(kind=4) :: mappingArray1Size
+  INTEGER(kind=4) :: mappingArray2Size
+  INTEGER(kind=4) :: mappingArray3Size
+  INTEGER(kind=4) :: mappingArray4Size
+  INTEGER(kind=4) :: pblkMapSize
+  INTEGER(kind=4) :: pindOffsSize
+  INTEGER(kind=4) :: pindSizesSize
+  INTEGER(kind=4) :: pnelemsSize
+  INTEGER(kind=4) :: pnthrcolSize
+  INTEGER(kind=4) :: poffsetSize
+  INTEGER(kind=4) :: pthrcolSize
+  END TYPE adt_calc_opDatCardinalities
 
-TYPE  :: bres_calc_opDatCardinalities
-INTEGER(kind=4) :: opDat1Cardinality
-INTEGER(kind=4) :: opDat3Cardinality
-INTEGER(kind=4) :: opDat4Cardinality
-INTEGER(kind=4) :: opDat5Cardinality
-INTEGER(kind=4) :: opDat6Cardinality
-INTEGER(kind=4) :: ind_maps1Size
-INTEGER(kind=4) :: mappingArray1Size
-INTEGER(kind=4) :: mappingArray2Size
-INTEGER(kind=4) :: ind_maps3Size
-INTEGER(kind=4) :: mappingArray3Size
-INTEGER(kind=4) :: ind_maps4Size
-INTEGER(kind=4) :: mappingArray4Size
-INTEGER(kind=4) :: ind_maps5Size
-INTEGER(kind=4) :: mappingArray5Size
-INTEGER(kind=4) :: pblkMapSize
-INTEGER(kind=4) :: pindOffsSize
-INTEGER(kind=4) :: pindSizesSize
-INTEGER(kind=4) :: pnelemsSize
-INTEGER(kind=4) :: pnthrcolSize
-INTEGER(kind=4) :: poffsetSize
-INTEGER(kind=4) :: pthrcolSize
-END TYPE bres_calc_opDatCardinalities
+  TYPE  :: bres_calc_opDatDimensions
+  INTEGER(kind=4) :: opDat1Dimension
+  INTEGER(kind=4) :: opDat2Dimension
+  INTEGER(kind=4) :: opDat3Dimension
+  INTEGER(kind=4) :: opDat4Dimension
+  INTEGER(kind=4) :: opDat5Dimension
+  INTEGER(kind=4) :: opDat6Dimension
+  END TYPE bres_calc_opDatDimensions
+  TYPE  :: bres_calc_opDatCardinalities
+  INTEGER(kind=4) :: opDat1Cardinality
+  INTEGER(kind=4) :: opDat3Cardinality
+  INTEGER(kind=4) :: opDat4Cardinality
+  INTEGER(kind=4) :: opDat5Cardinality
+  INTEGER(kind=4) :: opDat6Cardinality
+  INTEGER(kind=4) :: ind_maps1Size
+  INTEGER(kind=4) :: mappingArray1Size
+  INTEGER(kind=4) :: mappingArray2Size
+  INTEGER(kind=4) :: ind_maps3Size
+  INTEGER(kind=4) :: mappingArray3Size
+  INTEGER(kind=4) :: ind_maps4Size
+  INTEGER(kind=4) :: mappingArray4Size
+  INTEGER(kind=4) :: ind_maps5Size
+  INTEGER(kind=4) :: mappingArray5Size
+  INTEGER(kind=4) :: pblkMapSize
+  INTEGER(kind=4) :: pindOffsSize
+  INTEGER(kind=4) :: pindSizesSize
+  INTEGER(kind=4) :: pnelemsSize
+  INTEGER(kind=4) :: pnthrcolSize
+  INTEGER(kind=4) :: poffsetSize
+  INTEGER(kind=4) :: pthrcolSize
+  END TYPE bres_calc_opDatCardinalities
 
-TYPE  :: res_calc_opDatDimensions
-INTEGER(kind=4) :: opDat1Dimension
-INTEGER(kind=4) :: opDat2Dimension
-INTEGER(kind=4) :: opDat3Dimension
-INTEGER(kind=4) :: opDat4Dimension
-INTEGER(kind=4) :: opDat5Dimension
-INTEGER(kind=4) :: opDat6Dimension
-INTEGER(kind=4) :: opDat7Dimension
-INTEGER(kind=4) :: opDat8Dimension
-END TYPE res_calc_opDatDimensions
+  TYPE  :: res_calc_opDatDimensions
+  INTEGER(kind=4) :: opDat1Dimension
+  INTEGER(kind=4) :: opDat2Dimension
+  INTEGER(kind=4) :: opDat3Dimension
+  INTEGER(kind=4) :: opDat4Dimension
+  INTEGER(kind=4) :: opDat5Dimension
+  INTEGER(kind=4) :: opDat6Dimension
+  INTEGER(kind=4) :: opDat7Dimension
+  INTEGER(kind=4) :: opDat8Dimension
+  END TYPE res_calc_opDatDimensions
+  TYPE  :: res_calc_opDatCardinalities
+  INTEGER(kind=4) :: opDat1Cardinality
+  INTEGER(kind=4) :: opDat3Cardinality
+  INTEGER(kind=4) :: opDat5Cardinality
+  INTEGER(kind=4) :: opDat7Cardinality
+  INTEGER(kind=4) :: ind_maps1Size
+  INTEGER(kind=4) :: mappingArray1Size
+  INTEGER(kind=4) :: mappingArray2Size
+  INTEGER(kind=4) :: ind_maps3Size
+  INTEGER(kind=4) :: mappingArray3Size
+  INTEGER(kind=4) :: mappingArray4Size
+  INTEGER(kind=4) :: ind_maps5Size
+  INTEGER(kind=4) :: mappingArray5Size
+  INTEGER(kind=4) :: mappingArray6Size
+  INTEGER(kind=4) :: ind_maps7Size
+  INTEGER(kind=4) :: mappingArray7Size
+  INTEGER(kind=4) :: mappingArray8Size
+  INTEGER(kind=4) :: pblkMapSize
+  INTEGER(kind=4) :: pindOffsSize
+  INTEGER(kind=4) :: pindSizesSize
+  INTEGER(kind=4) :: pnelemsSize
+  INTEGER(kind=4) :: pnthrcolSize
+  INTEGER(kind=4) :: poffsetSize
+  INTEGER(kind=4) :: pthrcolSize
+  END TYPE res_calc_opDatCardinalities
 
-TYPE  :: res_calc_opDatCardinalities
-INTEGER(kind=4) :: opDat1Cardinality
-INTEGER(kind=4) :: opDat3Cardinality
-INTEGER(kind=4) :: opDat5Cardinality
-INTEGER(kind=4) :: opDat7Cardinality
-INTEGER(kind=4) :: ind_maps1Size
-INTEGER(kind=4) :: mappingArray1Size
-INTEGER(kind=4) :: mappingArray2Size
-INTEGER(kind=4) :: ind_maps3Size
-INTEGER(kind=4) :: mappingArray3Size
-INTEGER(kind=4) :: mappingArray4Size
-INTEGER(kind=4) :: ind_maps5Size
-INTEGER(kind=4) :: mappingArray5Size
-INTEGER(kind=4) :: mappingArray6Size
-INTEGER(kind=4) :: ind_maps7Size
-INTEGER(kind=4) :: mappingArray7Size
-INTEGER(kind=4) :: mappingArray8Size
-INTEGER(kind=4) :: pblkMapSize
-INTEGER(kind=4) :: pindOffsSize
-INTEGER(kind=4) :: pindSizesSize
-INTEGER(kind=4) :: pnelemsSize
-INTEGER(kind=4) :: pnthrcolSize
-INTEGER(kind=4) :: poffsetSize
-INTEGER(kind=4) :: pthrcolSize
-END TYPE res_calc_opDatCardinalities
+  TYPE  :: save_soln_qdim_opDatDimensions
+  INTEGER(kind=4) :: opDat2Dimension
+  INTEGER(kind=4) :: opDat3Dimension
+  END TYPE save_soln_qdim_opDatDimensions
+  TYPE  :: save_soln_qdim_opDatCardinalities
+  INTEGER(kind=4) :: opDat2Cardinality
+  INTEGER(kind=4) :: opDat3Cardinality
+  END TYPE save_soln_qdim_opDatCardinalities
 
-TYPE  :: save_soln_qdim_opDatDimensions
-INTEGER(kind=4) :: opDat2Dimension
-INTEGER(kind=4) :: opDat3Dimension
-END TYPE save_soln_qdim_opDatDimensions
+  TYPE  :: update_opDatDimensions
+  INTEGER(kind=4) :: opDat1Dimension
+  INTEGER(kind=4) :: opDat2Dimension
+  INTEGER(kind=4) :: opDat3Dimension
+  INTEGER(kind=4) :: opDat4Dimension
+  END TYPE update_opDatDimensions
+  TYPE  :: update_opDatCardinalities
+  INTEGER(kind=4) :: opDat1Cardinality
+  INTEGER(kind=4) :: opDat2Cardinality
+  INTEGER(kind=4) :: opDat3Cardinality
+  INTEGER(kind=4) :: opDat4Cardinality
+  INTEGER(kind=4) :: opDat5Cardinality
+  END TYPE update_opDatCardinalities
 
-TYPE  :: save_soln_qdim_opDatCardinalities
-INTEGER(kind=4) :: opDat2Cardinality
-INTEGER(kind=4) :: opDat3Cardinality
-END TYPE save_soln_qdim_opDatCardinalities
+  REAL(kind=4) :: loopTimeHostadt_calc_1379395014
+  REAL(kind=4) :: loopTimeKerneladt_calc_1379395014
+  INTEGER(kind=4) :: numberCalledadt_calc_1379395014
 
-TYPE  :: update_opDatDimensions
-INTEGER(kind=4) :: opDat1Dimension
-INTEGER(kind=4) :: opDat2Dimension
-INTEGER(kind=4) :: opDat3Dimension
-INTEGER(kind=4) :: opDat4Dimension
-END TYPE update_opDatDimensions
+  TYPE ( c_ptr )  :: planRet_adt_calc
+  REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat1Deviceadt_calc_1379395014
+  REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat5Deviceadt_calc_1379395014
+  REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat6Deviceadt_calc_1379395014
+  INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps1_adt_calc_1379395014
+  INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps2_adt_calc_1379395014
+  INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps3_adt_calc_1379395014
+  INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps4_adt_calc_1379395014
+  INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray1_adt_calc_1379395014
+  INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray2_adt_calc_1379395014
+  INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray3_adt_calc_1379395014
+  INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray4_adt_calc_1379395014
 
-TYPE  :: update_opDatCardinalities
-INTEGER(kind=4) :: opDat1Cardinality
-INTEGER(kind=4) :: opDat2Cardinality
-INTEGER(kind=4) :: opDat3Cardinality
-INTEGER(kind=4) :: opDat4Cardinality
-INTEGER(kind=4) :: opDat5Cardinality
-END TYPE update_opDatCardinalities
+  REAL(kind=4) :: loopTimeHostbres_calc_3019043301
+  REAL(kind=4) :: loopTimeKernelbres_calc_3019043301
+  INTEGER(kind=4) :: numberCalledbres_calc_3019043301
+  TYPE ( c_ptr )  :: planRet_bres_calc
+  REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat1Devicebres_calc_3019043301
+  REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat3Devicebres_calc_3019043301
+  REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat4Devicebres_calc_3019043301
+  REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat5Devicebres_calc_3019043301
+  INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat6Devicebres_calc_3019043301
+  INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps1_bres_calc_3019043301
+  INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps2_bres_calc_3019043301
+  INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps3_bres_calc_3019043301
+  INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps4_bres_calc_3019043301
+  INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps5_bres_calc_3019043301
+  INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray1_bres_calc_3019043301
+  INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray2_bres_calc_3019043301
+  INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray3_bres_calc_3019043301
+  INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray4_bres_calc_3019043301
+  INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray5_bres_calc_3019043301
 
-REAL(kind=4) :: loopTimeHostadt_calc_1379395014
-REAL(kind=4) :: loopTimeKerneladt_calc_1379395014
-INTEGER(kind=4) :: numberCalledadt_calc_1379395014
-TYPE ( c_ptr )  :: planRet_adt_calc
-REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat1Deviceadt_calc_1379395014
-REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat5Deviceadt_calc_1379395014
-REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat6Deviceadt_calc_1379395014
-INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps1_adt_calc_1379395014
-INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps2_adt_calc_1379395014
-INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps3_adt_calc_1379395014
-INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps4_adt_calc_1379395014
-INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray1_adt_calc_1379395014
-INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray2_adt_calc_1379395014
-INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray3_adt_calc_1379395014
-INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray4_adt_calc_1379395014
-REAL(kind=4) :: loopTimeHostbres_calc_3019043301
-REAL(kind=4) :: loopTimeKernelbres_calc_3019043301
-INTEGER(kind=4) :: numberCalledbres_calc_3019043301
-TYPE ( c_ptr )  :: planRet_bres_calc
-REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat1Devicebres_calc_3019043301
-REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat3Devicebres_calc_3019043301
-REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat4Devicebres_calc_3019043301
-REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat5Devicebres_calc_3019043301
-INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat6Devicebres_calc_3019043301
-INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps1_bres_calc_3019043301
-INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps2_bres_calc_3019043301
-INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps3_bres_calc_3019043301
-INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps4_bres_calc_3019043301
-INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps5_bres_calc_3019043301
-INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray1_bres_calc_3019043301
-INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray2_bres_calc_3019043301
-INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray3_bres_calc_3019043301
-INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray4_bres_calc_3019043301
-INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray5_bres_calc_3019043301
-REAL(kind=4) :: loopTimeHostres_calc_3884922247
-REAL(kind=4) :: loopTimeKernelres_calc_3884922247
-INTEGER(kind=4) :: numberCalledres_calc_3884922247
-TYPE ( c_ptr )  :: planRet_res_calc
-REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat1Deviceres_calc_3884922247
-REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat3Deviceres_calc_3884922247
-REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat5Deviceres_calc_3884922247
-REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat7Deviceres_calc_3884922247
-INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps1_res_calc_3884922247
-INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps2_res_calc_3884922247
-INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps3_res_calc_3884922247
-INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps4_res_calc_3884922247
-INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps5_res_calc_3884922247
-INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps6_res_calc_3884922247
-INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps7_res_calc_3884922247
-INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps8_res_calc_3884922247
-INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray1_res_calc_3884922247
-INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray2_res_calc_3884922247
-INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray3_res_calc_3884922247
-INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray4_res_calc_3884922247
-INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray5_res_calc_3884922247
-INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray6_res_calc_3884922247
-INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray7_res_calc_3884922247
-INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray8_res_calc_3884922247
-REAL(kind=4) :: loopTimeHostsave_soln_qdim_2320554256
-REAL(kind=4) :: loopTimeKernelsave_soln_qdim_2320554256
-INTEGER(kind=4) :: numberCalledsave_soln_qdim_2320554256
-DOUBLE PRECISION, DIMENSION(:), DEVICE, ALLOCATABLE :: opDat2Devicesave_soln_qdim_2320554256
-DOUBLE PRECISION, DIMENSION(:), DEVICE, ALLOCATABLE :: opDat3Devicesave_soln_qdim_2320554256
-REAL(kind=4) :: loopTimeHostupdate_2692987784
-REAL(kind=4) :: loopTimeKernelupdate_2692987784
-INTEGER(kind=4) :: numberCalledupdate_2692987784
-REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat1Deviceupdate_2692987784
-REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat2Deviceupdate_2692987784
-REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat3Deviceupdate_2692987784
-REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat4Deviceupdate_2692987784
-CONTAINS
+  REAL(kind=4) :: loopTimeHostres_calc_3884922247
+  REAL(kind=4) :: loopTimeKernelres_calc_3884922247
+  INTEGER(kind=4) :: numberCalledres_calc_3884922247
+  TYPE ( c_ptr )  :: planRet_res_calc
+  REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat1Deviceres_calc_3884922247
+  REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat3Deviceres_calc_3884922247
+  REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat5Deviceres_calc_3884922247
+  REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat7Deviceres_calc_3884922247
+  INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps1_res_calc_3884922247
+  INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps2_res_calc_3884922247
+  INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps3_res_calc_3884922247
+  INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps4_res_calc_3884922247
+  INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps5_res_calc_3884922247
+  INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps6_res_calc_3884922247
+  INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps7_res_calc_3884922247
+  INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps8_res_calc_3884922247
+  INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray1_res_calc_3884922247
+  INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray2_res_calc_3884922247
+  INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray3_res_calc_3884922247
+  INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray4_res_calc_3884922247
+  INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray5_res_calc_3884922247
+  INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray6_res_calc_3884922247
+  INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray7_res_calc_3884922247
+  INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray8_res_calc_3884922247
 
-attributes (device) SUBROUTINE ReductionFloat8(reductionResult,inputValue,reductionOperation)
-REAL(kind=8), DIMENSION(:), DEVICE :: reductionResult
-REAL(kind=8), DIMENSION(1:1) :: inputValue
-INTEGER(kind=4), VALUE :: reductionOperation
-REAL(kind=8), DIMENSION(0:*), SHARED :: sharedFloat8
-INTEGER(kind=4) :: i1
-INTEGER(kind=4) :: threadID
-threadID = threadIdx%x - 1
-i1 = ishft(blockDim%x,-1)
-CALL syncthreads()
-sharedFloat8(threadID) = inputValue(1)
+  REAL(kind=4) :: loopTimeHostsave_soln_qdim_2320554256
+  REAL(kind=4) :: loopTimeKernelsave_soln_qdim_2320554256
+  INTEGER(kind=4) :: numberCalledsave_soln_qdim_2320554256
+  DOUBLE PRECISION, DIMENSION(:), DEVICE, ALLOCATABLE :: opDat2Devicesave_soln_qdim_2320554256
+  DOUBLE PRECISION, DIMENSION(:), DEVICE, ALLOCATABLE :: opDat3Devicesave_soln_qdim_2320554256
 
-DO WHILE (i1 > 0)
-CALL syncthreads()
+  REAL(kind=4) :: loopTimeHostupdate_2692987784
+  REAL(kind=4) :: loopTimeKernelupdate_2692987784
+  INTEGER(kind=4) :: numberCalledupdate_2692987784
+  REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat1Deviceupdate_2692987784
+  REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat2Deviceupdate_2692987784
+  REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat3Deviceupdate_2692987784
+  REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat4Deviceupdate_2692987784
 
-IF (threadID < i1) THEN
+  CONTAINS
 
-SELECT CASE(reductionOperation)
-CASE (0)
-sharedFloat8(threadID) = sharedFloat8(threadID) + sharedFloat8(threadID + i1)
-CASE (1)
+  attributes (device) SUBROUTINE ReductionFloat8(reductionResult,inputValue,reductionOperation)
+    REAL(kind=8), DIMENSION(:), DEVICE :: reductionResult
+    REAL(kind=8), DIMENSION(1:1) :: inputValue
+    INTEGER(kind=4), VALUE :: reductionOperation
+    REAL(kind=8), DIMENSION(0:*), SHARED :: sharedFloat8
+    INTEGER(kind=4) :: i1
+    INTEGER(kind=4) :: threadID
+    threadID = threadIdx%x - 1
+    i1 = ishft(blockDim%x,-1)
+    CALL syncthreads()
+    sharedFloat8(threadID) = inputValue(1)
 
-IF (sharedFloat8(threadID + i1) < sharedFloat8(threadID)) THEN
-sharedFloat8(threadID) = sharedFloat8(threadID + i1)
-END IF
+    DO WHILE (i1 > 0)
+      CALL syncthreads()
+      IF (threadID < i1) THEN
+        SELECT CASE(reductionOperation)
+          CASE (0)
+            sharedFloat8(threadID) = sharedFloat8(threadID) + sharedFloat8(threadID + i1)
+          CASE (1)
+            IF (sharedFloat8(threadID + i1) < sharedFloat8(threadID)) THEN
+              sharedFloat8(threadID) = sharedFloat8(threadID + i1)
+            END IF
+          CASE (2)
+            IF (sharedFloat8(threadID + i1) > sharedFloat8(threadID)) THEN
+              sharedFloat8(threadID) = sharedFloat8(threadID + i1)
+            END IF
+        END SELECT
+      END IF
+      i1 = ishft(i1,-1)
+    END DO
 
-CASE (2)
+    CALL syncthreads()
 
-IF (sharedFloat8(threadID + i1) > sharedFloat8(threadID)) THEN
-sharedFloat8(threadID) = sharedFloat8(threadID + i1)
-END IF
+    IF (threadID .EQ. 0) THEN
+      SELECT CASE(reductionOperation)
+        CASE (0)
+          reductionResult(1) = reductionResult(1) + sharedFloat8(0)
+        CASE (1)
+          IF (sharedFloat8(0) < reductionResult(1)) THEN
+            reductionResult(1) = sharedFloat8(0)
+          END IF
+        CASE (2)
+          IF (sharedFloat8(0) > reductionResult(1)) THEN
+            reductionResult(1) = sharedFloat8(0)
+          END IF
+      END SELECT
+    END IF
 
-END SELECT
+    CALL syncthreads()
 
-END IF
-
-i1 = ishft(i1,-1)
-END DO
-
-CALL syncthreads()
-
-IF (threadID .EQ. 0) THEN
-
-SELECT CASE(reductionOperation)
-CASE (0)
-reductionResult(1) = reductionResult(1) + sharedFloat8(0)
-CASE (1)
-
-IF (sharedFloat8(0) < reductionResult(1)) THEN
-reductionResult(1) = sharedFloat8(0)
-END IF
-
-CASE (2)
-
-IF (sharedFloat8(0) > reductionResult(1)) THEN
-reductionResult(1) = sharedFloat8(0)
-END IF
-
-END SELECT
-
-END IF
-
-CALL syncthreads()
 END SUBROUTINE
 
 attributes (host) SUBROUTINE printProfInfo()
@@ -300,62 +290,73 @@ print *, 'loopTimeKernelupdate_2692987784 Average = ', loopTimeKernelupdate_2692
 END SUBROUTINE
 
 attributes (host) SUBROUTINE initOP2Constants(alpha,cfl,eps,gam,gm1,mach,qinf)
-IMPLICIT NONE
-REAL(kind=8) :: alpha
-REAL(kind=8) :: cfl
-REAL(kind=8) :: eps
-REAL(kind=8) :: gam
-REAL(kind=8) :: gm1
-REAL(kind=8) :: mach
-REAL(kind=8), DIMENSION(4) :: qinf
-INTEGER(kind=4) :: i1
-alpha_OP2_CONSTANT = alpha
-cfl_OP2_CONSTANT = cfl
-eps_OP2_CONSTANT = eps
-gam_OP2_CONSTANT = gam
-gm1_OP2_CONSTANT = gm1
-mach_OP2_CONSTANT = mach
-qinf_OP2_CONSTANT = qinf
+  IMPLICIT NONE
+  REAL(kind=8) :: alpha
+  REAL(kind=8) :: cfl
+  REAL(kind=8) :: eps
+  REAL(kind=8) :: gam
+  REAL(kind=8) :: gm1
+  REAL(kind=8) :: mach
+  REAL(kind=8), DIMENSION(4) :: qinf
+  INTEGER(kind=4) :: i1
+  alpha_OP2_CONSTANT = alpha
+  cfl_OP2_CONSTANT = cfl
+  eps_OP2_CONSTANT = eps
+  gam_OP2_CONSTANT = gam
+  gm1_OP2_CONSTANT = gm1
+  mach_OP2_CONSTANT = mach
+  qinf_OP2_CONSTANT = qinf
 END SUBROUTINE
 
 attributes (device) SUBROUTINE adt_calc_modified(x1,x2,x3,x4,q,adt)
-IMPLICIT NONE
-REAL(kind=8), DIMENSION(*) :: x1
-REAL(kind=8), DIMENSION(*) :: x2
-REAL(kind=8), DIMENSION(*) :: x3
-REAL(kind=8), DIMENSION(*) :: x4
-REAL(kind=8), DIMENSION(*) :: q
-REAL(kind=8) :: adt
-REAL(kind=8) :: dx
-REAL(kind=8) :: dy
-REAL(kind=8) :: ri
-REAL(kind=8) :: u
-REAL(kind=8) :: v
-REAL(kind=8) :: c
-ri = 1.0 / q(1)
-u = ri * q(2)
-v = ri * q(3)
-c = sqrt(gam_OP2_CONSTANT * gm1_OP2_CONSTANT * (ri * q(4) - 0.5 * (u * u + v * v)))
-dx = x2(1) - x1(1)
-dy = x2(2) - x1(2)
-adt = abs(u * dy - v * dx) + c * sqrt(dx * dx + dy * dy)
-dx = x3(1) - x2(1)
-dy = x3(2) - x2(2)
-adt = adt + abs(u * dy - v * dx) + c * sqrt(dx * dx + dy * dy)
-dx = x4(1) - x3(1)
-dy = x4(2) - x3(2)
-adt = adt + abs(u * dy - v * dx) + c * sqrt(dx * dx + dy * dy)
-dx = x1(1) - x4(1)
-dy = x1(2) - x4(2)
-adt = adt + abs(u * dy - v * dx) + c * sqrt(dx * dx + dy * dy)
-adt = adt / cfl_OP2_CONSTANT
+  IMPLICIT NONE
+  REAL(kind=8), DIMENSION(*) :: x1
+  REAL(kind=8), DIMENSION(*) :: x2
+  REAL(kind=8), DIMENSION(*) :: x3
+  REAL(kind=8), DIMENSION(*) :: x4
+  REAL(kind=8), DIMENSION(*) :: q
+  REAL(kind=8) :: adt
+  REAL(kind=8) :: dx
+  REAL(kind=8) :: dy
+  REAL(kind=8) :: ri
+  REAL(kind=8) :: u
+  REAL(kind=8) :: v
+  REAL(kind=8) :: c
+  ri = 1.0 / q(1)
+  u = ri * q(2)
+  v = ri * q(3)
+  c = sqrt(gam_OP2_CONSTANT * gm1_OP2_CONSTANT * (ri * q(4) - 0.5 * (u * u + v * v)))
+  dx = x2(1) - x1(1)
+  dy = x2(2) - x1(2)
+  adt = abs(u * dy - v * dx) + c * sqrt(dx * dx + dy * dy)
+  dx = x3(1) - x2(1)
+  dy = x3(2) - x2(2)
+  adt = adt + abs(u * dy - v * dx) + c * sqrt(dx * dx + dy * dy)
+  dx = x4(1) - x3(1)
+  dy = x4(2) - x3(2)
+  adt = adt + abs(u * dy - v * dx) + c * sqrt(dx * dx + dy * dy)
+  dx = x1(1) - x4(1)
+  dy = x1(2) - x4(2)
+  adt = adt + abs(u * dy - v * dx) + c * sqrt(dx * dx + dy * dy)
+  adt = adt / cfl_OP2_CONSTANT
 END SUBROUTINE
 
-attributes (global) SUBROUTINE adt_calc_kernel(opDatDimensions,opDatCardinalities,pindSizes,pindOffs,pblkMap,poffset,pn&
-&elems,pnthrcol,pthrcol,blockOffset)
-IMPLICIT NONE
-TYPE ( adt_calc_opDatDimensions ) , DEVICE :: opDatDimensions
-TYPE ( adt_calc_opDatCardinalities ) , DEVICE :: opDatCardinalities
+attributes (global) SUBROUTINE adt_calc_kernel( &
+  & opDatDimensions, &
+  & opDatCardinalities, &
+  & pindSizes, &
+  & pindOffs, &
+  & pblkMap, &
+  & poffset, &
+  & pnelems, &
+  & pnthrcol, &
+  & pthrcol, &
+  & blockOffset)
+
+  IMPLICIT NONE
+
+  TYPE ( adt_calc_opDatDimensions ) , DEVICE :: opDatDimensions
+  TYPE ( adt_calc_opDatCardinalities ) , DEVICE :: opDatCardinalities
 INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pindSizesSize - 1), DEVICE :: pindSizes
 INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pindOffsSize - 1), DEVICE :: pindOffs
 INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pblkMapSize - 1), DEVICE :: pblkMap

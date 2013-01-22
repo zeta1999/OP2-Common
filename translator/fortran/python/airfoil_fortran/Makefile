@@ -1,23 +1,26 @@
-IC = icc
-FC = /opt/intel/Compiler/11.1/064/bin/intel64/ifort
+#IC = icc
+#FC = /opt/intel/Compiler/11.1/064/bin/intel64/ifort
 
-#IC = pgcc
-#FC = pgfortran
+IC = pgcc
+#FC = pgfortran -Mcuda=cuda4.0
+FC = pgf90 -Mcuda
 
-OPENMP = -openmp
-#OPENMP = -mp
-PREPROCESSOR = -fpp
+#OPENMP = -openmp
+OPENMP = -mp
+#PREPROCESSOR = -fpp
 
 CPPLINK = -lstdc++
-OPT = -DOP_PART_SIZE_1=$(PART_SIZE_ENV) -O2 -xSSE4.2 -vec-report
+OPT = -DOP_PART_SIZE_1=$(PART_SIZE_ENV) -O2 #-xSSE4.2 -vec-report
 OP2 = $(OP2_INSTALL_PATH)
 
-F_OP2_MOD = $(OP2)/fortran/mod/intel
-#F_OP2_MOD = $(OP2)/fortran/mod/pgi
+#F_OP2_MOD = $(OP2)/fortran/mod/intel
+F_OP2_MOD = $(OP2)/fortran/mod/pgi
 F_OP2_LIB = $(OP2)/fortran/lib
 
 HDF5_LIB = -L$(HDF5_INSTALL_PATH)/lib -lhdf5
+#HDF5_LIB = -L/home/gihan/hdf5-pgi/lib -lhdf5
 MPI_LIB = -L$(MPI_INSTALL_PATH)/lib -lmpi
+#MPI_LIB = -L/home/gihan/openmpi-pgi/lib -lmpi
 
 FLINK = -L$(F_OP2_LIB)
 FMODS = -I$(F_OP2_MOD)
@@ -35,9 +38,9 @@ airfoil_seq: compile_seq debug.o constants.o
 
 compile_openmp:  airfoil_op.F90 save_soln_kernel.F90 adt_calc_kernel.F90 \
 	  res_calc_kernel.F90 bres_calc_kernel.F90 update_kernel.F90
-	$(FC) $(OPT) $(OPENMP) $(FMODS) -c constants.F90 airfoil_seqfun.F90 \
+	$(FC) $(OPT) $(OPENMP) $(FMODS) -c constants.F90 \
 	save_soln_kernel.F90 update_kernel.F90 bres_calc_kernel.F90 \
-	res_calc_kernel.F90 adt_calc_kernel.F90 airfoil_op.F90 airfoil_seqfun.F90 airfoil.F90
+	res_calc_kernel.F90 adt_calc_kernel.F90 airfoil_op.F90 airfoil_seqfun.F90
 
 airfoil_openmp_$(PART_SIZE_ENV): compile_openmp airfoil_op.F90 save_soln_kernel.F90 adt_calc_kernel.F90 \
 	  res_calc_kernel.F90 bres_calc_kernel.F90 update_kernel.F90
