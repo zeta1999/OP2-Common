@@ -357,31 +357,31 @@ attributes (global) SUBROUTINE adt_calc_kernel( &
 
   TYPE ( adt_calc_opDatDimensions ) , DEVICE :: opDatDimensions
   TYPE ( adt_calc_opDatCardinalities ) , DEVICE :: opDatCardinalities
-INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pindSizesSize - 1), DEVICE :: pindSizes
-INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pindOffsSize - 1), DEVICE :: pindOffs
-INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pblkMapSize - 1), DEVICE :: pblkMap
-INTEGER(kind=4), DIMENSION(0:opDatCardinalities%poffsetSize - 1), DEVICE :: poffset
-INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pnelemsSize - 1), DEVICE :: pnelems
-INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pnthrcolSize - 1), DEVICE :: pnthrcol
-INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pthrcolSize - 1), DEVICE :: pthrcol
-INTEGER(kind=4), VALUE :: blockOffset
-REAL(kind=8), DIMENSION(0:3) :: opDat5Local
-REAL(kind=8), DIMENSION(0:*), SHARED :: sharedFloat8
-INTEGER(kind=4) :: sharedOffsetFloat8
-INTEGER(kind=4), SHARED :: sharedMemoryOffset
-INTEGER(kind=4), SHARED :: blockID
-INTEGER(kind=4), SHARED :: numberOfActiveThreads
-INTEGER(kind=4) :: moduloResult
-INTEGER(kind=4) :: nbytes
-INTEGER(kind=4) :: i1
-INTEGER(kind=4) :: n1
-INTEGER(kind=4) :: opDat1nBytes
-INTEGER(kind=4) :: opDat5nBytes
-INTEGER(kind=4) :: opDat6nBytes
-INTEGER(kind=4) :: opDat1RoundUp
-INTEGER(kind=4) :: opDat5RoundUp
-INTEGER(kind=4) :: opDat6RoundUp
-INTEGER(kind=4), SHARED :: opDat1SharedIndirectionSize
+  INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pindSizesSize - 1), DEVICE :: pindSizes
+  INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pindOffsSize - 1), DEVICE :: pindOffs
+  INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pblkMapSize - 1), DEVICE :: pblkMap
+  INTEGER(kind=4), DIMENSION(0:opDatCardinalities%poffsetSize - 1), DEVICE :: poffset
+  INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pnelemsSize - 1), DEVICE :: pnelems
+  INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pnthrcolSize - 1), DEVICE :: pnthrcol
+  INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pthrcolSize - 1), DEVICE :: pthrcol
+  INTEGER(kind=4), VALUE :: blockOffset
+  REAL(kind=8), DIMENSION(0:3) :: opDat5Local
+  REAL(kind=8), DIMENSION(0:*), SHARED :: sharedFloat8
+  INTEGER(kind=4) :: sharedOffsetFloat8
+  INTEGER(kind=4), SHARED :: sharedMemoryOffset
+  INTEGER(kind=4), SHARED :: blockID
+  INTEGER(kind=4), SHARED :: numberOfActiveThreads
+  INTEGER(kind=4) :: moduloResult
+  INTEGER(kind=4) :: nbytes
+  INTEGER(kind=4) :: i1
+  INTEGER(kind=4) :: n1
+  INTEGER(kind=4) :: opDat1nBytes
+  INTEGER(kind=4) :: opDat5nBytes
+  INTEGER(kind=4) :: opDat6nBytes
+  INTEGER(kind=4) :: opDat1RoundUp
+  INTEGER(kind=4) :: opDat5RoundUp
+  INTEGER(kind=4) :: opDat6RoundUp
+  INTEGER(kind=4), SHARED :: opDat1SharedIndirectionSize
 
 IF (threadIdx%x - 1 .EQ. 0) THEN
 blockID = pblkMap(blockIdx%x - 1 + blockOffset)

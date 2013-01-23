@@ -380,9 +380,18 @@ SUBROUTINE adt_calc_host( userSubroutine, set, &
   INTEGER(kind=4) :: i1
   INTEGER(kind=4) :: i2
 
-  IF (set%setPtr%size .EQ. 0) THEN
+  returnMPIHaloExchange = op_mpi_halo_exchanges(set%setCPtr,numberOfOpDats,opArgArray)
+
+  IF (returnMPIHaloExchange .EQ. 0) THEN
+    CALL op_mpi_wait_all(numberOfOpDats,opArgArray)
+    CALL op_mpi_set_dirtybit(numberOfOpDats,opArgArray)
     RETURN
   END IF
+
+
+  !IF (set%setPtr%size .EQ. 0) THEN
+  !  RETURN
+  !END IF
 
   numberCalledadt_calc_1379395014 = numberCalledadt_calc_1379395014 + 1
 
@@ -488,6 +497,11 @@ SUBROUTINE adt_calc_host( userSubroutine, set, &
   blockOffset = 0
 
   DO i1 = 0, actualPlan_adt_calc%ncolors - 1, 1
+
+    IF (i1 .EQ. actualPlan_adt_calc%ncolors_core) THEN
+      CALL op_mpi_wait_all(numberOfOpDats,opArgArray)
+    END IF
+
     nblocks = ncolblk_adt_calc(i1 + 1)
 
     !$OMP PARALLEL DO private (threadID)
@@ -526,6 +540,8 @@ SUBROUTINE adt_calc_host( userSubroutine, set, &
 
     call date_and_time(values=timeArrayStart)
     startTimeHost = 1.00000 * timeArrayStart(8) + 1000.00 * timeArrayStart(7) + 60000 * timeArrayStart(6) + 3600000 * timeArrayStart(5)
+
+    CALL op_mpi_set_dirtybit(numberOfOpDats,opArgArray)
 
     call date_and_time(values=timeArrayEnd)
     endTimeHost = 1.00000 * timeArrayEnd(8) + &
@@ -831,10 +847,17 @@ SUBROUTINE bres_calc_host( userSubroutine, set, &
   INTEGER(kind=4) :: i1
   INTEGER(kind=4) :: i2
 
+  returnMPIHaloExchange = op_mpi_halo_exchanges(set%setCPtr,numberOfOpDats,opArgArray)
 
-  IF (set%setPtr%size .EQ. 0) THEN
+  IF (returnMPIHaloExchange .EQ. 0) THEN
+    CALL op_mpi_wait_all(numberOfOpDats,opArgArray)
+    CALL op_mpi_set_dirtybit(numberOfOpDats,opArgArray)
     RETURN
   END IF
+
+  !IF (set%setPtr%size .EQ. 0) THEN
+  !  RETURN
+  !END IF
 
   numberCalledbres_calc_3019043301 = numberCalledbres_calc_3019043301 + 1
 
@@ -953,7 +976,13 @@ SUBROUTINE bres_calc_host( userSubroutine, set, &
   blockOffset = 0
 
   DO i1 = 0, actualPlan_bres_calc%ncolors - 1, 1
+
+    IF (i1 .EQ. actualPlan_bres_calc%ncolors_core) THEN
+      CALL op_mpi_wait_all(numberOfOpDats,opArgArray)
+    END IF
+
     nblocks = ncolblk_bres_calc(i1 + 1)
+
     !$OMP PARALLEL DO private (threadID)
     DO i2 = 0, nblocks - 1, 1
       threadID = omp_get_thread_num()
@@ -1001,6 +1030,8 @@ SUBROUTINE bres_calc_host( userSubroutine, set, &
   & 1000.00 * timeArrayStart(7) + &
   & 60000 * timeArrayStart(6) + &
   & 3600000 * timeArrayStart(5)
+
+  CALL op_mpi_set_dirtybit(numberOfOpDats,opArgArray)
 
   call date_and_time(values=timeArrayEnd)
   endTimeHost = 1.00000 * timeArrayEnd(8) + &
@@ -1326,7 +1357,15 @@ SUBROUTINE res_calc_host( userSubroutine, set, &
   INTEGER(kind=4) :: i1
   INTEGER(kind=4) :: i2
 
-  IF (set%setPtr%size .EQ. 0) THEN
+  !IF (set%setPtr%size .EQ. 0) THEN
+  !  RETURN
+  !END IF
+
+  returnMPIHaloExchange = op_mpi_halo_exchanges(set%setCPtr,numberOfOpDats,opArgArray)
+
+  IF (returnMPIHaloExchange .EQ. 0) THEN
+    CALL op_mpi_wait_all(numberOfOpDats,opArgArray)
+    CALL op_mpi_set_dirtybit(numberOfOpDats,opArgArray)
     RETURN
   END IF
 
@@ -1460,7 +1499,13 @@ SUBROUTINE res_calc_host( userSubroutine, set, &
   blockOffset = 0
 
   DO i1 = 0, actualPlan_res_calc%ncolors - 1, 1
+
+    IF (i1 .EQ. actualPlan_res_calc%ncolors_core) THEN
+      CALL op_mpi_wait_all(numberOfOpDats,opArgArray)
+    END IF
+
     nblocks = ncolblk_res_calc(i1 + 1)
+
     !$OMP PARALLEL DO private (threadID)
       DO i2 = 0, nblocks - 1, 1
         threadID = omp_get_thread_num()
@@ -1508,6 +1553,8 @@ SUBROUTINE res_calc_host( userSubroutine, set, &
   & 1000.00 * timeArrayStart(7) + &
   & 60000 * timeArrayStart(6) + &
   & 3600000 * timeArrayStart(5)
+
+  CALL op_mpi_set_dirtybit(numberOfOpDats,opArgArray)
 
   call date_and_time(values=timeArrayEnd)
   endTimeHost = 1.00000 * timeArrayEnd(8) + &
@@ -1851,6 +1898,8 @@ SUBROUTINE update_host( userSubroutine, set, &
   END DO
 
   deallocate( reductionArrayHost5 )
+
+  CALL op_mpi_reduce_float(opArg5,opArg5%data)
 
   call date_and_time(values=timeArrayEnd)
   endTimeHost = 1.00000 * timeArrayEnd(8) + &

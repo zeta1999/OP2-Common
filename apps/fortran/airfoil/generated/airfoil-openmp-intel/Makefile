@@ -1,20 +1,20 @@
 #IC = icc
 #FC = /opt/intel/Compiler/11.1/064/bin/intel64/ifort
 
-IC = pgcc -g
-FC = pgfortran -g -Mcuda
+IC = pgcc
+FC = pgfortran  -Mcuda
 
-OPENMP = -mp #-openmp #-mp
-PREPROCESSOR = #-fpp
+OPENMP = -mp#-openmp #-mp
+PREPROCESSOR = -fpp
 
 EXEC = airfoil_openmp_$(PART_SIZE_ENV)
 
 CPPLINK = -lstdc++
-OPT = -DOP_PART_SIZE_1=$(PART_SIZE_ENV)
+OPT = -DOP_PART_SIZE_1=$(PART_SIZE_ENV) -O3 #-xSSE4.2
 
 OP2 = $(OP2_INSTALL_PATH)
 
-F_OP2_MOD = $(OP2)/fortran/mod/pgi
+F_OP2_MOD = $(OP2)/fortran/mod/$(OP2_COMPILER)
 F_OP2_LIB = $(OP2)/fortran/lib
 
 HDF5_LIB = -L$(HDF5_INSTALL_PATH)/lib -lhdf5
@@ -32,7 +32,7 @@ airfoil_seq: OP2Profiling.f90 debug_int.f90 input.f90 constvars.f90 rose_openmp_
 	$(FC) $(OPT) $(DEBUG) $(OPENMP) $(FMODS) -c OP2Profiling.f90 debug_int.f90 input.f90 constvars.f90 rose_openmp_code.F90 airfoil_seqfun.f90 rose_airfoil.F90
 
 link: debug.o OP2Profiling.o debug_int.o input.o constvars.o rose_openmp_code.o airfoil_seqfun.o rose_airfoil.o
-	$(FC) $(OPT) $(OPENMP) $(FLINK) OP2Profiling.o debug.o debug_int.o input.o constvars.o rose_openmp_code.o airfoil_seqfun.o rose_airfoil.o -o $(EXEC) -lop2_for_openmp $(HDF5_LIB) $(MPI_LIB) -lz
+	$(FC) $(OPT) $(OPENMP) OP2Profiling.o debug.o debug_int.o input.o constvars.o rose_openmp_code.o airfoil_seqfun.o rose_airfoil.o -o $(EXEC) $(FLINK) -lop2_for_openmp $(HDF5_LIB) $(MPI_LIB) -lz
 
 clean:
 	rm -f *.o
