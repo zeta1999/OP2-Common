@@ -1,10 +1,10 @@
-#IC = icc
-#FC = /opt/intel/Compiler/11.1/064/bin/intel64/ifort
+IC = icc
+FC = /opt/intel/Compiler/11.1/064/bin/intel64/ifort
 
-IC = pgcc
-FC = pgfortran  -Mcuda
+#IC = pgcc
+#FC = pgfortran  -Mcuda
 
-OPENMP = -mp#-openmp #-mp
+OPENMP = -openmp #-mp
 PREPROCESSOR = -fpp
 
 EXEC = airfoil_openmp_$(PART_SIZE_ENV)

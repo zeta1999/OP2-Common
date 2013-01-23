@@ -73,7 +73,6 @@ op_set op_decl_set_hdf5(char const *file, char const *name)
 
   H5Dclose(dset_id);
   H5Fclose(file_id);
-
   return op_decl_set(l_size,  name);
 }
 
@@ -105,8 +104,8 @@ op_map op_decl_map_hdf5(op_set from, op_set to, int dim, char const *file, char 
   //check if size is accurate
   if(from->size != g_size)
   {
-    printf("map from set size %d in file %s and size %d do not match \n",
-        g_size,file,from->size);
+    printf("map from set %s size %d in file %s and size %d of set %s do not match \n",
+        name, g_size,file,from->size, from->name);
     exit(2);
   }
 
@@ -474,9 +473,9 @@ void op_write_hdf5(char const * file_name)
   /*loop over all the op_dats and write them to file*/
   op_dat_entry *item;
   TAILQ_FOREACH(item, &OP_dat_list, entries) {
-		op_dat dat = item->dat;
+    op_dat dat = item->dat;
 
-		//find total size of map
+    //find total size of map
     int g_size = dat->set->size;
 
     //Create the dataspace for the dataset.

@@ -16,7 +16,7 @@ F_OP2_INC = $(F_OP2)/include
 F_OP2_SRC = $(F_OP2)/src
 F_OP2_OBJ = $(F_OP2)/obj
 F_OP2_LIB = $(F_OP2)/lib
-F_OP2_MOD = $(F_OP2)/mod/pgi
+F_OP2_MOD = $(F_OP2)/mod
 
 PARMETIS_INCLUDE_PATH ?= $(PARMETIS_INSTALL_PATH)
 PARMETIS_LIB_PATH ?= $(PARMETIS_INSTALL_PATH)
@@ -89,7 +89,7 @@ ifeq ($(OP2_COMPILER),intel)
   MPICC	  	  = mpicc $(OPT)
   MPIF90	  = mpif90 $(OPT)
   NO_MPI_MACRO    = -D NO_MPI
-  ALLTARGETS      = f_reference f_openmp f_mpi_openmp_hydra
+  ALLTARGETS      = f_reference_hdf5 f_openmp #f_mpi_openmp_hydra
 else
 print:
 	@echo "unrecognised value for OP2_COMPILER"
@@ -153,11 +153,13 @@ f_reference_hdf5: $(C_OP2_INC)/op_lib_core.h $(C_OP2_SRC)/core/op_lib_core.c \
 						 $(F_OP2_SRC)/op2_for_declarations.F90 \
 						 $(F_OP2_SRC)/op2_for_reference.F90 \
 						 $(F_OP2_SRC)/op2_C_reference.c \
+						 $(C_OP2_SRC)/externlib/op_util.c \
 						 $(C_OP2_SRC)/externlib/op_hdf5.c \
 						 directories
 	$(CC) $(CFLAGS) -I$(C_OP2_INC) -c $(C_OP2_SRC)/core/op_lib_core.c -o $(F_OP2_OBJ)/op_lib_core.o
 	$(CC) $(CFLAGS) -I$(C_OP2_INC) -c $(C_OP2_SRC)/sequential/op_seq.c -o $(F_OP2_OBJ)/op_seq.o
 	$(CC) $(CFLAGS) -I$(C_OP2_INC) -c $(C_OP2_SRC)/core/op_dummy_singlenode.c -o $(F_OP2_OBJ)/op_dummy_singlenode.o
+	$(CC) $(CFLAGS) -I$(C_OP2_INC) -c $(C_OP2_SRC)/externlib/op_util.c -o $(F_OP2_OBJ)/op_util.o
 	$(CC) $(CFLAGS) $(NO_MPI_MACRO) -I $(F_OP2_INC) -I$(C_OP2_INC) -c $(F_OP2_SRC)/op_dummy_wrappers.c -o $(F_OP2_OBJ)/op_dummy_wrappers.o
 	$(CC) $(CFLAGS) $(NO_MPI_MACRO) -I$(C_OP2_INC) -I$(MPI_INC) -c $(F_OP2_SRC)/op2_for_C_wrappers.c -o $(F_OP2_OBJ)/op2_for_C_wrappers.o
 	$(FC) $(FFLAGS) -c $(F_OP2_SRC)/op2_for_declarations.F90 -o $(F_OP2_OBJ)/op2_for_declarations.o
@@ -175,7 +177,9 @@ f_reference_hdf5: $(C_OP2_INC)/op_lib_core.h $(C_OP2_SRC)/core/op_lib_core.c \
 				$(F_OP2_OBJ)/op2_for_C_wrappers.o \
 				$(F_OP2_OBJ)/op2_for_declarations.o \
 				$(F_OP2_OBJ)/op_hdf5.o \
-				$(F_OP2_OBJ)/op2_C_reference.o
+				$(F_OP2_OBJ)/op2_C_reference.o \
+				$(F_OP2_OBJ)/op_util.o
+
 
 f_cuda: $(C_OP2_INC)/op_lib_core.h $(C_OP2_SRC)/core/op_lib_core.c \
 				$(C_OP2_INC)/op_cuda_rt_support.h $(C_OP2_SRC)/cuda/op_cuda_rt_support.c \
@@ -226,7 +230,7 @@ f_cuda_hydra: $(C_OP2_INC)/op_lib_core.h $(C_OP2_SRC)/core/op_lib_core.c \
 				$(F_OP2_SRC)/op2_for_rt_wrappers_cuda.c \
 				$(F_OP2_SRC)/op2_for_reference.F90 \
 				$(F_OP2_SRC)/op2_C_reference.c \
-			  $(C_OP2_SRC)/externlib/op_util.c \
+				$(C_OP2_SRC)/externlib/op_util.c \
 				$(C_OP2_SRC)/externlib/op_hdf5.c \
 				directories
 	$(NVCC) $(PGCFLAGS) -I$(C_OP2_INC) -c $(C_OP2_SRC)/core/op_lib_core.c -o $(F_OP2_OBJ)/op_lib_core.o
