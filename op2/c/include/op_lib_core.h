@@ -106,7 +106,8 @@ typedef struct
   op_set      from,   /* set pointed from */
               to;     /* set pointed to */
   int         dim,    /* dimension of pointer */
-             *map;    /* array defining pointer */
+             *map,    /* array defining pointer */
+             *map_d;  /* data on GPU, transposed */
   char const *name;   /* name of pointer */
   int         user_managed; /* indicates whether the user is managing memory */
 } op_map_core;

@@ -152,7 +152,17 @@ op_decl_set ( int size, char const * name )
 op_map
 op_decl_map ( op_set from, op_set to, int dim, int * imap, char const * name )
 {
-  return op_decl_map_core ( from, to, dim, imap, name );
+  op_map map = op_decl_map_core ( from, to, dim, imap, name );
+  int *transpose = (int *)malloc(from->size * dim * sizeof(int));
+  for (int i = 0; i < dim; i++) {
+    for (int j = 0; j < from->size; j++) {
+      transpose[i*from->size + j] = imap[dim*j+i];
+    }
+  }
+  op_cpHostToDevice ( ( void ** ) &( map->map_d ),
+                     ( void ** ) &( transpose ), from->size * dim * sizeof(int) );
+  free(transpose);
+  return map;
 }
 
 op_arg

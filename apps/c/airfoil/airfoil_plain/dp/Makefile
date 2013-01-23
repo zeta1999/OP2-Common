@@ -22,7 +22,7 @@ CUDA_LIB	= -L$(CUDA_INSTALL_PATH)/lib64
 
 ifeq ($(OP2_COMPILER),gnu)
   CPP		= g++
-  CPPFLAGS	= -g -fPIC -DUNIX -Wall #-Wextra
+  CPPFLAGS	= -arch x86_64 -g -fPIC -DUNIX -Wall #-Wextra
   OMPFLAGS	= -fopenmp
   MPICPP	= /usr/bin/mpiCC
   MPIFLAGS	= $(CCFLAGS)
@@ -53,7 +53,7 @@ endif
 # set flags for NVCC compilation and linking
 #
 
-NVCCFLAGS	= -O3 -arch=sm_20 -Xptxas=-v -Dlcm=ca -use_fast_math #-g -G -O0
+NVCCFLAGS	= -m64 -O3 -arch=sm_20 -Xptxas=-v -Dlcm=ca -use_fast_math #-g -G -O0
 
 #VAR		= -DOP_PART_SIZE_1=512 -DOP_PART_SIZE_2=1024 -DOP_PART_SIZE_3=64
 #-DOP_BLOCK_SIZE_0=512 -DOP_BLOCK_SIZE_1=64 -DOP_BLOCK_SIZE_2=64 -DOP_BLOCK_SIZE_3=64 -DOP_BLOCK_SIZE_4=64

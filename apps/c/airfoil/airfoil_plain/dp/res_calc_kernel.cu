@@ -11,9 +11,11 @@ __device__
 // CUDA kernel function
 
 __global__ void op_cuda_res_calc(
-  double *ind_arg0,
-  double *ind_arg1,
-  double *ind_arg2,
+  const double * __restrict ind_arg0,
+  const int * __restrict map0,
+  const double * __restrict ind_arg1,
+  const int * __restrict map1,
+  const double * __restrict ind_arg2,
   double *ind_arg3,
   int   *ind_map,
   short *arg_map,
@@ -31,13 +33,7 @@ __global__ void op_cuda_res_calc(
   double arg6_l[4];
   double arg7_l[4];
 
-  __shared__ int   *ind_arg0_map, ind_arg0_size;
-  __shared__ int   *ind_arg1_map, ind_arg1_size;
-  __shared__ int   *ind_arg2_map, ind_arg2_size;
   __shared__ int   *ind_arg3_map, ind_arg3_size;
-  __shared__ double *ind_arg0_s;
-  __shared__ double *ind_arg1_s;
-  __shared__ double *ind_arg2_s;
   __shared__ double *ind_arg3_s;
   __shared__ int    nelems2, ncolor;
   __shared__ int    nelem, offset_b;
@@ -57,40 +53,16 @@ __global__ void op_cuda_res_calc(
     nelems2  = blockDim.x*(1+(nelem-1)/blockDim.x);
     ncolor   = ncolors[blockId];
 
-    ind_arg0_size = ind_arg_sizes[0+blockId*4];
-    ind_arg1_size = ind_arg_sizes[1+blockId*4];
-    ind_arg2_size = ind_arg_sizes[2+blockId*4];
     ind_arg3_size = ind_arg_sizes[3+blockId*4];
-
-    ind_arg0_map = &ind_map[0*set_size] + ind_arg_offs[0+blockId*4];
-    ind_arg1_map = &ind_map[2*set_size] + ind_arg_offs[1+blockId*4];
-    ind_arg2_map = &ind_map[4*set_size] + ind_arg_offs[2+blockId*4];
     ind_arg3_map = &ind_map[6*set_size] + ind_arg_offs[3+blockId*4];
 
     // set shared memory pointers
 
     int nbytes = 0;
-    ind_arg0_s = (double *) &shared[nbytes];
-    nbytes    += ROUND_UP(ind_arg0_size*sizeof(double)*2);
-    ind_arg1_s = (double *) &shared[nbytes];
-    nbytes    += ROUND_UP(ind_arg1_size*sizeof(double)*4);
-    ind_arg2_s = (double *) &shared[nbytes];
-    nbytes    += ROUND_UP(ind_arg2_size*sizeof(double)*1);
     ind_arg3_s = (double *) &shared[nbytes];
   }
 
   __syncthreads(); // make sure all of above completed
-
-  // copy indirect datasets into shared memory or zero increment
-
-  for (int n=threadIdx.x; n<ind_arg0_size*2; n+=blockDim.x)
-    ind_arg0_s[n] = ind_arg0[n%2+ind_arg0_map[n/2]*2];
-
-  for (int n=threadIdx.x; n<ind_arg1_size*4; n+=blockDim.x)
-    ind_arg1_s[n] = ind_arg1[n%4+ind_arg1_map[n/4]*4];
-
-  for (int n=threadIdx.x; n<ind_arg2_size*1; n+=blockDim.x)
-    ind_arg2_s[n] = ind_arg2[n%1+ind_arg2_map[n/1]*1];
 
   for (int n=threadIdx.x; n<ind_arg3_size*4; n+=blockDim.x)
     ind_arg3_s[n] = ZERO_double;
@@ -112,17 +84,15 @@ __global__ void op_cuda_res_calc(
         arg7_l[d] = ZERO_double;
 
 
-
-
       // user-supplied kernel call
 
 
-      res_calc(  ind_arg0_s+arg_map[0*set_size+n+offset_b]*2,
-                 ind_arg0_s+arg_map[1*set_size+n+offset_b]*2,
-                 ind_arg1_s+arg_map[2*set_size+n+offset_b]*4,
-                 ind_arg1_s+arg_map[3*set_size+n+offset_b]*4,
-                 ind_arg2_s+arg_map[4*set_size+n+offset_b]*1,
-                 ind_arg2_s+arg_map[5*set_size+n+offset_b]*1,
+      res_calc(  ind_arg0 + map0[0*set_size+n+offset_b]*2,
+                 ind_arg0 + map0[1*set_size+n+offset_b]*2,
+                 ind_arg1 + map1[0*set_size+n+offset_b]*4,
+                 ind_arg1 + map1[1*set_size+n+offset_b]*4,
+                 ind_arg2 + map1[0*set_size+n+offset_b],
+                 ind_arg2 + map1[1*set_size+n+offset_b],
                  arg6_l,
                  arg7_l );
 
@@ -234,7 +204,9 @@ void op_par_loop_res_calc(char const *name, op_set set,
         int nshared = Plan->nsharedCol[col];
         op_cuda_res_calc<<<nblocks,nthread,nshared>>>(
            (double *)arg0.data_d,
+           arg0.map->map_d,
            (double *)arg2.data_d,
+           arg2.map->map_d,
            (double *)arg4.data_d,
            (double *)arg6.data_d,
            Plan->ind_map,
