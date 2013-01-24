@@ -11,15 +11,14 @@ __device__
 // CUDA kernel function
 
 __global__ void op_cuda_update(
-  double *arg0,
+  const double * __restrict arg0,
   double *arg1,
   double *arg2,
-  double *arg3,
+  const double * __restrict arg3,
   double *arg4,
   int   offset_s,
   int   set_size ) {
 
-  double arg0_l[4];
   double arg1_l[4];
   double arg2_l[4];
   double arg4_l[1];
@@ -41,12 +40,6 @@ __global__ void op_cuda_update(
     // copy data into shared memory, then into local
 
     for (int m=0; m<4; m++)
-      ((double *)arg_s)[tid+m*nelems] = arg0[tid+m*nelems+offset*4];
-
-    for (int m=0; m<4; m++)
-      arg0_l[m] = ((double *)arg_s)[m+tid*4];
-
-    for (int m=0; m<4; m++)
       ((double *)arg_s)[tid+m*nelems] = arg2[tid+m*nelems+offset*4];
 
     for (int m=0; m<4; m++)
@@ -56,7 +49,7 @@ __global__ void op_cuda_update(
     // user-supplied kernel call
 
 
-    update(  arg0_l,
+    update(  arg0+4*n,
              arg1_l,
              arg2_l,
              arg3+n,
@@ -127,8 +120,8 @@ void op_par_loop_update(char const *name, op_set set,
     #ifdef OP_BLOCK_SIZE_4
       int nthread = OP_BLOCK_SIZE_4;
     #else
-      // int nthread = OP_block_size;
-      int nthread = 128;
+      int nthread = OP_block_size;
+      //int nthread = 128;
     #endif
 
     int nblocks = 200;

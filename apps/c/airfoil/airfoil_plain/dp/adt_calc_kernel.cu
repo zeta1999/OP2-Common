@@ -11,10 +11,11 @@ __device__
 // CUDA kernel function
 
 __global__ void op_cuda_adt_calc(
-  double *ind_arg0,
+  const double * __restrict ind_arg0,
+  const int * __restrict map0,
   int   *ind_map,
   short *arg_map,
-  double *arg4,
+  const double * __restrict arg4,
   double *arg5,
   int   *ind_arg_sizes,
   int   *ind_arg_offs,
@@ -27,12 +28,7 @@ __global__ void op_cuda_adt_calc(
   int   nblocks,
   int   set_size) {
 
-
-  __shared__ int   *ind_arg0_map, ind_arg0_size;
-  __shared__ double *ind_arg0_s;
   __shared__ int    nelem, offset_b;
-
-  extern __shared__ char shared[];
 
   if (blockIdx.x+blockIdx.y*gridDim.x >= nblocks) return;
   if (threadIdx.x==0) {
@@ -43,38 +39,20 @@ __global__ void op_cuda_adt_calc(
 
     nelem    = nelems[blockId];
     offset_b = offset[blockId];
-
-    ind_arg0_size = ind_arg_sizes[0+blockId*1];
-
-    ind_arg0_map = &ind_map[0*set_size] + ind_arg_offs[0+blockId*1];
-
-    // set shared memory pointers
-
-    int nbytes = 0;
-    ind_arg0_s = (double *) &shared[nbytes];
   }
-
-  __syncthreads(); // make sure all of above completed
-
-  // copy indirect datasets into shared memory or zero increment
-
-  for (int n=threadIdx.x; n<ind_arg0_size*2; n+=blockDim.x)
-    ind_arg0_s[n] = ind_arg0[n%2+ind_arg0_map[n/2]*2];
 
   __syncthreads();
 
   // process set elements
 
   for (int n=threadIdx.x; n<nelem; n+=blockDim.x) {
-
-
       // user-supplied kernel call
 
 
-      adt_calc(  ind_arg0_s+arg_map[0*set_size+n+offset_b]*2,
-                 ind_arg0_s+arg_map[1*set_size+n+offset_b]*2,
-                 ind_arg0_s+arg_map[2*set_size+n+offset_b]*2,
-                 ind_arg0_s+arg_map[3*set_size+n+offset_b]*2,
+      adt_calc(  ind_arg0+map0[0*set_size+n+offset_b]*2,
+                 ind_arg0+map0[1*set_size+n+offset_b]*2,
+                 ind_arg0+map0[2*set_size+n+offset_b]*2,
+                 ind_arg0+map0[3*set_size+n+offset_b]*2,
                  arg4+(n+offset_b)*4,
                  arg5+(n+offset_b)*1 );
   }
@@ -150,9 +128,9 @@ void op_par_loop_adt_calc(char const *name, op_set set,
       dim3 nblocks = dim3(Plan->ncolblk[col] >= (1<<16) ? 65535 : Plan->ncolblk[col],
                       Plan->ncolblk[col] >= (1<<16) ? (Plan->ncolblk[col]-1)/65535+1: 1, 1);
       if (Plan->ncolblk[col] > 0) {
-        int nshared = Plan->nsharedCol[col];
-        op_cuda_adt_calc<<<nblocks,nthread,nshared>>>(
+        op_cuda_adt_calc<<<nblocks,nthread>>>(
            (double *)arg0.data_d,
+           arg0.map->map_d,
            Plan->ind_map,
            Plan->loc_map,
            (double *)arg4.data_d,
