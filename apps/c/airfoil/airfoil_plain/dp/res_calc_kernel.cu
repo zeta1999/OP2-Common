@@ -10,7 +10,7 @@ __device__
 
 // CUDA kernel function
 
-__global__ void op_cuda_res_calc(
+  __global__ void op_cuda_res_calc(
   const double * __restrict ind_arg0,
   const int * __restrict map0,
   const double * __restrict ind_arg1,
@@ -33,8 +33,6 @@ __global__ void op_cuda_res_calc(
   double arg6_l[4];
   double arg7_l[4];
 
-  __shared__ int   *ind_arg3_map, ind_arg3_size;
-  __shared__ double *ind_arg3_s;
   __shared__ int    nelems2, ncolor;
   __shared__ int    nelem, offset_b;
 
@@ -43,7 +41,7 @@ __global__ void op_cuda_res_calc(
   if (blockIdx.x+blockIdx.y*gridDim.x >= nblocks) return;
   if (threadIdx.x==0) {
 
-    // get sizes and shift pointers and direct-mapped data
+      // get sizes and shift pointers and direct-mapped data
 
     int blockId = blkmap[blockIdx.x + blockIdx.y*gridDim.x  + block_offset];
 
@@ -53,81 +51,54 @@ __global__ void op_cuda_res_calc(
     nelems2  = blockDim.x*(1+(nelem-1)/blockDim.x);
     ncolor   = ncolors[blockId];
 
-    ind_arg3_size = ind_arg_sizes[3+blockId*4];
-    ind_arg3_map = &ind_map[6*set_size] + ind_arg_offs[3+blockId*4];
-
-    // set shared memory pointers
-
-    int nbytes = 0;
-    ind_arg3_s = (double *) &shared[nbytes];
   }
 
   __syncthreads(); // make sure all of above completed
 
-  for (int n=threadIdx.x; n<ind_arg3_size*4; n+=blockDim.x)
-    ind_arg3_s[n] = ZERO_double;
-
-  __syncthreads();
-
-  // process set elements
+    // process set elements
 
   for (int n=threadIdx.x; n<nelems2; n+=blockDim.x) {
     int col2 = -1;
 
     if (n<nelem) {
 
-      // initialise local variables
+        // initialise local variables
 
       for (int d=0; d<4; d++)
-        arg6_l[d] = ZERO_double;
+        arg6_l[d] = 0.0;
       for (int d=0; d<4; d++)
-        arg7_l[d] = ZERO_double;
+        arg7_l[d] = 0.0;
 
 
-      // user-supplied kernel call
+        // user-supplied kernel call
 
 
       res_calc(  ind_arg0 + map0[0*set_size+n+offset_b]*2,
-                 ind_arg0 + map0[1*set_size+n+offset_b]*2,
-                 ind_arg1 + map1[0*set_size+n+offset_b]*4,
-                 ind_arg1 + map1[1*set_size+n+offset_b]*4,
-                 ind_arg2 + map1[0*set_size+n+offset_b],
-                 ind_arg2 + map1[1*set_size+n+offset_b],
-                 arg6_l,
-                 arg7_l );
+        ind_arg0 + map0[1*set_size+n+offset_b]*2,
+        ind_arg1 + map1[0*set_size+n+offset_b]*4,
+        ind_arg1 + map1[1*set_size+n+offset_b]*4,
+        ind_arg2 + map1[0*set_size+n+offset_b],
+        ind_arg2 + map1[1*set_size+n+offset_b],
+        arg6_l,
+        arg7_l );
 
       col2 = colors[n+offset_b];
     }
 
-    // store local variables
-
-      int arg6_map;
-      int arg7_map;
-
-      if (col2>=0) {
-        arg6_map = arg_map[6*set_size+n+offset_b];
-        arg7_map = arg_map[7*set_size+n+offset_b];
-      }
+      // store local variables
 
     for (int col=0; col<ncolor; col++) {
       if (col2==col) {
         for (int d=0; d<4; d++)
-          ind_arg3_s[d+arg6_map*4] += arg6_l[d];
+          ind_arg3[d+map1[0*set_size+n+offset_b]*4] += arg6_l[d];
         for (int d=0; d<4; d++)
-          ind_arg3_s[d+arg7_map*4] += arg7_l[d];
+          ind_arg3[d+map1[1*set_size+n+offset_b]*4] += arg7_l[d];
       }
       __syncthreads();
     }
 
   }
-
-  // apply pointered write/increment
-
-  for (int n=threadIdx.x; n<ind_arg3_size*4; n+=blockDim.x)
-    ind_arg3[n%4+ind_arg3_map[n/4]*4] += ind_arg3_s[n];
-
 }
-
 
 // host stub function
 
@@ -202,7 +173,7 @@ void op_par_loop_res_calc(char const *name, op_set set,
                       Plan->ncolblk[col] >= (1<<16) ? (Plan->ncolblk[col]-1)/65535+1: 1, 1);
       if (Plan->ncolblk[col] > 0) {
         int nshared = Plan->nsharedCol[col];
-        op_cuda_res_calc<<<nblocks,nthread,nshared>>>(
+        op_cuda_res_calc<<<nblocks,nthread>>>(
            (double *)arg0.data_d,
            arg0.map->map_d,
            (double *)arg2.data_d,
