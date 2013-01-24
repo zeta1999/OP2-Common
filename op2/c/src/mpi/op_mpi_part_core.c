@@ -250,7 +250,6 @@ static int partition_from_set(op_map map, int my_rank, int comm_size, int** part
     }
   }
 
-  if ( my_rank == 10 )  { printf ("calling create_export_list at 253 (part)\n"); fflush (stdout);}
   create_export_list(map->to,temp_list, pi_list, count, comm_size, my_rank);
   free(temp_list);
 
@@ -1116,7 +1115,7 @@ static void migrate_all(int my_rank, int comm_size)
     }
     //create partition export list
     pe_list[set->index] = (halo_list) xmalloc(sizeof(halo_list_core));
-    if ( my_rank == 10 )  { printf ("calling create_export_list at 1119 (part)\n"); fflush (stdout);}
+
     create_export_list(set, temp_list, pe_list[set->index],
         count, comm_size, my_rank);
     free(temp_list);
@@ -1835,7 +1834,7 @@ void op_partition_kway(op_map primary_map)
     }
   }
   halo_list exp_list= (halo_list)xmalloc(sizeof(halo_list_core));
-  if ( my_rank == 10 )  { printf ("calling create_export_list at 1837 (part)\n"); fflush (stdout);}
+
   create_export_list(primary_map->from,list, exp_list, c, comm_size, my_rank);
   free(list);//free temp list
 
@@ -2229,7 +2228,7 @@ void op_partition_geomkway(op_dat coords, op_map primary_map)
     }
   }
   halo_list exp_list= (halo_list)xmalloc(sizeof(halo_list_core));
-  if ( my_rank == 10 )  { printf ("calling create_export_list at 22232 (part)\n"); fflush (stdout);}
+
   create_export_list(primary_map->from,list, exp_list, c, comm_size, my_rank);
   free(list);//free temp list
 
@@ -2761,7 +2760,7 @@ void op_partition_ptscotch(op_map primary_map)
     }
   }
   halo_list exp_list= (halo_list)xmalloc(sizeof(halo_list_core));
-  if ( my_rank == 10 )  { printf ("calling create_export_list at 2764 (part)\n"); fflush (stdout);}
+
   create_export_list(primary_map->from,list, exp_list, c, comm_size, my_rank);
   free(list);//free temp list
 

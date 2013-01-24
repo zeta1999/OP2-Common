@@ -89,7 +89,7 @@ ifeq ($(OP2_COMPILER),intel)
   MPICC	  	  = mpicc $(OPT)
   MPIF90	  = mpif90 $(OPT)
   NO_MPI_MACRO    = -D NO_MPI
-  ALLTARGETS      = f_reference_hdf5 f_openmp #f_mpi_openmp_hydra
+  ALLTARGETS      = f_reference f_reference_hdf5 f_openmp f_mpi_seq_hydra
 else
 print:
 	@echo "unrecognised value for OP2_COMPILER"
@@ -168,7 +168,7 @@ f_reference_hdf5: $(C_OP2_INC)/op_lib_core.h $(C_OP2_SRC)/core/op_lib_core.c \
 	$(FC) $(FFLAGS) -c $(F_OP2_SRC)/op2_cpp_reference.F90 -o $(F_OP2_OBJ)/op2_for_reference.o
 	$(CC) $(CFLAGS) $(NO_MPI_MACRO) -I$(C_OP2_INC) -I$(MPI_INC) -c $(F_OP2_SRC)/op2_C_reference.c -o $(F_OP2_OBJ)/op2_C_reference.o
 	$(CC) $(CFLAGS) $(HDF5_INCLUDE) -I$(MPI_INC) -I$(C_OP2_INC) -c $(C_OP2_SRC)/externlib/op_hdf5.c -o $(F_OP2_OBJ)/op_hdf5.o
-	ar -r $(F_OP2_LIB)/libop2_for_reference.a \
+	ar -r $(F_OP2_LIB)/libop2_for_reference_hdf5.a \
 				$(F_OP2_OBJ)/op_lib_core.o \
 				$(F_OP2_OBJ)/op_seq.o \
 				$(F_OP2_OBJ)/op_dummy_singlenode.o \
@@ -185,12 +185,11 @@ f_cuda: $(C_OP2_INC)/op_lib_core.h $(C_OP2_SRC)/core/op_lib_core.c \
 				$(C_OP2_INC)/op_cuda_rt_support.h $(C_OP2_SRC)/cuda/op_cuda_rt_support.c \
 				$(C_OP2_SRC)/cuda/op_cuda_decl.c \
 				$(F_OP2_SRC)/op2_for_rt_wrappers.c \
-			  $(C_OP2_SRC)/core/op_dummy_singlenode.c \
+				$(C_OP2_SRC)/core/op_dummy_singlenode.c \
 				$(F_OP2_SRC)/op2_for_rt_support.F90 \
 				$(C_OP2_INC)/op_rt_support.h $(C_OP2_SRC)/core/op_rt_support.c \
 				$(F_OP2_SRC)/op2_for_rt_wrappers_cuda.c \
-			  $(F_OP2_SRC)/op2_hdf5_dummy.c \
-				directories
+				$(F_OP2_SRC)/op2_hdf5_dummy.c directories
 	$(NVCC) $(PGCFLAGS) -I$(C_OP2_INC) -c $(C_OP2_SRC)/core/op_lib_core.c -o $(F_OP2_OBJ)/op_lib_core.o
 	$(NVCC) $(PGCFLAGS) $(NVCCFLAGS) -I$(C_OP2_INC)  -I$(CUDA_INC) -c $(C_OP2_SRC)/cuda/op_cuda_decl.c -o $(F_OP2_OBJ)/op_cuda_decl.o
 	$(NVCC) $(PGCFLAGS) -I$(C_OP2_INC) -I$(CUDA_INC) -c $(C_OP2_SRC)/cuda/op_cuda_rt_support.c -o $(F_OP2_OBJ)/op_cuda_rt_support.o
@@ -411,7 +410,7 @@ f_mpi_seq: $(C_OP2_INC)/op_lib_core.h $(C_OP2_SRC)/core/op_lib_core.c \
 					 $(C_OP2_INC)/op_lib_mpi.h  $(C_OP2_INC)/op_mpi_core.h \
 					 $(C_OP2_SRC)/mpi/op_mpi_core.c $(C_OP2_SRC)/mpi/op_mpi_decl.c \
 					 $(C_OP2_SRC)/mpi/op_mpi_part_core.c $(C_OP2_SRC)/mpi/op_mpi_rt_support.c \
-				   $(F_OP2_SRC)/op2_hdf5_dummy.c \
+					 $(F_OP2_SRC)/op2_hdf5_dummy.c \
 					 directories
 	$(CC) $(CFLAGS) -I$(C_OP2_INC) -c $(C_OP2_SRC)/core/op_lib_core.c -o $(F_OP2_OBJ)/op_lib_core.o
 	$(CC) $(CFLAGS) -I$(C_OP2_INC) -c $(C_OP2_SRC)/core/op_rt_support.c -o $(F_OP2_OBJ)/op_rt_support.o

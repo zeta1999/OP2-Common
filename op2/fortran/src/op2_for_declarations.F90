@@ -156,6 +156,12 @@ module OP2_Fortran_Declarations
 
     end subroutine op_init_c
 
+    subroutine op_exit_c (  ) BIND(C,name='op_exit')
+
+      use, intrinsic :: ISO_C_BINDING
+
+    end subroutine op_exit_c
+
     type(c_ptr) function op_decl_set_c ( setsize, name ) BIND(C,name='op_decl_set')
 
       use, intrinsic :: ISO_C_BINDING
@@ -166,6 +172,8 @@ module OP2_Fortran_Declarations
       character(kind=c_char,len=1), intent(in)  :: name(*)
 
     end function op_decl_set_c
+
+
 
     type(c_ptr) function op_decl_map_c ( from, to, mapdim, data, name ) BIND(C,name='op_decl_map')
 
@@ -508,6 +516,14 @@ contains
     call op_init_c ( argc, C_NULL_PTR, diags )
 
   end subroutine op_init
+
+
+  subroutine op_exit ( )
+
+    call op_exit_c (  )
+
+  end subroutine op_exit
+
 
   subroutine op_decl_set ( setsize, set, opname )
 

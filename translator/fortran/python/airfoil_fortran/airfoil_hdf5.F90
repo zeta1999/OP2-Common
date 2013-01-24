@@ -1,6 +1,7 @@
 program AIRFOIL
   use OP2_FORTRAN_DECLARATIONS
   use OP2_Fortran_Reference
+  use OP2_Fortran_RT_Support
   use OP2_CONSTANTS
   use AIRFOIL_SEQ
   use, intrinsic :: ISO_C_BINDING
@@ -131,6 +132,8 @@ program AIRFOIL
   call op_decl_const (alpha, 1, alphaName)
   call op_decl_const (qinf, 4, qinfName)
 
+  call op_partition ("PTSCOTCH", "KWAY", edges, pecell, p_x)
+
   ! start timer
   call op_timers ( startTime )
 
@@ -197,5 +200,6 @@ program AIRFOIL
 
   call op_timers ( endTime )
   write (*,*), 'Max total runtime =', endTime - startTime,'seconds'
+  call op_exit (  )
 
 end program AIRFOIL
