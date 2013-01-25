@@ -108,6 +108,8 @@ program AIRFOIL
   call op_decl_set_hdf5 ( nbedge, bedges, FileName, "bedges" )
   call op_decl_set_hdf5 ( ncell, cells, FileName, "cells" )
 
+
+
   print *, "Declaring OP2 maps"
   call op_decl_map_hdf5 ( edges, nodes, 2, pedge, FileName, "pedge" )
   call op_decl_map_hdf5 ( edges, cells, 2, pecell, FileName, "pecell" )
@@ -133,6 +135,7 @@ program AIRFOIL
   call op_decl_const (qinf, 4, qinfName)
 
   call op_partition ("PTSCOTCH", "KWAY", edges, pecell, p_x)
+  ncellr = real(op_get_size(cells))
 
   ! start timer
   call op_timers ( startTime )
@@ -191,9 +194,7 @@ program AIRFOIL
 
     end do ! internal loop
 
-    ncellr = real ( ncell )
     rms = sqrt ( rms / ncellr )
-
     if (mod(niter,100) .eq. 0)  write (*,*), niter,"  ",rms
 
   end do ! external loop

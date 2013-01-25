@@ -173,6 +173,14 @@ module OP2_Fortran_Declarations
 
     end function op_decl_set_c
 
+    INTEGER function op_get_size_c ( set ) BIND(C,name='op_get_size')
+      use, intrinsic :: ISO_C_BINDING
+
+      import :: op_set
+      type(c_ptr), value, intent(in) :: set
+
+    end function
+
 
 
     type(c_ptr) function op_decl_map_c ( from, to, mapdim, data, name ) BIND(C,name='op_decl_map')
@@ -904,6 +912,24 @@ contains
     endif
 
   end function op_arg_dat_generic
+
+
+    INTEGER function op_get_size (set )
+
+    use, intrinsic :: ISO_C_BINDING
+
+    implicit none
+
+    type(op_set) :: set
+
+    op_get_size = op_get_size_c ( set%setCPtr )
+
+  end function op_get_size
+
+
+
+
+
 
 
   type(op_arg) function op_arg_gbl_real_8_scalar ( dat, access )

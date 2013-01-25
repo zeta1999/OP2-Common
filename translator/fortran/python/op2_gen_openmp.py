@@ -573,6 +573,16 @@ def op2_gen_openmp(master, date, consts, kernels):
       code('INTEGER(kind=4) :: i1')
       code('INTEGER(kind=4) :: i2')
       code('')
+
+      #mpi halo exchange call
+      code('returnMPIHaloExchange = op_mpi_halo_exchanges(set%setCPtr,numberOfOpDats,opArgArray)')
+      IF('returnMPIHaloExchange .EQ. 0')
+      code('CALL op_mpi_wait_all(numberOfOpDats,opArgArray)')
+      code('CALL op_mpi_set_dirtybit(numberOfOpDats,opArgArray)')
+      code('RETURN')
+      ENDIF()
+      code('')
+
     else:
       code('INTEGER(kind=4) :: threadID')
       code('INTEGER(kind=4) :: numberOfThreads')
@@ -596,18 +606,19 @@ def op2_gen_openmp(master, date, consts, kernels):
       if maps[g_m] == OP_GBL:
         code(typs[g_m]+', DIMENSION(:), ALLOCATABLE :: reductionArrayHost'+str(g_m+1))
 
-    IF('set%setPtr%size .EQ. 0')
-    code('RETURN')
-    ENDIF()
-    code('')
+    #IF('set%setPtr%size .EQ. 0')
+    #code('RETURN')
+    #ENDIF()
+    #code('')
 
-    code('numberCalled'+name+' = numberCalled'+name+'+ 1')
+
+    #code('numberCalled'+name+' = numberCalled'+name+'+ 1')
     code('')
-    code('call date_and_time(values=timeArrayStart)')
-    code('startTimeHost = 1.00000 * timeArrayStart(8) + &')
-    code('& 1000.00 * timeArrayStart(7) + &')
-    code('& 60000 * timeArrayStart(6) + &')
-    code('& 3600000 * timeArrayStart(5)')
+    #code('call date_and_time(values=timeArrayStart)')
+    #code('startTimeHost = 1.00000 * timeArrayStart(8) + &')
+    #code('& 1000.00 * timeArrayStart(7) + &')
+    #code('& 60000 * timeArrayStart(6) + &')
+    #code('& 3600000 * timeArrayStart(5)')
     code('')
 
     depth = depth - 2
@@ -709,26 +720,32 @@ def op2_gen_openmp(master, date, consts, kernels):
         ENDDO()
 
     code('')
-    code('call date_and_time(values=timeArrayEnd)')
-    code('endTimeHost = 1.00000 * timeArrayEnd(8) + &')
-    code('& 1000 * timeArrayEnd(7)  + &')
-    code('& 60000 * timeArrayEnd(6) + &')
-    code('& 3600000 * timeArrayEnd(5)')
-    code('')
-    code('accumulatorHostTime = endTimeHost - startTimeHost')
-    code('loopTimeHost'+name+' = loopTimeHost'+name+' + accumulatorHostTime')
-    code('')
-    code('call date_and_time(values=timeArrayStart)')
-    code('startTimeKernel = 1.00000 * timeArrayStart(8) + &')
-    code('& 1000 * timeArrayStart(7) + &')
-    code('& 60000 * timeArrayStart(6) + &')
-    code('& 3600000 * timeArrayStart(5)')
-    code('')
+    #code('call date_and_time(values=timeArrayEnd)')
+    #code('endTimeHost = 1.00000 * timeArrayEnd(8) + &')
+    #code('& 1000 * timeArrayEnd(7)  + &')
+    #code('& 60000 * timeArrayEnd(6) + &')
+    #code('& 3600000 * timeArrayEnd(5)')
+    #code('')
+    #code('accumulatorHostTime = endTimeHost - startTimeHost')
+    #code('loopTimeHost'+name+' = loopTimeHost'+name+' + accumulatorHostTime')
+    #code('')
+    #code('call date_and_time(values=timeArrayStart)')
+    #code('startTimeKernel = 1.00000 * timeArrayStart(8) + &')
+    #code('& 1000 * timeArrayStart(7) + &')
+    #code('& 60000 * timeArrayStart(6) + &')
+    #code('& 3600000 * timeArrayStart(5)')
+    #code('')
 
     if ninds > 0: #indirect loop host stub call
       code('blockOffset = 0')
       code('')
       DO('i1','0','actualPlan_'+name+'%ncolors')
+
+      IF('i1 .EQ. actualPlan_'+name+'%ncolors_core')
+      code('CALL op_mpi_wait_all(numberOfOpDats,opArgArray)')
+      ENDIF()
+      code('')
+
       code('nblocks = ncolblk_'+name+'(i1 + 1)')
       code('!$OMP PARALLEL DO private (threadID)')
       DO('i2','0','nblocks')
@@ -784,21 +801,25 @@ def op2_gen_openmp(master, date, consts, kernels):
 
 
     code('')
-    code('call date_and_time(values=timeArrayEnd)')
-    code('endTimeKernel = 1.00000 * timeArrayEnd(8) + &')
-    code('& 1000 * timeArrayEnd(7) + &')
-    code('& 60000 * timeArrayEnd(6) + &')
-    code('& 3600000 * timeArrayEnd(5)')
-    code('')
-    code('accumulatorKernelTime = endTimeKernel - startTimeKernel')
-    code('loopTimeKernel'+name+' = loopTimeKernel'+name+' + accumulatorKernelTime')
-    code('')
-    code('call date_and_time(values=timeArrayStart)')
-    code('startTimeHost = 1.00000 * timeArrayStart(8) + &')
-    code('& 1000.00 * timeArrayStart(7) + &')
-    code('& 60000 * timeArrayStart(6) + &')
-    code('& 3600000 * timeArrayStart(5)')
-    code('')
+    #code('call date_and_time(values=timeArrayEnd)')
+    #code('endTimeKernel = 1.00000 * timeArrayEnd(8) + &')
+    #code('& 1000 * timeArrayEnd(7) + &')
+    #code('& 60000 * timeArrayEnd(6) + &')
+    #code('& 3600000 * timeArrayEnd(5)')
+    #code('')
+    #code('accumulatorKernelTime = endTimeKernel - startTimeKernel')
+    #code('loopTimeKernel'+name+' = loopTimeKernel'+name+' + accumulatorKernelTime')
+    #code('')
+    #code('call date_and_time(values=timeArrayStart)')
+    #code('startTimeHost = 1.00000 * timeArrayStart(8) + &')
+    #code('& 1000.00 * timeArrayStart(7) + &')
+    #code('& 60000 * timeArrayStart(6) + &')
+    #code('& 3600000 * timeArrayStart(5)')
+
+    if ninds > 0:
+      code('')
+      code('CALL op_mpi_set_dirtybit(numberOfOpDats,opArgArray)')
+      code('')
 
     #reductions
     for g_m in range(0,nargs):
@@ -808,25 +829,27 @@ def op2_gen_openmp(master, date, consts, kernels):
         code('opDat'+str(g_m+1)+'Local = opDat'+str(g_m+1)+'Local + reductionArrayHost'+str(g_m+1)+'((i10 - 1) * 1 + i11)')
         ENDDO()
         ENDDO()
+        code('')
         code('deallocate( reductionArrayHost'+str(g_m+1)+' )')
         code('')
+        code('CALL op_mpi_reduce_float(opArg'+str(g_m+1)+',opArg'+str(g_m+1)+'%data)')
 
 
-    code('call date_and_time(values=timeArrayEnd)')
-    code('endTimeHost = 1.00000 * timeArrayEnd(8) + &')
-    code('1000 * timeArrayEnd(7) + &')
-    code('60000 * timeArrayEnd(6) + &')
-    code('3600000 * timeArrayEnd(5)')
-    code('')
-    code('accumulatorHostTime = endTimeHost - startTimeHost')
-    code('loopTimeHost'+name+' = loopTimeHost'+name+' + accumulatorHostTime')
-    code('')
-    code('returnSetKernelTiming = setKernelTime('+str(nk)+' , userSubroutine, &')
+    #code('call date_and_time(values=timeArrayEnd)')
+    #code('endTimeHost = 1.00000 * timeArrayEnd(8) + &')
+    #code('1000 * timeArrayEnd(7) + &')
+    #code('60000 * timeArrayEnd(6) + &')
+    #code('3600000 * timeArrayEnd(5)')
+    #code('')
+    #code('accumulatorHostTime = endTimeHost - startTimeHost')
+    #code('loopTimeHost'+name+' = loopTimeHost'+name+' + accumulatorHostTime')
+    #code('')
+    #code('returnSetKernelTiming = setKernelTime('+str(nk)+' , userSubroutine, &')
 
-    if ninds > 0:
-      code('& accumulatorKernelTime / 1000.00,actualPlan_'+name+'%transfer,actualPlan_'+name+'%transfer2)')
-    else:
-      code('& accumulatorKernelTime / 1000.00,0.00000,0.00000)')
+    #if ninds > 0:
+    #  code('& accumulatorKernelTime / 1000.00,actualPlan_'+name+'%transfer,actualPlan_'+name+'%transfer2)')
+    #else:
+    #  code('& accumulatorKernelTime / 1000.00,0.00000,0.00000)')
 
 
     depth = depth - 2

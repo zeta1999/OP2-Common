@@ -632,7 +632,7 @@ for a in range(1,len(sys.argv)):
             line = line + indent + '& ' + elem['type'] + '(' + elem['dat'] + ','+ elem['idx'] \
             + ','+ elem['map'] + ','+ elem['acc']
          elif elem['type'] == 'op_arg_gbl':
-            line = line + indent + elem['type'] + '(' + elem['data'] + ','+ elem['acc']
+            line = line + indent + '& ' + elem['type'] + '(' + elem['data'] + ','+ elem['acc']
 
          if arguments <> loop_args[curr_loop]['nargs'] - 1:
            line = line + '), &\n'
