@@ -196,7 +196,7 @@ void dumpOpDat (op_dat_core * data, const char * fileName)
     {
       // support for old and new names (real should be replaced by double)
       if ( strncmp ( "double", data->type, 6 ) == 0 ||
-	   strncmp ( "double", data->type, 6 ) == 0) {
+     strncmp ( "double", data->type, 6 ) == 0) {
         for ( i = 0; i < data->set->size; i++ )
           for ( j = 0; j < data->dim; j++ )
             fprintf (outfile, "%d, %d -> %e\n", i, j, ((double *) data->data)[i*data->dim + j] );
