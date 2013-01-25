@@ -1004,7 +1004,7 @@ typedef struct
 
 std::vector<op_tile_plan> op_tile_plans;
 
-#define OP2_ONETHREAD
+//#define OP2_ONETHREAD
 
 #ifdef OP2_ONETHREAD
 #include <omp.h>
@@ -1403,6 +1403,9 @@ void construct_tile(op_subset &subset, std::vector<op_dataset_dependency>& depen
     printf("Set %s owned: %d incl. halo: %d\n", OP_set_list[i]->name, (int)dependencies[i].owned.size(), dependencies[i].size);
   }
 
+  for (unsigned int i = 0; i < dats.size(); i++) {
+    printf("Before Data pointers %d %p\n", i, dats[i]->data);
+  }
   //substitute new maps and dats into loop args
   for (unsigned int i = 0; i < kernel_list.size(); i++) {
     for (int arg = 0; arg <kernel_list[i].nargs; arg++) {
@@ -1443,7 +1446,7 @@ void construct_tile(op_subset &subset, std::vector<op_dataset_dependency>& depen
 
 void execute_tile(std::vector<op_kernel_descriptor>& kernel_list, std::vector<op_dataset_dependency>& dependencies, std::vector<op_dat>& dats, std::vector<op_map>& maps, std::vector<op_map>& gbl_ind_maps, std::vector<op_map>& gbl_direct_maps, op_dat *discard, int n_discard , double *timing, std::vector<std::vector<char*> > &data_ptrs) {
 
-#ifdef OP2_ONETHREAD
+
   //substitute new maps and dats into loop args
   for (unsigned int i = 0; i < kernel_list.size(); i++) {
     for (int arg = 0; arg <kernel_list[i].nargs; arg++) {
@@ -1460,14 +1463,21 @@ void execute_tile(std::vector<op_kernel_descriptor>& kernel_list, std::vector<op
       
       if (written) {
         for (j = 0; j < dats.size(); j++)
+#ifdef OP2_ONETHREAD
           if (dats[j]->index == original->index) {kernel_list[i].args[arg].data = data_ptrs[omp_get_thread_num()][j]; break;}
+#else
+          if (dats[j]->index == original->index) {kernel_list[i].args[arg].data = dats[j]->data; break;}
+#endif
         if (j == dats.size()) {
           printf("Error, local dat not found\n"); exit(-1);}//just some sanity checks
         
       }
     }
   }
-#endif
+
+  for (unsigned int i = 0; i < dats.size(); i++) {
+    printf("After Data pointers %d %p\n", i, dats[i]->data);
+  }
   
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
   op_timers_core(&cpu_t1, &wall_t1);

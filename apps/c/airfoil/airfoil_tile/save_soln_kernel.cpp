@@ -35,14 +35,8 @@ void op_par_loop_save_soln(op_kernel_descriptor *desc ){
           //printf("kernel %s color %d from %d to %d\n", name, col, desc->subset->color_offsets[2*col], desc->subset->color_offsets[2*col+1]);
     //#pragma omp parallel for private(p_a)
     for (int n=desc->subset->color_offsets[2*col]; n<desc->subset->color_offsets[2*col+1]; n++) {
-      
-      
-      op_arg_set(n,args[0], &p_a[0],0);
-      op_arg_set(n,args[1], &p_a[1],0);
-      
       // call kernel function, passing in pointers to data
-      
-      save_soln( (double *)p_a[0],  (double *)p_a[1]);
+      save_soln( (double *)(arg0.data + arg0.size*n),  (double *)(arg1.data + arg1.size*n));
     }
   }
   // update timer record
