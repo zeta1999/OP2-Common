@@ -89,7 +89,7 @@ ifeq ($(OP2_COMPILER),intel)
   MPICC	  	  = mpicc $(OPT)
   MPIF90	  = mpif90 $(OPT)
   NO_MPI_MACRO    = -D NO_MPI
-  ALLTARGETS      = f_reference f_reference_hdf5 f_openmp f_mpi_seq_hydra
+  ALLTARGETS      = f_reference f_reference_hdf5 f_openmp f_mpi_seq_hydra f_mpi_openmp_hydra
 else
 print:
 	@echo "unrecognised value for OP2_COMPILER"
@@ -608,19 +608,17 @@ f_mpi_cuda_hydra: $(C_OP2_INC)/op_lib_core.h $(C_OP2_SRC)/core/op_lib_core.c \
 
 #MPI+OpenMP case for HYDRA
 f_mpi_openmp_hydra: $(C_OP2_INC)/op_lib_core.h $(C_OP2_SRC)/core/op_lib_core.c \
-										$(C_OP2_SRC)/openmp/op_openmp_decl.c \
-										$(F_OP2_SRC)/op2_for_declarations.F90 \
-										$(F_OP2_SRC)/op2_for_reference.F90 \
-										$(F_OP2_SRC)/op2_C_reference.c \
-										$(C_OP2_SRC)/externlib/op_util.c \
-										$(C_OP2_INC)/op_lib_mpi.h  $(C_OP2_INC)/op_mpi_core.h \
-										$(F_OP2_SRC)/op_mpi_core.c $(C_OP2_SRC)/mpi/op_mpi_decl.c \
-										$(C_OP2_SRC)/mpi/op_mpi_part_core.c $(F_OP2_SRC)/op_mpi_rt_support.c \
-										$(C_OP2_SRC)/mpi/op_mpi_hdf5.c \
-										directories
+	$(F_OP2_SRC)/op2_for_declarations.F90 \
+	$(F_OP2_SRC)/op2_for_reference.F90 \
+	$(F_OP2_SRC)/op2_C_reference.c \
+	$(C_OP2_SRC)/externlib/op_util.c \
+	$(C_OP2_INC)/op_lib_mpi.h  $(C_OP2_INC)/op_mpi_core.h \
+	$(F_OP2_SRC)/op_mpi_core.c $(C_OP2_SRC)/mpi/op_mpi_decl.c \
+	$(C_OP2_SRC)/mpi/op_mpi_part_core.c $(F_OP2_SRC)/op_mpi_rt_support.c \
+	$(C_OP2_SRC)/mpi/op_mpi_hdf5.c \
+	directories
 	$(CC) $(CFLAGS) -I$(C_OP2_INC) -c $(C_OP2_SRC)/core/op_lib_core.c -o $(F_OP2_OBJ)/op_lib_core.o
 	$(CC) $(CFLAGS) -I$(MPI_INC) $(NO_MPI_MACRO) -I$(C_OP2_INC) -c $(F_OP2_SRC)/op2_for_C_wrappers.c -o $(F_OP2_OBJ)/op2_for_C_wrappers.o
-	$(CC) $(CFLAGS) -I$(C_OP2_INC) -c $(C_OP2_SRC)/openmp/op_openmp_decl.c -o $(F_OP2_OBJ)/op_openmp_decl.o
 	$(FC) $(FFLAGS) -c $(F_OP2_SRC)/op2_for_declarations.F90 -o $(F_OP2_OBJ)/op2_for_declarations.o
 	$(shell cp $(F_OP2_SRC)/op2_for_reference.F90 $(F_OP2_SRC)/op2_for_reference.c)
 	$(shell cpp $(F_OP2_SRC)/op2_for_reference.c | sed s/##//g | sed s/\"@\"//g | tr "@" "\\n" > $(F_OP2_SRC)/op2_cpp_reference.F90)
@@ -629,7 +627,6 @@ f_mpi_openmp_hydra: $(C_OP2_INC)/op_lib_core.h $(C_OP2_SRC)/core/op_lib_core.c \
 	$(CC) $(CFLAGS) -I$(C_OP2_INC) -c $(C_OP2_SRC)/core/op_rt_support.c -o $(F_OP2_OBJ)/op_rt_support.o
 	$(CC) $(CFLAGS) -I$(C_OP2_INC) -c $(F_OP2_SRC)/op2_for_rt_wrappers.c -o $(F_OP2_OBJ)/op2_for_rt_wrappers.o
 	$(CC) $(CFLAGS) $(NO_MPI_MACRO) -I $(F_OP2_INC) -I$(C_OP2_INC) -c $(F_OP2_SRC)/op_dummy_wrappers.c -o $(F_OP2_OBJ)/op_dummy_wrappers.o
-	$(CC) $(CFLAGS) -I$(C_OP2_INC) -c $(C_OP2_SRC)/core/op_dummy_singlenode.c -o $(F_OP2_OBJ)/op_dummy_singlenode.o
 	$(FC) $(FFLAGS) -c $(F_OP2_SRC)/op2_for_rt_support.F90 -o $(F_OP2_OBJ)/op2_for_rt_support.o
 	$(CC) $(CFLAGS) -I$(C_OP2_INC) -c $(C_OP2_SRC)/externlib/op_util.c -o $(F_OP2_OBJ)/op_util.o
 	$(CC) $(CFLAGS) -I$(MPI_INC) -I$(C_OP2_INC) -c $(F_OP2_SRC)/op_mpi_core.c -o $(F_OP2_OBJ)/op_mpi_core.o
@@ -638,21 +635,20 @@ f_mpi_openmp_hydra: $(C_OP2_INC)/op_lib_core.h $(C_OP2_SRC)/core/op_lib_core.c \
 	$(CC) $(CFLAGS) -I$(MPI_INC) -I$(C_OP2_INC) -c $(F_OP2_SRC)/op_mpi_rt_support.c -o $(F_OP2_OBJ)/op_mpi_rt_support.o
 	$(CC) $(CFLAGS) -I$(MPI_INC) $(NVCCFLAGS) $(HDF5_INCLUDE) -I$(C_OP2_INC)  -I$(CUDA_INC) -c $(C_OP2_SRC)/mpi/op_mpi_hdf5.c -o $(F_OP2_OBJ)/op_mpi_hdf5.o
 	ar -r $(F_OP2_LIB)/libop2_for_mpi_openmp.a \
-				$(F_OP2_OBJ)/op2_for_reference.o \
-				$(F_OP2_OBJ)/op_rt_support.o \
-				$(F_OP2_OBJ)/op2_C_reference.o \
-				$(F_OP2_OBJ)/op2_for_C_wrappers.o \
-				$(F_OP2_OBJ)/op_lib_core.o \
-				$(F_OP2_OBJ)/op_openmp_decl.o \
-				$(F_OP2_OBJ)/op2_for_declarations.o \
-				$(F_OP2_OBJ)/op2_for_rt_wrappers.o \
-				$(F_OP2_OBJ)/op_dummy_singlenode.o \
-				$(F_OP2_OBJ)/op_dummy_wrappers.o \
-				$(F_OP2_OBJ)/op2_for_rt_support.o \
-				$(F_OP2_OBJ)/op_util.o \
-				$(F_OP2_OBJ)/op_mpi_core.o \
-				$(F_OP2_OBJ)/op_mpi_part_core.o \
-				$(F_OP2_OBJ)/op_mpi_hdf5.o
+	$(F_OP2_OBJ)/op2_for_reference.o \
+	$(F_OP2_OBJ)/op_rt_support.o \
+	$(F_OP2_OBJ)/op2_C_reference.o \
+	$(F_OP2_OBJ)/op2_for_C_wrappers.o \
+	$(F_OP2_OBJ)/op_lib_core.o \
+	$(F_OP2_OBJ)/op2_for_declarations.o \
+	$(F_OP2_OBJ)/op2_for_rt_wrappers.o \
+	$(F_OP2_OBJ)/op_dummy_wrappers.o \
+	$(F_OP2_OBJ)/op2_for_rt_support.o \
+	$(F_OP2_OBJ)/op_util.o \
+	$(F_OP2_OBJ)/op_mpi_decl.o \
+	$(F_OP2_OBJ)/op_mpi_core.o \
+	$(F_OP2_OBJ)/op_mpi_part_core.o \
+	$(F_OP2_OBJ)/op_mpi_hdf5.o
 
 
 clean:
