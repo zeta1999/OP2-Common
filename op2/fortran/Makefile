@@ -81,15 +81,15 @@ ifeq ($(OP2_COMPILER),pgi)
 else
 ifeq ($(OP2_COMPILER),intel)
   F_INC_MOD       = $(F_OP2_MOD)/intel
-  OPT		  = -O3 -xSSE4.2 -vec-report
-  CC              = icc -O3 -xSSE4.2 -vec-report
+  OPT		  = -O0 -g# -xSSE4.2 -vec-report
+  CC              = icc -O0 -g# -xSSE4.2 -vec-report
   CFLAGS          = -std=c99 -Wall -Werror $(DEBUG_FLAGS)
   FC              = /opt/intel/Compiler/11.1/064/bin/intel64/ifort $(OPT)
   FFLAGS          = -module $(F_INC_MOD) $(DEBUG_FLAGS)
   MPICC	  	  = mpicc $(OPT)
   MPIF90	  = mpif90 $(OPT)
   NO_MPI_MACRO    = -D NO_MPI
-  ALLTARGETS      = f_reference f_reference_hdf5 f_openmp f_mpi_seq_hydra f_mpi_openmp_hydra
+  ALLTARGETS      = f_reference f_reference_hdf5 f_openmp f_mpi_seq_hydra f_openmp_hdf5 #f_mpi_openmp_hydra
 else
 print:
 	@echo "unrecognised value for OP2_COMPILER"
@@ -342,7 +342,7 @@ f_openmp_hdf5: $(C_OP2_INC)/op_lib_core.h $(C_OP2_SRC)/core/op_lib_core.c \
 	$(FC) -c $(FFLAGS) $(F_OP2_SRC)/op2_cpp_reference.F90 -o $(F_OP2_OBJ)/op2_for_reference.o
 	$(CC) $(CFLAGS)	-I$(C_OP2_INC) -c $(F_OP2_SRC)/op2_hdf5_dummy.c -o $(F_OP2_OBJ)/op2_hdf5_dummy.o
 	$(CC) $(CFLAGS) $(HDF5_INCLUDE) -I$(MPI_INC) -I$(C_OP2_INC) -c $(C_OP2_SRC)/externlib/op_hdf5.c -o $(F_OP2_OBJ)/op_hdf5.o
-	ar -r $(F_OP2_LIB)/libop2_for_openmp.a \
+	ar -r $(F_OP2_LIB)/libop2_for_openmp_hdf5.a \
 				$(F_OP2_OBJ)/op2_for_C_wrappers.o \
 				$(F_OP2_OBJ)/op_lib_core.o \
 				$(F_OP2_OBJ)/op_rt_support.o \
