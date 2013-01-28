@@ -349,15 +349,23 @@ SUBROUTINE res_calc_host( userSubroutine, set, &
   INTEGER(kind=4) :: i1
   INTEGER(kind=4) :: i2
 
+  numberOfOpDats = 8
+
+  opArgArray(1) = opArg1
+  opArgArray(2) = opArg2
+  opArgArray(3) = opArg3
+  opArgArray(4) = opArg4
+  opArgArray(5) = opArg5
+  opArgArray(6) = opArg6
+  opArgArray(7) = opArg7
+  opArgArray(8) = opArg8
+
   returnMPIHaloExchange = op_mpi_halo_exchanges(set%setCPtr,numberOfOpDats,opArgArray)
   IF (returnMPIHaloExchange .EQ. 0) THEN
     CALL op_mpi_wait_all(numberOfOpDats,opArgArray)
     CALL op_mpi_set_dirtybit(numberOfOpDats,opArgArray)
     RETURN
   END IF
-
-
-
 
 #ifdef OP_PART_SIZE_1
   partitionSize = OP_PART_SIZE_1
@@ -370,17 +378,6 @@ SUBROUTINE res_calc_host( userSubroutine, set, &
 #else
   numberOfThreads = 1
 #endif
-
-  numberOfOpDats = 8
-
-  opArgArray(1) = opArg1
-  opArgArray(2) = opArg2
-  opArgArray(3) = opArg3
-  opArgArray(4) = opArg4
-  opArgArray(5) = opArg5
-  opArgArray(6) = opArg6
-  opArgArray(7) = opArg7
-  opArgArray(8) = opArg8
 
   indirectionDescriptorArray(1) = 0
   indirectionDescriptorArray(2) = 0

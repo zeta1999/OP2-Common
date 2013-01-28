@@ -122,9 +122,23 @@ SUBROUTINE update_host( userSubroutine, set, &
   INTEGER(kind=4) :: i1
   INTEGER(kind=4) :: i10
   INTEGER(kind=4) :: i11
-
   real(8), DIMENSION(:), ALLOCATABLE :: reductionArrayHost5
 
+  !neede in code generator
+  numberOfOpDats = 5
+  opArgArray(1) = opArg1
+  opArgArray(2) = opArg2
+  opArgArray(3) = opArg3
+  opArgArray(4) = opArg4
+  opArgArray(5) = opArg5
+
+  returnMPIHaloExchange = op_mpi_halo_exchanges(set%setCPtr,numberOfOpDats,opArgArray)
+
+  IF (returnMPIHaloExchange .EQ. 0) THEN
+    CALL op_mpi_wait_all(numberOfOpDats,opArgArray)
+    CALL op_mpi_set_dirtybit(numberOfOpDats,opArgArray)
+    RETURN
+  END IF
 
 
 #ifdef _OPENMP
@@ -135,10 +149,11 @@ SUBROUTINE update_host( userSubroutine, set, &
 
   opSetCore => set%setPtr
 
+  !correction here needed to be put to code generator
   opDat1Cardinality = opArg1%dim * getSetSizeFromOpArg(opArg1)
-  opDat1Cardinality = opArg2%dim * getSetSizeFromOpArg(opArg2)
-  opDat1Cardinality = opArg3%dim * getSetSizeFromOpArg(opArg3)
-  opDat1Cardinality = opArg4%dim * getSetSizeFromOpArg(opArg4)
+  opDat2Cardinality = opArg2%dim * getSetSizeFromOpArg(opArg2)
+  opDat3Cardinality = opArg3%dim * getSetSizeFromOpArg(opArg3)
+  opDat4Cardinality = opArg4%dim * getSetSizeFromOpArg(opArg4)
   opDat5Cardinality = opArg5%dim
 
   CALL c_f_pointer(opArg1%data,opDat1Local,(/opDat1Cardinality/))
@@ -148,7 +163,7 @@ SUBROUTINE update_host( userSubroutine, set, &
   CALL c_f_pointer(opArg5%data,opDat5Local)
 
   allocate( reductionArrayHost5(numberOfThreads * 1) )
-  DO i10 = 1, numberOfThreads-1, 1
+  DO i10 = 1, numberOfThreads, 1 !check end index in code generator
     DO i11 = 1, 2-1, 1
       reductionArrayHost5((i10 - 1) * 1 + i11) = 0
     END DO
@@ -170,14 +185,16 @@ SUBROUTINE update_host( userSubroutine, set, &
   END DO
   !$OMP END PARALLEL DO
 
-  DO i10 = 1, numberOfThreads-1, 1
+  DO i10 = 1, numberOfThreads, 1 !check end index in code generator
     DO i11 = 1, 2-1, 1
       opDat5Local = opDat5Local + reductionArrayHost5((i10 - 1) * 1 + i11)
     END DO
   END DO
 
   deallocate( reductionArrayHost5 )
+  CALL op_mpi_reduce_double(opArg5,opArg5%data)
 
-  CALL op_mpi_reduce_float(opArg5,opArg5%data)
+  CALL op_mpi_set_dirtybit(numberOfOpDats,opArgArray)
+
 END SUBROUTINE
 END MODULE UPDATE_MODULE

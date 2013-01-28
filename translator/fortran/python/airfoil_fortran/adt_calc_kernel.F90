@@ -235,6 +235,14 @@ SUBROUTINE adt_calc_host( userSubroutine, set, &
   INTEGER(kind=4) :: i1
   INTEGER(kind=4) :: i2
 
+  numberOfOpDats = 6
+  opArgArray(1) = opArg1
+  opArgArray(2) = opArg2
+  opArgArray(3) = opArg3
+  opArgArray(4) = opArg4
+  opArgArray(5) = opArg5
+  opArgArray(6) = opArg6
+
   returnMPIHaloExchange = op_mpi_halo_exchanges(set%setCPtr,numberOfOpDats,opArgArray)
   IF (returnMPIHaloExchange .EQ. 0) THEN
     CALL op_mpi_wait_all(numberOfOpDats,opArgArray)
@@ -256,15 +264,6 @@ SUBROUTINE adt_calc_host( userSubroutine, set, &
 #else
   numberOfThreads = 1
 #endif
-
-  numberOfOpDats = 6
-
-  opArgArray(1) = opArg1
-  opArgArray(2) = opArg2
-  opArgArray(3) = opArg3
-  opArgArray(4) = opArg4
-  opArgArray(5) = opArg5
-  opArgArray(6) = opArg6
 
   indirectionDescriptorArray(1) = 0
   indirectionDescriptorArray(2) = 0

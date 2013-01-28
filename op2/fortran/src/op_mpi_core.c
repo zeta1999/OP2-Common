@@ -1575,6 +1575,8 @@ void op_mpi_reduce_double(op_arg* arg, double* data)
           MPI_MIN, OP_MPI_WORLD);
       memcpy(arg->data, result, sizeof(double)*arg->dim);
     }
+    //if(rank == 0)
+    //  printf("RMS from CORE MPI LIB = %lf\n", sqrt(*result/(double)720000.00));
     free (result);
   }
 }

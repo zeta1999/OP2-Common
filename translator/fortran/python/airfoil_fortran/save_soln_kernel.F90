@@ -96,6 +96,16 @@ SUBROUTINE save_soln_host( userSubroutine, set, &
   INTEGER(kind=4) :: i11
 
 
+  numberOfOpDats = 2
+  opArgArray(1) = opArg1
+  opArgArray(2) = opArg2
+  returnMPIHaloExchange = op_mpi_halo_exchanges(set%setCPtr,numberOfOpDats,opArgArray)
+
+  IF (returnMPIHaloExchange .EQ. 0) THEN
+    CALL op_mpi_wait_all(numberOfOpDats,opArgArray)
+    CALL op_mpi_set_dirtybit(numberOfOpDats,opArgArray)
+    RETURN
+  END IF
 
 
 #ifdef _OPENMP
@@ -105,9 +115,9 @@ SUBROUTINE save_soln_host( userSubroutine, set, &
 #endif
 
   opSetCore => set%setPtr
-
+  !check code generator here
   opDat1Cardinality = opArg1%dim * getSetSizeFromOpArg(opArg1)
-  opDat1Cardinality = opArg2%dim * getSetSizeFromOpArg(opArg2)
+  opDat2Cardinality = opArg2%dim * getSetSizeFromOpArg(opArg2)
 
   CALL c_f_pointer(opArg1%data,opDat1Local,(/opDat1Cardinality/))
   CALL c_f_pointer(opArg2%data,opDat2Local,(/opDat2Cardinality/))
@@ -125,6 +135,8 @@ SUBROUTINE save_soln_host( userSubroutine, set, &
     & sliceEnd)
   END DO
   !$OMP END PARALLEL DO
+
+  CALL op_mpi_set_dirtybit(numberOfOpDats,opArgArray)
 
 END SUBROUTINE
 END MODULE SAVE_SOLN_MODULE

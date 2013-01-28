@@ -30,7 +30,7 @@ PTSCOTCH_LIB 	= -L$(PTSCOTCH_INSTALL_PATH)/lib/ -lptscotch \
 FLINK = -L$(F_OP2_LIB)
 FMODS = -I$(F_OP2_MOD)
 
-all: clean cfunctions  airfoil_seq airfoil_hdf5_seq airfoil_hdf5_mpi airfoil_openmp_$(PART_SIZE_ENV) airfoil_hdf5_openmp_$(PART_SIZE_ENV) #airfoil_hdf5_mpi_openmp_$(PART_SIZE_ENV)
+all: clean cfunctions  airfoil_seq airfoil_hdf5_seq airfoil_hdf5_mpi airfoil_openmp_$(PART_SIZE_ENV) airfoil_hdf5_openmp_$(PART_SIZE_ENV) airfoil_hdf5_mpi_openmp_$(PART_SIZE_ENV)
 
 cfunctions: debug.c
 	$(IC) $(OPT) $(DEBUG) -c debug.c
@@ -66,15 +66,15 @@ airfoil_hdf5_openmp_$(PART_SIZE_ENV): airfoil_hdf5_op.F90 save_soln_kernel.F90 a
 	bres_calc_kernel.o update_kernel.o airfoil_hdf5_op.o -o airfoil_hdf5_openmp_$(PART_SIZE_ENV) -lop2_for_openmp_hdf5 $(HDF5_LIB) $(MPI_LIB) -lz
 
 
-#airfoil_hdf5_mpi_openmp_$(PART_SIZE_ENV): airfoil_hdf5_op.F90 save_soln_kernel.F90 adt_calc_kernel.F90 \
-#    res_calc_kernel.F90 bres_calc_kernel.F90 update_kernel.F90 constants.F90 airfoil_seqfun.F90
-#	$(FC) $(OPT) $(OPENMP) $(FMODS) -c constants.F90 \
-#	save_soln_kernel.F90 update_kernel.F90 bres_calc_kernel.F90 \
-#	res_calc_kernel.F90 adt_calc_kernel.F90 airfoil_hdf5_op.F90 airfoil_seqfun.F90
-#	$(FC) $(OPT) $(OPENMP) $(FLINK) $(PARMETIS_INC) $(PTSCOTCH_INC) debug.o constants.o airfoil_seqfun.o \
-#	save_soln_kernel.o adt_calc_kernel.o res_calc_kernel.o \
-#	bres_calc_kernel.o update_kernel.o airfoil_hdf5_op.o -o airfoil_hdf5_mpi_openmp_$(PART_SIZE_ENV) \
-#	-lop2_for_mpi_seq_hydra $(PARMETIS_LIB) $(PTSCOTCH_LIB) $(HDF5_LIB) $(MPI_LIB) -lz
+airfoil_hdf5_mpi_openmp_$(PART_SIZE_ENV): airfoil_hdf5_op.F90 save_soln_kernel.F90 adt_calc_kernel.F90 \
+    res_calc_kernel.F90 bres_calc_kernel.F90 update_kernel.F90 constants.F90 airfoil_seqfun.F90
+	$(FC) $(OPT) $(OPENMP) $(FMODS) -c constants.F90 \
+	save_soln_kernel.F90 update_kernel.F90 bres_calc_kernel.F90 \
+	res_calc_kernel.F90 adt_calc_kernel.F90 airfoil_hdf5_op.F90 #airfoil_seqfun.F90
+	$(FC) $(OPT) $(OPENMP) $(FLINK) $(PARMETIS_INC) $(PTSCOTCH_INC) debug.o constants.o \
+	save_soln_kernel.o adt_calc_kernel.o res_calc_kernel.o \
+	bres_calc_kernel.o update_kernel.o airfoil_hdf5_op.o -o airfoil_hdf5_mpi_openmp_$(PART_SIZE_ENV) \
+	-lop2_for_mpi_openmp $(PARMETIS_LIB) $(PTSCOTCH_LIB) $(HDF5_LIB) $(MPI_LIB) -lz
 
 clean:
 	rm -f *.o
