@@ -574,15 +574,6 @@ def op2_gen_openmp(master, date, consts, kernels):
       code('INTEGER(kind=4) :: i2')
       code('')
 
-      #mpi halo exchange call
-      code('returnMPIHaloExchange = op_mpi_halo_exchanges(set%setCPtr,numberOfOpDats,opArgArray)')
-      IF('returnMPIHaloExchange .EQ. 0')
-      code('CALL op_mpi_wait_all(numberOfOpDats,opArgArray)')
-      code('CALL op_mpi_set_dirtybit(numberOfOpDats,opArgArray)')
-      code('RETURN')
-      ENDIF()
-      code('')
-
     else:
       code('INTEGER(kind=4) :: threadID')
       code('INTEGER(kind=4) :: numberOfThreads')
@@ -606,10 +597,23 @@ def op2_gen_openmp(master, date, consts, kernels):
       if maps[g_m] == OP_GBL:
         code(typs[g_m]+', DIMENSION(:), ALLOCATABLE :: reductionArrayHost'+str(g_m+1))
 
-    #IF('set%setPtr%size .EQ. 0')
-    #code('RETURN')
-    #ENDIF()
-    #code('')
+    code('')
+    code('numberOfOpDats = '+str(nargs))
+    code('')
+
+    for g_m in range(0,nargs):
+      code('opArgArray('+str(g_m+1)+') = opArg'+str(g_m+1))
+    code('')
+
+
+    #mpi halo exchange call
+    code('returnMPIHaloExchange = op_mpi_halo_exchanges(set%setCPtr,numberOfOpDats,opArgArray)')
+    IF('returnMPIHaloExchange .EQ. 0')
+    code('CALL op_mpi_wait_all(numberOfOpDats,opArgArray)')
+    code('CALL op_mpi_set_dirtybit(numberOfOpDats,opArgArray)')
+    code('RETURN')
+    ENDIF()
+    code('')
 
 
     #code('numberCalled'+name+' = numberCalled'+name+'+ 1')
@@ -640,21 +644,12 @@ def op2_gen_openmp(master, date, consts, kernels):
 
 
     if ninds > 0:
-      code('')
-      code('numberOfOpDats = '+str(nargs))
-      code('')
-
-      for g_m in range(0,nargs):
-        code('opArgArray('+str(g_m+1)+') = opArg'+str(g_m+1))
-      code('')
       for g_m in range(0,nargs):
         code('indirectionDescriptorArray('+str(g_m+1)+') = '+str(inds[g_m]-1))
       code('')
 
-      if ninds > 0:
-        code('numberOfIndirectOpDats = '+str(ninds))
+      code('numberOfIndirectOpDats = '+str(ninds))
       code('')
-
       code('planRet_'+name+' = FortranPlanCaller( &')
       code('& userSubroutine, &')
       code('& set%setCPtr, &')
@@ -695,7 +690,7 @@ def op2_gen_openmp(master, date, consts, kernels):
       code('opDat'+str(invinds[g_m]+1)+'Cardinality = opArg'+str(invinds[g_m]+1)+'%dim * getSetSizeFromOpArg(opArg'+str(invinds[g_m]+1)+')')
     for g_m in range(0,nargs):
       if maps[g_m] == OP_ID:
-        code('opDat'+str(invinds[g_m]+1)+'Cardinality = opArg'+str(g_m+1)+'%dim * getSetSizeFromOpArg(opArg'+str(g_m+1)+')')
+        code('opDat'+str(g_m+1)+'Cardinality = opArg'+str(g_m+1)+'%dim * getSetSizeFromOpArg(opArg'+str(g_m+1)+')')
       elif maps[g_m] == OP_GBL:
         code('opDat'+str(g_m+1)+'Cardinality = opArg'+str(g_m+1)+'%dim')
 
@@ -713,7 +708,7 @@ def op2_gen_openmp(master, date, consts, kernels):
     for g_m in range(0,nargs):
       if maps[g_m] == OP_GBL and accs[g_m] == OP_INC:
         code('allocate( reductionArrayHost'+str(g_m+1)+'(numberOfThreads * 1) )')
-        DO('i10','1','numberOfThreads')
+        DO('i10','1','numberOfThreads+1')
         DO('i11','1','2')
         code('reductionArrayHost'+str(g_m+1)+'((i10 - 1) * 1 + i11) = 0')
         ENDDO()
@@ -816,15 +811,14 @@ def op2_gen_openmp(master, date, consts, kernels):
     #code('& 60000 * timeArrayStart(6) + &')
     #code('& 3600000 * timeArrayStart(5)')
 
-    if ninds > 0:
-      code('')
-      code('CALL op_mpi_set_dirtybit(numberOfOpDats,opArgArray)')
-      code('')
+    code('')
+    code('CALL op_mpi_set_dirtybit(numberOfOpDats,opArgArray)')
+    code('')
 
     #reductions
     for g_m in range(0,nargs):
       if maps[g_m] == OP_GBL and accs[g_m] == OP_INC:
-        DO('i10','1','numberOfThreads')
+        DO('i10','1','numberOfThreads+1')
         DO('i11','1','2')
         code('opDat'+str(g_m+1)+'Local = opDat'+str(g_m+1)+'Local + reductionArrayHost'+str(g_m+1)+'((i10 - 1) * 1 + i11)')
         ENDDO()
@@ -832,7 +826,12 @@ def op2_gen_openmp(master, date, consts, kernels):
         code('')
         code('deallocate( reductionArrayHost'+str(g_m+1)+' )')
         code('')
-        code('CALL op_mpi_reduce_float(opArg'+str(g_m+1)+',opArg'+str(g_m+1)+'%data)')
+        if typs[g_m] == 'real(8)':
+          code('CALL op_mpi_reduce_double(opArg'+str(g_m+1)+',opArg'+str(g_m+1)+'%data)')
+        elif typs[g_m] == 'real(4)':
+          code('CALL op_mpi_reduce_float(opArg'+str(g_m+1)+',opArg'+str(g_m+1)+'%data)')
+        elif typs[g_m] == 'integer(4)':
+          code('CALL op_mpi_reduce_int(opArg'+str(g_m+1)+',opArg'+str(g_m+1)+'%data)')
 
 
     #code('call date_and_time(values=timeArrayEnd)')
