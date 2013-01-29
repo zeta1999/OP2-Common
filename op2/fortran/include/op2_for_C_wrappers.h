@@ -37,6 +37,26 @@ op_map_core * op_decl_null_map ( );
 
 op_dat op_decl_gbl_f ( char ** dataIn, int dim, int size, const char * type );
 
+op_arg op_arg_gbl_copy ( char * data, int dim, const char * typ, int size, op_access acc );
+op_arg op_arg_dat_null (op_dat dat, int idx, op_map map, int dim, const char * typ, op_access acc);
+void op_dump_arg (op_arg * arg);
+void print_type (op_arg * arg);
+int op_mpi_size ();
+void op_mpi_rank (int * rank);
+void op_barrier ();
+bool isCNullPointer (void * ptr);
+void printFirstDatPosition (op_dat dat);
+int setKernelTime (int id, char name[], double kernelTime, float transfer, float transfer2);
+void decrement_all_mappings ();
+void increment_all_mappings ();
+
+void op_get_dat (op_dat dat);
+void op_put_dat (op_dat dat);
+void op_get_dat_mpi (op_dat dat);
+void op_put_dat_mpi (op_dat dat);
+
+int getSetSizeFromOpArg (op_arg * arg);
+
 int get_set_size (op_set_core * set);
 int get_associated_set_size (op_dat_core * dat);
 

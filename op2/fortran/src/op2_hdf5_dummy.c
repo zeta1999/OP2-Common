@@ -27,15 +27,24 @@
  */
 
 #include <stdlib.h>
-
 #include <op_lib_core.h>
+#include <op_hdf5.h>
 
 // Used in all those backends without HDF5
-op_set op_decl_set_hdf5(char const *file, char const *name) { return NULL; }
-op_map op_decl_map_hdf5(op_set from, op_set to, int dim, char const *file, char const *name) { return NULL; }
-op_dat op_decl_dat_hdf5(op_set set, int dim, char const *type, char const *file, char const *name) { return NULL; }
+op_set op_decl_set_hdf5(char const *file, char const *name) {
+  (void)file; (void)name;
+  return NULL;
+}
+op_map op_decl_map_hdf5(op_set from, op_set to, int dim, char const *file, char const *name) {
+  (void)from; (void) to; (void)dim; (void)file; (void)name;
+  return NULL;
+}
+op_dat op_decl_dat_hdf5(op_set set, int dim, char const *type, char const *file, char const *name) {
+  (void)set; (void)dim; (void)type; (void)file; (void)name;
+  return NULL;
+}
 void op_get_const_hdf5(char const *name, int dim, char const *type, char* const_data,
-  char const *file_name) {}
-void op_write_hdf5(char const * file_name) {}
+  char const *file_name) {(void)name; (void)dim; (void)type; (void)const_data; (void)file_name;}
+void op_write_hdf5(char const * file_name) { (void) file_name;}
 void op_write_const_hdf5(char const *name, int dim, char const *type, char* const_data,
-  char const *file_name) {}
+  char const *file_name) { (void)name; (void)dim; (void)type; (void)const_data; (void)file_name; }

@@ -10,7 +10,7 @@ OPENMP = -openmp
 PREPROCESSOR = -fpp
 
 CPPLINK = -lstdc++
-OPT = -DOP_PART_SIZE_1=$(PART_SIZE_ENV) -O0 -g# -xSSE4.2 -vec-report
+OPT = -DOP_PART_SIZE_1=$(PART_SIZE_ENV) -O2 -xSSE4.2 -vec-report
 OP2 = $(OP2_INSTALL_PATH)
 
 F_OP2_MOD = $(OP2)/fortran/mod/$(OP2_COMPILER)

@@ -83,6 +83,9 @@ op_plan * checkExistingPlan (char name[], op_set set,
   int partitionSize, int argsNumber, op_arg args[],
   int indsNumber, int inds[]) {
 
+  (void)inds;
+  (void)name;
+
   int match =0, ip = 0;
 
   while ( match == 0 && ip < OP_plan_index )

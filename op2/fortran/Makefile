@@ -81,9 +81,9 @@ ifeq ($(OP2_COMPILER),pgi)
 else
 ifeq ($(OP2_COMPILER),intel)
   F_INC_MOD       = $(F_OP2_MOD)/intel
-  OPT		  = -O0 -g# -xSSE4.2 -vec-report
-  CC              = icc -O0 -g# -xSSE4.2 -vec-report
-  CFLAGS          = -std=c99 -Wall -Werror $(DEBUG_FLAGS)
+  OPT		  = -O2 -xSSE4.2 -vec-report
+  CC              = icc -O2 -xSSE4.2 -vec-report
+  CFLAGS          = -std=c99 -Wall -Werror $(DEBUG_FLAGS) -wd981
   FC              = /opt/intel/Compiler/11.1/064/bin/intel64/ifort $(OPT)
   FFLAGS          = -module $(F_INC_MOD) $(DEBUG_FLAGS)
   MPICC	  	  = mpicc $(OPT)

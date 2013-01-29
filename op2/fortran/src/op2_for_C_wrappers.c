@@ -299,10 +299,12 @@ op_arg_gbl_copy ( char * data, int dim, const char * typ, int size, op_access ac
 
 op_arg
 op_arg_dat_null (op_dat dat, int idx, op_map map, int dim, const char * typ, op_access acc) {
+
+  (void)dat; (void)idx; (void)map; (void)dim; (void)typ; (void)acc;
+
   op_arg arg;
 
   arg.argtype = OP_ARG_NULL;
-
   arg.dat = NULL;
 
   // forces impossible dimension
@@ -429,7 +431,7 @@ int setKernelTime (int id, char name[], double kernelTime, float transfer, float
   }
 
   OP_kernels[id].count += 1;
-  OP_kernels[id].time += kernelTime;
+  OP_kernels[id].time += (float)kernelTime;
   OP_kernels[id].transfer += transfer;
   OP_kernels[id].transfer2 += transfer2;
 

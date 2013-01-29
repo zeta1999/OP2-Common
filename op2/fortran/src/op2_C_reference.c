@@ -157,7 +157,7 @@ void op_args_check(op_set set, int nargs, op_arg *args,
     char * p_a[N] = {ZERO_LIST(N)};                                     \
     op_arg args[N] = {ARG_ARR_LIST(N)};                                 \
     int halo = 0;                                                       \
-    int n_upper, rank;                                                  \
+    int n_upper;                                                  \
     ALLOC_POINTER_LIST(N)                                               \
     n_upper = op_mpi_halo_exchanges_seq (set, N, args);                 \
     if ( n_upper == 0 ) {                                               \
