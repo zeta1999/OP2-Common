@@ -79,9 +79,11 @@ extern int OP_cache_line_size;
  * enum list for op_par_loop
  */
 
-typedef enum { OP_READ, OP_WRITE, OP_RW, OP_INC, OP_MIN, OP_MAX } op_access;
+typedef int op_access;
+typedef int op_arg_type;
 
-typedef enum { OP_ARG_GBL, OP_ARG_DAT } op_arg_type;
+//typedef enum { OP_READ, OP_WRITE, OP_RW, OP_INC, OP_MIN, OP_MAX } op_access;
+//typedef enum { OP_ARG_GBL, OP_ARG_DAT } op_arg_type;
 
 /*
  * structures
