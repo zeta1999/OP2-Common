@@ -85,3 +85,4 @@ clean:
 	rm -f airfoil_hdf5_seq
 	rm -f airfoil_hdf5_mpi
 	rm -f airfoil_openmp_$(PART_SIZE_ENV)
+	rm -f airfoil_hdf5_openmp_$(PART_SIZE_ENV) airfoil_hdf5_mpi_openmp_$(PART_SIZE_ENV)

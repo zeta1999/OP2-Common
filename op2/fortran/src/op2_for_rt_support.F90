@@ -145,7 +145,7 @@ module OP2_Fortran_RT_Support
 
     end function
 
-    subroutine op_partition_c (lib_name, lib_routine, prime_set, prime_map, coords) BIND(C,name='op_partition_wrapper')
+    subroutine op_partition_c (lib_name, lib_routine, prime_set, prime_map, coords) BIND(C,name='op_partition')
 
       use, intrinsic :: ISO_C_BINDING
       use OP2_Fortran_Declarations

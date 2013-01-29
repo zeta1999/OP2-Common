@@ -155,6 +155,7 @@ f_reference_hdf5: $(C_OP2_INC)/op_lib_core.h $(C_OP2_SRC)/core/op_lib_core.c \
 						 $(F_OP2_SRC)/op2_C_reference.c \
 						 $(C_OP2_SRC)/externlib/op_util.c \
 						 $(C_OP2_SRC)/externlib/op_hdf5.c \
+						 $(F_OP2_SRC)/op2_for_rt_support.F90 \
 						 directories
 	$(CC) $(CFLAGS) -I$(C_OP2_INC) -c $(C_OP2_SRC)/core/op_lib_core.c -o $(F_OP2_OBJ)/op_lib_core.o
 	$(CC) $(CFLAGS) -I$(C_OP2_INC) -c $(C_OP2_SRC)/sequential/op_seq.c -o $(F_OP2_OBJ)/op_seq.o
@@ -168,6 +169,7 @@ f_reference_hdf5: $(C_OP2_INC)/op_lib_core.h $(C_OP2_SRC)/core/op_lib_core.c \
 	$(FC) $(FFLAGS) -c $(F_OP2_SRC)/op2_cpp_reference.F90 -o $(F_OP2_OBJ)/op2_for_reference.o
 	$(CC) $(CFLAGS) $(NO_MPI_MACRO) -I$(C_OP2_INC) -I$(MPI_INC) -c $(F_OP2_SRC)/op2_C_reference.c -o $(F_OP2_OBJ)/op2_C_reference.o
 	$(CC) $(CFLAGS) $(HDF5_INCLUDE) -I$(MPI_INC) -I$(C_OP2_INC) -c $(C_OP2_SRC)/externlib/op_hdf5.c -o $(F_OP2_OBJ)/op_hdf5.o
+	$(FC) $(FFLAGS) -c $(F_OP2_SRC)/op2_for_rt_support.F90 -o $(F_OP2_OBJ)/op2_for_rt_support.o
 	ar -r $(F_OP2_LIB)/libop2_for_reference_hdf5.a \
 				$(F_OP2_OBJ)/op_lib_core.o \
 				$(F_OP2_OBJ)/op_seq.o \
@@ -178,7 +180,8 @@ f_reference_hdf5: $(C_OP2_INC)/op_lib_core.h $(C_OP2_SRC)/core/op_lib_core.c \
 				$(F_OP2_OBJ)/op2_for_declarations.o \
 				$(F_OP2_OBJ)/op_hdf5.o \
 				$(F_OP2_OBJ)/op2_C_reference.o \
-				$(F_OP2_OBJ)/op_util.o
+				$(F_OP2_OBJ)/op_util.o \
+				$(F_OP2_OBJ)/op2_for_rt_support.o
 
 
 f_cuda: $(C_OP2_INC)/op_lib_core.h $(C_OP2_SRC)/core/op_lib_core.c \
