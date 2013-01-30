@@ -30,7 +30,7 @@ PTSCOTCH_LIB 	= -L$(PTSCOTCH_INSTALL_PATH)/lib/ -lptscotch \
 FLINK = -L$(F_OP2_LIB)
 FMODS = -I$(F_OP2_MOD)
 
-all: clean cfunctions  airfoil_seq airfoil_hdf5_seq airfoil_hdf5_mpi airfoil_openmp_$(PART_SIZE_ENV) airfoil_hdf5_openmp_$(PART_SIZE_ENV) airfoil_hdf5_mpi_openmp_$(PART_SIZE_ENV)
+all: clean cfunctions  airfoil_cuda
 
 cfunctions: debug.c
 	$(IC) $(OPT) $(DEBUG) -c debug.c

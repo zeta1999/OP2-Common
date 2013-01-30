@@ -36,8 +36,12 @@ import re
 import datetime
 
 #import openmp code generation function
-import op2_gen_openmp
-from op2_gen_openmp import *
+#import op2_gen_openmp
+#from op2_gen_openmp import *
+
+#import cuda code generation function
+import op2_gen_cuda
+from op2_gen_cuda import *
 
 
 #
@@ -680,5 +684,5 @@ if npart==0 and nhdf5>0:
 #                      ** END MAIN APPLICATION **
 ##########################################################################
 
-op2_gen_openmp(str(sys.argv[1]), date, consts, kernels)
-#op2_gen_cuda(str(sys.argv[1]), date, consts, kernels)
+#op2_gen_openmp(str(sys.argv[1]), date, consts, kernels)
+op2_gen_cuda(str(sys.argv[1]), date, consts, kernels)
