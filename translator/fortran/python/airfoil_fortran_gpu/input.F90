@@ -1,6 +1,4 @@
-module input
-use OP2_CONSTANTS
- contains
+
 
 ! read set sizes from input
 subroutine getSetSizes ( nnode, ncell, nedge, nbedge )
@@ -17,10 +15,10 @@ subroutine getSetSizes ( nnode, ncell, nedge, nbedge )
 
 
   character(len=MAX_PWD_LEN) :: currDir
-  !call get_environment_variable ( "WORK", currDir )
-  call get_environment_variable ( "PWD", currDir )
+  call get_environment_variable ( "WORK", currDir )
 
-  currDir = 'new_grid.dat'
+  currDir = trim(currDir) //  'new_grid.dat'
+  ! iterator for file scanning and array addressing
 
   ! open file
 
@@ -64,36 +62,36 @@ subroutine getSetInfo ( nnode, ncell, nedge, nbedge, cell, edge, ecell, bedge, b
   ! the file is already open and the pointer in file is already at the correct position
 
   do i = 1, nnode
-     read ( FILE_ID, * ) x( (2*i) - 1 ), x( 2*i )
+    read ( FILE_ID, * ) x( (2*i) - 1 ), x( 2*i )
   end do
 
   do i = 1, ncell
-     read ( FILE_ID, * ) cell(4 * i - 3), cell(4 * i + 1 - 3), cell(4 * i + 2 - 3), cell(4 * i + 3 - 3 )
+    read ( FILE_ID, * ) cell(4 * i - 3), cell(4 * i + 1 - 3), cell(4 * i + 2 - 3), cell(4 * i + 3 - 3 )
 
-     ! pointers are expressed for C arrays (from 0 to N-1), for Fortran we have to convert them in sets from 1 to N
-!     		cell(4 * i - 3) = cell(4 * i - 3) + 1
-!     		cell(4 * i + 1 - 3) = cell(4 * i + 1 - 3) + 1
-!     		cell(4 * i + 2 - 3) = cell(4 * i + 2 - 3) + 1
-!     		cell(4 * i + 3 - 3 ) = cell(4 * i + 3 - 3 ) + 1
+    ! pointers are expressed for C arrays (from 0 to N-1), for Fortran we have to convert them in sets from 1 to N
+!		cell(4 * i - 3) = cell(4 * i - 3) + 1
+!		cell(4 * i + 1 - 3) = cell(4 * i + 1 - 3) + 1
+!		cell(4 * i + 2 - 3) = cell(4 * i + 2 - 3) + 1
+!		cell(4 * i + 3 - 3 ) = cell(4 * i + 3 - 3 ) + 1
   enddo
 
   do i = 1, nedge
-     read ( FILE_ID, * ) edge(2 * i - 1), edge(2 * i + 1 - 1), ecell(2 * i - 1), ecell(2 * i + 1 - 1)
+    read ( FILE_ID, * ) edge(2 * i - 1), edge(2 * i + 1 - 1), ecell(2 * i - 1), ecell(2 * i + 1 - 1)
 
-     ! see above
-!     		edge(2 * i - 1) = edge(2 * i - 1) + 1
-!     		edge(2 * i + 1 - 1) = edge(2 * i + 1 - 1) + 1
-!     		ecell(2 * i - 1) = ecell(2 * i - 1) + 1
-!     		ecell(2 * i + 1 - 1) = ecell(2 * i + 1 - 1) + 1
+    ! see above
+!		edge(2 * i - 1) = edge(2 * i - 1) + 1
+!		edge(2 * i + 1 - 1) = edge(2 * i + 1 - 1) + 1
+!		ecell(2 * i - 1) = ecell(2 * i - 1) + 1
+!		ecell(2 * i + 1 - 1) = ecell(2 * i + 1 - 1) + 1
   enddo
 
   do i = 1, nbedge
-     read ( FILE_ID, * ) bedge(2 * i - 1), bedge(2 * i + 1 - 1), becell(i), bound(i)
+    read ( FILE_ID, * ) bedge(2 * i - 1), bedge(2 * i + 1 - 1), becell(i), bound(i)
 
-     ! see above
-!     		bedge(2 * i - 1) = bedge(2 * i - 1) + 1
-!     		bedge(2 * i + 1 - 1) = bedge(2 * i + 1 - 1) + 1
-!     		becell(i) = becell(i) + 1
+    ! see above
+!		bedge(2 * i - 1) = bedge(2 * i - 1) + 1
+!		bedge(2 * i + 1 - 1) = bedge(2 * i + 1 - 1) + 1
+!		becell(i) = becell(i) + 1
   enddo
 
   ! close file
@@ -101,48 +99,3 @@ subroutine getSetInfo ( nnode, ncell, nedge, nbedge, cell, edge, ecell, bedge, b
 
 
 end subroutine getSetInfo
-
-subroutine initialise_flow_field ( ncell, q, res )
-
-  implicit none
-
-  ! formal parameters
-  integer(4) :: ncell
-
-  real(8), dimension(:) :: q
-  real(8), dimension(:) :: res
-
-  ! local variables
-  real(8) :: p, r, u, e
-
-  integer(4) :: n, m
-
-
-  gam = 1.4
-  gm1 = gam - 1.0
-  cfl = 0.9
-  eps = 0.05
-
-
-  mach  = 0.4
-  alpha = 3.0 * atan(1.0) / 45.0
-  p     = 1.0
-  r     = 1.0
-  u     = sqrt ( gam * p / r ) * mach
-  e     = p / ( r * gm1 ) + 0.5 * u * u
-
-  qinf(1) = r
-  qinf(2) = r * u
-  qinf(3) = 0.0
-  qinf(4) = r * e
-
-  ! -4 in the subscript is done to adapt C++ code to fortran one
-  do n = 1, ncell
-    do m = 1, 4
-      q( (4 * n + m) - 4) = qinf(m)
-      res( (4 * n + m) - 4) = 0.0
-    end do
-  end do
-
-end subroutine initialise_flow_field
-end module input
