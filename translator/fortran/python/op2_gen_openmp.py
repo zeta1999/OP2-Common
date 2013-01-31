@@ -34,7 +34,7 @@ def rep(line,m):
     line = re.sub('INDARG','ind_arg'+str(m+1),line)
     line = re.sub('DIMS',str(dims[m]),line)
     line = re.sub('ARG','arg'+str(m+1),line)
-    line = re.sub('TYP',typs[m],line)
+    line = re.sub('TYPS',typs[m],line)
     line = re.sub('IDX',str(int(idxs[m])),line)
   elif CPP:
     line = re.sub('INDDIM',str(inddims[m]),line)

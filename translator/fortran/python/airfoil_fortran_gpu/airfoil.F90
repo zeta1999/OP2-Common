@@ -2,7 +2,7 @@ program AIRFOIL
   use OP2_FORTRAN_DECLARATIONS
   use OP2_Fortran_Reference
   use OP2_CONSTANTS
-  use AIRFOIL_SEQ
+  !use AIRFOIL_SEQ
   use, intrinsic :: ISO_C_BINDING
 
   implicit none

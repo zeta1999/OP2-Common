@@ -34,7 +34,7 @@ def rep(line,m):
     line = re.sub('INDARG','ind_arg'+str(m+1),line)
     line = re.sub('DIMS',str(dims[m]),line)
     line = re.sub('ARG','arg'+str(m+1),line)
-    line = re.sub('TYP',typs[m],line)
+    line = re.sub('TYPS',typs[m],line)
     line = re.sub('IDX',str(int(idxs[m])),line)
   elif CPP:
     line = re.sub('INDDIM',str(inddims[m]),line)
@@ -70,6 +70,15 @@ def DO(i,start,finish):
     code('DO '+i+' = '+start+', '+finish+'-1, 1')
   elif CPP:
     code('for ( int '+i+'='+start+'; '+i+'<'+finish+'; '+i+'++ ){')
+  depth += 2
+
+def DOWHILE(line):
+  global file_text, FORTRAN, CPP, g_m
+  global depth
+  if FORTRAN:
+    code('DO WHILE'+line)
+  elif CPP:
+    code('while ('+ line+ ' )')
   depth += 2
 
 def FOR(i,start,finish):
@@ -211,8 +220,115 @@ def op2_gen_cuda(master, date, consts, kernels):
 #  Generate CUDA kernel function
 ##########################################################################
     comm('CUDA kernel function')
-    code('attributes (global) SUBROUTINE '+name+'( &'); depth = depth + 2
+    code('attributes (global) SUBROUTINE op_cuda_'+name+'( &'); depth = depth + 2
+    code('& opDatDimensions, &')
+    code('& opDatCardinalities, &')
+    code('& pindSizes, &')
+    code('& pindOffs, &')
+    code('& pblkMap, &')
+    code('& poffset, &')
+    code('& pnelems, &')
+    code('& pnthrcol, &')
+    code('& pthrcol, &')
+    code('& blockOffset)')
+    code('')
+    code('IMPLICIT NONE')
+    code('')
+    code('TYPE ( adt_calc_opDatDimensions ) , DEVICE :: opDatDimensions')
+    code('TYPE ( adt_calc_opDatCardinalities ) , DEVICE :: opDatCardinalities')
+    code('INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pindSizesSize - 1), DEVICE :: pindSizes')
+    code('INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pindOffsSize - 1), DEVICE :: pindOffs')
+    code('INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pblkMapSize - 1), DEVICE :: pblkMap')
+    code('INTEGER(kind=4), DIMENSION(0:opDatCardinalities%poffsetSize - 1), DEVICE :: poffset')
+    code('INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pnelemsSize - 1), DEVICE :: pnelems')
+    code('INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pnthrcolSize - 1), DEVICE :: pnthrcol')
+    code('INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pthrcolSize - 1), DEVICE :: pthrcol')
+    code('INTEGER(kind=4), VALUE :: blockOffset')
+    code('')
+    for g_m in range(0,ninds):
+      if accs[invinds[g_m]] == OP_INC:
+        for m in range (0,int(idxs[g_m])):
+          code('REAL(kind=8), DIMENSION(0:3) :: opDat'+str(invinds[g_m]+1+m)+'Local')
+          code('INTEGER(kind=4) :: opDat'+str(invinds[g_m]+1+m)+'Map')
+    code('')
+    for g_m in range(0,ninds):
+      code('INTEGER(kind=4) :: opDat'+str(invinds[g_m]+1)+'nBytes')
+    code('')
+    for g_m in range(0,ninds):
+      code('INTEGER(kind=4) :: opDat'+str(invinds[g_m]+1)+'RoundUp')
+    code('')
+    for g_m in range(0,ninds):
+      code('INTEGER(kind=4) :: opDat'+str(invinds[g_m]+1)+'SharedIndirectionSize')
+    code('')
+    code('REAL(kind=8), DIMENSION(0:*), SHARED :: sharedFloat8')
+    code('INTEGER(kind=4) :: sharedOffsetFloat8')
+    code('INTEGER(kind=4), SHARED :: numOfColours')
+    code('INTEGER(kind=4), SHARED :: numberOfActiveThreadsCeiling')
+    code('INTEGER(kind=4), SHARED :: sharedMemoryOffset')
+    code('INTEGER(kind=4), SHARED :: blockID')
+    code('INTEGER(kind=4), SHARED :: numberOfActiveThreads')
+    code('INTEGER(kind=4) :: moduloResult')
+    code('INTEGER(kind=4) :: nbytes')
+    code('INTEGER(kind=4) :: colour1')
+    code('INTEGER(kind=4) :: colour2')
+    code('INTEGER(kind=4) :: n1')
+    code('INTEGER(kind=4) :: i1')
+    code('INTEGER(kind=4) :: i2')
 
+    IF('threadIdx%x - 1 .EQ. 0')
+    code('blockID = pblkMap(blockIdx%x - 1 + blockOffset)')
+    code('numberOfActiveThreads = pnelems(blockID)')
+    code('numberOfActiveThreadsCeiling = blockDim%x * (1 + (numberOfActiveThreads - 1) / blockDim%x)')
+    code('numOfColours = pnthrcol(blockID)')
+    code('sharedMemoryOffset = poffset(blockID)')
+    code('')
+    for g_m in range(0,ninds):
+      code('opDat'+str(invinds[g_m]+1)+'SharedIndirectionSize = pindSizes('+str(g_m)+' + blockID * '+str(ninds)+')')
+    ENDIF()
+    code('')
+    code('CALL syncthreads()')
+    code('')
+    for g_m in range(0,ninds):
+      code('opDat'+str(invinds[g_m]+1)+'RoundUp = opDat'+str(invinds[g_m]+1)+'SharedIndirectionSize * opDatDimensions%opDat'+str(invinds[g_m]+1)+'Dimension')
+    code('')
+    for g_m in range(0,ninds):
+      if g_m == 0:
+        code('opDat'+str(invinds[g_m]+1)+'nBytes = 0')
+      else:
+        code('opDat'+str(invinds[g_m]+1)+'nBytes = opDat'+str(invinds[g_m-1]+1)+'nBytes * 8 / 8 + opDat'+str(invinds[g_m]+1)+'RoundUp * 8 / 8')
+    code('')
+
+    for g_m in range(0,ninds):
+      code('i1 = threadIdx%x - 1')
+      code('n1 = opDat'+str(invinds[g_m]+1)+'SharedIndirectionSize * opDatDimensions%opDat'+str(invinds[g_m]+1)+'Dimension')
+      if accs[invinds[g_m]] == OP_READ:
+        DOWHILE('i1 < n1')
+        code('moduloResult = mod(i1,opDatDimensions%opDat'+str(invinds[g_m]+1)+'Dimension)')
+        code('sharedFloat8(opDat'+str(invinds[g_m]+1)+'nBytes + i1) = opDat'+str(invinds[g_m]+1)+'Device'+name+'( &')
+        code('& moduloResult + ind_maps'+str(invinds[g_m]+1)+'_'+name+'(0 + (pindOffs(1 + blockID * 4) + i1 / &')
+        code('& opDatDimensions%opDat'+str(invinds[g_m]+1)+'Dimension) + 1) * &')
+        code('& opDatDimensions%opDat'+str(invinds[g_m]+1)+'Dimension + 1)')
+        code('i1 = i1 + blockDim%x')
+        ENDDO()
+      elif accs[invinds[g_m]] == OP_INC:
+        DOWHILE('i1 < n1')
+        code('sharedFloat8(opDat'+str(invinds[g_m]+1)+'nBytes + i1) = 0')
+        code('i1 = i1 + blockDim%x')
+        ENDDO()
+      code('')
+
+    code('CALL syncthreads()')
+    code('i1 = threadIdx%x - 1')
+    code('')
+    DO('i1','0','numberOfActiveThreadsCeiling')
+    code('colour2 = -1')
+    IF('i1 < numberOfActiveThreads')
+    for g_m in range(0,ninds):
+      if accs[invinds[g_m]] == OP_INC:
+        for m in range (0,int(idxs[g_m])):
+          DO('i2','0','opDatDimensions%opDat'+str(invinds[g_m]+1+m)+'Dimension ')
+          code('opDat'+str(invinds[g_m]+1+m)+'Local(i2) = 0')
+          ENDDO()
 
     depth = depth - 2
     code('END SUBROUTINE')
