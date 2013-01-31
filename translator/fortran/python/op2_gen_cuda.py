@@ -76,7 +76,7 @@ def DOWHILE(line):
   global file_text, FORTRAN, CPP, g_m
   global depth
   if FORTRAN:
-    code('DO WHILE'+line)
+    code('DO WHILE '+line)
   elif CPP:
     code('while ('+ line+ ' )')
   depth += 2
@@ -330,10 +330,86 @@ def op2_gen_cuda(master, date, consts, kernels):
           code('opDat'+str(invinds[g_m]+1+m)+'Local(i2) = 0')
           ENDDO()
 
+##########################################################################
+#  CUDA kernel call
+##########################################################################
+    if ninds > 0: #indirect kernel call
+      code('')
+      comm('kernel call')
+      line = 'CALL '+name+'( &'
+      indent = '\n'+' '*depth
+      for g_m in range(0,nargs):
+        if maps[g_m] == OP_ID:
+          line = line + indent + '& sharedFloat8(opDat'+str(invinds[inds[g_m]-1]+1)+'nBytes + mappingArray'+str(g_m+1)+name+'(i1 + sharedMemoryOffset + 1) * opDatDimensions%opDat'+str(g_m+1)+'Dimension)'
+        if maps[g_m] == OP_MAP and accs[g_m] == OP_READ:
+          line = line + indent + '& sharedFloat8(opDat'+str(invinds[inds[g_m]-1]+1)+'nBytes + mappingArray'+str(g_m+1)+name+'(i1 + sharedMemoryOffset + 1) * opDatDimensions%opDat'+str(g_m+1)+'Dimension)'
+        elif maps[g_m] == OP_MAP and (accs[g_m] == OP_INC or accs[g_m] == OP_RW):
+          line = line +indent + '& opDat'+str(g_m+1)+'Local'
+        if g_m < nargs-1:
+          line = line +', &'
+        else:
+           line = line +' &'
+      depth = depth - 2
+      code(line + indent + '& )')
+      depth = depth + 2
+      code('colour2 = pthrcol(i1 + sharedMemoryOffset)')
+      ENDIF()
+
+      code('')
+      for g_m in range(0,ninds):
+        if accs[invinds[g_m]] == OP_INC:
+          for m in range (0,int(idxs[g_m])):
+            code('opDat'+str(invinds[g_m]+1+m)+'Map = mappingArray'+str(invinds[g_m]+1+m)+'_'+name+'(i1 + sharedMemoryOffset + 1)')
+      code('')
+
+      DO('colour1','0','numOfColours')
+      IF('colour2 .EQ. colour1')
+      for g_m in range(0,ninds):
+        if accs[invinds[g_m]] == OP_INC:
+          for m in range (0,int(idxs[g_m])):
+            DO('i2','0', 'opDatDimensions%opDatinddims'+str(invinds[g_m]+1+m)+'Dimension')
+            code('sharedFloat8(opDat'+str(invinds[g_m]+1)+'nBytes + (i2 + opDat'+str(invinds[g_m]+1+m)+'Map * opDatDimensions%opDat'+str(invinds[g_m]+1+m)+'Dimension)) = &')
+            code('& sharedFloat8(opDat'+str(invinds[g_m]+1)+'nBytes + (i2 + opDat'+str(invinds[g_m]+1+m)+'Map * opDatDimensions%opDat'+str(invinds[g_m]+1+m)+'Dimension)) + opDat'+str(invinds[g_m]+1+m)+'Local(i2)')
+            ENDDO()
+            code('')
+      ENDIF()
+      code('CALL syncthreads()')
+      ENDDO()
+      code('i1 = i1 + blockDim%x')
+      ENDDO()
+      code('')
+      code('CALL syncthreads()')
+      code('i1 = threadIdx%x - 1')
+      code('')
+      for g_m in range(0,ninds):
+        if accs[invinds[g_m]] == OP_INC:
+          DOWHILE('i1 < opDat'+str(invinds[g_m]+1)+'SharedIndirectionSize * opDatDimensions%opDat'+str(invinds[g_m]+1)+'Dimension')
+          code('moduloResult = mod(i1,opDatDimensions%opDat'+str(invinds[g_m]+1)+'Dimension)')
+          code('opDat'+str(invinds[g_m]+1)+'Deviceres_calc(moduloResult + ind_maps'+str(invinds[g_m]+1)+'_res_calc &')
+          code('& (0 + (pindOffs(3 + blockID * 4) + i1 / opDatDimensions%opDat'+str(invinds[g_m]+1)+'Dimension) + 1) * &')
+          code('& opDatDimensions%opDat'+str(invinds[g_m]+1)+'Dimension + 1) = &')
+          code('& opDat'+str(invinds[g_m]+1)+'Deviceres_calc(moduloResult + ind_maps'+str(invinds[g_m]+1)+'_res_calc &')
+          code('& (0 + (pindOffs(3 + blockID * 4) + i1 / opDatDimensions%opDat'+str(invinds[g_m]+1)+'Dimension) + 1) * &')
+          code('& opDatDimensions%opDat'+str(invinds[g_m]+1)+'Dimension + 1) + &')
+          code('& sharedFloat8(opDat'+str(invinds[g_m]+1)+'nBytes + i1)')
+          ENDDO()
+
+    else: #direct kernel call
+      code('')
+      comm('kernel call')
+
+    depth = depth - 2
+    code('END SUBROUTINE')
+    code('')
+
+##########################################################################
+#  Generate CUP hust stub
+##########################################################################
+    code('attributes (host) SUBROUTINE '+name+'_host( userSubroutine, set, &'); depth = depth + 2
+
     depth = depth - 2
     code('END SUBROUTINE')
     code('END MODULE '+name.upper()+'_MODULE')
-
 ##########################################################################
 #  output individual kernel file
 ##########################################################################
