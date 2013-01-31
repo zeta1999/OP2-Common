@@ -682,7 +682,6 @@ def op2_gen_openmp(master, date, consts, kernels):
           ENDIF()
           code('')
 
-
     code('')
     code('opSetCore => set%setPtr')
     code('')

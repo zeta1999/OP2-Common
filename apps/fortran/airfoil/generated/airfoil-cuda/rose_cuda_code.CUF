@@ -1282,7 +1282,6 @@ attributes (host) SUBROUTINE res_calc_host( userSubroutine, set, &
   TYPE ( op_arg ) , INTENT(IN) :: opArg8
 
   TYPE ( op_arg ) , DIMENSION(8) :: opArgArray
-
   INTEGER(kind=4) :: numberOfOpDats
   INTEGER(kind=4) :: returnMPIHaloExchange
   INTEGER(kind=4) :: returnSetKernelTiming
@@ -1294,16 +1293,15 @@ attributes (host) SUBROUTINE res_calc_host( userSubroutine, set, &
   INTEGER(kind=4) :: opDat5Cardinality
   INTEGER(kind=4) :: opDat7Cardinality
 
+  TYPE ( op_plan ) , POINTER :: actualPlan_res_calc
+  TYPE ( c_devptr ) , POINTER, DIMENSION(:) :: pindMaps
+  TYPE ( c_devptr ) , POINTER, DIMENSION(:) :: pmaps
+
+  INTEGER(kind=4) :: pindMapsSize
   INTEGER(kind=4) :: blocksPerGrid
   INTEGER(kind=4) :: threadsPerBlock
   INTEGER(kind=4) :: dynamicSharedMemorySize
   INTEGER(kind=4) :: threadSynchRet
-
-  TYPE ( op_plan ) , POINTER :: actualPlan_res_calc
-  TYPE ( c_devptr ) , POINTER, DIMENSION(:) :: pindMaps
-  TYPE ( c_devptr ) , POINTER, DIMENSION(:) :: pmaps
-  INTEGER(kind=4) :: pindMapsSize
-
   INTEGER(kind=4), DIMENSION(1:8) :: opDatArray
   INTEGER(kind=4), DIMENSION(1:8) :: mappingIndicesArray
   INTEGER(kind=4), DIMENSION(1:8) :: mappingArray
@@ -1421,27 +1419,29 @@ attributes (host) SUBROUTINE res_calc_host( userSubroutine, set, &
   CALL c_f_pointer(planRet_res_calc,actualPlan_res_calc)
   CALL c_f_pointer(actualPlan_res_calc%ind_maps,pindMaps,(/numberOfIndirectOpDats/))
   CALL c_f_pointer(actualPlan_res_calc%ncolblk,ncolblk,(/set%setPtr%size/))
+
   pindSizesSize = actualPlan_res_calc%nblocks * numberOfIndirectOpDats
   CALL c_f_pointer(actualPlan_res_calc%ind_sizes,pindSizes,(/pindSizesSize/))
 
   pindOffsSize = pindSizesSize
   CALL c_f_pointer(actualPlan_res_calc%ind_offs,pindOffs,(/pindOffsSize/))
+
   pblkMapSize = actualPlan_res_calc%nblocks
-
   CALL c_f_pointer(actualPlan_res_calc%blkmap,pblkMap,(/pblkMapSize/))
+
   poffsetSize = actualPlan_res_calc%nblocks
-
   CALL c_f_pointer(actualPlan_res_calc%offset,poffset,(/poffsetSize/))
+
   pnelemsSize = actualPlan_res_calc%nblocks
-
   CALL c_f_pointer(actualPlan_res_calc%nelems,pnelems,(/pnelemsSize/))
+
   pnthrcolSize = actualPlan_res_calc%nblocks
-
   CALL c_f_pointer(actualPlan_res_calc%nthrcol,pnthrcol,(/pnthrcolSize/))
-  pthrcolSize = set%setPtr%size
 
+  pthrcolSize = set%setPtr%size
   CALL c_f_pointer(actualPlan_res_calc%thrcol,pthrcol,(/pthrcolSize/))
   CALL c_f_pointer(actualPlan_res_calc%nindirect,pnindirect,(/numberOfIndirectOpDats/))
+
   CALL c_f_pointer(pindMaps(1),ind_maps1_res_calc_3884922247,pnindirect(1))
   CALL c_f_pointer(pindMaps(2),ind_maps3_res_calc_3884922247,pnindirect(2))
   CALL c_f_pointer(pindMaps(3),ind_maps5_res_calc_3884922247,pnindirect(3))
@@ -1525,7 +1525,8 @@ attributes (host) SUBROUTINE res_calc_host( userSubroutine, set, &
     dynamicSharedMemorySize = actualPlan_res_calc%nshared
 
     CALL res_calc_kernel <<<blocksPerGrid,threadsPerBlock,dynamicSharedMemorySize>>> &
-    & (opDatDimensions,opDatCardinalities,pindSizes,pindOffs,pblkMap,poffset,pnelems,pnthrcol,pthrcol,blockOffset)
+    & (opDatDimensions,opDatCardinalities,pindSizes,pindOffs,pblkMap, &
+    & poffset,pnelems,pnthrcol,pthrcol,blockOffset)
 
     threadSynchRet = cudaThreadSynchronize()
     blockOffset = blockOffset + blocksPerGrid
