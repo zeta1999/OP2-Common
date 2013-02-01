@@ -416,10 +416,10 @@ def op2_gen_cuda(master, date, consts, kernels):
         if accs[invinds[g_m]] == OP_INC:
           DOWHILE('i1 < opDat'+str(invinds[g_m]+1)+'SharedIndirectionSize * opDatDimensions%opDat'+str(invinds[g_m]+1)+'Dimension')
           code('moduloResult = mod(i1,opDatDimensions%opDat'+str(invinds[g_m]+1)+'Dimension)')
-          code('opDat'+str(invinds[g_m]+1)+'Deviceres_calc(moduloResult + ind_maps'+str(invinds[g_m]+1)+'_res_calc &')
+          code('opDat'+str(invinds[g_m]+1)+'Device'+name+'(moduloResult + ind_maps'+str(invinds[g_m]+1)+'_'+name+' &')
           code('& (0 + (pindOffs(3 + blockID * 4) + i1 / opDatDimensions%opDat'+str(invinds[g_m]+1)+'Dimension) + 1) * &')
           code('& opDatDimensions%opDat'+str(invinds[g_m]+1)+'Dimension + 1) = &')
-          code('& opDat'+str(invinds[g_m]+1)+'Deviceres_calc(moduloResult + ind_maps'+str(invinds[g_m]+1)+'_res_calc &')
+          code('& opDat'+str(invinds[g_m]+1)+'Device'+name+'(moduloResult + ind_maps'+str(invinds[g_m]+1)+'_'+name+' &')
           code('& (0 + (pindOffs(3 + blockID * 4) + i1 / opDatDimensions%opDat'+str(invinds[g_m]+1)+'Dimension) + 1) * &')
           code('& opDatDimensions%opDat'+str(invinds[g_m]+1)+'Dimension + 1) + &')
           code('& sharedFloat8(opDat'+str(invinds[g_m]+1)+'nBytes + i1)')
@@ -446,13 +446,13 @@ def op2_gen_cuda(master, date, consts, kernels):
     code('')
     code('IMPLICIT NONE')
     code('character(len='+str(len(name)+1)+'), INTENT(IN) :: userSubroutine')
-    code('type ( op_set ) , INTENT(IN) :: set')
+    code('TYPE ( op_set ) , INTENT(IN) :: set')
     code('')
 
     for g_m in range(0,nargs):
-      code('type ( op_arg ) , INTENT(IN) :: opArg'+str(g_m+1))
+      code('TYPE ( op_arg ) , INTENT(IN) :: opArg'+str(g_m+1))
     code('')
-    code('type ( op_arg ) , DIMENSION('+str(nargs)+') :: opArgArray')
+    code('TYPE ( op_arg ) , DIMENSION('+str(nargs)+') :: opArgArray')
     code('INTEGER(kind=4) :: numberOfOpDats')
     code('INTEGER(kind=4) :: returnMPIHaloExchange')
     code('INTEGER(kind=4) :: returnSetKernelTiming')
@@ -462,8 +462,14 @@ def op2_gen_cuda(master, date, consts, kernels):
     code('')
     for g_m in range(0,ninds):
       code('INTEGER(kind=4) :: opDat'+str(invinds[g_m]+1)+'Cardinality')
+    for g_m in range(0,nargs):
+      if maps[g_m] == OP_ID:
+        code('INTEGER(kind=4) :: opDat'+str(g_m+1)+'Cardinality')
+      elif maps[g_m] == OP_GBL:
+        code('INTEGER(kind=4) :: opDat'+str(g_m+1)+'Cardinality')
+
     code('')
-    code('TYPE ( op_plan ) , POINTER :: actualPlan_res_calc')
+    code('TYPE ( op_plan ) , POINTER :: actualPlan_'+name+'')
     code('TYPE ( c_devptr ) , POINTER, DIMENSION(:) :: pindMaps')
     code('TYPE ( c_devptr ) , POINTER, DIMENSION(:) :: pmaps')
     code('')
@@ -479,7 +485,8 @@ def op2_gen_cuda(master, date, consts, kernels):
     code('INTEGER(kind=4), DIMENSION(1:'+str(nargs)+') :: indirectionDescriptorArray')
     code('')
     for g_m in range(0,nargs):
-      code('INTEGER(kind=4) :: mappingArray'+str(g_m+1)+'Size')
+      if maps[g_m] == OP_MAP:
+        code('INTEGER(kind=4) :: mappingArray'+str(g_m+1)+'Size')
     code('')
 
     code('INTEGER(kind=4) :: numberOfIndirectOpDats')
@@ -542,6 +549,8 @@ def op2_gen_cuda(master, date, consts, kernels):
 
     code('numberOfIndirectOpDats = '+str(ninds))
     code('')
+    code('partitionSize = getPartitionSize(userSubroutine,set%setPtr%size)')
+    code('')
     code('planRet_'+name+' = FortranPlanCaller( &')
     code('& userSubroutine, &')
     code('& set%setCPtr, &')
@@ -560,7 +569,9 @@ def op2_gen_cuda(master, date, consts, kernels):
         code('opDatCardinalities%opDat'+str(g_m+1)+'Cardinality = opArg'+str(g_m+1)+'%dim * getSetSizeFromOpArg(opArg'+str(g_m+1)+')')
       elif maps[g_m] == OP_GBL:
         code('opDatCardinalities%opDat'+str(g_m+1)+'Cardinality = opArg'+str(g_m+1)+'%dim')
-
+    code('')
+    for g_m in range(0,nargs):
+      code('opDatDimensions%opDat'+str(g_m+1)+'Dimension = opArg'+str(g_m+1)+'%dim')
     code('')
     for g_m in range(0,ninds):
       code('opDat'+str(invinds[g_m]+1)+'Cardinality = opArg'+str(invinds[g_m]+1)+'%dim * getSetSizeFromOpArg(opArg'+str(invinds[g_m]+1)+')')
@@ -580,34 +591,35 @@ def op2_gen_cuda(master, date, consts, kernels):
         code('CALL c_f_pointer(opArg'+str(g_m+1)+'%data_d,opDat'+str(g_m+1)+'Device'+name+')')
     code('')
 
-    code('CALL c_f_pointer(planRet_res_calc,actualPlan_res_calc)')
-    code('CALL c_f_pointer(actualPlan_res_calc%ind_maps,pindMaps,(/numberOfIndirectOpDats/))')
-    code('CALL c_f_pointer(actualPlan_res_calc%ncolblk,ncolblk,(/set%setPtr%size/))')
+    code('CALL c_f_pointer(planRet_'+name+',actualPlan_'+name+')')
+    code('CALL c_f_pointer(actualPlan_'+name+'%ind_maps,pindMaps,(/numberOfIndirectOpDats/))')
+    code('CALL c_f_pointer(actualPlan_'+name+'%ncolblk,ncolblk,(/set%setPtr%size/))')
     code('')
-    code('pindSizesSize = actualPlan_res_calc%nblocks * numberOfIndirectOpDats')
-    code('CALL c_f_pointer(actualPlan_res_calc%ind_sizes,pindSizes,(/pindSizesSize/))')
+    code('pindSizesSize = actualPlan_'+name+'%nblocks * numberOfIndirectOpDats')
+    code('CALL c_f_pointer(actualPlan_'+name+'%ind_sizes,pindSizes,(/pindSizesSize/))')
     code('')
     code('pindOffsSize = pindSizesSize')
-    code('CALL c_f_pointer(actualPlan_res_calc%ind_offs,pindOffs,(/pindOffsSize/))')
+    code('CALL c_f_pointer(actualPlan_'+name+'%ind_offs,pindOffs,(/pindOffsSize/))')
     code('')
-    code('pblkMapSize = actualPlan_res_calc%nblocks')
-    code('CALL c_f_pointer(actualPlan_res_calc%blkmap,pblkMap,(/pblkMapSize/))')
+    code('pblkMapSize = actualPlan_'+name+'%nblocks')
+    code('CALL c_f_pointer(actualPlan_'+name+'%blkmap,pblkMap,(/pblkMapSize/))')
     code('')
-    code('poffsetSize = actualPlan_res_calc%nblocks')
-    code('CALL c_f_pointer(actualPlan_res_calc%offset,poffset,(/poffsetSize/))')
+    code('poffsetSize = actualPlan_'+name+'%nblocks')
+    code('CALL c_f_pointer(actualPlan_'+name+'%offset,poffset,(/poffsetSize/))')
     code('')
-    code('pnelemsSize = actualPlan_res_calc%nblocks')
-    code('CALL c_f_pointer(actualPlan_res_calc%nelems,pnelems,(/pnelemsSize/))')
+    code('pnelemsSize = actualPlan_'+name+'%nblocks')
+    code('CALL c_f_pointer(actualPlan_'+name+'%nelems,pnelems,(/pnelemsSize/))')
     code('')
-    code('pnthrcolSize = actualPlan_res_calc%nblocks')
-    code('CALL c_f_pointer(actualPlan_res_calc%nthrcol,pnthrcol,(/pnthrcolSize/))')
+    code('pnthrcolSize = actualPlan_'+name+'%nblocks')
+    code('CALL c_f_pointer(actualPlan_'+name+'%nthrcol,pnthrcol,(/pnthrcolSize/))')
     code('')
     code('pthrcolSize = set%setPtr%size')
-    code('CALL c_f_pointer(actualPlan_res_calc%thrcol,pthrcol,(/pthrcolSize/))')
-    code('CALL c_f_pointer(actualPlan_res_calc%nindirect,pnindirect,(/numberOfIndirectOpDats/))')
+    code('CALL c_f_pointer(actualPlan_'+name+'%thrcol,pthrcol,(/pthrcolSize/))')
+    code('CALL c_f_pointer(actualPlan_'+name+'%nindirect,pnindirect,(/numberOfIndirectOpDats/))')
     code('')
     for g_m in range(0,ninds):
       code('CALL c_f_pointer(pindMaps('+str(g_m+1)+'),ind_maps'+str(invinds[g_m]+1)+'_'+name+',pnindirect('+str(g_m+1)+'))')
+    code('CALL c_f_pointer(actualPlan_'+name+'%maps,pmaps,(/numberOfOpDats/))')
     code('')
 
     for g_m in range(0,nargs):
@@ -622,7 +634,8 @@ def op2_gen_cuda(master, date, consts, kernels):
       code('opDatCardinalities%ind_maps'+str(invinds[g_m]+1)+'Size = pnindirect('+str(g_m+1)+')')
     code('')
     for g_m in range(0,nargs):
-      code('opDatCardinalities%mappingArray'+str(g_m+1)+'Size = mappingArray'+str(g_m+1)+'Size')
+      if maps[g_m] == OP_MAP:
+        code('opDatCardinalities%mappingArray'+str(g_m+1)+'Size = mappingArray'+str(g_m+1)+'Size')
     code('')
 
     code('opDatCardinalities%pblkMapSize = pblkMapSize')
@@ -639,9 +652,11 @@ def op2_gen_cuda(master, date, consts, kernels):
     code('')
     code('loopTimeHost'+name+' = loopTimeHost'+name+' + accumulatorHostTime')
     code('istat = cudaEventRecord(startTimeKernel,0)')
+    code('')
 
     #indirect loop host stub call
     code('blockOffset = 0')
+    code('')
     code('threadsPerBlock = getBlockSize(userSubroutine,set%setPtr%size)')
 
     DO('i2','0','actualPlan_'+name+'%ncolors')
