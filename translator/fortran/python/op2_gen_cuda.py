@@ -76,7 +76,7 @@ def DOWHILE(line):
   global file_text, FORTRAN, CPP, g_m
   global depth
   if FORTRAN:
-    code('DO WHILE '+line)
+    code('DO WHILE ('+line+' )')
   elif CPP:
     code('while ('+ line+ ' )')
   depth += 2
@@ -234,6 +234,12 @@ def op2_gen_cuda(master, date, consts, kernels):
     code('')
     code('IMPLICIT NONE')
     code('')
+
+##########################################################################
+#  Declare local variables
+##########################################################################
+    comm('local variables')
+    #if ninds > 0: #indirect loop
     code('TYPE ( adt_calc_opDatDimensions ) , DEVICE :: opDatDimensions')
     code('TYPE ( adt_calc_opDatCardinalities ) , DEVICE :: opDatCardinalities')
     code('INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pindSizesSize - 1), DEVICE :: pindSizes')
@@ -253,9 +259,21 @@ def op2_gen_cuda(master, date, consts, kernels):
     code('')
     for g_m in range(0,ninds):
       code('INTEGER(kind=4) :: opDat'+str(invinds[g_m]+1)+'nBytes')
+    for g_m in range(0,nargs):
+      if maps[g_m] == OP_ID:
+        code('INTEGER(kind=4) :: opDat'+str(g_m+1)+'nBytes')
+      elif maps[g_m] == OP_GBL:
+        code('INTEGER(kind=4) :: opDat'+str(g_m+1)+'nBytes')
+
     code('')
     for g_m in range(0,ninds):
       code('INTEGER(kind=4) :: opDat'+str(invinds[g_m]+1)+'RoundUp')
+    for g_m in range(0,nargs):
+      if maps[g_m] == OP_ID:
+        code('INTEGER(kind=4) :: opDat'+str(g_m+1)+'RoundUp')
+      elif maps[g_m] == OP_GBL:
+        code('INTEGER(kind=4) :: opDat'+str(g_m+1)+'RoundUp')
+
     code('')
     for g_m in range(0,ninds):
       code('INTEGER(kind=4) :: opDat'+str(invinds[g_m]+1)+'SharedIndirectionSize')
@@ -320,6 +338,8 @@ def op2_gen_cuda(master, date, consts, kernels):
     code('CALL syncthreads()')
     code('i1 = threadIdx%x - 1')
     code('')
+
+
     DO('i1','0','numberOfActiveThreadsCeiling')
     code('colour2 = -1')
     IF('i1 < numberOfActiveThreads')
@@ -340,9 +360,20 @@ def op2_gen_cuda(master, date, consts, kernels):
       indent = '\n'+' '*depth
       for g_m in range(0,nargs):
         if maps[g_m] == OP_ID:
-          line = line + indent + '& sharedFloat8(opDat'+str(invinds[inds[g_m]-1]+1)+'nBytes + mappingArray'+str(g_m+1)+name+'(i1 + sharedMemoryOffset + 1) * opDatDimensions%opDat'+str(g_m+1)+'Dimension)'
+          if int(dims[g_m]) > 1:
+            line = line + indent + '& opDat'+str(g_m+1)+'Device'+name+ \
+            '((i1 + sharedMemoryOffset) * opDatDimensions%opDat'+str(g_m+1)+ \
+            'Dimension + 1:(i1 + sharedMemoryOffset) * opDatDimensions%opDat'+ \
+            str(g_m+1)+'Dimension + opDatDimensions%opDat'+str(g_m+1)+\
+            'Dimension + 1 + 1)'
+          else:
+            line = line + indent + '& opDat'+str(g_m+1)+'Device'+ \
+            name+'((i1 + sharedMemoryOffset) * opDatDimensions%opDat'+str(g_m+1)+ \
+            'Dimension + 1))'
         if maps[g_m] == OP_MAP and accs[g_m] == OP_READ:
-          line = line + indent + '& sharedFloat8(opDat'+str(invinds[inds[g_m]-1]+1)+'nBytes + mappingArray'+str(g_m+1)+name+'(i1 + sharedMemoryOffset + 1) * opDatDimensions%opDat'+str(g_m+1)+'Dimension)'
+          line = line + indent + '& sharedFloat8(opDat'+str(invinds[inds[g_m]-1]+1)+ \
+          'nBytes + mappingArray'+str(g_m+1)+name+ \
+          '(i1 + sharedMemoryOffset + 1) * opDatDimensions%opDat'+str(g_m+1)+'Dimension)'
         elif maps[g_m] == OP_MAP and (accs[g_m] == OP_INC or accs[g_m] == OP_RW):
           line = line +indent + '& opDat'+str(g_m+1)+'Local'
         if g_m < nargs-1:

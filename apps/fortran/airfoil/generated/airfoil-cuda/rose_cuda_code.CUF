@@ -366,7 +366,16 @@ attributes (global) SUBROUTINE adt_calc_kernel( &
   INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pthrcolSize - 1), DEVICE :: pthrcol
   INTEGER(kind=4), VALUE :: blockOffset
 
-  REAL(kind=8), DIMENSION(0:3) :: opDat5Local
+  INTEGER(kind=4) :: opDat1nBytes
+  INTEGER(kind=4) :: opDat5nBytes
+  INTEGER(kind=4) :: opDat6nBytes
+
+  INTEGER(kind=4) :: opDat1RoundUp
+  INTEGER(kind=4) :: opDat5RoundUp
+  INTEGER(kind=4) :: opDat6RoundUp
+
+  INTEGER(kind=4), SHARED :: opDat1SharedIndirectionSize
+
   REAL(kind=8), DIMENSION(0:*), SHARED :: sharedFloat8
   INTEGER(kind=4) :: sharedOffsetFloat8
   INTEGER(kind=4), SHARED :: sharedMemoryOffset
@@ -374,51 +383,52 @@ attributes (global) SUBROUTINE adt_calc_kernel( &
   INTEGER(kind=4), SHARED :: numberOfActiveThreads
   INTEGER(kind=4) :: moduloResult
   INTEGER(kind=4) :: nbytes
+
   INTEGER(kind=4) :: i1
   INTEGER(kind=4) :: n1
-  INTEGER(kind=4) :: opDat1nBytes
-  INTEGER(kind=4) :: opDat5nBytes
-  INTEGER(kind=4) :: opDat6nBytes
-  INTEGER(kind=4) :: opDat1RoundUp
-  INTEGER(kind=4) :: opDat5RoundUp
-  INTEGER(kind=4) :: opDat6RoundUp
-  INTEGER(kind=4), SHARED :: opDat1SharedIndirectionSize
+  IF (threadIdx%x - 1 .EQ. 0) THEN
+    blockID = pblkMap(blockIdx%x - 1 + blockOffset)
+    numberOfActiveThreads = pnelems(blockID)
+    sharedMemoryOffset = poffset(blockID)
 
-IF (threadIdx%x - 1 .EQ. 0) THEN
-blockID = pblkMap(blockIdx%x - 1 + blockOffset)
-numberOfActiveThreads = pnelems(blockID)
-sharedMemoryOffset = poffset(blockID)
-opDat1SharedIndirectionSize = pindSizes(0 + blockID * 1)
-END IF
+    opDat1SharedIndirectionSize = pindSizes(0 + blockID * 1)
+  END IF
 
-CALL syncthreads()
-opDat1RoundUp = opDat1SharedIndirectionSize * opDatDimensions%opDat1Dimension
-opDat1nBytes = 0
-i1 = threadIdx%x - 1
-n1 = opDat1SharedIndirectionSize * opDatDimensions%opDat1Dimension
+  CALL syncthreads()
 
-DO WHILE (i1 < n1)
-moduloResult = mod(i1,opDatDimensions%opDat1Dimension)
-sharedFloat8(opDat1nBytes + i1) = opDat1Deviceadt_calc_1379395014(moduloResult + ind_maps1_adt_calc_1379395014(0 + (pin&
-&dOffs(0 + blockID * 1) + i1 / opDatDimensions%opDat1Dimension) + 1) * opDatDimensions%opDat1Dimension + 1)
-i1 = i1 + blockDim%x
-END DO
+  opDat1RoundUp = opDat1SharedIndirectionSize * opDatDimensions%opDat1Dimension
 
-CALL syncthreads()
-i1 = threadIdx%x - 1
+  opDat1nBytes = 0
 
-DO WHILE (i1 < numberOfActiveThreads)
-CALL adt_calc_modified(sharedFloat8(opDat1nBytes + mappingArray1_adt_calc_1379395014(i1 + sharedMemoryOffset + 1) * opD&
-&atDimensions%opDat1Dimension),sharedFloat8(opDat1nBytes + mappingArray2_adt_calc_1379395014(i1 + sharedMemoryOffset + &
-&1) * opDatDimensions%opDat2Dimension),sharedFloat8(opDat1nBytes + mappingArray3_adt_calc_1379395014(i1 + sharedMemoryO&
-&ffset + 1) * opDatDimensions%opDat3Dimension),sharedFloat8(opDat1nBytes + mappingArray4_adt_calc_1379395014(i1 + share&
-&dMemoryOffset + 1) * opDatDimensions%opDat4Dimension),opDat5Deviceadt_calc_1379395014((i1 + sharedMemoryOffset) * opDa&
-&tDimensions%opDat5Dimension + 1:(i1 + sharedMemoryOffset) * opDatDimensions%opDat5Dimension + opDatDimensions%opDat5Di&
-&mension + 1 + 1),opDat6Deviceadt_calc_1379395014((i1 + sharedMemoryOffset) * opDatDimensions%opDat6Dimension + 1))
-i1 = i1 + blockDim%x
-END DO
+  i1 = threadIdx%x - 1
+  n1 = opDat1SharedIndirectionSize * opDatDimensions%opDat1Dimension
+  DO WHILE (i1 < n1)
+    moduloResult = mod(i1,opDatDimensions%opDat1Dimension)
+    sharedFloat8(opDat1nBytes + i1) = opDat1Deviceadt_calc_1379395014( &
+    & moduloResult + ind_maps1_adt_calc_1379395014(0 + (pindOffs(0 + blockID * 1) + i1 / &
+    & opDatDimensions%opDat1Dimension) + 1) * &
+    & opDatDimensions%opDat1Dimension + 1)
+    i1 = i1 + blockDim%x
+  END DO
 
-CALL syncthreads()
+  CALL syncthreads()
+  i1 = threadIdx%x - 1
+
+  DO WHILE (i1 < numberOfActiveThreads)
+
+    CALL adt_calc_modified( &
+    & sharedFloat8(opDat1nBytes + mappingArray1_adt_calc_1379395014(i1 + sharedMemoryOffset + 1) * opDatDimensions%opDat1Dimension), &
+    & sharedFloat8(opDat1nBytes + mappingArray2_adt_calc_1379395014(i1 + sharedMemoryOffset + 1) * opDatDimensions%opDat2Dimension), &
+    & sharedFloat8(opDat1nBytes + mappingArray3_adt_calc_1379395014(i1 + sharedMemoryOffset + 1) * opDatDimensions%opDat3Dimension), &
+    & sharedFloat8(opDat1nBytes + mappingArray4_adt_calc_1379395014(i1 + sharedMemoryOffset + 1) * opDatDimensions%opDat4Dimension), &
+    & opDat5Deviceadt_calc_1379395014((i1 + sharedMemoryOffset) * opDatDimensions%opDat5Dimension + 1:(i1 + sharedMemoryOffset) * opDatDimensions%opDat5Dimension + opDatDimensions%opDat5Dimension + 1 + 1), &
+    & opDat6Deviceadt_calc_1379395014((i1 + sharedMemoryOffset) * opDatDimensions%opDat6Dimension + 1) &
+    & )
+    i1 = i1 + blockDim%x
+  END DO
+
+  CALL syncthreads()
+
 END SUBROUTINE
 
 attributes (host) SUBROUTINE adt_calc_host(userSubroutine,set,opArg1,opArg2,opArg3,opArg4,opArg5,opArg6)
