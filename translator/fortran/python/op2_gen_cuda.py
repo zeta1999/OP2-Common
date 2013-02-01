@@ -72,6 +72,15 @@ def DO(i,start,finish):
     code('for ( int '+i+'='+start+'; '+i+'<'+finish+'; '+i+'++ ){')
   depth += 2
 
+def DO_STEP(i,start,finish,step):
+  global file_text, FORTRAN, CPP, g_m
+  global depth
+  if FORTRAN:
+    code('DO '+i+' = '+start+', '+finish+' - 1, '+step)
+  elif CPP:
+    code('for ( int '+i+'='+start+'; '+i+'<'+finish+'; '+i+' = '+i+' + '+step+' ){')
+  depth += 2
+
 def DOWHILE(line):
   global file_text, FORTRAN, CPP, g_m
   global depth
@@ -223,14 +232,24 @@ def op2_gen_cuda(master, date, consts, kernels):
     code('attributes (global) SUBROUTINE op_cuda_'+name+'( &'); depth = depth + 2
     code('& opDatDimensions, &')
     code('& opDatCardinalities, &')
-    code('& pindSizes, &')
-    code('& pindOffs, &')
-    code('& pblkMap, &')
-    code('& poffset, &')
-    code('& pnelems, &')
-    code('& pnthrcol, &')
-    code('& pthrcol, &')
-    code('& blockOffset)')
+    for g_m in range(0,nargs):
+      if maps[g_m] == OP_GBL:
+        code('&  opDat'+str(g_m+1)+',   &')
+
+    if ninds > 0: #indirect loop
+      code('& pindSizes, &')
+      code('& pindOffs, &')
+      code('& pblkMap, &')
+      code('& poffset, &')
+      code('& pnelems, &')
+      code('& pnthrcol, &')
+      code('& pthrcol, &')
+      code('& blockOffset)')
+    else: #direct loop
+      code('& setSize, &')
+      code('& warpSize, &')
+      code('& sharedMemoryOffset)')
+
     code('')
     code('IMPLICIT NONE')
     code('')
@@ -239,116 +258,137 @@ def op2_gen_cuda(master, date, consts, kernels):
 #  Declare local variables
 ##########################################################################
     comm('local variables')
-    #if ninds > 0: #indirect loop
-    code('TYPE ( adt_calc_opDatDimensions ) , DEVICE :: opDatDimensions')
-    code('TYPE ( adt_calc_opDatCardinalities ) , DEVICE :: opDatCardinalities')
-    code('INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pindSizesSize - 1), DEVICE :: pindSizes')
-    code('INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pindOffsSize - 1), DEVICE :: pindOffs')
-    code('INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pblkMapSize - 1), DEVICE :: pblkMap')
-    code('INTEGER(kind=4), DIMENSION(0:opDatCardinalities%poffsetSize - 1), DEVICE :: poffset')
-    code('INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pnelemsSize - 1), DEVICE :: pnelems')
-    code('INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pnthrcolSize - 1), DEVICE :: pnthrcol')
-    code('INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pthrcolSize - 1), DEVICE :: pthrcol')
-    code('INTEGER(kind=4), VALUE :: blockOffset')
-    code('')
-    for g_m in range(0,ninds):
-      if accs[invinds[g_m]] == OP_INC:
-        for m in range (0,int(idxs[g_m])):
-          code('REAL(kind=8), DIMENSION(0:3) :: opDat'+str(invinds[g_m]+1+m)+'Local')
-          code('INTEGER(kind=4) :: opDat'+str(invinds[g_m]+1+m)+'Map')
-    code('')
-    for g_m in range(0,ninds):
-      code('INTEGER(kind=4) :: opDat'+str(invinds[g_m]+1)+'nBytes')
-    for g_m in range(0,nargs):
-      if maps[g_m] == OP_ID:
-        code('INTEGER(kind=4) :: opDat'+str(g_m+1)+'nBytes')
-      elif maps[g_m] == OP_GBL:
-        code('INTEGER(kind=4) :: opDat'+str(g_m+1)+'nBytes')
+    if ninds > 0: #indirect loop
+      code('TYPE ( adt_calc_opDatDimensions ) , DEVICE :: opDatDimensions')
+      code('TYPE ( adt_calc_opDatCardinalities ) , DEVICE :: opDatCardinalities')
+      code('INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pindSizesSize - 1), DEVICE :: pindSizes')
+      code('INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pindOffsSize - 1), DEVICE :: pindOffs')
+      code('INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pblkMapSize - 1), DEVICE :: pblkMap')
+      code('INTEGER(kind=4), DIMENSION(0:opDatCardinalities%poffsetSize - 1), DEVICE :: poffset')
+      code('INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pnelemsSize - 1), DEVICE :: pnelems')
+      code('INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pnthrcolSize - 1), DEVICE :: pnthrcol')
+      code('INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pthrcolSize - 1), DEVICE :: pthrcol')
+      code('INTEGER(kind=4), VALUE :: blockOffset')
+      code('')
+      for g_m in range(0,ninds):
+        if accs[invinds[g_m]] == OP_INC:
+          for m in range (0,int(idxs[g_m])):
+            code('REAL(kind=8), DIMENSION(0:3) :: opDat'+str(invinds[g_m]+1+m)+'Local')
+            code('INTEGER(kind=4) :: opDat'+str(invinds[g_m]+1+m)+'Map')
+      code('')
+      for g_m in range(0,ninds):
+        code('INTEGER(kind=4) :: opDat'+str(invinds[g_m]+1)+'nBytes')
+      for g_m in range(0,nargs):
+        if maps[g_m] == OP_ID:
+          code('INTEGER(kind=4) :: opDat'+str(g_m+1)+'nBytes')
+        elif maps[g_m] == OP_GBL:
+          code('INTEGER(kind=4) :: opDat'+str(g_m+1)+'nBytes')
 
-    code('')
-    for g_m in range(0,ninds):
-      code('INTEGER(kind=4) :: opDat'+str(invinds[g_m]+1)+'RoundUp')
-    for g_m in range(0,nargs):
-      if maps[g_m] == OP_ID:
-        code('INTEGER(kind=4) :: opDat'+str(g_m+1)+'RoundUp')
-      elif maps[g_m] == OP_GBL:
-        code('INTEGER(kind=4) :: opDat'+str(g_m+1)+'RoundUp')
+      code('')
+      for g_m in range(0,ninds):
+        code('INTEGER(kind=4) :: opDat'+str(invinds[g_m]+1)+'RoundUp')
+      for g_m in range(0,nargs):
+        if maps[g_m] == OP_ID:
+          code('INTEGER(kind=4) :: opDat'+str(g_m+1)+'RoundUp')
+        elif maps[g_m] == OP_GBL:
+          code('INTEGER(kind=4) :: opDat'+str(g_m+1)+'RoundUp')
 
-    code('')
-    for g_m in range(0,ninds):
-      code('INTEGER(kind=4) :: opDat'+str(invinds[g_m]+1)+'SharedIndirectionSize')
-    code('')
-    code('REAL(kind=8), DIMENSION(0:*), SHARED :: sharedFloat8')
-    code('INTEGER(kind=4) :: sharedOffsetFloat8')
-    code('INTEGER(kind=4), SHARED :: numOfColours')
-    code('INTEGER(kind=4), SHARED :: numberOfActiveThreadsCeiling')
-    code('INTEGER(kind=4), SHARED :: sharedMemoryOffset')
-    code('INTEGER(kind=4), SHARED :: blockID')
-    code('INTEGER(kind=4), SHARED :: numberOfActiveThreads')
-    code('INTEGER(kind=4) :: moduloResult')
-    code('INTEGER(kind=4) :: nbytes')
-    code('INTEGER(kind=4) :: colour1')
-    code('INTEGER(kind=4) :: colour2')
-    code('INTEGER(kind=4) :: n1')
-    code('INTEGER(kind=4) :: i1')
-    code('INTEGER(kind=4) :: i2')
+      code('')
+      for g_m in range(0,ninds):
+        code('INTEGER(kind=4) :: opDat'+str(invinds[g_m]+1)+'SharedIndirectionSize')
+      code('')
+      code('REAL(kind=8), DIMENSION(0:*), SHARED :: sharedFloat8')
+      code('INTEGER(kind=4) :: sharedOffsetFloat8')
+      code('INTEGER(kind=4), SHARED :: numOfColours')
+      code('INTEGER(kind=4), SHARED :: numberOfActiveThreadsCeiling')
+      code('INTEGER(kind=4), SHARED :: sharedMemoryOffset')
+      code('INTEGER(kind=4), SHARED :: blockID')
+      code('INTEGER(kind=4), SHARED :: numberOfActiveThreads')
+      code('INTEGER(kind=4) :: moduloResult')
+      code('INTEGER(kind=4) :: nbytes')
+      code('INTEGER(kind=4) :: colour1')
+      code('INTEGER(kind=4) :: colour2')
+      code('INTEGER(kind=4) :: n1')
+      code('INTEGER(kind=4) :: i1')
+      code('INTEGER(kind=4) :: i2')
 
-    IF('threadIdx%x - 1 .EQ. 0')
-    code('blockID = pblkMap(blockIdx%x - 1 + blockOffset)')
-    code('numberOfActiveThreads = pnelems(blockID)')
-    code('numberOfActiveThreadsCeiling = blockDim%x * (1 + (numberOfActiveThreads - 1) / blockDim%x)')
-    code('numOfColours = pnthrcol(blockID)')
-    code('sharedMemoryOffset = poffset(blockID)')
-    code('')
-    for g_m in range(0,ninds):
-      code('opDat'+str(invinds[g_m]+1)+'SharedIndirectionSize = pindSizes('+str(g_m)+' + blockID * '+str(ninds)+')')
-    ENDIF()
-    code('')
-    code('CALL syncthreads()')
-    code('')
-    for g_m in range(0,ninds):
-      code('opDat'+str(invinds[g_m]+1)+'RoundUp = opDat'+str(invinds[g_m]+1)+'SharedIndirectionSize * opDatDimensions%opDat'+str(invinds[g_m]+1)+'Dimension')
-    code('')
-    for g_m in range(0,ninds):
-      if g_m == 0:
-        code('opDat'+str(invinds[g_m]+1)+'nBytes = 0')
-      else:
-        code('opDat'+str(invinds[g_m]+1)+'nBytes = opDat'+str(invinds[g_m-1]+1)+'nBytes * 8 / 8 + opDat'+str(invinds[g_m]+1)+'RoundUp * 8 / 8')
-    code('')
-
-    for g_m in range(0,ninds):
-      code('i1 = threadIdx%x - 1')
-      code('n1 = opDat'+str(invinds[g_m]+1)+'SharedIndirectionSize * opDatDimensions%opDat'+str(invinds[g_m]+1)+'Dimension')
-      if accs[invinds[g_m]] == OP_READ:
-        DOWHILE('i1 < n1')
-        code('moduloResult = mod(i1,opDatDimensions%opDat'+str(invinds[g_m]+1)+'Dimension)')
-        code('sharedFloat8(opDat'+str(invinds[g_m]+1)+'nBytes + i1) = opDat'+str(invinds[g_m]+1)+'Device'+name+'( &')
-        code('& moduloResult + ind_maps'+str(invinds[g_m]+1)+'_'+name+'(0 + (pindOffs(1 + blockID * 4) + i1 / &')
-        code('& opDatDimensions%opDat'+str(invinds[g_m]+1)+'Dimension) + 1) * &')
-        code('& opDatDimensions%opDat'+str(invinds[g_m]+1)+'Dimension + 1)')
-        code('i1 = i1 + blockDim%x')
-        ENDDO()
-      elif accs[invinds[g_m]] == OP_INC:
-        DOWHILE('i1 < n1')
-        code('sharedFloat8(opDat'+str(invinds[g_m]+1)+'nBytes + i1) = 0')
-        code('i1 = i1 + blockDim%x')
-        ENDDO()
+      IF('threadIdx%x - 1 .EQ. 0')
+      code('blockID = pblkMap(blockIdx%x - 1 + blockOffset)')
+      code('numberOfActiveThreads = pnelems(blockID)')
+      code('numberOfActiveThreadsCeiling = blockDim%x * (1 + (numberOfActiveThreads - 1) / blockDim%x)')
+      code('numOfColours = pnthrcol(blockID)')
+      code('sharedMemoryOffset = poffset(blockID)')
+      code('')
+      for g_m in range(0,ninds):
+        code('opDat'+str(invinds[g_m]+1)+'SharedIndirectionSize = pindSizes('+str(g_m)+' + blockID * '+str(ninds)+')')
+      ENDIF()
+      code('')
+      code('CALL syncthreads()')
+      code('')
+      for g_m in range(0,ninds):
+        code('opDat'+str(invinds[g_m]+1)+'RoundUp = opDat'+str(invinds[g_m]+1)+'SharedIndirectionSize * opDatDimensions%opDat'+str(invinds[g_m]+1)+'Dimension')
+      code('')
+      for g_m in range(0,ninds):
+        if g_m == 0:
+          code('opDat'+str(invinds[g_m]+1)+'nBytes = 0')
+        else:
+          code('opDat'+str(invinds[g_m]+1)+'nBytes = opDat'+str(invinds[g_m-1]+1)+'nBytes * 8 / 8 + opDat'+str(invinds[g_m]+1)+'RoundUp * 8 / 8')
       code('')
 
-    code('CALL syncthreads()')
-    code('i1 = threadIdx%x - 1')
-    code('')
-
-
-    DO('i1','0','numberOfActiveThreadsCeiling')
-    code('colour2 = -1')
-    IF('i1 < numberOfActiveThreads')
-    for g_m in range(0,ninds):
-      if accs[invinds[g_m]] == OP_INC:
-        for m in range (0,int(idxs[g_m])):
-          DO('i2','0','opDatDimensions%opDat'+str(invinds[g_m]+1+m)+'Dimension ')
-          code('opDat'+str(invinds[g_m]+1+m)+'Local(i2) = 0')
+      for g_m in range(0,ninds):
+        code('i1 = threadIdx%x - 1')
+        code('n1 = opDat'+str(invinds[g_m]+1)+'SharedIndirectionSize * opDatDimensions%opDat'+str(invinds[g_m]+1)+'Dimension')
+        if accs[invinds[g_m]] == OP_READ:
+          DOWHILE('i1 < n1')
+          code('moduloResult = mod(i1,opDatDimensions%opDat'+str(invinds[g_m]+1)+'Dimension)')
+          code('sharedFloat8(opDat'+str(invinds[g_m]+1)+'nBytes + i1) = opDat'+str(invinds[g_m]+1)+'Device'+name+'( &')
+          code('& moduloResult + ind_maps'+str(invinds[g_m]+1)+'_'+name+'(0 + (pindOffs(1 + blockID * 4) + i1 / &')
+          code('& opDatDimensions%opDat'+str(invinds[g_m]+1)+'Dimension) + 1) * &')
+          code('& opDatDimensions%opDat'+str(invinds[g_m]+1)+'Dimension + 1)')
+          code('i1 = i1 + blockDim%x')
           ENDDO()
+        elif accs[invinds[g_m]] == OP_INC:
+          DOWHILE('i1 < n1')
+          code('sharedFloat8(opDat'+str(invinds[g_m]+1)+'nBytes + i1) = 0')
+          code('i1 = i1 + blockDim%x')
+          ENDDO()
+        code('')
+
+      code('CALL syncthreads()')
+      code('i1 = threadIdx%x - 1')
+      code('')
+
+
+      DO('i1','0','numberOfActiveThreadsCeiling')
+      code('colour2 = -1')
+      IF('i1 < numberOfActiveThreads')
+      for g_m in range(0,ninds):
+        if accs[invinds[g_m]] == OP_INC:
+          for m in range (0,int(idxs[g_m])):
+            DO('i2','0','opDatDimensions%opDat'+str(invinds[g_m]+1+m)+'Dimension ')
+            code('opDat'+str(invinds[g_m]+1+m)+'Local(i2) = 0')
+            ENDDO()
+
+    else: #direct loop
+      code('TYPE ( save_soln_qdim_opDatDimensions ) , DEVICE :: opDatDimensions')
+      code('TYPE ( save_soln_qdim_opDatCardinalities ) , DEVICE :: opDatCardinalities')
+      for g_m in range(0,nargs):
+        if maps[g_m] <> OP_GBL:
+          code(typs[g_m]+', DIMENSION(0:3) :: opDat'+str(g_m+1)+'Local')
+        else: #global arg
+          code('INTEGER(kind=4), VALUE :: opDat'+str(g_m+1))
+
+      code('INTEGER(kind=4), VALUE :: setSize')
+      code('INTEGER(kind=4), VALUE :: warpSize')
+      code('INTEGER(kind=4), VALUE :: sharedMemoryOffset')
+      code('REAL(kind=8), DIMENSION(0:*), SHARED :: sharedFloat8')
+      code('INTEGER(kind=4) :: sharedOffsetFloat8')
+      code('INTEGER(kind=4) :: numberOfActiveThreads')
+      code('INTEGER(kind=4) :: localOffset')
+      code('INTEGER(kind=4) :: threadID')
+      code('INTEGER(kind=4) :: i1')
+      code('INTEGER(kind=4) :: i2')
+
 
 ##########################################################################
 #  CUDA kernel call
@@ -429,6 +469,65 @@ def op2_gen_cuda(master, date, consts, kernels):
     else: #direct kernel call
       code('')
       comm('kernel call')
+      code('threadID = mod(threadIdx%x - 1,warpSize)')
+      code('sharedOffsetDouble8 = sharedMemoryOffset * ((threadIdx%x - 1) / warpSize) / 8')
+      code('')
+      DO_STEP('i1','threadIdx%x - 1 + (blockIdx%x - 1) * blockDim%x','setSize','blockDim%x * gridDim%x')
+      code('localOffset = i1 - threadID')
+      code('numberOfActiveThreads = min(warpSize,setSize - localOffset)')
+      for g_m in range(0,nargs):
+        if int(dims[g_m]) <> 1 and (accs[g_m] == OP_READ or accs[g_m] == OP_RW):
+          DO('i2','0','opDatDimensions%opDat'+str(g_m+1)+'Dimension')
+          code('sharedFloat8(sharedOffsetFloat8 + (threadID + i2 * numberOfActiveThreads)) = &')
+          code('& opDat'+str(g_m+1)+'Device'+name+'(threadID + (i2 * numberOfActiveThreads + localOffset &')
+          code('& * opDatDimensions%opDat'+str(g_m+1)+'Dimension) + 1)')
+          ENDDO()
+          code('')
+          DO('i2','0','opDatDimensions%opDat'+str(g_m+1)+'Dimension')
+          code('opDat'+str(g_m+1)+'Local(i2) = sharedFloat8(sharedOffsetFloat8 + (i2 + threadID * opDatDimensions%opDat'+str(g_m+1)+'Dimension))')
+          ENDDO()
+          code('')
+      code('')
+      line = '  CALL '+name+'( &'
+      indent = '\n'+' '*depth
+      for g_m in range(0,nargs):
+        if maps[g_m] == OP_GBL:
+          line = line + indent +'& opDat'+str(g_m+1)+'Local'
+        else:
+          if int(dims[g_m]) == 1:
+            line = line + indent +'& opDat'+str(g_m+1)+'Device'+name+'(i1 + 1), &'
+          else:
+            line = line + indent +'& opDat'+str(g_m+1)+'Local'
+
+        if g_m < nargs-1:
+          line = line + ', &'
+        else:
+          line = line + ' &'
+      depth = depth - 2
+      code(line + indent +  '& )')
+      depth = depth + 2
+      code('')
+      for g_m in range(0,nargs):
+        if int(dims[g_m]) <> 1 and (accs[g_m] == OP_WRITE or accs[g_m] == OP_RW):
+          DO('i2','0','opDatDimensions%opDat'+str(g_m+1)+'Dimension')
+          code('sharedFloat8(sharedOffsetFloat8 + (i2 + threadID * opDatDimensions%opDat'+str(g_m+1)+'Dimension)) = opDat'+str(g_m+1)+'Local(i2)')
+          ENDDO()
+          code('')
+          DO('i2','0','opDatDimensions%opDat'+str(g_m+1)+'Dimension')
+          code('opDat'+str(g_m+1)+'Device'+name+'(threadID + (i2 * numberOfActiveThreads + localOffset * &')
+          code('& opDatDimensions%opDat'+str(g_m+1)+'Dimension) + 1) = &')
+          code('& sharedFloat8(sharedOffsetFloat8 + (threadID + i2 * numberOfActiveThreads))')
+          ENDDO()
+          code('')
+
+      ENDDO()
+
+    #call cuda reduction for each OP_GBL
+    code('')
+    for g_m in range(0,nargs):
+      if maps[g_m] == OP_GBL:
+        code('CALL ReductionFloat8(reductionArrayDevice'+str(g_m+1)+'(blockIdx%x - 1 + 1:),opDat'+str(g_m+1)+'Local,0)')
+    code('')
 
     depth = depth - 2
     code('END SUBROUTINE')
@@ -468,61 +567,86 @@ def op2_gen_cuda(master, date, consts, kernels):
         code('INTEGER(kind=4) :: opDat'+str(g_m+1)+'Cardinality')
       elif maps[g_m] == OP_GBL:
         code('INTEGER(kind=4) :: opDat'+str(g_m+1)+'Cardinality')
-
-    code('')
-    code('TYPE ( op_plan ) , POINTER :: actualPlan_'+name+'')
-    code('TYPE ( c_devptr ) , POINTER, DIMENSION(:) :: pindMaps')
-    code('TYPE ( c_devptr ) , POINTER, DIMENSION(:) :: pmaps')
-    code('')
-    code('INTEGER(kind=4) :: pindMapsSize')
-    code('INTEGER(kind=4) :: blocksPerGrid')
-    code('INTEGER(kind=4) :: threadsPerBlock')
-    code('INTEGER(kind=4) :: dynamicSharedMemorySize')
-    code('INTEGER(kind=4) :: threadSynchRet')
-    code('INTEGER(kind=4), DIMENSION(1:'+str(nargs)+') :: opDatArray')
-    code('INTEGER(kind=4), DIMENSION(1:'+str(nargs)+') :: mappingIndicesArray')
-    code('INTEGER(kind=4), DIMENSION(1:'+str(nargs)+') :: mappingArray')
-    code('INTEGER(kind=4), DIMENSION(1:'+str(nargs)+') :: accessDescriptorArray')
-    code('INTEGER(kind=4), DIMENSION(1:'+str(nargs)+') :: indirectionDescriptorArray')
-    code('')
-    for g_m in range(0,nargs):
-      if maps[g_m] == OP_MAP:
-        code('INTEGER(kind=4) :: mappingArray'+str(g_m+1)+'Size')
     code('')
 
-    code('INTEGER(kind=4) :: numberOfIndirectOpDats')
-    code('INTEGER(kind=4) :: blockOffset')
-    code('INTEGER(kind=4) :: pindSizesSize')
-    code('INTEGER(kind=4) :: pindOffsSize')
-    code('INTEGER(kind=4) :: pblkMapSize')
-    code('INTEGER(kind=4) :: poffsetSize')
-    code('INTEGER(kind=4) :: pnelemsSize')
-    code('INTEGER(kind=4) :: pnthrcolSize')
-    code('INTEGER(kind=4) :: pthrcolSize')
-    code('INTEGER(kind=4), POINTER, DIMENSION(:) :: ncolblk')
-    code('INTEGER(kind=4), POINTER, DIMENSION(:) :: pnindirect')
-    code('INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: pindSizes')
-    code('INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: pindOffs')
-    code('INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: pblkMap')
-    code('INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: poffset')
-    code('INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: pnelems')
-    code('INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: pnthrcol')
-    code('INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: pthrcol')
-    code('INTEGER(kind=4) :: partitionSize')
-    code('INTEGER(kind=4) :: blockSize')
-    code('INTEGER(kind=4) :: i1')
-    code('INTEGER(kind=4) :: i2')
-    code('INTEGER(kind=4), SAVE :: calledTimes')
-    code('INTEGER(kind=4) :: returnDumpOpDat')
+    if ninds > 0: #indirect loop
+      code('TYPE ( op_plan ) , POINTER :: actualPlan_'+name+'')
+      code('TYPE ( c_devptr ) , POINTER, DIMENSION(:) :: pindMaps')
+      code('TYPE ( c_devptr ) , POINTER, DIMENSION(:) :: pmaps')
+      code('')
+      code('INTEGER(kind=4) :: pindMapsSize')
+      code('INTEGER(kind=4) :: blocksPerGrid')
+      code('INTEGER(kind=4) :: threadsPerBlock')
+      code('INTEGER(kind=4) :: dynamicSharedMemorySize')
+      code('INTEGER(kind=4) :: threadSynchRet')
+      code('INTEGER(kind=4), DIMENSION(1:'+str(nargs)+') :: opDatArray')
+      code('INTEGER(kind=4), DIMENSION(1:'+str(nargs)+') :: mappingIndicesArray')
+      code('INTEGER(kind=4), DIMENSION(1:'+str(nargs)+') :: mappingArray')
+      code('INTEGER(kind=4), DIMENSION(1:'+str(nargs)+') :: accessDescriptorArray')
+      code('INTEGER(kind=4), DIMENSION(1:'+str(nargs)+') :: indirectionDescriptorArray')
+      code('')
+      for g_m in range(0,nargs):
+        if maps[g_m] == OP_MAP:
+          code('INTEGER(kind=4) :: mappingArray'+str(g_m+1)+'Size')
+      code('')
+
+      code('INTEGER(kind=4) :: numberOfIndirectOpDats')
+      code('INTEGER(kind=4) :: blockOffset')
+      code('INTEGER(kind=4) :: pindSizesSize')
+      code('INTEGER(kind=4) :: pindOffsSize')
+      code('INTEGER(kind=4) :: pblkMapSize')
+      code('INTEGER(kind=4) :: poffsetSize')
+      code('INTEGER(kind=4) :: pnelemsSize')
+      code('INTEGER(kind=4) :: pnthrcolSize')
+      code('INTEGER(kind=4) :: pthrcolSize')
+      code('INTEGER(kind=4), POINTER, DIMENSION(:) :: ncolblk')
+      code('INTEGER(kind=4), POINTER, DIMENSION(:) :: pnindirect')
+      code('INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: pindSizes')
+      code('INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: pindOffs')
+      code('INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: pblkMap')
+      code('INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: poffset')
+      code('INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: pnelems')
+      code('INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: pnthrcol')
+      code('INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: pthrcol')
+      code('INTEGER(kind=4) :: partitionSize')
+      code('INTEGER(kind=4) :: blockSize')
+      code('INTEGER(kind=4) :: i1')
+      code('INTEGER(kind=4) :: i2')
+      code('INTEGER(kind=4), SAVE :: calledTimes')
+      code('INTEGER(kind=4) :: returnDumpOpDat')
+      code('')
+
+    else: #direct loop
+      code('INTEGER(kind=4) :: blocksPerGrid')
+      code('INTEGER(kind=4) :: threadsPerBlock')
+      code('INTEGER(kind=4) :: dynamicSharedMemorySize')
+      code('INTEGER(kind=4) :: threadSynchRet')
+      code('INTEGER(kind=4) :: sharedMemoryOffset')
+      code('INTEGER(kind=4) :: warpSize')
+      code('INTEGER(kind=4), SAVE :: calledTimes')
+      code('INTEGER(kind=4) :: returnDumpOpDat')
+      code('INTEGER(kind=4) :: i1')
+      code('INTEGER(kind=4) :: i2')
+      code('INTEGER(kind=4) :: i10')
+      code('INTEGER(kind=4) :: i20')
+      code('')
+
+    code('INTEGER(kind=4) :: istat')
+    code('REAL(kind=4) :: accumulatorHostTime')
+    code('REAL(kind=4) :: accumulatorKernelTime')
     code('TYPE ( cudaEvent )  :: startTimeHost')
     code('TYPE ( cudaEvent )  :: endTimeHost')
     code('TYPE ( cudaEvent )  :: startTimeKernel')
     code('TYPE ( cudaEvent )  :: endTimeKernel')
-    code('INTEGER(kind=4) :: istat')
-    code('REAL(kind=4) :: accumulatorHostTime')
-    code('REAL(kind=4) :: accumulatorKernelTime')
-    code('')
 
+    for g_m in range(0,nargs):
+      if maps[g_m] == OP_GBL:
+        code(typs[g_m]+', DIMENSION(:), ALLOCATABLE :: reductionArrayHost'+str(g_m+1))
+        code(typs[g_m]+', DIMENSION(:), DEVICE, ALLOCATABLE :: reductionArrayDevice'+str(g_m+1))
+        code(typs[g_m]+', POINTER :: opDat'+str(g_m+1)+'Host')
+        code('INTEGER(kind=4) :: reductionCardinality'+str(g_m+1))
+
+    code('')
     code('numberOfOpDats = '+str(nargs))
     code('')
 

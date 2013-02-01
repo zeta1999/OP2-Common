@@ -1675,64 +1675,72 @@ attributes (host) SUBROUTINE res_calc_host( userSubroutine, set, &
 END SUBROUTINE
 
 attributes (device) SUBROUTINE s2456222878(qdim,q,qold)
-IMPLICIT NONE
-INTEGER(kind=4), VALUE :: qdim
-REAL(kind=8), DIMENSION(qdim) :: q
-REAL(kind=8), DIMENSION(*) :: qold
-INTEGER(kind=4) :: i
+  IMPLICIT NONE
+  INTEGER(kind=4), VALUE :: qdim
+  REAL(kind=8), DIMENSION(qdim) :: q
+  REAL(kind=8), DIMENSION(*) :: qold
+  INTEGER(kind=4) :: i
 
-DO i = 1, qdim
-qold(i) = q(i)
-END DO
-
+  DO i = 1, qdim
+    qold(i) = q(i)
+  END DO
 END SUBROUTINE
 
-attributes (global) SUBROUTINE s2882256832(opDatDimensions,opDatCardinalities,opDat1,setSize,warpSize,sharedMemoryOffse&
-&t)
-IMPLICIT NONE
-TYPE ( save_soln_qdim_opDatDimensions ) , DEVICE :: opDatDimensions
-TYPE ( save_soln_qdim_opDatCardinalities ) , DEVICE :: opDatCardinalities
-INTEGER(kind=4), VALUE :: opDat1
-INTEGER(kind=4), VALUE :: setSize
-INTEGER(kind=4), VALUE :: warpSize
-INTEGER(kind=4), VALUE :: sharedMemoryOffset
-DOUBLE PRECISION, DIMENSION(0:3) :: opDat2Local
-DOUBLE PRECISION, DIMENSION(0:3) :: opDat3Local
-DOUBLE PRECISION, DIMENSION(0:*), SHARED :: sharedDouble8
-INTEGER(kind=4) :: sharedOffsetDouble8
-INTEGER(kind=4) :: i1
-INTEGER(kind=4) :: i2
-INTEGER(kind=4) :: numberOfActiveThreads
-INTEGER(kind=4) :: localOffset
-INTEGER(kind=4) :: threadID
-threadID = mod(threadIdx%x - 1,warpSize)
-sharedOffsetDouble8 = sharedMemoryOffset * ((threadIdx%x - 1) / warpSize) / 8
+attributes (global) SUBROUTINE s2882256832( &
+  & opDatDimensions, &
+  & opDatCardinalities, &
+  & opDat1, &
+  & setSize, &
+  & warpSize, &
+  & sharedMemoryOffset)
 
-DO i1 = threadIdx%x - 1 + (blockIdx%x - 1) * blockDim%x, setSize - 1, blockDim%x * gridDim%x
-localOffset = i1 - threadID
-numberOfActiveThreads = min(warpSize,setSize - localOffset)
+  IMPLICIT NONE
 
-DO i2 = 0, opDatDimensions%opDat2Dimension - 1, 1
-sharedDouble8(sharedOffsetDouble8 + (threadID + i2 * numberOfActiveThreads)) = opDat2Devicesave_soln_qdim_2320554256(th&
-&readID + (i2 * numberOfActiveThreads + localOffset * opDatDimensions%opDat2Dimension) + 1)
-END DO
+  TYPE ( save_soln_qdim_opDatDimensions ) , DEVICE :: opDatDimensions
+  TYPE ( save_soln_qdim_opDatCardinalities ) , DEVICE :: opDatCardinalities
+  INTEGER(kind=4), VALUE :: opDat1
+  DOUBLE PRECISION, DIMENSION(0:3) :: opDat2Local
+  DOUBLE PRECISION, DIMENSION(0:3) :: opDat3Local
+  INTEGER(kind=4), VALUE :: setSize
+  INTEGER(kind=4), VALUE :: warpSize
+  INTEGER(kind=4), VALUE :: sharedMemoryOffset
+  DOUBLE PRECISION, DIMENSION(0:*), SHARED :: sharedDouble8
+  INTEGER(kind=4) :: sharedOffsetDouble8
+  INTEGER(kind=4) :: numberOfActiveThreads
+  INTEGER(kind=4) :: localOffset
+  INTEGER(kind=4) :: threadID
+  INTEGER(kind=4) :: i1
+  INTEGER(kind=4) :: i2
 
-DO i2 = 0, opDatDimensions%opDat2Dimension - 1, 1
-opDat2Local(i2) = sharedDouble8(sharedOffsetDouble8 + (i2 + threadID * opDatDimensions%opDat2Dimension))
-END DO
+  threadID = mod(threadIdx%x - 1,warpSize)
+  sharedOffsetDouble8 = sharedMemoryOffset * ((threadIdx%x - 1) / warpSize) / 8
 
-CALL s2456222878(opDat1,opDat2Local,opDat3Local)
+  DO i1 = threadIdx%x - 1 + (blockIdx%x - 1) * blockDim%x, setSize - 1, blockDim%x * gridDim%x
+    localOffset = i1 - threadID
+    numberOfActiveThreads = min(warpSize,setSize - localOffset)
 
-DO i2 = 0, opDatDimensions%opDat3Dimension - 1, 1
-sharedDouble8(sharedOffsetDouble8 + (i2 + threadID * opDatDimensions%opDat3Dimension)) = opDat3Local(i2)
-END DO
+    DO i2 = 0, opDatDimensions%opDat2Dimension - 1, 1
+      sharedDouble8(sharedOffsetDouble8 + (threadID + i2 * numberOfActiveThreads)) = &
+      & opDat2Devicesave_soln_qdim_2320554256(threadID + (i2 * numberOfActiveThreads + localOffset * &
+      & opDatDimensions%opDat2Dimension) + 1)
+    END DO
 
-DO i2 = 0, opDatDimensions%opDat3Dimension - 1, 1
-opDat3Devicesave_soln_qdim_2320554256(threadID + (i2 * numberOfActiveThreads + localOffset * opDatDimensions%opDat3Dime&
-&nsion) + 1) = sharedDouble8(sharedOffsetDouble8 + (threadID + i2 * numberOfActiveThreads))
-END DO
+    DO i2 = 0, opDatDimensions%opDat2Dimension - 1, 1
+      opDat2Local(i2) = sharedDouble8(sharedOffsetDouble8 + (i2 + threadID * opDatDimensions%opDat2Dimension))
+    END DO
 
-END DO
+    CALL s2456222878(opDat1,opDat2Local,opDat3Local)
+
+    DO i2 = 0, opDatDimensions%opDat3Dimension - 1, 1
+      sharedDouble8(sharedOffsetDouble8 + (i2 + threadID * opDatDimensions%opDat3Dimension)) = opDat3Local(i2)
+    END DO
+
+    DO i2 = 0, opDatDimensions%opDat3Dimension - 1, 1
+      opDat3Devicesave_soln_qdim_2320554256(threadID + (i2 * numberOfActiveThreads + localOffset * &
+      & opDatDimensions%opDat3Dimension) + 1) = &
+      & sharedDouble8(sharedOffsetDouble8 + (threadID + i2 * numberOfActiveThreads))
+    END DO
+  END DO
 
 END SUBROUTINE
 
@@ -1866,179 +1874,210 @@ INTEGER(kind=4) :: threadID
 threadID = mod(threadIdx%x - 1,warpSize)
 sharedOffsetFloat8 = sharedMemoryOffset * ((threadIdx%x - 1) / warpSize) / 8
 
-DO i1 = threadIdx%x - 1 + (blockIdx%x - 1) * blockDim%x, setSize - 1, blockDim%x * gridDim%x
-localOffset = i1 - threadID
-numberOfActiveThreads = min(warpSize,setSize - localOffset)
+  DO i1 = threadIdx%x - 1 + (blockIdx%x - 1) * blockDim%x, setSize - 1, blockDim%x * gridDim%x
+    localOffset = i1 - threadID
+    numberOfActiveThreads = min(warpSize,setSize - localOffset)
 
-DO i2 = 0, opDatDimensions%opDat1Dimension - 1, 1
-sharedFloat8(sharedOffsetFloat8 + (threadID + i2 * numberOfActiveThreads)) = opDat1Deviceupdate_2692987784(threadID + (&
-&i2 * numberOfActiveThreads + localOffset * opDatDimensions%opDat1Dimension) + 1)
-END DO
+    DO i2 = 0, opDatDimensions%opDat1Dimension - 1, 1
+      sharedFloat8(sharedOffsetFloat8 + (threadID + i2 * numberOfActiveThreads)) = &
+      & opDat1Deviceupdate_2692987784(threadID + (i2 * numberOfActiveThreads + localOffset * &
+      & opDatDimensions%opDat1Dimension) + 1)
+    END DO
 
-DO i2 = 0, opDatDimensions%opDat1Dimension - 1, 1
-opDat1Local(i2) = sharedFloat8(sharedOffsetFloat8 + (i2 + threadID * opDatDimensions%opDat1Dimension))
-END DO
+    DO i2 = 0, opDatDimensions%opDat1Dimension - 1, 1
+      opDat1Local(i2) = sharedFloat8(sharedOffsetFloat8 + (i2 + threadID * opDatDimensions%opDat1Dimension))
+    END DO
 
-DO i2 = 0, opDatDimensions%opDat3Dimension - 1, 1
-sharedFloat8(sharedOffsetFloat8 + (threadID + i2 * numberOfActiveThreads)) = opDat3Deviceupdate_2692987784(threadID + (&
-&i2 * numberOfActiveThreads + localOffset * opDatDimensions%opDat3Dimension) + 1)
-END DO
+    DO i2 = 0, opDatDimensions%opDat3Dimension - 1, 1
+      sharedFloat8(sharedOffsetFloat8 + (threadID + i2 * numberOfActiveThreads)) = &
+      & opDat3Deviceupdate_2692987784(threadID + (i2 * numberOfActiveThreads + localOffset * &
+      & opDatDimensions%opDat3Dimension) + 1)
+    END DO
 
-DO i2 = 0, opDatDimensions%opDat3Dimension - 1, 1
-opDat3Local(i2) = sharedFloat8(sharedOffsetFloat8 + (i2 + threadID * opDatDimensions%opDat3Dimension))
-END DO
+    DO i2 = 0, opDatDimensions%opDat3Dimension - 1, 1
+      opDat3Local(i2) = sharedFloat8(sharedOffsetFloat8 + (i2 + threadID * opDatDimensions%opDat3Dimension))
+    END DO
 
-CALL update_modified(opDat1Local,opDat2Local,opDat3Local,opDat4Deviceupdate_2692987784(i1 + 1),opDat5Local)
+    CALL update_modified( &
+    & opDat1Local, &
+    & opDat2Local, &
+    & opDat3Local, &
+    & opDat4Deviceupdate_2692987784(i1 + 1), &
+    & opDat5Local &
+    & )
 
-DO i2 = 0, opDatDimensions%opDat2Dimension - 1, 1
-sharedFloat8(sharedOffsetFloat8 + (i2 + threadID * opDatDimensions%opDat2Dimension)) = opDat2Local(i2)
-END DO
+    DO i2 = 0, opDatDimensions%opDat2Dimension - 1, 1
+      sharedFloat8(sharedOffsetFloat8 + (i2 + threadID * opDatDimensions%opDat2Dimension)) = opDat2Local(i2)
+    END DO
 
-DO i2 = 0, opDatDimensions%opDat2Dimension - 1, 1
-opDat2Deviceupdate_2692987784(threadID + (i2 * numberOfActiveThreads + localOffset * opDatDimensions%opDat2Dimension) +&
-& 1) = sharedFloat8(sharedOffsetFloat8 + (threadID + i2 * numberOfActiveThreads))
-END DO
+    DO i2 = 0, opDatDimensions%opDat2Dimension - 1, 1
+      opDat2Deviceupdate_2692987784(threadID + (i2 * numberOfActiveThreads + localOffset * &
+      & opDatDimensions%opDat2Dimension) + 1) = &
+      & sharedFloat8(sharedOffsetFloat8 + (threadID + i2 * numberOfActiveThreads))
+    END DO
 
-DO i2 = 0, opDatDimensions%opDat3Dimension - 1, 1
-sharedFloat8(sharedOffsetFloat8 + (i2 + threadID * opDatDimensions%opDat3Dimension)) = opDat3Local(i2)
-END DO
+    DO i2 = 0, opDatDimensions%opDat3Dimension - 1, 1
+      sharedFloat8(sharedOffsetFloat8 + (i2 + threadID * opDatDimensions%opDat3Dimension)) = opDat3Local(i2)
+    END DO
 
-DO i2 = 0, opDatDimensions%opDat3Dimension - 1, 1
-opDat3Deviceupdate_2692987784(threadID + (i2 * numberOfActiveThreads + localOffset * opDatDimensions%opDat3Dimension) +&
-& 1) = sharedFloat8(sharedOffsetFloat8 + (threadID + i2 * numberOfActiveThreads))
-END DO
+    DO i2 = 0, opDatDimensions%opDat3Dimension - 1, 1
+      opDat3Deviceupdate_2692987784(threadID + (i2 * numberOfActiveThreads + localOffset * &
+      & opDatDimensions%opDat3Dimension) + 1) = &
+      & sharedFloat8(sharedOffsetFloat8 + (threadID + i2 * numberOfActiveThreads))
+    END DO
 
-END DO
+  END DO
 
-CALL ReductionFloat8(reductionArrayDevice5(blockIdx%x - 1 + 1:),opDat5Local,0)
+  CALL ReductionFloat8(reductionArrayDevice5(blockIdx%x - 1 + 1:),opDat5Local,0)
 END SUBROUTINE
 
-attributes (host) SUBROUTINE update_host(userSubroutine,set,opArg1,opArg2,opArg3,opArg4,opArg5)
-IMPLICIT NONE
-character(len=7), INTENT(IN) :: userSubroutine
-TYPE ( op_set ) , INTENT(IN) :: set
-TYPE ( op_arg ) , INTENT(IN) :: opArg1
-TYPE ( op_arg ) , INTENT(IN) :: opArg2
-TYPE ( op_arg ) , INTENT(IN) :: opArg3
-TYPE ( op_arg ) , INTENT(IN) :: opArg4
-TYPE ( op_arg ) , INTENT(IN) :: opArg5
-TYPE ( op_arg ) , DIMENSION(5) :: opArgArray
-INTEGER(kind=4) :: numberOfOpDats
-INTEGER(kind=4) :: returnMPIHaloExchange
-INTEGER(kind=4) :: returnSetKernelTiming
-TYPE ( update_opDatDimensions ) , DEVICE :: opDatDimensions
-TYPE ( update_opDatCardinalities ) , DEVICE :: opDatCardinalities
-INTEGER(kind=4) :: opDat1Cardinality
-INTEGER(kind=4) :: opDat2Cardinality
-INTEGER(kind=4) :: opDat3Cardinality
-INTEGER(kind=4) :: opDat4Cardinality
-INTEGER(kind=4) :: opDat5Cardinality
-INTEGER(kind=4) :: blocksPerGrid
-INTEGER(kind=4) :: threadsPerBlock
-INTEGER(kind=4) :: dynamicSharedMemorySize
-INTEGER(kind=4) :: threadSynchRet
-INTEGER(kind=4) :: sharedMemoryOffset
-INTEGER(kind=4) :: warpSize
-INTEGER(kind=4), SAVE :: calledTimes
-INTEGER(kind=4) :: returnDumpOpDat
-INTEGER(kind=4) :: i1
-INTEGER(kind=4) :: i2
-INTEGER(kind=4) :: i10
-INTEGER(kind=4) :: i20
-REAL(kind=8), DIMENSION(:), ALLOCATABLE :: reductionArrayHost5
-REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: reductionArrayDevice5
-REAL(kind=8), POINTER :: opDat5Host
-INTEGER(kind=4) :: reductionCardinality5
-TYPE ( cudaEvent )  :: startTimeHost
-TYPE ( cudaEvent )  :: endTimeHost
-TYPE ( cudaEvent )  :: startTimeKernel
-TYPE ( cudaEvent )  :: endTimeKernel
-INTEGER(kind=4) :: istat
-REAL(kind=4) :: accumulatorHostTime
-REAL(kind=4) :: accumulatorKernelTime
-numberOfOpDats = 5
-opArgArray(1) = opArg1
-opArgArray(2) = opArg2
-opArgArray(3) = opArg3
-opArgArray(4) = opArg4
-opArgArray(5) = opArg5
+attributes (host) SUBROUTINE update_host( userSubroutine, set, &
+ & opArg1, &
+ & opArg2, &
+ & opArg3, &
+ & opArg4, &
+ & opArg5)
 
-IF (set%setPtr%size .EQ. 0) THEN
-RETURN
-END IF
+ IMPLICIT NONE
+ character(len=7), INTENT(IN) :: userSubroutine
+ TYPE ( op_set ) , INTENT(IN) :: set
 
-istat = cudaEventCreate(startTimeHost)
-istat = cudaEventCreate(endTimeHost)
-istat = cudaEventCreate(startTimeKernel)
-istat = cudaEventCreate(endTimeKernel)
-numberCalledupdate_2692987784 = numberCalledupdate_2692987784 + 1
-istat = cudaEventRecord(startTimeHost,0)
-blocksPerGrid = 200
-threadsPerBlock = getBlockSize(userSubroutine,set%setPtr%size)
-warpSize = OP_WARPSIZE
-dynamicSharedMemorySize = 32
-sharedMemoryOffset = dynamicSharedMemorySize * OP_WARPSIZE
-dynamicSharedMemorySize = dynamicSharedMemorySize * threadsPerBlock
-opDatDimensions%opDat1Dimension = opArg1%dim
-opDatDimensions%opDat2Dimension = opArg2%dim
-opDatDimensions%opDat3Dimension = opArg3%dim
-opDatDimensions%opDat4Dimension = opArg4%dim
-opDatCardinalities%opDat1Cardinality = opArg1%dim * getSetSizeFromOpArg(opArg1)
-opDatCardinalities%opDat2Cardinality = opArg2%dim * getSetSizeFromOpArg(opArg2)
-opDatCardinalities%opDat3Cardinality = opArg3%dim * getSetSizeFromOpArg(opArg3)
-opDatCardinalities%opDat4Cardinality = opArg4%dim * getSetSizeFromOpArg(opArg4)
-opDatCardinalities%opDat5Cardinality = set%setPtr%size
-opDat1Cardinality = opArg1%dim * getSetSizeFromOpArg(opArg1)
-opDat2Cardinality = opArg2%dim * getSetSizeFromOpArg(opArg2)
-opDat3Cardinality = opArg3%dim * getSetSizeFromOpArg(opArg3)
-opDat4Cardinality = opArg4%dim * getSetSizeFromOpArg(opArg4)
-opDat5Cardinality = set%setPtr%size
-CALL c_f_pointer(opArg1%data_d,opDat1Deviceupdate_2692987784,(/opDat1Cardinality/))
-CALL c_f_pointer(opArg2%data_d,opDat2Deviceupdate_2692987784,(/opDat2Cardinality/))
-CALL c_f_pointer(opArg3%data_d,opDat3Deviceupdate_2692987784,(/opDat3Cardinality/))
-CALL c_f_pointer(opArg4%data_d,opDat4Deviceupdate_2692987784,(/opDat4Cardinality/))
-CALL c_f_pointer(opArg5%data,opDat5Host)
-reductionCardinality5 = blocksPerGrid * 1
-allocate( reductionArrayHost5(reductionCardinality5) )
-allocate( reductionArrayDevice5(reductionCardinality5) )
+  TYPE ( op_arg ) , INTENT(IN) :: opArg1
+  TYPE ( op_arg ) , INTENT(IN) :: opArg2
+  TYPE ( op_arg ) , INTENT(IN) :: opArg3
+  TYPE ( op_arg ) , INTENT(IN) :: opArg4
+  TYPE ( op_arg ) , INTENT(IN) :: opArg5
 
-DO i10 = 1, reductionCardinality5, 1
-reductionArrayHost5(i10) = 0.00000
-END DO
+  TYPE ( op_arg ) , DIMENSION(5) :: opArgArray
+  INTEGER(kind=4) :: numberOfOpDats
+  INTEGER(kind=4) :: returnMPIHaloExchange
+  INTEGER(kind=4) :: returnSetKernelTiming
 
-reductionArrayDevice5 = reductionArrayHost5
-istat = cudaEventRecord(endTimeHost,0)
-istat = cudaEventSynchronize(endTimeHost)
-istat = cudaEventElapsedTime(accumulatorHostTime,startTimeHost,endTimeHost)
-loopTimeHostupdate_2692987784 = loopTimeHostupdate_2692987784 + accumulatorHostTime
-istat = cudaEventRecord(startTimeKernel,0)
-CALL update_kernel <<<blocksPerGrid,threadsPerBlock,dynamicSharedMemorySize>>>(opDatDimensions,opDatCardinalities,reduc&
-&tionArrayDevice5,set%setPtr%size,warpSize,sharedMemoryOffset)
-threadSynchRet = cudaThreadSynchronize()
-istat = cudaEventRecord(endTimeKernel,0)
-istat = cudaEventSynchronize(endTimeKernel)
-istat = cudaEventElapsedTime(accumulatorKernelTime,startTimeKernel,endTimeKernel)
-loopTimeKernelupdate_2692987784 = loopTimeKernelupdate_2692987784 + accumulatorKernelTime
-istat = cudaEventRecord(startTimeHost,0)
-reductionArrayHost5 = reductionArrayDevice5
+  TYPE ( update_opDatDimensions ) , DEVICE :: opDatDimensions
+  TYPE ( update_opDatCardinalities ) , DEVICE :: opDatCardinalities
 
-DO i10 = 0, reductionCardinality5 - 1, 1
-opDat5Host = reductionArrayHost5(i10) + opDat5Host
-END DO
+  INTEGER(kind=4) :: opDat1Cardinality
+  INTEGER(kind=4) :: opDat2Cardinality
+  INTEGER(kind=4) :: opDat3Cardinality
+  INTEGER(kind=4) :: opDat4Cardinality
+  INTEGER(kind=4) :: opDat5Cardinality
 
-deallocate( reductionArrayHost5 )
-deallocate( reductionArrayDevice5 )
-calledTimes = calledTimes + 1
-#ifdef PRINT_OUTPUT_DAT
-returnDumpOpDat = dumpOpDatFromDevice(opArg2,("update" // "opArg2") // CHAR(0),calledTimes)
-#endif
-#ifdef PRINT_OUTPUT_DAT
-returnDumpOpDat = dumpOpDatFromDevice(opArg3,("update" // "opArg3") // CHAR(0),calledTimes)
-#endif
-istat = cudaEventRecord(endTimeHost,0)
-istat = cudaEventSynchronize(endTimeHost)
-istat = cudaEventElapsedTime(accumulatorHostTime,startTimeHost,endTimeHost)
-loopTimeHostupdate_2692987784 = loopTimeHostupdate_2692987784 + accumulatorHostTime
+  INTEGER(kind=4) :: blocksPerGrid
+  INTEGER(kind=4) :: threadsPerBlock
+  INTEGER(kind=4) :: dynamicSharedMemorySize
+  INTEGER(kind=4) :: threadSynchRet
+  INTEGER(kind=4) :: sharedMemoryOffset
+  INTEGER(kind=4) :: warpSize
+  INTEGER(kind=4), SAVE :: calledTimes
+  INTEGER(kind=4) :: returnDumpOpDat
+  INTEGER(kind=4) :: i1
+  INTEGER(kind=4) :: i2
+  INTEGER(kind=4) :: i10
+  INTEGER(kind=4) :: i20
+
+  INTEGER(kind=4) :: istat
+  REAL(kind=4) :: accumulatorHostTime
+  REAL(kind=4) :: accumulatorKernelTime
+  TYPE ( cudaEvent )  :: startTimeHost
+  TYPE ( cudaEvent )  :: endTimeHost
+  TYPE ( cudaEvent )  :: startTimeKernel
+  TYPE ( cudaEvent )  :: endTimeKernel
+  REAL(kind=8), DIMENSION(:), ALLOCATABLE :: reductionArrayHost5
+  REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: reductionArrayDevice5
+  REAL(kind=8), POINTER :: opDat5Host
+  INTEGER(kind=4) :: reductionCardinality5
+
+  numberOfOpDats = 5
+
+  opArgArray(1) = opArg1
+  opArgArray(2) = opArg2
+  opArgArray(3) = opArg3
+  opArgArray(4) = opArg4
+  opArgArray(5) = opArg5
+
+  IF (set%setPtr%size .EQ. 0) THEN
+    RETURN
+  END IF
+
+  istat = cudaEventCreate(startTimeHost)
+  istat = cudaEventCreate(endTimeHost)
+  istat = cudaEventCreate(startTimeKernel)
+  istat = cudaEventCreate(endTimeKernel)
+
+  numberCalledupdate_2692987784 = numberCalledupdate_2692987784 + 1
+  istat = cudaEventRecord(startTimeHost,0)
+
+  blocksPerGrid = 200
+  threadsPerBlock = getBlockSize(userSubroutine,set%setPtr%size)
+  warpSize = OP_WARPSIZE
+  dynamicSharedMemorySize = 32
+  sharedMemoryOffset = dynamicSharedMemorySize * OP_WARPSIZE
+  dynamicSharedMemorySize = dynamicSharedMemorySize * threadsPerBlock
+
+  opDatDimensions%opDat1Dimension = opArg1%dim
+  opDatDimensions%opDat2Dimension = opArg2%dim
+  opDatDimensions%opDat3Dimension = opArg3%dim
+  opDatDimensions%opDat4Dimension = opArg4%dim
+
+  opDatCardinalities%opDat1Cardinality = opArg1%dim * getSetSizeFromOpArg(opArg1)
+  opDatCardinalities%opDat2Cardinality = opArg2%dim * getSetSizeFromOpArg(opArg2)
+  opDatCardinalities%opDat3Cardinality = opArg3%dim * getSetSizeFromOpArg(opArg3)
+  opDatCardinalities%opDat4Cardinality = opArg4%dim * getSetSizeFromOpArg(opArg4)
+
+  opDatCardinalities%opDat5Cardinality = set%setPtr%size
+  opDat1Cardinality = opArg1%dim * getSetSizeFromOpArg(opArg1)
+  opDat2Cardinality = opArg2%dim * getSetSizeFromOpArg(opArg2)
+  opDat3Cardinality = opArg3%dim * getSetSizeFromOpArg(opArg3)
+  opDat4Cardinality = opArg4%dim * getSetSizeFromOpArg(opArg4)
+  opDat5Cardinality = set%setPtr%size
+
+  CALL c_f_pointer(opArg1%data_d,opDat1Deviceupdate_2692987784,(/opDat1Cardinality/))
+  CALL c_f_pointer(opArg2%data_d,opDat2Deviceupdate_2692987784,(/opDat2Cardinality/))
+  CALL c_f_pointer(opArg3%data_d,opDat3Deviceupdate_2692987784,(/opDat3Cardinality/))
+  CALL c_f_pointer(opArg4%data_d,opDat4Deviceupdate_2692987784,(/opDat4Cardinality/))
+  CALL c_f_pointer(opArg5%data,opDat5Host)
+
+  reductionCardinality5 = blocksPerGrid * 1
+  allocate( reductionArrayHost5(reductionCardinality5) )
+  allocate( reductionArrayDevice5(reductionCardinality5) )
+
+  DO i10 = 1, reductionCardinality5, 1
+    reductionArrayHost5(i10) = 0.00000
+  END DO
+
+  reductionArrayDevice5 = reductionArrayHost5
+  istat = cudaEventRecord(endTimeHost,0)
+  istat = cudaEventSynchronize(endTimeHost)
+  istat = cudaEventElapsedTime(accumulatorHostTime,startTimeHost,endTimeHost)
+  loopTimeHostupdate_2692987784 = loopTimeHostupdate_2692987784 + accumulatorHostTime
+  istat = cudaEventRecord(startTimeKernel,0)
+  CALL update_kernel <<<blocksPerGrid,threadsPerBlock,dynamicSharedMemorySize>>>(opDatDimensions,opDatCardinalities,reduc&
+  &tionArrayDevice5,set%setPtr%size,warpSize,sharedMemoryOffset)
+  threadSynchRet = cudaThreadSynchronize()
+  istat = cudaEventRecord(endTimeKernel,0)
+  istat = cudaEventSynchronize(endTimeKernel)
+  istat = cudaEventElapsedTime(accumulatorKernelTime,startTimeKernel,endTimeKernel)
+  loopTimeKernelupdate_2692987784 = loopTimeKernelupdate_2692987784 + accumulatorKernelTime
+  istat = cudaEventRecord(startTimeHost,0)
+  reductionArrayHost5 = reductionArrayDevice5
+
+  DO i10 = 0, reductionCardinality5 - 1, 1
+  opDat5Host = reductionArrayHost5(i10) + opDat5Host
+  END DO
+
+  deallocate( reductionArrayHost5 )
+  deallocate( reductionArrayDevice5 )
+  calledTimes = calledTimes + 1
+  #ifdef PRINT_OUTPUT_DAT
+  returnDumpOpDat = dumpOpDatFromDevice(opArg2,("update" // "opArg2") // CHAR(0),calledTimes)
+  #endif
+  #ifdef PRINT_OUTPUT_DAT
+  returnDumpOpDat = dumpOpDatFromDevice(opArg3,("update" // "opArg3") // CHAR(0),calledTimes)
+  #endif
+  istat = cudaEventRecord(endTimeHost,0)
+  istat = cudaEventSynchronize(endTimeHost)
+  istat = cudaEventElapsedTime(accumulatorHostTime,startTimeHost,endTimeHost)
+  loopTimeHostupdate_2692987784 = loopTimeHostupdate_2692987784 + accumulatorHostTime
 END SUBROUTINE
 
 END MODULE GENERATED_MODULE

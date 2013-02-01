@@ -545,7 +545,7 @@ def op2_gen_openmp(master, date, consts, kernels):
       code('type ( op_dat_core ) , POINTER :: opDat'+str(g_m+1)+'Core')
     code('')
 
-    if ninds > 0:
+    if ninds > 0: #indirect loop
       for g_m in range(0,nargs):
         code('type ( op_map_core ) , POINTER :: opMap'+str(g_m+1)+'Core')
       code('')
@@ -574,7 +574,7 @@ def op2_gen_openmp(master, date, consts, kernels):
       code('INTEGER(kind=4) :: i2')
       code('')
 
-    else:
+    else: #direct loop
       code('INTEGER(kind=4) :: threadID')
       code('INTEGER(kind=4) :: numberOfThreads')
       code('INTEGER(kind=4) :: sliceStart')
