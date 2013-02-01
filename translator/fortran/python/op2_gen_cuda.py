@@ -356,7 +356,7 @@ def op2_gen_cuda(master, date, consts, kernels):
     if ninds > 0: #indirect kernel call
       code('')
       comm('kernel call')
-      line = 'CALL '+name+'( &'
+      line = '  CALL '+name+'( &'
       indent = '\n'+' '*depth
       for g_m in range(0,nargs):
         if maps[g_m] == OP_ID:
@@ -423,6 +423,7 @@ def op2_gen_cuda(master, date, consts, kernels):
           code('& (0 + (pindOffs(3 + blockID * 4) + i1 / opDatDimensions%opDat'+str(invinds[g_m]+1)+'Dimension) + 1) * &')
           code('& opDatDimensions%opDat'+str(invinds[g_m]+1)+'Dimension + 1) + &')
           code('& sharedFloat8(opDat'+str(invinds[g_m]+1)+'nBytes + i1)')
+          code('i1 = i1 + blockDim%x')
           ENDDO()
 
     else: #direct kernel call
