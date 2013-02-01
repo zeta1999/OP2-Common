@@ -668,23 +668,32 @@ def op2_gen_cuda(master, date, consts, kernels):
     code('istat = cudaEventRecord(startTimeHost,0)')
     code('')
 
-    for g_m in range(0,nargs):
-      code('indirectionDescriptorArray('+str(g_m+1)+') = '+str(inds[g_m]-1))
-    code('')
-
-    code('numberOfIndirectOpDats = '+str(ninds))
-    code('')
-    code('partitionSize = getPartitionSize(userSubroutine,set%setPtr%size)')
-    code('')
-    code('planRet_'+name+' = FortranPlanCaller( &')
-    code('& userSubroutine, &')
-    code('& set%setCPtr, &')
-    code('& partitionSize, &')
-    code('& numberOfOpDats, &')
-    code('& opArgArray, &')
-    code('& numberOfIndirectOpDats, &')
-    code('& indirectionDescriptorArray)')
-    code('')
+    if ninds > 0:
+      for g_m in range(0,nargs):
+        code('indirectionDescriptorArray('+str(g_m+1)+') = '+str(inds[g_m]-1))
+      code('')
+      code('numberOfIndirectOpDats = '+str(ninds))
+      code('')
+      code('partitionSize = getPartitionSize(userSubroutine,set%setPtr%size)')
+      code('')
+      code('planRet_'+name+' = FortranPlanCaller( &')
+      code('& userSubroutine, &')
+      code('& set%setCPtr, &')
+      code('& partitionSize, &')
+      code('& numberOfOpDats, &')
+      code('& opArgArray, &')
+      code('& numberOfIndirectOpDats, &')
+      code('& indirectionDescriptorArray)')
+      code('')
+    else:
+      code('')
+      code('blocksPerGrid = 200')
+      code('threadsPerBlock = getBlockSize(userSubroutine,set%setPtr%size)')
+      code('warpSize = OP_WARPSIZE')
+      code('dynamicSharedMemorySize = 32')
+      code('sharedMemoryOffset = dynamicSharedMemorySize * OP_WARPSIZE')
+      code('dynamicSharedMemorySize = dynamicSharedMemorySize * threadsPerBlock')
+      code('')
 
 
     for g_m in range(0,ninds):

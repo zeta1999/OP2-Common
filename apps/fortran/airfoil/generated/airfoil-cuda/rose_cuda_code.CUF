@@ -2014,17 +2014,18 @@ attributes (host) SUBROUTINE update_host( userSubroutine, set, &
   sharedMemoryOffset = dynamicSharedMemorySize * OP_WARPSIZE
   dynamicSharedMemorySize = dynamicSharedMemorySize * threadsPerBlock
 
+  opDatCardinalities%opDat1Cardinality = opArg1%dim * getSetSizeFromOpArg(opArg1)
+  opDatCardinalities%opDat2Cardinality = opArg2%dim * getSetSizeFromOpArg(opArg2)
+  opDatCardinalities%opDat3Cardinality = opArg3%dim * getSetSizeFromOpArg(opArg3)
+  opDatCardinalities%opDat4Cardinality = opArg4%dim * getSetSizeFromOpArg(opArg4)
+  opDatCardinalities%opDat5Cardinality = set%setPtr%size
+
   opDatDimensions%opDat1Dimension = opArg1%dim
   opDatDimensions%opDat2Dimension = opArg2%dim
   opDatDimensions%opDat3Dimension = opArg3%dim
   opDatDimensions%opDat4Dimension = opArg4%dim
 
-  opDatCardinalities%opDat1Cardinality = opArg1%dim * getSetSizeFromOpArg(opArg1)
-  opDatCardinalities%opDat2Cardinality = opArg2%dim * getSetSizeFromOpArg(opArg2)
-  opDatCardinalities%opDat3Cardinality = opArg3%dim * getSetSizeFromOpArg(opArg3)
-  opDatCardinalities%opDat4Cardinality = opArg4%dim * getSetSizeFromOpArg(opArg4)
 
-  opDatCardinalities%opDat5Cardinality = set%setPtr%size
   opDat1Cardinality = opArg1%dim * getSetSizeFromOpArg(opArg1)
   opDat2Cardinality = opArg2%dim * getSetSizeFromOpArg(opArg2)
   opDat3Cardinality = opArg3%dim * getSetSizeFromOpArg(opArg3)
@@ -2046,11 +2047,13 @@ attributes (host) SUBROUTINE update_host( userSubroutine, set, &
   END DO
 
   reductionArrayDevice5 = reductionArrayHost5
+
   istat = cudaEventRecord(endTimeHost,0)
   istat = cudaEventSynchronize(endTimeHost)
   istat = cudaEventElapsedTime(accumulatorHostTime,startTimeHost,endTimeHost)
   loopTimeHostupdate_2692987784 = loopTimeHostupdate_2692987784 + accumulatorHostTime
   istat = cudaEventRecord(startTimeKernel,0)
+
   CALL update_kernel <<<blocksPerGrid,threadsPerBlock,dynamicSharedMemorySize>>>(opDatDimensions,opDatCardinalities,reduc&
   &tionArrayDevice5,set%setPtr%size,warpSize,sharedMemoryOffset)
   threadSynchRet = cudaThreadSynchronize()
