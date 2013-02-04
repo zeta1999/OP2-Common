@@ -211,8 +211,63 @@ def op2_gen_cuda(master, date, consts, kernels):
 ##########################################################################
 #  Variable declarations
 ##########################################################################
+    code('')
+    comm('variable declarations')
 
+    code('TYPE  :: '+name+'_opDatDimensions')
+    depth = depth + 2
+    for g_m in range(0,nargs):
+      if maps[g_m] <> OP_GBL:
+        code('INTEGER(kind=4) :: opDat'+str(g_m+1)+'Dimension')
+    depth = depth - 2
+    code('END TYPE '+name+'_opDatDimensions')
+    code('')
 
+    code('TYPE  :: '+name+'_opDatCardinalities')
+    depth = depth + 2
+    for g_m in range(0,ninds):
+      code('INTEGER(kind=4) :: opDat'+str(invinds[g_m]+1)+'Cardinality')
+    for g_m in range(0,nargs):
+      if maps[g_m] == OP_ID:
+        code('INTEGER(kind=4) :: opDat'+str(g_m+1)+'Cardinality')
+
+    for g_m in range(0,ninds):
+      code('INTEGER(kind=4) :: ind_maps'+str(invinds[g_m]+1)+'Size')
+
+    if ninds > 0:
+      for g_m in range(0,nargs):
+        if maps[g_m] <> OP_MAP:
+          code('INTEGER(kind=4) :: mappingArray'+str(g_m+1)+'Size')
+
+      code('INTEGER(kind=4) :: pblkMapSize')
+      code('INTEGER(kind=4) :: pindOffsSize')
+      code('INTEGER(kind=4) :: pindSizesSize')
+      code('INTEGER(kind=4) :: pnelemsSize')
+      code('INTEGER(kind=4) :: pnthrcolSize')
+      code('INTEGER(kind=4) :: poffsetSize')
+      code('INTEGER(kind=4) :: pthrcolSize')
+
+    depth = depth - 2
+    code('END TYPE '+name+'_opDatCardinalities')
+    code('')
+    code('REAL(kind=4) :: loopTimeHost'+name)
+    code('REAL(kind=4) :: loopTimeKernel'+name)
+    code('INTEGER(kind=4) :: numberCalled'+name)
+    code('')
+    for g_m in range(0,ninds):
+      code('REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat'+str(invinds[g_m]+1)+'Device'+name)
+    for g_m in range(0,nargs):
+      if maps[g_m] == OP_ID:
+        code('REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat'+str(g_m+1)+'Device'+name)
+
+    if ninds > 0:
+      code('TYPE ( c_ptr )  :: planRet_'+name)
+      for g_m in range(0,nargs):
+        if maps[g_m] <> OP_GBL:
+          code('INTEGER(kind=4), DIMENSION(:), DEVICE, ALLOCATABLE :: ind_maps'+str(g_m+1)+'_'+name)
+      for g_m in range(0,nargs):
+        if maps[g_m] <> OP_GBL:
+          code('INTEGER(kind=2), DIMENSION(:), DEVICE, ALLOCATABLE :: mappingArray'+str(g_m+1)+'_'+name)
 
 ##########################################################################
 #  Inline user kernel function

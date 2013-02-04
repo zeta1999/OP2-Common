@@ -14,120 +14,127 @@ MODULE GENERATED_MODULE
   REAL(kind=8), DIMENSION(4), DEVICE :: qinf_OP2_CONSTANT
 
   TYPE  :: adt_calc_opDatDimensions
-  INTEGER(kind=4) :: opDat1Dimension
-  INTEGER(kind=4) :: opDat2Dimension
-  INTEGER(kind=4) :: opDat3Dimension
-  INTEGER(kind=4) :: opDat4Dimension
-  INTEGER(kind=4) :: opDat5Dimension
-  INTEGER(kind=4) :: opDat6Dimension
+    INTEGER(kind=4) :: opDat1Dimension
+    INTEGER(kind=4) :: opDat2Dimension
+    INTEGER(kind=4) :: opDat3Dimension
+    INTEGER(kind=4) :: opDat4Dimension
+    INTEGER(kind=4) :: opDat5Dimension
+    INTEGER(kind=4) :: opDat6Dimension
   END TYPE adt_calc_opDatDimensions
+
   TYPE  :: adt_calc_opDatCardinalities
-  INTEGER(kind=4) :: opDat1Cardinality
-  INTEGER(kind=4) :: opDat5Cardinality
-  INTEGER(kind=4) :: opDat6Cardinality
-  INTEGER(kind=4) :: ind_maps1Size
-  INTEGER(kind=4) :: mappingArray1Size
-  INTEGER(kind=4) :: mappingArray2Size
-  INTEGER(kind=4) :: mappingArray3Size
-  INTEGER(kind=4) :: mappingArray4Size
-  INTEGER(kind=4) :: pblkMapSize
-  INTEGER(kind=4) :: pindOffsSize
-  INTEGER(kind=4) :: pindSizesSize
-  INTEGER(kind=4) :: pnelemsSize
-  INTEGER(kind=4) :: pnthrcolSize
-  INTEGER(kind=4) :: poffsetSize
-  INTEGER(kind=4) :: pthrcolSize
+    INTEGER(kind=4) :: opDat1Cardinality
+    INTEGER(kind=4) :: opDat5Cardinality
+    INTEGER(kind=4) :: opDat6Cardinality
+    INTEGER(kind=4) :: ind_maps1Size
+    INTEGER(kind=4) :: mappingArray1Size
+    INTEGER(kind=4) :: mappingArray2Size
+    INTEGER(kind=4) :: mappingArray3Size
+    INTEGER(kind=4) :: mappingArray4Size
+    INTEGER(kind=4) :: pblkMapSize
+    INTEGER(kind=4) :: pindOffsSize
+    INTEGER(kind=4) :: pindSizesSize
+    INTEGER(kind=4) :: pnelemsSize
+    INTEGER(kind=4) :: pnthrcolSize
+    INTEGER(kind=4) :: poffsetSize
+    INTEGER(kind=4) :: pthrcolSize
   END TYPE adt_calc_opDatCardinalities
 
   TYPE  :: bres_calc_opDatDimensions
-  INTEGER(kind=4) :: opDat1Dimension
-  INTEGER(kind=4) :: opDat2Dimension
-  INTEGER(kind=4) :: opDat3Dimension
-  INTEGER(kind=4) :: opDat4Dimension
-  INTEGER(kind=4) :: opDat5Dimension
-  INTEGER(kind=4) :: opDat6Dimension
+    INTEGER(kind=4) :: opDat1Dimension
+    INTEGER(kind=4) :: opDat2Dimension
+    INTEGER(kind=4) :: opDat3Dimension
+    INTEGER(kind=4) :: opDat4Dimension
+    INTEGER(kind=4) :: opDat5Dimension
+    INTEGER(kind=4) :: opDat6Dimension
   END TYPE bres_calc_opDatDimensions
+
   TYPE  :: bres_calc_opDatCardinalities
-  INTEGER(kind=4) :: opDat1Cardinality
-  INTEGER(kind=4) :: opDat3Cardinality
-  INTEGER(kind=4) :: opDat4Cardinality
-  INTEGER(kind=4) :: opDat5Cardinality
-  INTEGER(kind=4) :: opDat6Cardinality
-  INTEGER(kind=4) :: ind_maps1Size
-  INTEGER(kind=4) :: mappingArray1Size
-  INTEGER(kind=4) :: mappingArray2Size
-  INTEGER(kind=4) :: ind_maps3Size
-  INTEGER(kind=4) :: mappingArray3Size
-  INTEGER(kind=4) :: ind_maps4Size
-  INTEGER(kind=4) :: mappingArray4Size
-  INTEGER(kind=4) :: ind_maps5Size
-  INTEGER(kind=4) :: mappingArray5Size
-  INTEGER(kind=4) :: pblkMapSize
-  INTEGER(kind=4) :: pindOffsSize
-  INTEGER(kind=4) :: pindSizesSize
-  INTEGER(kind=4) :: pnelemsSize
-  INTEGER(kind=4) :: pnthrcolSize
-  INTEGER(kind=4) :: poffsetSize
-  INTEGER(kind=4) :: pthrcolSize
+    INTEGER(kind=4) :: opDat1Cardinality
+    INTEGER(kind=4) :: opDat3Cardinality
+    INTEGER(kind=4) :: opDat4Cardinality
+    INTEGER(kind=4) :: opDat5Cardinality
+    INTEGER(kind=4) :: opDat6Cardinality
+    INTEGER(kind=4) :: ind_maps1Size
+    INTEGER(kind=4) :: mappingArray1Size
+    INTEGER(kind=4) :: mappingArray2Size
+    INTEGER(kind=4) :: ind_maps3Size
+    INTEGER(kind=4) :: mappingArray3Size
+    INTEGER(kind=4) :: ind_maps4Size
+    INTEGER(kind=4) :: mappingArray4Size
+    INTEGER(kind=4) :: ind_maps5Size
+    INTEGER(kind=4) :: mappingArray5Size
+    INTEGER(kind=4) :: pblkMapSize
+    INTEGER(kind=4) :: pindOffsSize
+    INTEGER(kind=4) :: pindSizesSize
+    INTEGER(kind=4) :: pnelemsSize
+    INTEGER(kind=4) :: pnthrcolSize
+    INTEGER(kind=4) :: poffsetSize
+    INTEGER(kind=4) :: pthrcolSize
   END TYPE bres_calc_opDatCardinalities
 
   TYPE  :: res_calc_opDatDimensions
-  INTEGER(kind=4) :: opDat1Dimension
-  INTEGER(kind=4) :: opDat2Dimension
-  INTEGER(kind=4) :: opDat3Dimension
-  INTEGER(kind=4) :: opDat4Dimension
-  INTEGER(kind=4) :: opDat5Dimension
-  INTEGER(kind=4) :: opDat6Dimension
-  INTEGER(kind=4) :: opDat7Dimension
-  INTEGER(kind=4) :: opDat8Dimension
+    INTEGER(kind=4) :: opDat1Dimension
+    INTEGER(kind=4) :: opDat2Dimension
+    INTEGER(kind=4) :: opDat3Dimension
+    INTEGER(kind=4) :: opDat4Dimension
+    INTEGER(kind=4) :: opDat5Dimension
+    INTEGER(kind=4) :: opDat6Dimension
+    INTEGER(kind=4) :: opDat7Dimension
+    INTEGER(kind=4) :: opDat8Dimension
   END TYPE res_calc_opDatDimensions
+
   TYPE  :: res_calc_opDatCardinalities
-  INTEGER(kind=4) :: opDat1Cardinality
-  INTEGER(kind=4) :: opDat3Cardinality
-  INTEGER(kind=4) :: opDat5Cardinality
-  INTEGER(kind=4) :: opDat7Cardinality
-  INTEGER(kind=4) :: ind_maps1Size
-  INTEGER(kind=4) :: mappingArray1Size
-  INTEGER(kind=4) :: mappingArray2Size
-  INTEGER(kind=4) :: ind_maps3Size
-  INTEGER(kind=4) :: mappingArray3Size
-  INTEGER(kind=4) :: mappingArray4Size
-  INTEGER(kind=4) :: ind_maps5Size
-  INTEGER(kind=4) :: mappingArray5Size
-  INTEGER(kind=4) :: mappingArray6Size
-  INTEGER(kind=4) :: ind_maps7Size
-  INTEGER(kind=4) :: mappingArray7Size
-  INTEGER(kind=4) :: mappingArray8Size
-  INTEGER(kind=4) :: pblkMapSize
-  INTEGER(kind=4) :: pindOffsSize
-  INTEGER(kind=4) :: pindSizesSize
-  INTEGER(kind=4) :: pnelemsSize
-  INTEGER(kind=4) :: pnthrcolSize
-  INTEGER(kind=4) :: poffsetSize
-  INTEGER(kind=4) :: pthrcolSize
+    INTEGER(kind=4) :: opDat1Cardinality
+    INTEGER(kind=4) :: opDat3Cardinality
+    INTEGER(kind=4) :: opDat5Cardinality
+    INTEGER(kind=4) :: opDat7Cardinality
+    INTEGER(kind=4) :: ind_maps1Size
+    INTEGER(kind=4) :: ind_maps3Size
+    INTEGER(kind=4) :: ind_maps5Size
+    INTEGER(kind=4) :: ind_maps7Size
+
+    INTEGER(kind=4) :: mappingArray1Size
+    INTEGER(kind=4) :: mappingArray2Size
+    INTEGER(kind=4) :: mappingArray3Size
+    INTEGER(kind=4) :: mappingArray4Size
+    INTEGER(kind=4) :: mappingArray5Size
+    INTEGER(kind=4) :: mappingArray6Size
+    INTEGER(kind=4) :: mappingArray7Size
+    INTEGER(kind=4) :: mappingArray8Size
+
+    INTEGER(kind=4) :: pblkMapSize
+    INTEGER(kind=4) :: pindOffsSize
+    INTEGER(kind=4) :: pindSizesSize
+    INTEGER(kind=4) :: pnelemsSize
+    INTEGER(kind=4) :: pnthrcolSize
+    INTEGER(kind=4) :: poffsetSize
+    INTEGER(kind=4) :: pthrcolSize
   END TYPE res_calc_opDatCardinalities
 
   TYPE  :: save_soln_qdim_opDatDimensions
-  INTEGER(kind=4) :: opDat2Dimension
-  INTEGER(kind=4) :: opDat3Dimension
+    INTEGER(kind=4) :: opDat2Dimension
+    INTEGER(kind=4) :: opDat3Dimension
   END TYPE save_soln_qdim_opDatDimensions
+
   TYPE  :: save_soln_qdim_opDatCardinalities
-  INTEGER(kind=4) :: opDat2Cardinality
-  INTEGER(kind=4) :: opDat3Cardinality
+    INTEGER(kind=4) :: opDat2Cardinality
+    INTEGER(kind=4) :: opDat3Cardinality
   END TYPE save_soln_qdim_opDatCardinalities
 
   TYPE  :: update_opDatDimensions
-  INTEGER(kind=4) :: opDat1Dimension
-  INTEGER(kind=4) :: opDat2Dimension
-  INTEGER(kind=4) :: opDat3Dimension
-  INTEGER(kind=4) :: opDat4Dimension
+    INTEGER(kind=4) :: opDat1Dimension
+    INTEGER(kind=4) :: opDat2Dimension
+    INTEGER(kind=4) :: opDat3Dimension
+    INTEGER(kind=4) :: opDat4Dimension
   END TYPE update_opDatDimensions
+
   TYPE  :: update_opDatCardinalities
-  INTEGER(kind=4) :: opDat1Cardinality
-  INTEGER(kind=4) :: opDat2Cardinality
-  INTEGER(kind=4) :: opDat3Cardinality
-  INTEGER(kind=4) :: opDat4Cardinality
-  INTEGER(kind=4) :: opDat5Cardinality
+    INTEGER(kind=4) :: opDat1Cardinality
+    INTEGER(kind=4) :: opDat2Cardinality
+    INTEGER(kind=4) :: opDat3Cardinality
+    INTEGER(kind=4) :: opDat4Cardinality
+    INTEGER(kind=4) :: opDat5Cardinality
   END TYPE update_opDatCardinalities
 
   REAL(kind=4) :: loopTimeHostadt_calc_1379395014
@@ -150,6 +157,7 @@ MODULE GENERATED_MODULE
   REAL(kind=4) :: loopTimeHostbres_calc_3019043301
   REAL(kind=4) :: loopTimeKernelbres_calc_3019043301
   INTEGER(kind=4) :: numberCalledbres_calc_3019043301
+
   TYPE ( c_ptr )  :: planRet_bres_calc
   REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat1Devicebres_calc_3019043301
   REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat3Devicebres_calc_3019043301
@@ -195,12 +203,14 @@ MODULE GENERATED_MODULE
   REAL(kind=4) :: loopTimeHostsave_soln_qdim_2320554256
   REAL(kind=4) :: loopTimeKernelsave_soln_qdim_2320554256
   INTEGER(kind=4) :: numberCalledsave_soln_qdim_2320554256
+
   DOUBLE PRECISION, DIMENSION(:), DEVICE, ALLOCATABLE :: opDat2Devicesave_soln_qdim_2320554256
   DOUBLE PRECISION, DIMENSION(:), DEVICE, ALLOCATABLE :: opDat3Devicesave_soln_qdim_2320554256
 
   REAL(kind=4) :: loopTimeHostupdate_2692987784
   REAL(kind=4) :: loopTimeKernelupdate_2692987784
   INTEGER(kind=4) :: numberCalledupdate_2692987784
+
   REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat1Deviceupdate_2692987784
   REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat2Deviceupdate_2692987784
   REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat3Deviceupdate_2692987784
@@ -1745,89 +1755,114 @@ attributes (global) SUBROUTINE s2882256832( &
 END SUBROUTINE
 
 attributes (host) SUBROUTINE save_soln_qdim_host(userSubroutine,set,opArg1,opArg2,opArg3)
-IMPLICIT NONE
-character(len=15), INTENT(IN) :: userSubroutine
-TYPE ( op_set ) , INTENT(IN) :: set
-TYPE ( op_arg ) , INTENT(IN) :: opArg1
-TYPE ( op_arg ) , INTENT(IN) :: opArg2
-TYPE ( op_arg ) , INTENT(IN) :: opArg3
-TYPE ( op_arg ) , DIMENSION(3) :: opArgArray
-INTEGER(kind=4) :: numberOfOpDats
-INTEGER(kind=4) :: returnMPIHaloExchange
-INTEGER(kind=4) :: returnSetKernelTiming
-TYPE ( save_soln_qdim_opDatDimensions ) , DEVICE :: opDatDimensions
-TYPE ( save_soln_qdim_opDatCardinalities ) , DEVICE :: opDatCardinalities
-INTEGER(kind=4) :: opDat2Cardinality
-INTEGER(kind=4) :: opDat3Cardinality
-INTEGER(kind=4), POINTER :: opDat1Host
-INTEGER(kind=4) :: blocksPerGrid
-INTEGER(kind=4) :: threadsPerBlock
-INTEGER(kind=4) :: dynamicSharedMemorySize
-INTEGER(kind=4) :: threadSynchRet
-INTEGER(kind=4) :: sharedMemoryOffset
-INTEGER(kind=4) :: warpSize
-INTEGER(kind=4), SAVE :: calledTimes
-INTEGER(kind=4) :: returnDumpOpDat
-INTEGER(kind=4) :: i1
-INTEGER(kind=4) :: i2
-TYPE ( cudaEvent )  :: startTimeHost
-TYPE ( cudaEvent )  :: endTimeHost
-TYPE ( cudaEvent )  :: startTimeKernel
-TYPE ( cudaEvent )  :: endTimeKernel
-INTEGER(kind=4) :: istat
-REAL(kind=4) :: accumulatorHostTime
-REAL(kind=4) :: accumulatorKernelTime
-numberOfOpDats = 3
-opArgArray(1) = opArg1
-opArgArray(2) = opArg2
-opArgArray(3) = opArg3
 
-IF (set%setPtr%size .EQ. 0) THEN
-RETURN
-END IF
+  IMPLICIT NONE
+  character(len=15), INTENT(IN) :: userSubroutine
+  TYPE ( op_set ) , INTENT(IN) :: set
 
-istat = cudaEventCreate(startTimeHost)
-istat = cudaEventCreate(endTimeHost)
-istat = cudaEventCreate(startTimeKernel)
-istat = cudaEventCreate(endTimeKernel)
-numberCalledsave_soln_qdim_2320554256 = numberCalledsave_soln_qdim_2320554256 + 1
-istat = cudaEventRecord(startTimeHost,0)
-blocksPerGrid = 200
-threadsPerBlock = getBlockSize(userSubroutine,set%setPtr%size)
-warpSize = OP_WARPSIZE
-dynamicSharedMemorySize = 32
-sharedMemoryOffset = dynamicSharedMemorySize * OP_WARPSIZE
-dynamicSharedMemorySize = dynamicSharedMemorySize * threadsPerBlock
-opDatDimensions%opDat2Dimension = opArg2%dim
-opDatDimensions%opDat3Dimension = opArg3%dim
-opDatCardinalities%opDat2Cardinality = opArg2%dim * getSetSizeFromOpArg(opArg2)
-opDatCardinalities%opDat3Cardinality = opArg3%dim * getSetSizeFromOpArg(opArg3)
-opDat2Cardinality = opArg2%dim * getSetSizeFromOpArg(opArg2)
-opDat3Cardinality = opArg3%dim * getSetSizeFromOpArg(opArg3)
-CALL c_f_pointer(opArg1%data,opDat1Host)
-CALL c_f_pointer(opArg2%data_d,opDat2Devicesave_soln_qdim_2320554256,(/opDat2Cardinality/))
-CALL c_f_pointer(opArg3%data_d,opDat3Devicesave_soln_qdim_2320554256,(/opDat3Cardinality/))
-istat = cudaEventRecord(endTimeHost,0)
-istat = cudaEventSynchronize(endTimeHost)
-istat = cudaEventElapsedTime(accumulatorHostTime,startTimeHost,endTimeHost)
-loopTimeHostsave_soln_qdim_2320554256 = loopTimeHostsave_soln_qdim_2320554256 + accumulatorHostTime
-istat = cudaEventRecord(startTimeKernel,0)
-CALL s2882256832 <<<blocksPerGrid,threadsPerBlock,dynamicSharedMemorySize>>>(opDatDimensions,opDatCardinalities,opDat1H&
-&ost,set%setPtr%size,warpSize,sharedMemoryOffset)
-threadSynchRet = cudaThreadSynchronize()
-istat = cudaEventRecord(endTimeKernel,0)
-istat = cudaEventSynchronize(endTimeKernel)
-istat = cudaEventElapsedTime(accumulatorKernelTime,startTimeKernel,endTimeKernel)
-loopTimeKernelsave_soln_qdim_2320554256 = loopTimeKernelsave_soln_qdim_2320554256 + accumulatorKernelTime
-istat = cudaEventRecord(startTimeHost,0)
-calledTimes = calledTimes + 1
+  TYPE ( op_arg ) , INTENT(IN) :: opArg1
+  TYPE ( op_arg ) , INTENT(IN) :: opArg2
+  TYPE ( op_arg ) , INTENT(IN) :: opArg3
+
+  TYPE ( op_arg ) , DIMENSION(3) :: opArgArray
+  INTEGER(kind=4) :: numberOfOpDats
+  INTEGER(kind=4) :: returnMPIHaloExchange
+  INTEGER(kind=4) :: returnSetKernelTiming
+
+  TYPE ( save_soln_qdim_opDatDimensions ) , DEVICE :: opDatDimensions
+  TYPE ( save_soln_qdim_opDatCardinalities ) , DEVICE :: opDatCardinalities
+
+  INTEGER(kind=4) :: opDat2Cardinality
+  INTEGER(kind=4) :: opDat3Cardinality
+
+  INTEGER(kind=4), POINTER :: opDat1Host
+
+  INTEGER(kind=4) :: blocksPerGrid
+  INTEGER(kind=4) :: threadsPerBlock
+  INTEGER(kind=4) :: dynamicSharedMemorySize
+  INTEGER(kind=4) :: threadSynchRet
+  INTEGER(kind=4) :: sharedMemoryOffset
+  INTEGER(kind=4) :: warpSize
+  INTEGER(kind=4), SAVE :: calledTimes
+  INTEGER(kind=4) :: returnDumpOpDat
+  INTEGER(kind=4) :: i1
+  INTEGER(kind=4) :: i2
+
+  INTEGER(kind=4) :: istat
+  REAL(kind=4) :: accumulatorHostTime
+  REAL(kind=4) :: accumulatorKernelTime
+   TYPE ( cudaEvent )  :: startTimeHost
+  TYPE ( cudaEvent )  :: endTimeHost
+  TYPE ( cudaEvent )  :: startTimeKernel
+  TYPE ( cudaEvent )  :: endTimeKernel
+
+  numberOfOpDats = 3
+
+  opArgArray(1) = opArg1
+  opArgArray(2) = opArg2
+  opArgArray(3) = opArg3
+
+  IF (set%setPtr%size .EQ. 0) THEN
+  RETURN
+  END IF
+
+  istat = cudaEventCreate(startTimeHost)
+  istat = cudaEventCreate(endTimeHost)
+  istat = cudaEventCreate(startTimeKernel)
+  istat = cudaEventCreate(endTimeKernel)
+
+  numberCalledsave_soln_qdim_2320554256 = numberCalledsave_soln_qdim_2320554256 + 1
+  istat = cudaEventRecord(startTimeHost,0)
+
+  blocksPerGrid = 200
+  threadsPerBlock = getBlockSize(userSubroutine,set%setPtr%size)
+  warpSize = OP_WARPSIZE
+  dynamicSharedMemorySize = 32
+  sharedMemoryOffset = dynamicSharedMemorySize * OP_WARPSIZE
+  dynamicSharedMemorySize = dynamicSharedMemorySize * threadsPerBlock
+
+  opDatCardinalities%opDat2Cardinality = opArg2%dim * getSetSizeFromOpArg(opArg2)
+  opDatCardinalities%opDat3Cardinality = opArg3%dim * getSetSizeFromOpArg(opArg3)
+
+  opDatDimensions%opDat2Dimension = opArg2%dim
+  opDatDimensions%opDat3Dimension = opArg3%dim
+
+  opDat2Cardinality = opArg2%dim * getSetSizeFromOpArg(opArg2)
+  opDat3Cardinality = opArg3%dim * getSetSizeFromOpArg(opArg3)
+
+  CALL c_f_pointer(opArg1%data,opDat1Host)
+  CALL c_f_pointer(opArg2%data_d,opDat2Devicesave_soln_qdim_2320554256,(/opDat2Cardinality/))
+  CALL c_f_pointer(opArg3%data_d,opDat3Devicesave_soln_qdim_2320554256,(/opDat3Cardinality/))
+
+  istat = cudaEventRecord(endTimeHost,0)
+  istat = cudaEventSynchronize(endTimeHost)
+  istat = cudaEventElapsedTime(accumulatorHostTime,startTimeHost,endTimeHost)
+
+  loopTimeHostsave_soln_qdim_2320554256 = loopTimeHostsave_soln_qdim_2320554256 + accumulatorHostTime
+  istat = cudaEventRecord(startTimeKernel,0)
+
+  CALL s2882256832 <<<blocksPerGrid,threadsPerBlock,dynamicSharedMemorySize>>> &
+  & (opDatDimensions,opDatCardinalities, &
+  & opDat1Host, &
+  & set%setPtr%size,&
+  & warpSize,sharedMemoryOffset)
+
+  threadSynchRet = cudaThreadSynchronize()
+  istat = cudaEventRecord(endTimeKernel,0)
+  istat = cudaEventSynchronize(endTimeKernel)
+  istat = cudaEventElapsedTime(accumulatorKernelTime,startTimeKernel,endTimeKernel)
+  loopTimeKernelsave_soln_qdim_2320554256 = loopTimeKernelsave_soln_qdim_2320554256 + accumulatorKernelTime
+
+  istat = cudaEventRecord(startTimeHost,0)
+  calledTimes = calledTimes + 1
+
 #ifdef PRINT_OUTPUT_DAT
-returnDumpOpDat = dumpOpDatFromDevice(opArg3,("save_soln_qdim" // "opArg3") // CHAR(0),calledTimes)
+  returnDumpOpDat = dumpOpDatFromDevice(opArg3,("save_soln_qdim" // "opArg3") // CHAR(0),calledTimes)
 #endif
-istat = cudaEventRecord(endTimeHost,0)
-istat = cudaEventSynchronize(endTimeHost)
-istat = cudaEventElapsedTime(accumulatorHostTime,startTimeHost,endTimeHost)
-loopTimeHostsave_soln_qdim_2320554256 = loopTimeHostsave_soln_qdim_2320554256 + accumulatorHostTime
+  istat = cudaEventRecord(endTimeHost,0)
+  istat = cudaEventSynchronize(endTimeHost)
+  istat = cudaEventElapsedTime(accumulatorHostTime,startTimeHost,endTimeHost)
+  loopTimeHostsave_soln_qdim_2320554256 = loopTimeHostsave_soln_qdim_2320554256 + accumulatorHostTime
 END SUBROUTINE
 
 attributes (device) SUBROUTINE update_modified(qold,q,res,adt,rms)
