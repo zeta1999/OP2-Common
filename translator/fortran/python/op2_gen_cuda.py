@@ -702,10 +702,13 @@ def op2_gen_cuda(master, date, consts, kernels):
       if maps[g_m] == OP_ID:
         code('opDatCardinalities%opDat'+str(g_m+1)+'Cardinality = opArg'+str(g_m+1)+'%dim * getSetSizeFromOpArg(opArg'+str(g_m+1)+')')
       elif maps[g_m] == OP_GBL:
-        code('opDatCardinalities%opDat'+str(g_m+1)+'Cardinality = opArg'+str(g_m+1)+'%dim')
+        code('opDatCardinalities%opDat'+str(g_m+1)+'Cardinality = set%setPtr%size')
     code('')
+
     for g_m in range(0,nargs):
-      code('opDatDimensions%opDat'+str(g_m+1)+'Dimension = opArg'+str(g_m+1)+'%dim')
+      if maps[g_m] <> OP_GBL:
+        code('opDatDimensions%opDat'+str(g_m+1)+'Dimension = opArg'+str(g_m+1)+'%dim')
+
     code('')
     for g_m in range(0,ninds):
       code('opDat'+str(invinds[g_m]+1)+'Cardinality = opArg'+str(invinds[g_m]+1)+'%dim * getSetSizeFromOpArg(opArg'+str(invinds[g_m]+1)+')')
@@ -713,7 +716,7 @@ def op2_gen_cuda(master, date, consts, kernels):
       if maps[g_m] == OP_ID:
         code('opDat'+str(g_m+1)+'Cardinality = opArg'+str(g_m+1)+'%dim * getSetSizeFromOpArg(opArg'+str(g_m+1)+')')
       elif maps[g_m] == OP_GBL:
-        code('opDat'+str(g_m+1)+'Cardinality = opArg'+str(g_m+1)+'%dim')
+        code('opDat'+str(g_m+1)+'Cardinality = set%setPtr%size')
 
     code('')
     for g_m in range(0,ninds):
@@ -722,64 +725,80 @@ def op2_gen_cuda(master, date, consts, kernels):
       if maps[g_m] == OP_ID:
         code('CALL c_f_pointer(opArg'+str(g_m+1)+'%data_d,opDat'+str(g_m+1)+'Device'+name+',(/opDat'+str(g_m+1)+'Cardinality/))')
       elif maps[g_m] == OP_GBL:
-        code('CALL c_f_pointer(opArg'+str(g_m+1)+'%data_d,opDat'+str(g_m+1)+'Device'+name+')')
+        code('CALL c_f_pointer(opArg'+str(g_m+1)+'%data,opDat'+str(g_m+1)+'Host)')
     code('')
 
-    code('CALL c_f_pointer(planRet_'+name+',actualPlan_'+name+')')
-    code('CALL c_f_pointer(actualPlan_'+name+'%ind_maps,pindMaps,(/numberOfIndirectOpDats/))')
-    code('CALL c_f_pointer(actualPlan_'+name+'%ncolblk,ncolblk,(/set%setPtr%size/))')
-    code('')
-    code('pindSizesSize = actualPlan_'+name+'%nblocks * numberOfIndirectOpDats')
-    code('CALL c_f_pointer(actualPlan_'+name+'%ind_sizes,pindSizes,(/pindSizesSize/))')
-    code('')
-    code('pindOffsSize = pindSizesSize')
-    code('CALL c_f_pointer(actualPlan_'+name+'%ind_offs,pindOffs,(/pindOffsSize/))')
-    code('')
-    code('pblkMapSize = actualPlan_'+name+'%nblocks')
-    code('CALL c_f_pointer(actualPlan_'+name+'%blkmap,pblkMap,(/pblkMapSize/))')
-    code('')
-    code('poffsetSize = actualPlan_'+name+'%nblocks')
-    code('CALL c_f_pointer(actualPlan_'+name+'%offset,poffset,(/poffsetSize/))')
-    code('')
-    code('pnelemsSize = actualPlan_'+name+'%nblocks')
-    code('CALL c_f_pointer(actualPlan_'+name+'%nelems,pnelems,(/pnelemsSize/))')
-    code('')
-    code('pnthrcolSize = actualPlan_'+name+'%nblocks')
-    code('CALL c_f_pointer(actualPlan_'+name+'%nthrcol,pnthrcol,(/pnthrcolSize/))')
-    code('')
-    code('pthrcolSize = set%setPtr%size')
-    code('CALL c_f_pointer(actualPlan_'+name+'%thrcol,pthrcol,(/pthrcolSize/))')
-    code('CALL c_f_pointer(actualPlan_'+name+'%nindirect,pnindirect,(/numberOfIndirectOpDats/))')
-    code('')
-    for g_m in range(0,ninds):
-      code('CALL c_f_pointer(pindMaps('+str(g_m+1)+'),ind_maps'+str(invinds[g_m]+1)+'_'+name+',pnindirect('+str(g_m+1)+'))')
-    code('CALL c_f_pointer(actualPlan_'+name+'%maps,pmaps,(/numberOfOpDats/))')
-    code('')
+    if ninds > 0:
+      code('CALL c_f_pointer(planRet_'+name+',actualPlan_'+name+')')
+      code('CALL c_f_pointer(actualPlan_'+name+'%ind_maps,pindMaps,(/numberOfIndirectOpDats/))')
+      code('CALL c_f_pointer(actualPlan_'+name+'%ncolblk,ncolblk,(/set%setPtr%size/))')
+      code('')
+      code('pindSizesSize = actualPlan_'+name+'%nblocks * numberOfIndirectOpDats')
+      code('CALL c_f_pointer(actualPlan_'+name+'%ind_sizes,pindSizes,(/pindSizesSize/))')
+      code('')
+      code('pindOffsSize = pindSizesSize')
+      code('CALL c_f_pointer(actualPlan_'+name+'%ind_offs,pindOffs,(/pindOffsSize/))')
+      code('')
+      code('pblkMapSize = actualPlan_'+name+'%nblocks')
+      code('CALL c_f_pointer(actualPlan_'+name+'%blkmap,pblkMap,(/pblkMapSize/))')
+      code('')
+      code('poffsetSize = actualPlan_'+name+'%nblocks')
+      code('CALL c_f_pointer(actualPlan_'+name+'%offset,poffset,(/poffsetSize/))')
+      code('')
+      code('pnelemsSize = actualPlan_'+name+'%nblocks')
+      code('CALL c_f_pointer(actualPlan_'+name+'%nelems,pnelems,(/pnelemsSize/))')
+      code('')
+      code('pnthrcolSize = actualPlan_'+name+'%nblocks')
+      code('CALL c_f_pointer(actualPlan_'+name+'%nthrcol,pnthrcol,(/pnthrcolSize/))')
+      code('')
+      code('pthrcolSize = set%setPtr%size')
+      code('CALL c_f_pointer(actualPlan_'+name+'%thrcol,pthrcol,(/pthrcolSize/))')
+      code('CALL c_f_pointer(actualPlan_'+name+'%nindirect,pnindirect,(/numberOfIndirectOpDats/))')
+      code('')
+      for g_m in range(0,ninds):
+        code('CALL c_f_pointer(pindMaps('+str(g_m+1)+'),ind_maps'+str(invinds[g_m]+1)+'_'+name+',pnindirect('+str(g_m+1)+'))')
+      code('CALL c_f_pointer(actualPlan_'+name+'%maps,pmaps,(/numberOfOpDats/))')
+      code('')
 
+      for g_m in range(0,nargs):
+        if maps[g_m] == OP_MAP:
+          IF('indirectionDescriptorArray('+str(g_m+1)+') >= 0')
+          code('mappingArray'+str(g_m+1)+'Size = set%setPtr%size')
+          code('CALL c_f_pointer(pmaps('+str(g_m+1)+'),mappingArray'+str(g_m+1)+'_'+name+',(/mappingArray'+str(g_m+1)+'Size/))')
+          ENDIF()
+          code('')
+
+      for g_m in range(0,ninds):
+        code('opDatCardinalities%ind_maps'+str(invinds[g_m]+1)+'Size = pnindirect('+str(g_m+1)+')')
+      code('')
+      for g_m in range(0,nargs):
+        if maps[g_m] == OP_MAP:
+          code('opDatCardinalities%mappingArray'+str(g_m+1)+'Size = mappingArray'+str(g_m+1)+'Size')
+      code('')
+
+      code('opDatCardinalities%pblkMapSize = pblkMapSize')
+      code('opDatCardinalities%pindOffsSize = pindOffsSize')
+      code('opDatCardinalities%pindSizesSize = pindSizesSize')
+      code('opDatCardinalities%pnelemsSize = pnelemsSize')
+      code('opDatCardinalities%pnthrcolSize = pnthrcolSize')
+      code('opDatCardinalities%poffsetSize = poffsetSize')
+      code('opDatCardinalities%pthrcolSize = pthrcolSize')
+      code('')
+
+
+    #setup for reduction
     for g_m in range(0,nargs):
-      if maps[g_m] == OP_MAP:
-        IF('indirectionDescriptorArray('+str(g_m+1)+') >= 0')
-        code('mappingArray'+str(g_m+1)+'Size = set%setPtr%size')
-        code('CALL c_f_pointer(pmaps('+str(g_m+1)+'),mappingArray'+str(g_m+1)+'_'+name+',(/mappingArray'+str(g_m+1)+'Size/))')
-        ENDIF()
+      if maps[g_m] == OP_GBL:
+        code('reductionCardinality'+str(g_m+1)+' = blocksPerGrid * 1')
+        code('allocate( reductionArrayHost'+str(g_m+1)+'(reductionCardinality'+str(g_m+1)+') )')
+        code('allocate( reductionArrayDevice'+str(g_m+1)+'(reductionCardinality'+str(g_m+1)+') )')
         code('')
+        DO('i10','1','reductionCardinality'+str(g_m+1)+'')
+        code('reductionArrayHost'+str(g_m+1)+'(i10) = 0.00000')
+        ENDDO()
+        code('')
+        code('reductionArrayDevice'+str(g_m+1)+' = reductionArrayHost'+str(g_m+1)+'')
 
-    for g_m in range(0,ninds):
-      code('opDatCardinalities%ind_maps'+str(invinds[g_m]+1)+'Size = pnindirect('+str(g_m+1)+')')
-    code('')
-    for g_m in range(0,nargs):
-      if maps[g_m] == OP_MAP:
-        code('opDatCardinalities%mappingArray'+str(g_m+1)+'Size = mappingArray'+str(g_m+1)+'Size')
-    code('')
-
-    code('opDatCardinalities%pblkMapSize = pblkMapSize')
-    code('opDatCardinalities%pindOffsSize = pindOffsSize')
-    code('opDatCardinalities%pindSizesSize = pindSizesSize')
-    code('opDatCardinalities%pnelemsSize = pnelemsSize')
-    code('opDatCardinalities%pnthrcolSize = pnthrcolSize')
-    code('opDatCardinalities%poffsetSize = poffsetSize')
-    code('opDatCardinalities%pthrcolSize = pthrcolSize')
-    code('')
     code('istat = cudaEventRecord(endTimeHost,0)')
     code('istat = cudaEventSynchronize(endTimeHost)')
     code('istat = cudaEventElapsedTime(accumulatorHostTime,startTimeHost,endTimeHost)')
@@ -789,33 +808,68 @@ def op2_gen_cuda(master, date, consts, kernels):
     code('')
 
     #indirect loop host stub call
-    code('blockOffset = 0')
-    code('')
-    code('threadsPerBlock = getBlockSize(userSubroutine,set%setPtr%size)')
+    if ninds > 0:
+      code('blockOffset = 0')
+      code('')
+      code('threadsPerBlock = getBlockSize(userSubroutine,set%setPtr%size)')
 
-    DO('i2','0','actualPlan_'+name+'%ncolors')
-    code('blocksPerGrid = ncolblk(i2 + 1)')
-    code('dynamicSharedMemorySize = actualPlan_'+name+'%nshared')
-    code('')
-    code('CALL '+name+'_kernel <<<blocksPerGrid,threadsPerBlock,dynamicSharedMemorySize>>> &')
-    code('& (opDatDimensions,opDatCardinalities,pindSizes,pindOffs,pblkMap, &')
-    code('& poffset,pnelems,pnthrcol,pthrcol,blockOffset)')
-    code('')
-    code('threadSynchRet = cudaThreadSynchronize()')
-    code('blockOffset = blockOffset + blocksPerGrid')
-    ENDDO()
-    code('')
-    code('istat = cudaEventRecord(endTimeKernel,0)')
-    code('istat = cudaEventSynchronize(endTimeKernel)')
-    code('istat = cudaEventElapsedTime(accumulatorKernelTime,startTimeKernel,endTimeKernel)')
-    code('loopTimeKernel'+name+' = loopTimeKernel'+name+' + accumulatorKernelTime')
-    code('')
-    code('istat = cudaEventRecord(startTimeHost,0)')
-    code('istat = cudaEventRecord(endTimeHost,0)')
-    code('istat = cudaEventSynchronize(endTimeHost)')
-    code('istat = cudaEventElapsedTime(accumulatorHostTime,startTimeHost,endTimeHost)')
-    code('loopTimeHost'+name+' = loopTimeHost'+name+' + accumulatorHostTime')
-    code('')
+      DO('i2','0','actualPlan_'+name+'%ncolors')
+      code('blocksPerGrid = ncolblk(i2 + 1)')
+      code('dynamicSharedMemorySize = actualPlan_'+name+'%nshared')
+      code('')
+      code('CALL '+name+'_kernel <<<blocksPerGrid,threadsPerBlock,dynamicSharedMemorySize>>> &')
+      code('& (opDatDimensions,opDatCardinalities,pindSizes,pindOffs,pblkMap, &')
+      code('& poffset,pnelems,pnthrcol,pthrcol,blockOffset)')
+      code('')
+      code('threadSynchRet = cudaThreadSynchronize()')
+      code('blockOffset = blockOffset + blocksPerGrid')
+      ENDDO()
+      code('')
+      code('istat = cudaEventRecord(endTimeKernel,0)')
+      code('istat = cudaEventSynchronize(endTimeKernel)')
+      code('istat = cudaEventElapsedTime(accumulatorKernelTime,startTimeKernel,endTimeKernel)')
+      code('loopTimeKernel'+name+' = loopTimeKernel'+name+' + accumulatorKernelTime')
+      code('')
+      code('istat = cudaEventRecord(startTimeHost,0)')
+      code('istat = cudaEventRecord(endTimeHost,0)')
+      code('istat = cudaEventSynchronize(endTimeHost)')
+      code('istat = cudaEventElapsedTime(accumulatorHostTime,startTimeHost,endTimeHost)')
+      code('loopTimeHost'+name+' = loopTimeHost'+name+' + accumulatorHostTime')
+      code('')
+    else: #direct loop host stub call
+      code('CALL '+name+'_kernel <<<blocksPerGrid,threadsPerBlock,dynamicSharedMemorySize>>> &')
+      code('& (opDatDimensions,opDatCardinalities, &')
+      for g_m in range(0,nargs):
+        if maps[g_m] == OP_GBL:
+          code('reductionArrayDevice'+str(g_m+1)+', &')
+      code('set%setPtr%size, &')
+      code('& warpSize,sharedMemoryOffset)')
+      code('')
+      code('threadSynchRet = cudaThreadSynchronize()')
+      code('istat = cudaEventRecord(endTimeKernel,0)')
+      code('istat = cudaEventSynchronize(endTimeKernel)')
+      code('istat = cudaEventElapsedTime(accumulatorKernelTime,startTimeKernel,endTimeKernel)')
+      code('loopTimeKernel'+name+' = loopTimeKernel'+name+' + accumulatorKernelTime')
+      code('')
+
+    #reduction
+    #reductions
+    for g_m in range(0,nargs):
+      if maps[g_m] == OP_GBL and accs[g_m] == OP_INC:
+        code('istat = cudaEventRecord(startTimeHost,0)') #timer for reduction
+        code('reductionArrayHost'+str(g_m+1)+' = reductionArrayDevice'+str(g_m+1)+'')
+        code('')
+        DO('i10','0','reductionCardinality'+str(g_m+1)+'')
+        code('opDat'+str(g_m+1)+'Host = reductionArrayHost'+str(g_m+1)+'(i10) + opDat'+str(g_m+1)+'Host')
+        ENDDO()
+        code('')
+        code('deallocate( reductionArrayHost'+str(g_m+1)+' )')
+        code('deallocate( reductionArrayDevice'+str(g_m+1)+' )')
+        code('calledTimes = calledTimes + 1')
+        code('istat = cudaEventRecord(endTimeHost,0)') #end timer for reduction
+        code('istat = cudaEventSynchronize(endTimeHost)')
+        code('istat = cudaEventElapsedTime(accumulatorHostTime,startTimeHost,endTimeHost)')
+        code('loopTimeHost'+name+' = loopTimeHost'+name+' + accumulatorHostTime')
 
     depth = depth - 2
     code('END SUBROUTINE')

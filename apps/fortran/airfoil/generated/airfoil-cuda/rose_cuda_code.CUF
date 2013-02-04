@@ -2051,16 +2051,19 @@ attributes (host) SUBROUTINE update_host( userSubroutine, set, &
   istat = cudaEventRecord(endTimeHost,0)
   istat = cudaEventSynchronize(endTimeHost)
   istat = cudaEventElapsedTime(accumulatorHostTime,startTimeHost,endTimeHost)
+
   loopTimeHostupdate_2692987784 = loopTimeHostupdate_2692987784 + accumulatorHostTime
   istat = cudaEventRecord(startTimeKernel,0)
 
   CALL update_kernel <<<blocksPerGrid,threadsPerBlock,dynamicSharedMemorySize>>>(opDatDimensions,opDatCardinalities,reduc&
   &tionArrayDevice5,set%setPtr%size,warpSize,sharedMemoryOffset)
+
   threadSynchRet = cudaThreadSynchronize()
   istat = cudaEventRecord(endTimeKernel,0)
   istat = cudaEventSynchronize(endTimeKernel)
   istat = cudaEventElapsedTime(accumulatorKernelTime,startTimeKernel,endTimeKernel)
   loopTimeKernelupdate_2692987784 = loopTimeKernelupdate_2692987784 + accumulatorKernelTime
+
   istat = cudaEventRecord(startTimeHost,0)
   reductionArrayHost5 = reductionArrayDevice5
 
@@ -2071,12 +2074,14 @@ attributes (host) SUBROUTINE update_host( userSubroutine, set, &
   deallocate( reductionArrayHost5 )
   deallocate( reductionArrayDevice5 )
   calledTimes = calledTimes + 1
+
   #ifdef PRINT_OUTPUT_DAT
   returnDumpOpDat = dumpOpDatFromDevice(opArg2,("update" // "opArg2") // CHAR(0),calledTimes)
   #endif
   #ifdef PRINT_OUTPUT_DAT
   returnDumpOpDat = dumpOpDatFromDevice(opArg3,("update" // "opArg3") // CHAR(0),calledTimes)
   #endif
+
   istat = cudaEventRecord(endTimeHost,0)
   istat = cudaEventSynchronize(endTimeHost)
   istat = cudaEventElapsedTime(accumulatorHostTime,startTimeHost,endTimeHost)
