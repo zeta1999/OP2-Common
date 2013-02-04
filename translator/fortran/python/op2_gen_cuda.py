@@ -257,10 +257,10 @@ def op2_gen_cuda(master, date, consts, kernels):
     code('INTEGER(kind=4) :: numberCalled'+name)
     code('')
     for g_m in range(0,ninds):
-      code('REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat'+str(invinds[g_m]+1)+'Device'+name)
+      code(typs[g_m]+', DIMENSION(:), DEVICE, ALLOCATABLE :: opDat'+str(invinds[g_m]+1)+'Device'+name)
     for g_m in range(0,nargs):
       if maps[g_m] == OP_ID:
-        code('REAL(kind=8), DIMENSION(:), DEVICE, ALLOCATABLE :: opDat'+str(g_m+1)+'Device'+name)
+        code(typs[g_m]+', DIMENSION(:), DEVICE, ALLOCATABLE :: opDat'+str(g_m+1)+'Device'+name)
 
     if ninds > 0:
       code('TYPE ( c_ptr )  :: planRet_'+name)
