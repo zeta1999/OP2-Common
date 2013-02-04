@@ -230,13 +230,15 @@ def op2_gen_cuda(master, date, consts, kernels):
     for g_m in range(0,nargs):
       if maps[g_m] == OP_ID:
         code('INTEGER(kind=4) :: opDat'+str(g_m+1)+'Cardinality')
+      elif maps[g_m] == OP_GBL:
+        code('INTEGER(kind=4) :: opDat'+str(g_m+1)+'Cardinality')
 
     for g_m in range(0,ninds):
       code('INTEGER(kind=4) :: ind_maps'+str(invinds[g_m]+1)+'Size')
 
     if ninds > 0:
       for g_m in range(0,nargs):
-        if maps[g_m] <> OP_MAP:
+        if maps[g_m] <> OP_GBL:
           code('INTEGER(kind=4) :: mappingArray'+str(g_m+1)+'Size')
 
       code('INTEGER(kind=4) :: pblkMapSize')
@@ -289,7 +291,7 @@ def op2_gen_cuda(master, date, consts, kernels):
     code('& opDatCardinalities, &')
     for g_m in range(0,nargs):
       if maps[g_m] == OP_GBL:
-        code('&  opDat'+str(g_m+1)+',   &')
+        code('& reductionArrayDevice'+str(g_m+1)+',   &')
 
     if ninds > 0: #indirect loop
       code('& pindSizes, &')
@@ -314,8 +316,8 @@ def op2_gen_cuda(master, date, consts, kernels):
 ##########################################################################
     comm('local variables')
     if ninds > 0: #indirect loop
-      code('TYPE ( adt_calc_opDatDimensions ) , DEVICE :: opDatDimensions')
-      code('TYPE ( adt_calc_opDatCardinalities ) , DEVICE :: opDatCardinalities')
+      code('TYPE ( '+name+'_opDatDimensions ) , DEVICE :: opDatDimensions')
+      code('TYPE ( '+name+'_opDatCardinalities ) , DEVICE :: opDatCardinalities')
       code('INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pindSizesSize - 1), DEVICE :: pindSizes')
       code('INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pindOffsSize - 1), DEVICE :: pindOffs')
       code('INTEGER(kind=4), DIMENSION(0:opDatCardinalities%pblkMapSize - 1), DEVICE :: pblkMap')
@@ -414,7 +416,7 @@ def op2_gen_cuda(master, date, consts, kernels):
       code('')
 
 
-      DO('i1','0','numberOfActiveThreadsCeiling')
+      DOWHILE('i1 < numberOfActiveThreadsCeiling')
       code('colour2 = -1')
       IF('i1 < numberOfActiveThreads')
       for g_m in range(0,ninds):
@@ -425,13 +427,14 @@ def op2_gen_cuda(master, date, consts, kernels):
             ENDDO()
 
     else: #direct loop
-      code('TYPE ( save_soln_qdim_opDatDimensions ) , DEVICE :: opDatDimensions')
-      code('TYPE ( save_soln_qdim_opDatCardinalities ) , DEVICE :: opDatCardinalities')
+      code('TYPE ( '+name+'_opDatDimensions ) , DEVICE :: opDatDimensions')
+      code('TYPE ( '+name+'_opDatCardinalities ) , DEVICE :: opDatCardinalities')
       for g_m in range(0,nargs):
         if maps[g_m] <> OP_GBL:
           code(typs[g_m]+', DIMENSION(0:3) :: opDat'+str(g_m+1)+'Local')
         else: #global arg
-          code('INTEGER(kind=4), VALUE :: opDat'+str(g_m+1))
+          code(typs[g_m]+' :: opDat'+str(g_m+1)+'Local')
+          code(typs[g_m]+', DIMENSION(:), DEVICE :: reductionArrayDevice'+str(g_m+1))
 
       code('INTEGER(kind=4), VALUE :: setSize')
       code('INTEGER(kind=4), VALUE :: warpSize')
@@ -464,10 +467,10 @@ def op2_gen_cuda(master, date, consts, kernels):
           else:
             line = line + indent + '& opDat'+str(g_m+1)+'Device'+ \
             name+'((i1 + sharedMemoryOffset) * opDatDimensions%opDat'+str(g_m+1)+ \
-            'Dimension + 1))'
+            'Dimension + 1)'
         if maps[g_m] == OP_MAP and accs[g_m] == OP_READ:
           line = line + indent + '& sharedFloat8(opDat'+str(invinds[inds[g_m]-1]+1)+ \
-          'nBytes + mappingArray'+str(g_m+1)+name+ \
+          'nBytes + mappingArray'+str(g_m+1)+'_'+name+ \
           '(i1 + sharedMemoryOffset + 1) * opDatDimensions%opDat'+str(g_m+1)+'Dimension)'
         elif maps[g_m] == OP_MAP and (accs[g_m] == OP_INC or accs[g_m] == OP_RW):
           line = line +indent + '& opDat'+str(g_m+1)+'Local'
@@ -493,7 +496,7 @@ def op2_gen_cuda(master, date, consts, kernels):
       for g_m in range(0,ninds):
         if accs[invinds[g_m]] == OP_INC:
           for m in range (0,int(idxs[g_m])):
-            DO('i2','0', 'opDatDimensions%opDatinddims'+str(invinds[g_m]+1+m)+'Dimension')
+            DO('i2','0', 'opDatDimensions%opDat'+str(invinds[g_m]+1+m)+'Dimension')
             code('sharedFloat8(opDat'+str(invinds[g_m]+1)+'nBytes + (i2 + opDat'+str(invinds[g_m]+1+m)+'Map * opDatDimensions%opDat'+str(invinds[g_m]+1+m)+'Dimension)) = &')
             code('& sharedFloat8(opDat'+str(invinds[g_m]+1)+'nBytes + (i2 + opDat'+str(invinds[g_m]+1+m)+'Map * opDatDimensions%opDat'+str(invinds[g_m]+1+m)+'Dimension)) + opDat'+str(invinds[g_m]+1+m)+'Local(i2)')
             ENDDO()
@@ -525,7 +528,7 @@ def op2_gen_cuda(master, date, consts, kernels):
       code('')
       comm('kernel call')
       code('threadID = mod(threadIdx%x - 1,warpSize)')
-      code('sharedOffsetDouble8 = sharedMemoryOffset * ((threadIdx%x - 1) / warpSize) / 8')
+      code('sharedOffsetFloat8 = sharedMemoryOffset * ((threadIdx%x - 1) / warpSize) / 8')
       code('')
       DO_STEP('i1','threadIdx%x - 1 + (blockIdx%x - 1) * blockDim%x','setSize','blockDim%x * gridDim%x')
       code('localOffset = i1 - threadID')
@@ -550,7 +553,7 @@ def op2_gen_cuda(master, date, consts, kernels):
           line = line + indent +'& opDat'+str(g_m+1)+'Local'
         else:
           if int(dims[g_m]) == 1:
-            line = line + indent +'& opDat'+str(g_m+1)+'Device'+name+'(i1 + 1), &'
+            line = line + indent +'& opDat'+str(g_m+1)+'Device'+name+'(i1 + 1)'
           else:
             line = line + indent +'& opDat'+str(g_m+1)+'Local'
 
@@ -600,7 +603,7 @@ def op2_gen_cuda(master, date, consts, kernels):
 
     code('')
     code('IMPLICIT NONE')
-    code('character(len='+str(len(name)+1)+'), INTENT(IN) :: userSubroutine')
+    code('character(len='+str(len(name))+'), INTENT(IN) :: userSubroutine')
     code('TYPE ( op_set ) , INTENT(IN) :: set')
     code('')
 

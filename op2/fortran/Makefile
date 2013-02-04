@@ -89,7 +89,7 @@ ifeq ($(OP2_COMPILER),intel)
   MPICC	  	  = mpicc $(OPT)
   MPIF90	  = mpif90 $(OPT)
   NO_MPI_MACRO    = -D NO_MPI
-  ALLTARGETS      = f_reference f_reference_hdf5 f_openmp f_mpi_seq_hydra f_openmp_hdf5 f_mpi_openmp_hydra
+  ALLTARGETS      = f_reference f_cuda#f_reference_hdf5 f_openmp f_mpi_seq_hydra f_openmp_hdf5 f_mpi_openmp_hydra
 else
 print:
 	@echo "unrecognised value for OP2_COMPILER"

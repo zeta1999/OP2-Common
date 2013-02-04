@@ -1886,28 +1886,37 @@ END DO
 
 END SUBROUTINE
 
-attributes (global) SUBROUTINE update_kernel(opDatDimensions,opDatCardinalities,reductionArrayDevice5,setSize,warpSize,&
-&sharedMemoryOffset)
-IMPLICIT NONE
-TYPE ( update_opDatDimensions ) , DEVICE :: opDatDimensions
-TYPE ( update_opDatCardinalities ) , DEVICE :: opDatCardinalities
-REAL(kind=8), DIMENSION(:), DEVICE :: reductionArrayDevice5
-INTEGER(kind=4), VALUE :: setSize
-INTEGER(kind=4), VALUE :: warpSize
-INTEGER(kind=4), VALUE :: sharedMemoryOffset
-REAL(kind=8), DIMENSION(0:3) :: opDat1Local
-REAL(kind=8), DIMENSION(0:3) :: opDat2Local
-REAL(kind=8), DIMENSION(0:3) :: opDat3Local
-REAL(kind=8) :: opDat5Local
-REAL(kind=8), DIMENSION(0:*), SHARED :: sharedFloat8
-INTEGER(kind=4) :: sharedOffsetFloat8
-INTEGER(kind=4) :: i1
-INTEGER(kind=4) :: i2
-INTEGER(kind=4) :: numberOfActiveThreads
-INTEGER(kind=4) :: localOffset
-INTEGER(kind=4) :: threadID
-threadID = mod(threadIdx%x - 1,warpSize)
-sharedOffsetFloat8 = sharedMemoryOffset * ((threadIdx%x - 1) / warpSize) / 8
+attributes (global) SUBROUTINE update_kernel( &
+ & opDatDimensions, &
+ & opDatCardinalities, &
+ & reductionArrayDevice5, &
+ & setSize, &
+ & warpSize,&
+ & sharedMemoryOffset)
+
+ IMPLICIT NONE
+
+  TYPE ( update_opDatDimensions ) , DEVICE :: opDatDimensions
+  TYPE ( update_opDatCardinalities ) , DEVICE :: opDatCardinalities
+  REAL(kind=8), DIMENSION(:), DEVICE :: reductionArrayDevice5
+  REAL(kind=8), DIMENSION(0:3) :: opDat1Local
+  REAL(kind=8), DIMENSION(0:3) :: opDat2Local
+  REAL(kind=8), DIMENSION(0:3) :: opDat3Local
+
+  INTEGER(kind=4), VALUE :: setSize
+  INTEGER(kind=4), VALUE :: warpSize
+  INTEGER(kind=4), VALUE :: sharedMemoryOffset
+
+  REAL(kind=8) :: opDat5Local
+  REAL(kind=8), DIMENSION(0:*), SHARED :: sharedFloat8
+  INTEGER(kind=4) :: sharedOffsetFloat8
+  INTEGER(kind=4) :: i1
+  INTEGER(kind=4) :: i2
+  INTEGER(kind=4) :: numberOfActiveThreads
+  INTEGER(kind=4) :: localOffset
+  INTEGER(kind=4) :: threadID
+  threadID = mod(threadIdx%x - 1,warpSize)
+  sharedOffsetFloat8 = sharedMemoryOffset * ((threadIdx%x - 1) / warpSize) / 8
 
   DO i1 = threadIdx%x - 1 + (blockIdx%x - 1) * blockDim%x, setSize - 1, blockDim%x * gridDim%x
     localOffset = i1 - threadID
