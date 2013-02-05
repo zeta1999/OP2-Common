@@ -14,7 +14,7 @@ MODULE OP2_CONSTANTS
 
     contains
 
-subroutine initialise_flow_field ( ncell, q, res )
+attributes(host) subroutine initialise_flow_field ( ncell, q, res )
 
   implicit none
 
