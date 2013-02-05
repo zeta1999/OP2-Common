@@ -1,6 +1,5 @@
 IC = pgcc
-FC = pgfortran
-
+FC = pgfortran -g
 
 PREPROCESSOR = -fpp
 
@@ -31,8 +30,8 @@ cfunctions: debug.c
 	$(IC) $(OPT) $(DEBUG) -c debug.c
 
 airfoil_cuda: airfoil_op.F90 save_soln_kernel.CUF adt_calc_kernel.CUF input.F90 \
-	res_calc_kernel.CUF bres_calc_kernel.CUF update_kernel.CUF constants.F90 input.F90 cudaConfigurationParams.F95
-	$(FC) $(OPT) $(OPENMP) $(FMODS) -c cudaConfigurationParams.F95 constants.F90 input.F90 \
+	res_calc_kernel.CUF bres_calc_kernel.CUF update_kernel.CUF constants.CUF input.F90 cudaConfigurationParams.F95
+	$(FC) $(OPT) $(OPENMP) $(FMODS) -c cudaConfigurationParams.F95 constants.CUF input.F90 \
 	save_soln_kernel.CUF update_kernel.CUF bres_calc_kernel.CUF \
 	res_calc_kernel.CUF adt_calc_kernel.CUF airfoil_op.F90
 	$(FC) $(OPT) $(OPENMP) $(FLINK) debug.o cudaConfigurationParams.o constants.o input.o \

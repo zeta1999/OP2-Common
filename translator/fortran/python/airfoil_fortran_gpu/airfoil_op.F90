@@ -5,6 +5,7 @@
 program AIRFOIL
   use OP2_CONSTANTS
   use IO
+  USE OP2_FORTRAN_RT_SUPPORT
   use OP2_FORTRAN_DECLARATIONS
   use SAVE_SOLN_MODULE
   use ADT_CALC_MODULE
@@ -152,6 +153,7 @@ program AIRFOIL
   call op_timers ( startTime )
 
   ! main time-marching loop
+  !call initOP2Constants(alpha,cfl,eps,gam,gm1,mach,qinf)
 
   do niter = 1, iterationNumber
 
