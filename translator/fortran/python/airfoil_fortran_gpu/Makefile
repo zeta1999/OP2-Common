@@ -5,7 +5,7 @@ FC = pgfortran
 PREPROCESSOR = -fpp
 
 CPPLINK = -lstdc++
-OPT = -g -Mcuda=cuda4.2 -Minform=inform -O0 -fast -Mcuda=cc20
+OPT = -g -Mcuda=4.2 -Minform=inform -O0 -Mcuda=cc20 #-fast
 OP2 = $(OP2_INSTALL_PATH)
 
 F_OP2_MOD = $(OP2)/fortran/mod/$(OP2_COMPILER)

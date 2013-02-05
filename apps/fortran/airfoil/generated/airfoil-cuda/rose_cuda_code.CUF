@@ -516,13 +516,15 @@ attributes (host) SUBROUTINE adt_calc_host( userSubroutine, set, &
   INTEGER(kind=4) :: i2
   INTEGER(kind=4), SAVE :: calledTimes
   INTEGER(kind=4) :: returnDumpOpDat
+
+  INTEGER(kind=4) :: istat
+  REAL(kind=4) :: accumulatorHostTime
+  REAL(kind=4) :: accumulatorKernelTime
   TYPE ( cudaEvent )  :: startTimeHost
   TYPE ( cudaEvent )  :: endTimeHost
   TYPE ( cudaEvent )  :: startTimeKernel
   TYPE ( cudaEvent )  :: endTimeKernel
-  INTEGER(kind=4) :: istat
-  REAL(kind=4) :: accumulatorHostTime
-  REAL(kind=4) :: accumulatorKernelTime
+
 
   numberOfOpDats = 6
 
