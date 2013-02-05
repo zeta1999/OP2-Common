@@ -68,11 +68,11 @@ ifeq ($(OP2_COMPILER),pgi)
   CC	   	  = nvcc
   FC		  = pgfortran
   FFLAGS          = -module $(F_INC_MOD) $(DEBUG_FLAGS)
-  NVCC            = nvcc
+  NVCC            = nvcc -G
   PGCC            = pgcc
   PGCFLAGS        = -Xcompiler="-std=c99 -Wall -fPIC -pedantic -pipe" $(DEBUG_FLAGS)
   PGFC            = pgfortran
-  PGFFLAGS        = -module $(F_INC_MOD) -Mcuda=cuda4.0 -Minform=inform -DOP2_WITH_CUDAFOR $(DEBUG_FLAGS) -Mvect –Mvect=cachesize:12288
+  PGFFLAGS        = -module $(F_INC_MOD) -Mcuda=cuda4.2 -Minform=inform -DOP2_WITH_CUDAFOR $(DEBUG_FLAGS) -g #-Mvect –Mvect=cachesize:12288
   CFLAGS          = $(PGCFLAGS)
   MPICC	  	  = $(CC) -I$(MPI_INC) -L$(MPI_LIB)
   MPIF90	  = $(FC) -I$(MPI_INC) -L$(MPI_LIB)

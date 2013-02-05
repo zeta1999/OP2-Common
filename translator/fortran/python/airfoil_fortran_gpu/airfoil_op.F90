@@ -3,13 +3,15 @@
 !
 
 program AIRFOIL
+  use OP2_CONSTANTS
+  use IO
   use OP2_FORTRAN_DECLARATIONS
   use SAVE_SOLN_MODULE
   use ADT_CALC_MODULE
   use RES_CALC_MODULE
   use BRES_CALC_MODULE
   use UPDATE_MODULE
-  use OP2_CONSTANTS
+
   !use AIRFOIL_SEQ
   use, intrinsic :: ISO_C_BINDING
 
@@ -138,13 +140,13 @@ program AIRFOIL
   call op_decl_dat ( cells, 4, res, p_res, resName )
 
   print *, "Declaring OP2 constants"
-  call op_decl_const (gam, 1, gamName)
-  call op_decl_const (gm1, 1, gm1Name)
-  call op_decl_const (cfl, 1, cflName)
-  call op_decl_const (eps, 1, epsName)
-  call op_decl_const (mach, 1, machName)
-  call op_decl_const (alpha, 1, alphaName)
-  call op_decl_const (qinf, 4, qinfName)
+  !call op_decl_const (gam, 1, gamName)
+  !call op_decl_const (gm1, 1, gm1Name)
+  !call op_decl_const (cfl, 1, cflName)
+  !call op_decl_const (eps, 1, epsName)
+  !call op_decl_const (mach, 1, machName)
+  !call op_decl_const (alpha, 1, alphaName)
+  !call op_decl_const (qinf, 4, qinfName)
 
   ! start timer
   call op_timers ( startTime )
