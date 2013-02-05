@@ -1,6 +1,6 @@
 module IO
-  use cudafor
-  use OP2_CONSTANTS
+  USE CUDAFOR
+  USE OP2_CONSTANTS
 
   contains
 ! read set sizes from input
