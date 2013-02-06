@@ -123,10 +123,10 @@ attributes (global) SUBROUTINE op_cuda_res_calc( &
   INTEGER(kind=4) :: opDat5RoundUp
   INTEGER(kind=4) :: opDat7RoundUp
 
-  INTEGER(kind=4) :: opDat1SharedIndirectionSize
-  INTEGER(kind=4) :: opDat3SharedIndirectionSize
-  INTEGER(kind=4) :: opDat5SharedIndirectionSize
-  INTEGER(kind=4) :: opDat7SharedIndirectionSize
+  INTEGER(kind=4), SHARED :: opDat1SharedIndirectionSize
+  INTEGER(kind=4), SHARED :: opDat3SharedIndirectionSize
+  INTEGER(kind=4), SHARED :: opDat5SharedIndirectionSize
+  INTEGER(kind=4), SHARED :: opDat7SharedIndirectionSize
 
   REAL(kind=8), DIMENSION(0:*), SHARED :: sharedFloat8
   INTEGER(kind=4) :: sharedOffsetFloat8
@@ -142,6 +142,7 @@ attributes (global) SUBROUTINE op_cuda_res_calc( &
   INTEGER(kind=4) :: n1
   INTEGER(kind=4) :: i1
   INTEGER(kind=4) :: i2
+
   IF (threadIdx%x - 1 .EQ. 0) THEN
     blockID = pblkMap(blockIdx%x - 1 + blockOffset)
     numberOfActiveThreads = pnelems(blockID)
@@ -163,9 +164,14 @@ attributes (global) SUBROUTINE op_cuda_res_calc( &
   opDat7RoundUp = opDat7SharedIndirectionSize * opDatDimensions%opDat7Dimension
 
   opDat1nBytes = 0
-  opDat3nBytes = opDat1nBytes * 8 / 8 + opDat3RoundUp * 8 / 8
-  opDat5nBytes = opDat3nBytes * 8 / 8 + opDat5RoundUp * 8 / 8
-  opDat7nBytes = opDat5nBytes * 8 / 8 + opDat7RoundUp * 8 / 8
+  opDat3nBytes = opDat1nBytes * 8 / 8 + opDat1RoundUp * 8 / 8
+  opDat5nBytes = opDat3nBytes * 8 / 8 + opDat3RoundUp * 8 / 8
+  opDat7nBytes = opDat5nBytes * 8 / 8 + opDat5RoundUp * 8 / 8
+
+  !code gen update needed
+  !opDat3nBytes = opDat1nBytes * 8 / 8 + opDat3RoundUp * 8 / 8
+  !opDat5nBytes = opDat3nBytes * 8 / 8 + opDat5RoundUp * 8 / 8
+  !opDat7nBytes = opDat5nBytes * 8 / 8 + opDat7RoundUp * 8 / 8
 
   i1 = threadIdx%x - 1
   n1 = opDat1SharedIndirectionSize * opDatDimensions%opDat1Dimension
@@ -411,11 +417,7 @@ attributes (host) SUBROUTINE res_calc_host( userSubroutine, set, &
   & numberOfIndirectOpDats, &
   & indirectionDescriptorArray)
 
-  opDatCardinalities%opDat1Cardinality = opArg1%dim * getSetSizeFromOpArg(opArg1)
-  opDatCardinalities%opDat3Cardinality = opArg3%dim * getSetSizeFromOpArg(opArg3)
-  opDatCardinalities%opDat5Cardinality = opArg5%dim * getSetSizeFromOpArg(opArg5)
-  opDatCardinalities%opDat7Cardinality = opArg7%dim * getSetSizeFromOpArg(opArg7)
-
+  !shifted the possition of this block
   opDatDimensions%opDat1Dimension = opArg1%dim
   opDatDimensions%opDat2Dimension = opArg2%dim
   opDatDimensions%opDat3Dimension = opArg3%dim
@@ -424,6 +426,11 @@ attributes (host) SUBROUTINE res_calc_host( userSubroutine, set, &
   opDatDimensions%opDat6Dimension = opArg6%dim
   opDatDimensions%opDat7Dimension = opArg7%dim
   opDatDimensions%opDat8Dimension = opArg8%dim
+
+  opDatCardinalities%opDat1Cardinality = opArg1%dim * getSetSizeFromOpArg(opArg1)
+  opDatCardinalities%opDat3Cardinality = opArg3%dim * getSetSizeFromOpArg(opArg3)
+  opDatCardinalities%opDat5Cardinality = opArg5%dim * getSetSizeFromOpArg(opArg5)
+  opDatCardinalities%opDat7Cardinality = opArg7%dim * getSetSizeFromOpArg(opArg7)
 
   opDat1Cardinality = opArg1%dim * getSetSizeFromOpArg(opArg1)
   opDat3Cardinality = opArg3%dim * getSetSizeFromOpArg(opArg3)

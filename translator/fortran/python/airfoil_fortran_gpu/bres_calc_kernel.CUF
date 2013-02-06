@@ -117,10 +117,11 @@ attributes (global) SUBROUTINE op_cuda_bres_calc( &
   INTEGER(kind=4) :: opDat5RoundUp
   INTEGER(kind=4) :: opDat6RoundUp
 
-  INTEGER(kind=4) :: opDat1SharedIndirectionSize
-  INTEGER(kind=4) :: opDat3SharedIndirectionSize
-  INTEGER(kind=4) :: opDat4SharedIndirectionSize
-  INTEGER(kind=4) :: opDat5SharedIndirectionSize
+  !code gne requires , SHARED
+  INTEGER(kind=4), SHARED :: opDat1SharedIndirectionSize
+  INTEGER(kind=4), SHARED :: opDat3SharedIndirectionSize
+  INTEGER(kind=4), SHARED :: opDat4SharedIndirectionSize
+  INTEGER(kind=4), SHARED :: opDat5SharedIndirectionSize
 
   REAL(kind=8), DIMENSION(0:*), SHARED :: sharedFloat8
   INTEGER(kind=4) :: sharedOffsetFloat8
@@ -157,9 +158,14 @@ attributes (global) SUBROUTINE op_cuda_bres_calc( &
   opDat5RoundUp = opDat5SharedIndirectionSize * opDatDimensions%opDat5Dimension
 
   opDat1nBytes = 0
-  opDat3nBytes = opDat1nBytes * 8 / 8 + opDat3RoundUp * 8 / 8
-  opDat4nBytes = opDat3nBytes * 8 / 8 + opDat4RoundUp * 8 / 8
-  opDat5nBytes = opDat4nBytes * 8 / 8 + opDat5RoundUp * 8 / 8
+  opDat3nBytes = opDat1nBytes * 8 / 8 + opDat1RoundUp * 8 / 8
+  opDat4nBytes = opDat3nBytes * 8 / 8 + opDat3RoundUp * 8 / 8
+  opDat5nBytes = opDat4nBytes * 8 / 8 + opDat4RoundUp * 8 / 8
+
+  !code gen update this block
+  !opDat3nBytes = opDat1nBytes * 8 / 8 + opDat3RoundUp * 8 / 8
+  !opDat4nBytes = opDat3nBytes * 8 / 8 + opDat4RoundUp * 8 / 8
+  !opDat5nBytes = opDat4nBytes * 8 / 8 + opDat5RoundUp * 8 / 8
 
   i1 = threadIdx%x - 1
   n1 = opDat1SharedIndirectionSize * opDatDimensions%opDat1Dimension

@@ -43,7 +43,8 @@ include "update.inc"
 
 attributes (device) SUBROUTINE ReductionFloat8(reductionResult,inputValue,reductionOperation)
     REAL(kind=8), DIMENSION(:), DEVICE :: reductionResult
-    REAL(kind=8), DIMENSION(1:1) :: inputValue
+    !REAL(kind=8), DIMENSION(1:1) :: inputValue
+    REAL(kind=8) :: inputValue
     INTEGER(kind=4), VALUE :: reductionOperation
     REAL(kind=8), DIMENSION(0:*), SHARED :: sharedFloat8
     INTEGER(kind=4) :: i1
@@ -51,7 +52,8 @@ attributes (device) SUBROUTINE ReductionFloat8(reductionResult,inputValue,reduct
     threadID = threadIdx%x - 1
     i1 = ishft(blockDim%x,-1)
     CALL syncthreads()
-    sharedFloat8(threadID) = inputValue(1)
+    !sharedFloat8(threadID) = inputValue(1)
+    sharedFloat8(threadID) = inputValue
 
     DO WHILE (i1 > 0)
       CALL syncthreads()

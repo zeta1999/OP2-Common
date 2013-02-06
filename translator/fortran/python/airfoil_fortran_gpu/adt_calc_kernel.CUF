@@ -104,27 +104,25 @@ attributes (global) SUBROUTINE op_cuda_adt_calc( &
   INTEGER(kind=4) :: opDat5RoundUp
   INTEGER(kind=4) :: opDat6RoundUp
 
-  INTEGER(kind=4) :: opDat1SharedIndirectionSize
+  !SHARED :: needs to be added to CodeGen
+  INTEGER(kind=4), SHARED :: opDat1SharedIndirectionSize
 
   REAL(kind=8), DIMENSION(0:*), SHARED :: sharedFloat8
   INTEGER(kind=4) :: sharedOffsetFloat8
-  INTEGER(kind=4), SHARED :: numOfColours
-  INTEGER(kind=4), SHARED :: numberOfActiveThreadsCeiling
+  !INTEGER(kind=4), SHARED :: numOfColours
+  !INTEGER(kind=4), SHARED :: numberOfActiveThreadsCeiling
   INTEGER(kind=4), SHARED :: sharedMemoryOffset
   INTEGER(kind=4), SHARED :: blockID
   INTEGER(kind=4), SHARED :: numberOfActiveThreads
   INTEGER(kind=4) :: moduloResult
   INTEGER(kind=4) :: nbytes
-  INTEGER(kind=4) :: colour1
-  INTEGER(kind=4) :: colour2
-  INTEGER(kind=4) :: n1
+
   INTEGER(kind=4) :: i1
-  INTEGER(kind=4) :: i2
+  INTEGER(kind=4) :: n1
+
   IF (threadIdx%x - 1 .EQ. 0) THEN
     blockID = pblkMap(blockIdx%x - 1 + blockOffset)
     numberOfActiveThreads = pnelems(blockID)
-    numberOfActiveThreadsCeiling = blockDim%x * (1 + (numberOfActiveThreads - 1) / blockDim%x)
-    numOfColours = pnthrcol(blockID)
     sharedMemoryOffset = poffset(blockID)
 
     opDat1SharedIndirectionSize = pindSizes(0 + blockID * 1)
@@ -150,9 +148,7 @@ attributes (global) SUBROUTINE op_cuda_adt_calc( &
   CALL syncthreads()
   i1 = threadIdx%x - 1
 
-  DO WHILE (i1 < numberOfActiveThreadsCeiling )
-    colour2 = -1
-    IF (i1 < numberOfActiveThreads) THEN
+  DO WHILE (i1 < numberOfActiveThreads)
 
 ! kernel call
       CALL adt_calc( &
@@ -163,22 +159,10 @@ attributes (global) SUBROUTINE op_cuda_adt_calc( &
       & opDat5Deviceadt_calc((i1 + sharedMemoryOffset) * opDatDimensions%opDat5Dimension + 1:(i1 + sharedMemoryOffset) * opDatDimensions%opDat5Dimension + opDatDimensions%opDat5Dimension + 1 + 1), &
       & opDat6Deviceadt_calc((i1 + sharedMemoryOffset) * opDatDimensions%opDat6Dimension + 1) &
       & )
-      colour2 = pthrcol(i1 + sharedMemoryOffset)
-    END IF
-
-
-    DO colour1 = 0, numOfColours - 1, 1
-      IF (colour2 .EQ. colour1) THEN
-      END IF
-      CALL syncthreads()
-    END DO
     i1 = i1 + blockDim%x
   END DO
 
   CALL syncthreads()
-  i1 = threadIdx%x - 1
-
-
 
 END SUBROUTINE
 

@@ -53,7 +53,8 @@ attributes (global) SUBROUTINE op_cuda_save_soln( &
   INTEGER(kind=4), VALUE :: setSize
   INTEGER(kind=4), VALUE :: warpSize
   INTEGER(kind=4), VALUE :: sharedMemoryOffset
-  REAL(kind=8), DIMENSION(0:*), SHARED :: sharedFloat8
+  !REAL(kind=8), DIMENSION(0:*), SHARED :: sharedFloat8
+  DOUBLE PRECISION, DIMENSION(0:*), SHARED :: sharedFloat8
   INTEGER(kind=4) :: sharedOffsetFloat8
   INTEGER(kind=4) :: numberOfActiveThreads
   INTEGER(kind=4) :: localOffset

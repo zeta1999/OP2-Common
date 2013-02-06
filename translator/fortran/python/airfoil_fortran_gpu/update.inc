@@ -4,7 +4,8 @@ attributes (device) SUBROUTINE update(qold,q,res,adt,rms)
   REAL(kind=8), DIMENSION(*) :: q
   REAL(kind=8), DIMENSION(*) :: res
   REAL(kind=8), DIMENSION(*) :: adt
-  REAL(kind=8), DIMENSION(1) :: rms
+  !REAL(kind=8), DIMENSION(*) :: rms
+  REAL(kind=8) :: rms
   REAL(kind=8) :: del,adti
   INTEGER(kind=4) :: i
   adti = 1.0 / adt(1)
@@ -13,6 +14,7 @@ attributes (device) SUBROUTINE update(qold,q,res,adt,rms)
     del = adti * res(i)
     q(i) = qold(i) - del
     res(i) = 0.0
-    rms(1) = rms(1) + del * del
+    !rms(1) = rms(1) + del * del
+    rms = rms + del * del
   END DO
 END SUBROUTINE
