@@ -62,6 +62,8 @@ attributes (global) SUBROUTINE op_cuda_save_soln( &
   INTEGER(kind=4) :: i1
   INTEGER(kind=4) :: i2
 
+
+
 ! kernel call
   threadID = mod(threadIdx%x - 1,warpSize)
   sharedOffsetFloat8 = sharedMemoryOffset * ((threadIdx%x - 1) / warpSize) / 8

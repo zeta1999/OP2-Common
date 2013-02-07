@@ -143,6 +143,7 @@ attributes (global) SUBROUTINE op_cuda_res_calc( &
   INTEGER(kind=4) :: i1
   INTEGER(kind=4) :: i2
 
+
   IF (threadIdx%x - 1 .EQ. 0) THEN
     blockID = pblkMap(blockIdx%x - 1 + blockOffset)
     numberOfActiveThreads = pnelems(blockID)
@@ -372,6 +373,8 @@ attributes (host) SUBROUTINE res_calc_host( userSubroutine, set, &
   TYPE ( cudaEvent )  :: startTimeKernel
   TYPE ( cudaEvent )  :: endTimeKernel
 
+  REAL(kind=8) :: temp_gam
+
   numberOfOpDats = 8
 
   opArgArray(1) = opArg1
@@ -416,6 +419,7 @@ attributes (host) SUBROUTINE res_calc_host( userSubroutine, set, &
   & opArgArray, &
   & numberOfIndirectOpDats, &
   & indirectionDescriptorArray)
+
 
   !shifted the possition of this block
   opDatDimensions%opDat1Dimension = opArg1%dim
