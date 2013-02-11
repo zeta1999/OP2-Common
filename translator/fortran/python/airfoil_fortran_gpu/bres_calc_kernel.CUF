@@ -172,7 +172,7 @@ attributes (global) SUBROUTINE op_cuda_bres_calc( &
   DO WHILE (i1 < n1 )
     moduloResult = mod(i1,opDatDimensions%opDat1Dimension)
     sharedFloat8(opDat1nBytes + i1) = opDat1Devicebres_calc( &
-    & moduloResult + ind_maps1_bres_calc(0 + (pindOffs(1 + blockID * 4) + i1 / &
+    & moduloResult + ind_maps1_bres_calc(0 + (pindOffs(0 + blockID * 4) + i1 / &
     & opDatDimensions%opDat1Dimension) + 1) * &
     & opDatDimensions%opDat1Dimension + 1)
     i1 = i1 + blockDim%x
@@ -194,7 +194,7 @@ attributes (global) SUBROUTINE op_cuda_bres_calc( &
   DO WHILE (i1 < n1 )
     moduloResult = mod(i1,opDatDimensions%opDat4Dimension)
     sharedFloat8(opDat4nBytes + i1) = opDat4Devicebres_calc( &
-    & moduloResult + ind_maps4_bres_calc(0 + (pindOffs(1 + blockID * 4) + i1 / &
+    & moduloResult + ind_maps4_bres_calc(0 + (pindOffs(2 + blockID * 4) + i1 / &
     & opDatDimensions%opDat4Dimension) + 1) * &
     & opDatDimensions%opDat4Dimension + 1)
     i1 = i1 + blockDim%x

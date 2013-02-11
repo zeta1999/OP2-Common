@@ -136,10 +136,10 @@ attributes (global) SUBROUTINE op_cuda_adt_calc( &
 
   i1 = threadIdx%x - 1
   n1 = opDat1SharedIndirectionSize * opDatDimensions%opDat1Dimension
-  DO WHILE (i1 < n1 )
+  DO WHILE (i1 < n1 ) !check the ... (1 + blockID * 4) -- > (0 + blockID * 1)
     moduloResult = mod(i1,opDatDimensions%opDat1Dimension)
     sharedFloat8(opDat1nBytes + i1) = opDat1Deviceadt_calc( &
-    & moduloResult + ind_maps1_adt_calc(0 + (pindOffs(1 + blockID * 4) + i1 / &
+    & moduloResult + ind_maps1_adt_calc(0 + (pindOffs(0 + blockID * 1) + i1 / &
     & opDatDimensions%opDat1Dimension) + 1) * &
     & opDatDimensions%opDat1Dimension + 1)
     i1 = i1 + blockDim%x

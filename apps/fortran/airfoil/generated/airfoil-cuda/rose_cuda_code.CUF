@@ -396,6 +396,7 @@ attributes (global) SUBROUTINE adt_calc_kernel( &
 
   INTEGER(kind=4) :: i1
   INTEGER(kind=4) :: n1
+
   IF (threadIdx%x - 1 .EQ. 0) THEN
     blockID = pblkMap(blockIdx%x - 1 + blockOffset)
     numberOfActiveThreads = pnelems(blockID)

@@ -174,12 +174,13 @@ attributes (global) SUBROUTINE op_cuda_res_calc( &
   !opDat5nBytes = opDat3nBytes * 8 / 8 + opDat5RoundUp * 8 / 8
   !opDat7nBytes = opDat5nBytes * 8 / 8 + opDat7RoundUp * 8 / 8
 
+  ! check code gen (pindOffs(0 -- >> should be 0 , 1, 2 here
   i1 = threadIdx%x - 1
   n1 = opDat1SharedIndirectionSize * opDatDimensions%opDat1Dimension
   DO WHILE (i1 < n1 )
     moduloResult = mod(i1,opDatDimensions%opDat1Dimension)
     sharedFloat8(opDat1nBytes + i1) = opDat1Deviceres_calc( &
-    & moduloResult + ind_maps1_res_calc(0 + (pindOffs(1 + blockID * 4) + i1 / &
+    & moduloResult + ind_maps1_res_calc(0 + (pindOffs(0 + blockID * 4) + i1 / &
     & opDatDimensions%opDat1Dimension) + 1) * &
     & opDatDimensions%opDat1Dimension + 1)
     i1 = i1 + blockDim%x
@@ -201,7 +202,7 @@ attributes (global) SUBROUTINE op_cuda_res_calc( &
   DO WHILE (i1 < n1 )
     moduloResult = mod(i1,opDatDimensions%opDat5Dimension)
     sharedFloat8(opDat5nBytes + i1) = opDat5Deviceres_calc( &
-    & moduloResult + ind_maps5_res_calc(0 + (pindOffs(1 + blockID * 4) + i1 / &
+    & moduloResult + ind_maps5_res_calc(0 + (pindOffs(2 + blockID * 4) + i1 / &
     & opDatDimensions%opDat5Dimension) + 1) * &
     & opDatDimensions%opDat5Dimension + 1)
     i1 = i1 + blockDim%x
