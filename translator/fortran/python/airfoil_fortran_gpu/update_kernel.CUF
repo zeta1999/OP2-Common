@@ -7,7 +7,7 @@ USE OP2_FORTRAN_DECLARATIONS
 USE OP2_FORTRAN_RT_SUPPORT
 USE ISO_C_BINDING
 USE CUDAFOR
-USE OP2_CONSTANTS
+!USE OP2_CONSTANTS
 USE CUDACONFIGURATIONPARAMS
 
 
@@ -41,33 +41,31 @@ CONTAINS
 ! user function
 include "update.inc"
 
-attributes (device) SUBROUTINE ReductionFloat8(reductionResult,inputValue,reductionOperation)
+  attributes (device) SUBROUTINE ReductionFloat8(reductionResult,inputValue,reductionOperation)
     REAL(kind=8), DIMENSION(:), DEVICE :: reductionResult
-    !REAL(kind=8), DIMENSION(1:1) :: inputValue
-    REAL(kind=8) :: inputValue
+    REAL(kind=8), DIMENSION(1:1) :: inputValue
     INTEGER(kind=4), VALUE :: reductionOperation
-    REAL(kind=8), DIMENSION(0:*), SHARED :: sharedFloat8
+    REAL(kind=8), DIMENSION(0:*), SHARED :: sharedDouble8
     INTEGER(kind=4) :: i1
     INTEGER(kind=4) :: threadID
     threadID = threadIdx%x - 1
     i1 = ishft(blockDim%x,-1)
     CALL syncthreads()
-    !sharedFloat8(threadID) = inputValue(1)
-    sharedFloat8(threadID) = inputValue
+    sharedDouble8(threadID) = inputValue(1)
 
     DO WHILE (i1 > 0)
       CALL syncthreads()
       IF (threadID < i1) THEN
         SELECT CASE(reductionOperation)
           CASE (0)
-            sharedFloat8(threadID) = sharedFloat8(threadID) + sharedFloat8(threadID + i1)
+            sharedDouble8(threadID) = sharedDouble8(threadID) + sharedDouble8(threadID + i1)
           CASE (1)
-            IF (sharedFloat8(threadID + i1) < sharedFloat8(threadID)) THEN
-              sharedFloat8(threadID) = sharedFloat8(threadID + i1)
+            IF (sharedDouble8(threadID + i1) < sharedDouble8(threadID)) THEN
+              sharedDouble8(threadID) = sharedDouble8(threadID + i1)
             END IF
           CASE (2)
-            IF (sharedFloat8(threadID + i1) > sharedFloat8(threadID)) THEN
-              sharedFloat8(threadID) = sharedFloat8(threadID + i1)
+            IF (sharedDouble8(threadID + i1) > sharedDouble8(threadID)) THEN
+              sharedDouble8(threadID) = sharedDouble8(threadID + i1)
             END IF
         END SELECT
       END IF
@@ -79,14 +77,14 @@ attributes (device) SUBROUTINE ReductionFloat8(reductionResult,inputValue,reduct
     IF (threadID .EQ. 0) THEN
       SELECT CASE(reductionOperation)
         CASE (0)
-          reductionResult(1) = reductionResult(1) + sharedFloat8(0)
+          reductionResult(1) = reductionResult(1) + sharedDouble8(0)
         CASE (1)
-          IF (sharedFloat8(0) < reductionResult(1)) THEN
-            reductionResult(1) = sharedFloat8(0)
+          IF (sharedDouble8(0) < reductionResult(1)) THEN
+            reductionResult(1) = sharedDouble8(0)
           END IF
         CASE (2)
-          IF (sharedFloat8(0) > reductionResult(1)) THEN
-            reductionResult(1) = sharedFloat8(0)
+          IF (sharedDouble8(0) > reductionResult(1)) THEN
+            reductionResult(1) = sharedDouble8(0)
           END IF
       END SELECT
     END IF

@@ -8,6 +8,12 @@ attributes (device) SUBROUTINE adt_calc(x1,x2,x3,x4,q,adt)
   REAL(kind=8) :: adt
   REAL(kind=8) :: dx,dy,ri,u,v,c
 
+  real(8) :: gam, gm1, cfl
+
+  gam = 1.4
+  gm1 = 1.4 - 1.0
+  cfl = 0.9
+
   ri = 1.0 / q(1)
   u = ri * q(2)
   v = ri * q(3)

@@ -222,27 +222,27 @@ MODULE GENERATED_MODULE
     REAL(kind=8), DIMENSION(:), DEVICE :: reductionResult
     REAL(kind=8), DIMENSION(1:1) :: inputValue
     INTEGER(kind=4), VALUE :: reductionOperation
-    REAL(kind=8), DIMENSION(0:*), SHARED :: sharedFloat8
+    REAL(kind=8), DIMENSION(0:*), SHARED :: sharedDouble8
     INTEGER(kind=4) :: i1
     INTEGER(kind=4) :: threadID
     threadID = threadIdx%x - 1
     i1 = ishft(blockDim%x,-1)
     CALL syncthreads()
-    sharedFloat8(threadID) = inputValue(1)
+    sharedDouble8(threadID) = inputValue(1)
 
     DO WHILE (i1 > 0)
       CALL syncthreads()
       IF (threadID < i1) THEN
         SELECT CASE(reductionOperation)
           CASE (0)
-            sharedFloat8(threadID) = sharedFloat8(threadID) + sharedFloat8(threadID + i1)
+            sharedDouble8(threadID) = sharedDouble8(threadID) + sharedDouble8(threadID + i1)
           CASE (1)
-            IF (sharedFloat8(threadID + i1) < sharedFloat8(threadID)) THEN
-              sharedFloat8(threadID) = sharedFloat8(threadID + i1)
+            IF (sharedDouble8(threadID + i1) < sharedDouble8(threadID)) THEN
+              sharedDouble8(threadID) = sharedDouble8(threadID + i1)
             END IF
           CASE (2)
-            IF (sharedFloat8(threadID + i1) > sharedFloat8(threadID)) THEN
-              sharedFloat8(threadID) = sharedFloat8(threadID + i1)
+            IF (sharedDouble8(threadID + i1) > sharedDouble8(threadID)) THEN
+              sharedDouble8(threadID) = sharedDouble8(threadID + i1)
             END IF
         END SELECT
       END IF
@@ -254,14 +254,14 @@ MODULE GENERATED_MODULE
     IF (threadID .EQ. 0) THEN
       SELECT CASE(reductionOperation)
         CASE (0)
-          reductionResult(1) = reductionResult(1) + sharedFloat8(0)
+          reductionResult(1) = reductionResult(1) + sharedDouble8(0)
         CASE (1)
-          IF (sharedFloat8(0) < reductionResult(1)) THEN
-            reductionResult(1) = sharedFloat8(0)
+          IF (sharedDouble8(0) < reductionResult(1)) THEN
+            reductionResult(1) = sharedDouble8(0)
           END IF
         CASE (2)
-          IF (sharedFloat8(0) > reductionResult(1)) THEN
-            reductionResult(1) = sharedFloat8(0)
+          IF (sharedDouble8(0) > reductionResult(1)) THEN
+            reductionResult(1) = sharedDouble8(0)
           END IF
       END SELECT
     END IF
@@ -308,7 +308,7 @@ attributes (host) SUBROUTINE initOP2Constants(alpha,cfl,eps,gam,gm1,mach,qinf)
   REAL(kind=8) :: gm1
   REAL(kind=8) :: mach
   REAL(kind=8), DIMENSION(4) :: qinf
-  INTEGER(kind=4) :: i1
+  !INTEGER(kind=4) :: i1
   alpha_OP2_CONSTANT = alpha
   cfl_OP2_CONSTANT = cfl
   eps_OP2_CONSTANT = eps
@@ -386,7 +386,7 @@ attributes (global) SUBROUTINE adt_calc_kernel( &
 
   INTEGER(kind=4), SHARED :: opDat1SharedIndirectionSize
 
-  REAL(kind=8), DIMENSION(0:*), SHARED :: sharedFloat8
+  REAL(kind=8), DIMENSION(0:*), SHARED :: sharedDouble8
   INTEGER(kind=4) :: sharedOffsetFloat8
   INTEGER(kind=4), SHARED :: sharedMemoryOffset
   INTEGER(kind=4), SHARED :: blockID
@@ -415,7 +415,7 @@ attributes (global) SUBROUTINE adt_calc_kernel( &
   n1 = opDat1SharedIndirectionSize * opDatDimensions%opDat1Dimension
   DO WHILE (i1 < n1)
     moduloResult = mod(i1,opDatDimensions%opDat1Dimension)
-    sharedFloat8(opDat1nBytes + i1) = opDat1Deviceadt_calc_1379395014( &
+    sharedDouble8(opDat1nBytes + i1) = opDat1Deviceadt_calc_1379395014( &
     & moduloResult + ind_maps1_adt_calc_1379395014(0 + (pindOffs(0 + blockID * 1) + i1 / &
     & opDatDimensions%opDat1Dimension) + 1) * &
     & opDatDimensions%opDat1Dimension + 1)
@@ -428,10 +428,10 @@ attributes (global) SUBROUTINE adt_calc_kernel( &
   DO WHILE (i1 < numberOfActiveThreads)
 
     CALL adt_calc_modified( &
-    & sharedFloat8(opDat1nBytes + mappingArray1_adt_calc_1379395014(i1 + sharedMemoryOffset + 1) * opDatDimensions%opDat1Dimension), &
-    & sharedFloat8(opDat1nBytes + mappingArray2_adt_calc_1379395014(i1 + sharedMemoryOffset + 1) * opDatDimensions%opDat2Dimension), &
-    & sharedFloat8(opDat1nBytes + mappingArray3_adt_calc_1379395014(i1 + sharedMemoryOffset + 1) * opDatDimensions%opDat3Dimension), &
-    & sharedFloat8(opDat1nBytes + mappingArray4_adt_calc_1379395014(i1 + sharedMemoryOffset + 1) * opDatDimensions%opDat4Dimension), &
+    & sharedDouble8(opDat1nBytes + mappingArray1_adt_calc_1379395014(i1 + sharedMemoryOffset + 1) * opDatDimensions%opDat1Dimension), &
+    & sharedDouble8(opDat1nBytes + mappingArray2_adt_calc_1379395014(i1 + sharedMemoryOffset + 1) * opDatDimensions%opDat2Dimension), &
+    & sharedDouble8(opDat1nBytes + mappingArray3_adt_calc_1379395014(i1 + sharedMemoryOffset + 1) * opDatDimensions%opDat3Dimension), &
+    & sharedDouble8(opDat1nBytes + mappingArray4_adt_calc_1379395014(i1 + sharedMemoryOffset + 1) * opDatDimensions%opDat4Dimension), &
     & opDat5Deviceadt_calc_1379395014((i1 + sharedMemoryOffset) * opDatDimensions%opDat5Dimension + 1:(i1 + sharedMemoryOffset) * opDatDimensions%opDat5Dimension + opDatDimensions%opDat5Dimension + 1 + 1), &
     & opDat6Deviceadt_calc_1379395014((i1 + sharedMemoryOffset) * opDatDimensions%opDat6Dimension + 1) &
     & )
@@ -775,7 +775,7 @@ attributes (global) SUBROUTINE bres_calc_kernel( &
   INTEGER(kind=4), SHARED :: opDat4SharedIndirectionSize
   INTEGER(kind=4), SHARED :: opDat5SharedIndirectionSize
 
-  REAL(kind=8), DIMENSION(0:*), SHARED :: sharedFloat8
+  REAL(kind=8), DIMENSION(0:*), SHARED :: sharedDouble8
   INTEGER(kind=4) :: sharedOffsetFloat8
   INTEGER(kind=4), SHARED :: numOfColours
   INTEGER(kind=4), SHARED :: numberOfActiveThreadsCeiling
@@ -818,7 +818,7 @@ attributes (global) SUBROUTINE bres_calc_kernel( &
   n1 = opDat1SharedIndirectionSize * opDatDimensions%opDat1Dimension
   DO WHILE (i1 < n1)
     moduloResult = mod(i1,opDatDimensions%opDat1Dimension)
-    sharedFloat8(opDat1nBytes + i1) = opDat1Devicebres_calc_3019043301( &
+    sharedDouble8(opDat1nBytes + i1) = opDat1Devicebres_calc_3019043301( &
     & moduloResult + ind_maps1_bres_calc_3019043301(0 + (pindOffs(0 + blockID * 4) + i1 / &
     & opDatDimensions%opDat1Dimension) + 1) * &
     & opDatDimensions%opDat1Dimension + 1)
@@ -829,7 +829,7 @@ attributes (global) SUBROUTINE bres_calc_kernel( &
   n1 = opDat3SharedIndirectionSize * opDatDimensions%opDat3Dimension
   DO WHILE (i1 < n1)
     moduloResult = mod(i1,opDatDimensions%opDat3Dimension)
-    sharedFloat8(opDat3nBytes + i1) = opDat3Devicebres_calc_3019043301( &
+    sharedDouble8(opDat3nBytes + i1) = opDat3Devicebres_calc_3019043301( &
     & moduloResult + ind_maps3_bres_calc_3019043301(0 + (pindOffs(1 + blockID * 4) + i1 / &
     & opDatDimensions%opDat3Dimension) + 1) * &
     & opDatDimensions%opDat3Dimension + 1)
@@ -840,7 +840,7 @@ attributes (global) SUBROUTINE bres_calc_kernel( &
   n1 = opDat4SharedIndirectionSize * opDatDimensions%opDat4Dimension
   DO WHILE (i1 < n1)
     moduloResult = mod(i1,opDatDimensions%opDat4Dimension)
-    sharedFloat8(opDat4nBytes + i1) = opDat4Devicebres_calc_3019043301(&
+    sharedDouble8(opDat4nBytes + i1) = opDat4Devicebres_calc_3019043301(&
     & moduloResult + ind_maps4_bres_calc_3019043301(0 + (pindOffs(2 + blockID * 4) + i1 / &
     & opDatDimensions%opDat4Dimension) + 1) * &
     & opDatDimensions%opDat4Dimension + 1)
@@ -850,7 +850,7 @@ attributes (global) SUBROUTINE bres_calc_kernel( &
   i1 = threadIdx%x - 1
   n1 = opDat5SharedIndirectionSize * opDatDimensions%opDat5Dimension
   DO WHILE (i1 < n1)
-    sharedFloat8(opDat5nBytes + i1) = 0
+    sharedDouble8(opDat5nBytes + i1) = 0
     i1 = i1 + blockDim%x
   END DO
 
@@ -865,10 +865,10 @@ attributes (global) SUBROUTINE bres_calc_kernel( &
       END DO
 
       CALL bres_calc_modified( &
-      & sharedFloat8(opDat1nBytes + mappingArray1_bres_calc_3019043301(i1 + sharedMemoryOffset + 1) * opDatDimensions%opDat1Dimension), &
-      & sharedFloat8(opDat1nBytes + mappingArray2_bres_calc_3019043301(i1 + sharedMemoryOffset + 1) * opDatDimensions%opDat2Dimension), &
-      & sharedFloat8(opDat3nBytes + mappingArray3_bres_calc_3019043301(i1 + sharedMemoryOffset + 1) * opDatDimensions%opDat3Dimension), &
-      & sharedFloat8(opDat4nBytes + mappingArray4_bres_calc_3019043301(i1 + sharedMemoryOffset + 1) * opDatDimensions%opDat4Dimension), &
+      & sharedDouble8(opDat1nBytes + mappingArray1_bres_calc_3019043301(i1 + sharedMemoryOffset + 1) * opDatDimensions%opDat1Dimension), &
+      & sharedDouble8(opDat1nBytes + mappingArray2_bres_calc_3019043301(i1 + sharedMemoryOffset + 1) * opDatDimensions%opDat2Dimension), &
+      & sharedDouble8(opDat3nBytes + mappingArray3_bres_calc_3019043301(i1 + sharedMemoryOffset + 1) * opDatDimensions%opDat3Dimension), &
+      & sharedDouble8(opDat4nBytes + mappingArray4_bres_calc_3019043301(i1 + sharedMemoryOffset + 1) * opDatDimensions%opDat4Dimension), &
       & opDat5Local, &
       & opDat6Devicebres_calc_3019043301((i1 + sharedMemoryOffset) * opDatDimensions%opDat6Dimension + 1) &
       & )
@@ -880,8 +880,8 @@ attributes (global) SUBROUTINE bres_calc_kernel( &
     DO colour1 = 0, numOfColours - 1, 1
       IF (colour2 .EQ. colour1) THEN
         DO i2 = 0, opDatDimensions%opDat5Dimension - 1, 1
-          sharedFloat8(opDat5nBytes + (i2 + opDat5Map * opDatDimensions%opDat5Dimension)) = &
-          & sharedFloat8(opDat5nBytes + (i2 + opDat5Map * opDatDimensions%opDat5Dimension)) + opDat5Local(i2)
+          sharedDouble8(opDat5nBytes + (i2 + opDat5Map * opDatDimensions%opDat5Dimension)) = &
+          & sharedDouble8(opDat5nBytes + (i2 + opDat5Map * opDatDimensions%opDat5Dimension)) + opDat5Local(i2)
         END DO
 
       END IF
@@ -901,7 +901,7 @@ attributes (global) SUBROUTINE bres_calc_kernel( &
     & opDat5Devicebres_calc_3019043301(moduloResult + ind_maps5_bres_calc_3019043301 &
     & (0 + (pindOffs(3 + blockID * 4) + i1 / opDatDimensions%opDat5Dimension) + 1) * &
     & opDatDimensions%opDat5Dimension + 1) + &
-    & sharedFloat8(opDat5nBytes + i1)
+    & sharedDouble8(opDat5nBytes + i1)
     i1 = i1 + blockDim%x
   END DO
 END SUBROUTINE
@@ -1255,7 +1255,7 @@ attributes (global) SUBROUTINE res_calc_kernel( &
   INTEGER(kind=4), SHARED :: opDat5SharedIndirectionSize
   INTEGER(kind=4), SHARED :: opDat7SharedIndirectionSize
 
-  REAL(kind=8), DIMENSION(0:*), SHARED :: sharedFloat8
+  REAL(kind=8), DIMENSION(0:*), SHARED :: sharedDouble8
   INTEGER(kind=4) :: sharedOffsetFloat8
   INTEGER(kind=4), SHARED :: numOfColours
   INTEGER(kind=4), SHARED :: numberOfActiveThreadsCeiling
@@ -1299,7 +1299,7 @@ attributes (global) SUBROUTINE res_calc_kernel( &
   n1 = opDat1SharedIndirectionSize * opDatDimensions%opDat1Dimension
   DO WHILE (i1 < n1)
     moduloResult = mod(i1,opDatDimensions%opDat1Dimension)
-    sharedFloat8(opDat1nBytes + i1) = opDat1Deviceres_calc_3884922247( &
+    sharedDouble8(opDat1nBytes + i1) = opDat1Deviceres_calc_3884922247( &
     & moduloResult + ind_maps1_res_calc_3884922247(0 + (pindOffs(0 + blockID * 4) + i1 / &
     & opDatDimensions%opDat1Dimension) + 1) * &
     & opDatDimensions%opDat1Dimension + 1)
@@ -1310,7 +1310,7 @@ attributes (global) SUBROUTINE res_calc_kernel( &
   n1 = opDat3SharedIndirectionSize * opDatDimensions%opDat3Dimension
   DO WHILE (i1 < n1)
     moduloResult = mod(i1,opDatDimensions%opDat3Dimension)
-    sharedFloat8(opDat3nBytes + i1) = opDat3Deviceres_calc_3884922247( &
+    sharedDouble8(opDat3nBytes + i1) = opDat3Deviceres_calc_3884922247( &
     & moduloResult + ind_maps3_res_calc_3884922247(0 + (pindOffs(1 + blockID * 4) + i1 / &
     & opDatDimensions%opDat3Dimension) + 1) * &
     & opDatDimensions%opDat3Dimension + 1)
@@ -1321,7 +1321,7 @@ attributes (global) SUBROUTINE res_calc_kernel( &
   n1 = opDat5SharedIndirectionSize * opDatDimensions%opDat5Dimension
   DO WHILE (i1 < n1)
     moduloResult = mod(i1,opDatDimensions%opDat5Dimension)
-    sharedFloat8(opDat5nBytes + i1) = opDat5Deviceres_calc_3884922247( &
+    sharedDouble8(opDat5nBytes + i1) = opDat5Deviceres_calc_3884922247( &
     & moduloResult + ind_maps5_res_calc_3884922247(0 + (pindOffs(2 + blockID * 4) + i1 / &
     & opDatDimensions%opDat5Dimension) + 1) * &
     & opDatDimensions%opDat5Dimension + 1)
@@ -1331,7 +1331,7 @@ attributes (global) SUBROUTINE res_calc_kernel( &
   i1 = threadIdx%x - 1
   n1 = opDat7SharedIndirectionSize * opDatDimensions%opDat7Dimension
   DO WHILE (i1 < n1)
-    sharedFloat8(opDat7nBytes + i1) = 0
+    sharedDouble8(opDat7nBytes + i1) = 0
     i1 = i1 + blockDim%x
   END DO
 
@@ -1350,12 +1350,12 @@ attributes (global) SUBROUTINE res_calc_kernel( &
       END DO
 
       CALL res_calc_modified( &
-      & sharedFloat8(opDat1nBytes + mappingArray1_res_calc_3884922247(i1 + sharedMemoryOffset + 1) * opDatDimensions%opDat1Dimension), &
-      & sharedFloat8(opDat1nBytes + mappingArray2_res_calc_3884922247(i1 + sharedMemoryOffset + 1) * opDatDimensions%opDat2Dimension), &
-      & sharedFloat8(opDat3nBytes + mappingArray3_res_calc_3884922247(i1 + sharedMemoryOffset + 1) * opDatDimensions%opDat3Dimension), &
-      & sharedFloat8(opDat3nBytes + mappingArray4_res_calc_3884922247(i1 + sharedMemoryOffset + 1) * opDatDimensions%opDat4Dimension), &
-      & sharedFloat8(opDat5nBytes + mappingArray5_res_calc_3884922247(i1 + sharedMemoryOffset + 1) * opDatDimensions%opDat5Dimension), &
-      & sharedFloat8(opDat5nBytes + mappingArray6_res_calc_3884922247(i1 + sharedMemoryOffset + 1) * opDatDimensions%opDat6Dimension), &
+      & sharedDouble8(opDat1nBytes + mappingArray1_res_calc_3884922247(i1 + sharedMemoryOffset + 1) * opDatDimensions%opDat1Dimension), &
+      & sharedDouble8(opDat1nBytes + mappingArray2_res_calc_3884922247(i1 + sharedMemoryOffset + 1) * opDatDimensions%opDat2Dimension), &
+      & sharedDouble8(opDat3nBytes + mappingArray3_res_calc_3884922247(i1 + sharedMemoryOffset + 1) * opDatDimensions%opDat3Dimension), &
+      & sharedDouble8(opDat3nBytes + mappingArray4_res_calc_3884922247(i1 + sharedMemoryOffset + 1) * opDatDimensions%opDat4Dimension), &
+      & sharedDouble8(opDat5nBytes + mappingArray5_res_calc_3884922247(i1 + sharedMemoryOffset + 1) * opDatDimensions%opDat5Dimension), &
+      & sharedDouble8(opDat5nBytes + mappingArray6_res_calc_3884922247(i1 + sharedMemoryOffset + 1) * opDatDimensions%opDat6Dimension), &
       & opDat7Local, &
       & opDat8Local &
       & )
@@ -1368,13 +1368,13 @@ attributes (global) SUBROUTINE res_calc_kernel( &
     DO colour1 = 0, numOfColours - 1, 1
       IF (colour2 .EQ. colour1) THEN
         DO i2 = 0, opDatDimensions%opDat7Dimension - 1, 1
-          sharedFloat8(opDat7nBytes + (i2 + opDat7Map * opDatDimensions%opDat7Dimension)) = &
-          & sharedFloat8(opDat7nBytes + (i2 + opDat7Map * opDatDimensions%opDat7Dimension)) + opDat7Local(i2)
+          sharedDouble8(opDat7nBytes + (i2 + opDat7Map * opDatDimensions%opDat7Dimension)) = &
+          & sharedDouble8(opDat7nBytes + (i2 + opDat7Map * opDatDimensions%opDat7Dimension)) + opDat7Local(i2)
         END DO
 
         DO i2 = 0, opDatDimensions%opDat8Dimension - 1, 1
-          sharedFloat8(opDat7nBytes + (i2 + opDat8Map * opDatDimensions%opDat8Dimension)) = &
-          & sharedFloat8(opDat7nBytes + (i2 + opDat8Map * opDatDimensions%opDat8Dimension)) + opDat8Local(i2)
+          sharedDouble8(opDat7nBytes + (i2 + opDat8Map * opDatDimensions%opDat8Dimension)) = &
+          & sharedDouble8(opDat7nBytes + (i2 + opDat8Map * opDatDimensions%opDat8Dimension)) + opDat8Local(i2)
         END DO
 
       END IF
@@ -1394,7 +1394,7 @@ attributes (global) SUBROUTINE res_calc_kernel( &
     & opDat7Deviceres_calc_3884922247(moduloResult + ind_maps7_res_calc_3884922247 &
     & (0 + (pindOffs(3 + blockID * 4) + i1 / opDatDimensions%opDat7Dimension) + 1) * &
     & opDatDimensions%opDat7Dimension + 1) + &
-    & sharedFloat8(opDat7nBytes + i1)
+    & sharedDouble8(opDat7nBytes + i1)
     i1 = i1 + blockDim%x
   END DO
 END SUBROUTINE
@@ -1731,7 +1731,6 @@ attributes (global) SUBROUTINE s2882256832( &
   DO i1 = threadIdx%x - 1 + (blockIdx%x - 1) * blockDim%x, setSize - 1, blockDim%x * gridDim%x
     localOffset = i1 - threadID
     numberOfActiveThreads = min(warpSize,setSize - localOffset)
-
     DO i2 = 0, opDatDimensions%opDat2Dimension - 1, 1
       sharedDouble8(sharedOffsetDouble8 + (threadID + i2 * numberOfActiveThreads)) = &
       & opDat2Devicesave_soln_qdim_2320554256(threadID + (i2 * numberOfActiveThreads + localOffset * &
@@ -1757,7 +1756,10 @@ attributes (global) SUBROUTINE s2882256832( &
 
 END SUBROUTINE
 
-attributes (host) SUBROUTINE save_soln_qdim_host(userSubroutine,set,opArg1,opArg2,opArg3)
+attributes (host) SUBROUTINE save_soln_qdim_host( userSubroutine, set, &
+  & opArg1, &
+  & opArg2, &
+  & opArg3)
 
   IMPLICIT NONE
   character(len=15), INTENT(IN) :: userSubroutine
@@ -1794,7 +1796,7 @@ attributes (host) SUBROUTINE save_soln_qdim_host(userSubroutine,set,opArg1,opArg
   INTEGER(kind=4) :: istat
   REAL(kind=4) :: accumulatorHostTime
   REAL(kind=4) :: accumulatorKernelTime
-   TYPE ( cudaEvent )  :: startTimeHost
+  TYPE ( cudaEvent )  :: startTimeHost
   TYPE ( cudaEvent )  :: endTimeHost
   TYPE ( cudaEvent )  :: startTimeKernel
   TYPE ( cudaEvent )  :: endTimeKernel
@@ -1910,7 +1912,7 @@ attributes (global) SUBROUTINE update_kernel( &
   INTEGER(kind=4), VALUE :: setSize
   INTEGER(kind=4), VALUE :: warpSize
   INTEGER(kind=4), VALUE :: sharedMemoryOffset
-  REAL(kind=8), DIMENSION(0:*), SHARED :: sharedFloat8
+  REAL(kind=8), DIMENSION(0:*), SHARED :: sharedDouble8
   INTEGER(kind=4) :: sharedOffsetFloat8
   INTEGER(kind=4) :: numberOfActiveThreads
   INTEGER(kind=4) :: localOffset
@@ -1926,23 +1928,23 @@ attributes (global) SUBROUTINE update_kernel( &
     numberOfActiveThreads = min(warpSize,setSize - localOffset)
 
     DO i2 = 0, opDatDimensions%opDat1Dimension - 1, 1
-      sharedFloat8(sharedOffsetFloat8 + (threadID + i2 * numberOfActiveThreads)) = &
+      sharedDouble8(sharedOffsetFloat8 + (threadID + i2 * numberOfActiveThreads)) = &
       & opDat1Deviceupdate_2692987784(threadID + (i2 * numberOfActiveThreads + localOffset * &
       & opDatDimensions%opDat1Dimension) + 1)
     END DO
 
     DO i2 = 0, opDatDimensions%opDat1Dimension - 1, 1
-      opDat1Local(i2) = sharedFloat8(sharedOffsetFloat8 + (i2 + threadID * opDatDimensions%opDat1Dimension))
+      opDat1Local(i2) = sharedDouble8(sharedOffsetFloat8 + (i2 + threadID * opDatDimensions%opDat1Dimension))
     END DO
 
     DO i2 = 0, opDatDimensions%opDat3Dimension - 1, 1
-      sharedFloat8(sharedOffsetFloat8 + (threadID + i2 * numberOfActiveThreads)) = &
+      sharedDouble8(sharedOffsetFloat8 + (threadID + i2 * numberOfActiveThreads)) = &
       & opDat3Deviceupdate_2692987784(threadID + (i2 * numberOfActiveThreads + localOffset * &
       & opDatDimensions%opDat3Dimension) + 1)
     END DO
 
     DO i2 = 0, opDatDimensions%opDat3Dimension - 1, 1
-      opDat3Local(i2) = sharedFloat8(sharedOffsetFloat8 + (i2 + threadID * opDatDimensions%opDat3Dimension))
+      opDat3Local(i2) = sharedDouble8(sharedOffsetFloat8 + (i2 + threadID * opDatDimensions%opDat3Dimension))
     END DO
 
     CALL update_modified( &
@@ -1954,23 +1956,23 @@ attributes (global) SUBROUTINE update_kernel( &
     & )
 
     DO i2 = 0, opDatDimensions%opDat2Dimension - 1, 1
-      sharedFloat8(sharedOffsetFloat8 + (i2 + threadID * opDatDimensions%opDat2Dimension)) = opDat2Local(i2)
+      sharedDouble8(sharedOffsetFloat8 + (i2 + threadID * opDatDimensions%opDat2Dimension)) = opDat2Local(i2)
     END DO
 
     DO i2 = 0, opDatDimensions%opDat2Dimension - 1, 1
       opDat2Deviceupdate_2692987784(threadID + (i2 * numberOfActiveThreads + localOffset * &
       & opDatDimensions%opDat2Dimension) + 1) = &
-      & sharedFloat8(sharedOffsetFloat8 + (threadID + i2 * numberOfActiveThreads))
+      & sharedDouble8(sharedOffsetFloat8 + (threadID + i2 * numberOfActiveThreads))
     END DO
 
     DO i2 = 0, opDatDimensions%opDat3Dimension - 1, 1
-      sharedFloat8(sharedOffsetFloat8 + (i2 + threadID * opDatDimensions%opDat3Dimension)) = opDat3Local(i2)
+      sharedDouble8(sharedOffsetFloat8 + (i2 + threadID * opDatDimensions%opDat3Dimension)) = opDat3Local(i2)
     END DO
 
     DO i2 = 0, opDatDimensions%opDat3Dimension - 1, 1
       opDat3Deviceupdate_2692987784(threadID + (i2 * numberOfActiveThreads + localOffset * &
       & opDatDimensions%opDat3Dimension) + 1) = &
-      & sharedFloat8(sharedOffsetFloat8 + (threadID + i2 * numberOfActiveThreads))
+      & sharedDouble8(sharedOffsetFloat8 + (threadID + i2 * numberOfActiveThreads))
     END DO
 
   END DO

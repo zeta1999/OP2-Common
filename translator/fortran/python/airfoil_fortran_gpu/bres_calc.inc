@@ -8,6 +8,27 @@ attributes (device) SUBROUTINE bres_calc(x1,x2,q1,adt1,res1,bound)
   INTEGER(kind=4), DIMENSION(1) :: bound
   REAL(kind=8) :: dx,dy,mu,ri,p1,vol1,p2,vol2,f
 
+  real(8) :: gam, gm1, cfl, eps, mach, alpha, air_const
+  REAL(kind=8), DIMENSION(4) :: qinf
+  real(8) :: p, r, u, e
+
+  gam = 1.4
+  gm1 = gam - 1.0
+  cfl = 0.9
+  eps = 0.05
+
+  mach  = 0.4
+  alpha = 3.0 * atan(1.0) / 45.0
+  p     = 1.0
+  r     = 1.0
+  u     = sqrt ( gam * p / r ) * mach
+  e     = p / ( r * gm1 ) + 0.5 * u * u
+
+  qinf(1) = r
+  qinf(2) = r * u
+  qinf(3) = 0.0
+  qinf(4) = r * e
+
   dx = x1(1) - x2(1)
   dy = x1(2) - x2(2)
   ri = 1.0 / q1(1)

@@ -196,7 +196,7 @@ program AIRFOIL
 
       ! update flow field
 
-!      rms = 0.0
+      rms = 0.0
 
       call update_host("update",cells, &
                        & op_arg_dat(p_qold,-1,OP_ID,OP_READ), &

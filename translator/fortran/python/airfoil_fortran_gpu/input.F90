@@ -1,6 +1,6 @@
 module IO
   USE CUDAFOR
-  USE OP2_CONSTANTS
+  !USE OP2_CONSTANTS
 
   contains
 ! read set sizes from input
@@ -107,6 +107,8 @@ attributes(host) subroutine initialise_flow_field ( ncell, q, res )
 
   implicit none
 
+  real(8) :: gam, gm1, cfl, eps, mach, alpha, air_const, qinf(4)
+
   ! formal parameters
   integer(4) :: ncell
 
@@ -121,7 +123,7 @@ attributes(host) subroutine initialise_flow_field ( ncell, q, res )
   print *, 'initialising constants'
 
   gam = 1.4
-  gm1 = 1.4 - 1.0 !gam - 1.0
+  gm1 = 1.4 - 1.0
   cfl = 0.9
   eps = 0.05
 

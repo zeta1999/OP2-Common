@@ -10,6 +10,13 @@ attributes (device) SUBROUTINE res_calc(x1,x2,q1,q2,adt1,adt2,res1,res2)
   REAL(kind=8), DIMENSION(4) :: res2
   REAL(kind=8) :: dx,dy,mu,ri,p1,vol1,p2,vol2,f
 
+  real(8) :: gam, gm1, eps
+
+
+  gam = 1.4
+  gm1 = 1.4 - 1.0
+  eps = 0.05
+
 
 
   dx = x1(1) - x2(1)
