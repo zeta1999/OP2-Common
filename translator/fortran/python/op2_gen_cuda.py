@@ -352,7 +352,7 @@ def op2_gen_cuda(master, date, consts, kernels):
 
       code('')
       for g_m in range(0,ninds):
-        code('INTEGER(kind=4) :: opDat'+str(invinds[g_m]+1)+'SharedIndirectionSize')
+        code('INTEGER(kind=4), SHARED :: opDat'+str(invinds[g_m]+1)+'SharedIndirectionSize')
       code('')
       code('REAL(kind=8), DIMENSION(0:*), SHARED :: sharedFloat8')
       code('INTEGER(kind=4) :: sharedOffsetFloat8')
@@ -389,7 +389,7 @@ def op2_gen_cuda(master, date, consts, kernels):
         if g_m == 0:
           code('opDat'+str(invinds[g_m]+1)+'nBytes = 0')
         else:
-          code('opDat'+str(invinds[g_m]+1)+'nBytes = opDat'+str(invinds[g_m-1]+1)+'nBytes * 8 / 8 + opDat'+str(invinds[g_m]+1)+'RoundUp * 8 / 8')
+          code('opDat'+str(invinds[g_m]+1)+'nBytes = opDat'+str(invinds[g_m-1]+1)+'nBytes * 8 / 8 + opDat'+str(invinds[g_m-1]+1)+'RoundUp * 8 / 8')
       code('')
 
       for g_m in range(0,ninds):
@@ -399,7 +399,7 @@ def op2_gen_cuda(master, date, consts, kernels):
           DOWHILE('i1 < n1')
           code('moduloResult = mod(i1,opDatDimensions%opDat'+str(invinds[g_m]+1)+'Dimension)')
           code('sharedFloat8(opDat'+str(invinds[g_m]+1)+'nBytes + i1) = opDat'+str(invinds[g_m]+1)+'Device'+name+'( &')
-          code('& moduloResult + ind_maps'+str(invinds[g_m]+1)+'_'+name+'(0 + (pindOffs(1 + blockID * 4) + i1 / &')
+          code('& moduloResult + ind_maps'+str(invinds[g_m]+1)+'_'+name+'(0 + (pindOffs('+str(g_m)+' + blockID * 4) + i1 / &')
           code('& opDatDimensions%opDat'+str(invinds[g_m]+1)+'Dimension) + 1) * &')
           code('& opDatDimensions%opDat'+str(invinds[g_m]+1)+'Dimension + 1)')
           code('i1 = i1 + blockDim%x')
@@ -875,7 +875,7 @@ def op2_gen_cuda(master, date, consts, kernels):
       code('blocksPerGrid = ncolblk(i2 + 1)')
       code('dynamicSharedMemorySize = actualPlan_'+name+'%nshared')
       code('')
-      code('CALL '+name+'_kernel <<<blocksPerGrid,threadsPerBlock,dynamicSharedMemorySize>>> &')
+      code('CALL op_cuda_'+name+' <<<blocksPerGrid,threadsPerBlock,dynamicSharedMemorySize>>> &')
       code('& (opDatDimensions,opDatCardinalities,pindSizes,pindOffs,pblkMap, &')
       code('& poffset,pnelems,pnthrcol,pthrcol,blockOffset)')
       code('')
@@ -895,7 +895,7 @@ def op2_gen_cuda(master, date, consts, kernels):
       code('loopTimeHost'+name+' = loopTimeHost'+name+' + accumulatorHostTime')
       code('')
     else: #direct loop host stub call
-      code('CALL '+name+'_kernel <<<blocksPerGrid,threadsPerBlock,dynamicSharedMemorySize>>> &')
+      code('CALL op_cuda_'+name+' <<<blocksPerGrid,threadsPerBlock,dynamicSharedMemorySize>>> &')
       code('& (opDatDimensions,opDatCardinalities, &')
       for g_m in range(0,nargs):
         if maps[g_m] == OP_GBL:

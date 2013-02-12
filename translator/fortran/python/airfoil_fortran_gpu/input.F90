@@ -1,5 +1,5 @@
 module IO
-  USE CUDAFOR
+  !USE CUDAFOR
   !USE OP2_CONSTANTS
 
   contains
@@ -103,9 +103,7 @@ subroutine getSetInfo ( nnode, ncell, nedge, nbedge, cell, edge, ecell, bedge, b
 
 end subroutine getSetInfo
 
-attributes(host) subroutine initialise_flow_field ( ncell, q, res )
-
-  implicit none
+subroutine initialise_flow_field ( ncell, q, res )
 
   real(8) :: gam, gm1, cfl, eps, mach, alpha, air_const, qinf(4)
 
