@@ -1,7 +1,7 @@
 module IO
-  !USE CUDAFOR
-  !USE OP2_CONSTANTS
-
+  USE CUDAFOR
+  USE OP2_CONSTANTS
+  IMPLICIT  NONE
   contains
 ! read set sizes from input
 subroutine getSetSizes ( nnode, ncell, nedge, nbedge )
@@ -105,8 +105,6 @@ end subroutine getSetInfo
 
 subroutine initialise_flow_field ( ncell, q, res )
 
-  real(8) :: gam, gm1, cfl, eps, mach, alpha, air_const, qinf(4)
-
   ! formal parameters
   integer(4) :: ncell
 
@@ -118,14 +116,10 @@ subroutine initialise_flow_field ( ncell, q, res )
 
   integer(4) :: n, m
 
-  print *, 'initialising constants'
-
   gam = 1.4
   gm1 = 1.4 - 1.0
   cfl = 0.9
   eps = 0.05
-
-  print *, 'initialising constants 2'
 
   mach  = 0.4
   alpha = 3.0 * atan(1.0) / 45.0
@@ -134,14 +128,10 @@ subroutine initialise_flow_field ( ncell, q, res )
   u     = sqrt ( gam * p / r ) * mach
   e     = p / ( r * gm1 ) + 0.5 * u * u
 
-  print *, 'initialising constants 3'
-
   qinf(1) = r
   qinf(2) = r * u
   qinf(3) = 0.0
   qinf(4) = r * e
-
-  print *, 'initialising flow field, ncell = ', ncell
 
   ! -4 in the subscript is done to adapt C++ code to fortran one
   do n = 1, ncell
@@ -151,6 +141,6 @@ subroutine initialise_flow_field ( ncell, q, res )
     end do
   end do
 
-end subroutine initialise_flow_field
+  end subroutine initialise_flow_field
 
 end module

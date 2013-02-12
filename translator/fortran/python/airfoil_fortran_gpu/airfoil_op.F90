@@ -105,6 +105,7 @@ program AIRFOIL
   call getSetInfo ( nnode, ncell, nedge, nbedge, cell, edge, ecell, bedge, becell, bound, x, q, qold, res, adt )
 
   print *, "Initialising constants"
+
   call initialise_flow_field ( ncell, q, res )
 
   do iter = 1, 4*ncell
