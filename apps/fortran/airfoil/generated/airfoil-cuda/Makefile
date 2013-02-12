@@ -6,7 +6,7 @@ EXEC = airfoil_cuda
 F_OP2_MOD = $(OP2)/fortran/mod/pgi
 F_OP2_LIB = $(OP2)/fortran/lib
 
-OPT = -Mcuda=cuda4.0 -Minform=inform -O2 -fast -Mcuda=cc20
+OPT = -Mcuda=cuda4.2 -Minform=inform -O2 -fast -Mcuda=cc20
 FLINK = -L$(F_OP2_LIB)
 FMODS = -I$(F_OP2_MOD)
 
