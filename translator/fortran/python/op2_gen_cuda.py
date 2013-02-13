@@ -399,7 +399,7 @@ def op2_gen_cuda(master, date, consts, kernels):
           DOWHILE('i1 < n1')
           code('moduloResult = mod(i1,opDatDimensions%opDat'+str(invinds[g_m]+1)+'Dimension)')
           code('sharedFloat8(opDat'+str(invinds[g_m]+1)+'nBytes + i1) = opDat'+str(invinds[g_m]+1)+'Device'+name+'( &')
-          code('& moduloResult + ind_maps'+str(invinds[g_m]+1)+'_'+name+'(0 + (pindOffs('+str(g_m)+' + blockID * 4) + i1 / &')
+          code('& moduloResult + ind_maps'+str(invinds[g_m]+1)+'_'+name+'(0 + (pindOffs('+str(g_m)+' + blockID * '+str(ninds)+') + i1 / &')
           code('& opDatDimensions%opDat'+str(invinds[g_m]+1)+'Dimension) + 1) * &')
           code('& opDatDimensions%opDat'+str(invinds[g_m]+1)+'Dimension + 1)')
           code('i1 = i1 + blockDim%x')

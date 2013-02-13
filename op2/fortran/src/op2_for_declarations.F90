@@ -772,6 +772,23 @@ contains
 
   end subroutine op_decl_const_real_8
 
+  subroutine op_decl_const ( dat, constdim, opname )
+
+    real(8) :: dat
+    integer(kind=c_int), value :: constdim
+    character(kind=c_char,len=*), optional :: opname
+
+    ! local dummies to prevent compiler warning
+    real(8) :: dat_dummy
+    integer(kind=c_int) :: constdim_dummy
+    character(kind=c_char) :: opname_dummy
+
+    dat_dummy = dat
+    constdim_dummy = constdim
+    opname_dummy = opname
+
+  end subroutine op_decl_const
+
   subroutine op_decl_const_scalar_integer_4 ( dat, constdim, opname )
 
     integer(4), intent(in), target :: dat
