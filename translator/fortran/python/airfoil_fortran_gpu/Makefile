@@ -4,7 +4,7 @@ FC = pgfortran
 PREPROCESSOR = -fpp
 
 CPPLINK = -lstdc++
-OPT = -Mcuda=4.2 -Minform=inform -O3 Mcuda=cc20 -fast
+OPT = -Mcuda=4.2 -Minform=inform -O3 -fast
 OP2 = $(OP2_INSTALL_PATH)
 
 F_OP2_MOD = $(OP2)/fortran/mod/$(OP2_COMPILER)
@@ -31,11 +31,11 @@ cfunctions: debug.c
 
 airfoil_seq: airfoil_seqfun.F90 airfoil.F90 constants.F95 input.F90
 	$(FC) $(OPT) $(FMODS) -c constants.F95 input.F90 airfoil_seqfun.F90 airfoil.F90
-	$(FC) $(OPT) $(FLINK) constants.o airfoil.o input.o airfoil_seqfun.o -o airfoil_seq -lop2_for_seq
+	$(FC) $(OPT) $(FLINK) constants.o airfoil.o input.o airfoil_seqfun.o -o airfoil_seq -lop2_for_reference
 
 airfoil_cuda: airfoil_op.F90 save_soln_kernel.CUF adt_calc_kernel.CUF input.F90 \
 	res_calc_kernel.CUF bres_calc_kernel.CUF update_kernel.CUF constants.F95 input.F90 cudaConfigurationParams.F95
-	$(FC) $(OPT) $(OPENMP) $(FMODS) $(FLINK) cudaConfigurationParams.F95 constants.F95 input.F90 \
+	$(FC) $(OPT) $(OPENMP) $(FMODS) $(FLINK) -DOP2_WITH_CUDAFOR cudaConfigurationParams.F95 constants.F95 input.F90 \
 	save_soln_kernel.CUF update_kernel.CUF bres_calc_kernel.CUF \
 	res_calc_kernel.CUF adt_calc_kernel.CUF airfoil_op.F90 -o airfoil_cuda -lop2_for_cuda
 
@@ -44,4 +44,4 @@ clean:
 	rm -f *.mod
 	rm -f $(EXEC)
 	rm -f *~
-	rm -f airfoil_cuda
+	rm -f airfoil_seq airfoil_cuda

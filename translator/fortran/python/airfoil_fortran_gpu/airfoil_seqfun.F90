@@ -5,7 +5,7 @@ use OP2_CONSTANTS
  contains
 
 ! save old solution
-attributes (device) subroutine save_soln ( q, qold )
+subroutine save_soln ( q, qold )
 
   implicit none
 
@@ -25,7 +25,7 @@ attributes (device) subroutine save_soln ( q, qold )
 end subroutine save_soln
 
 
-attributes (device) subroutine adt_calc ( x1, x2, x3, x4, q, adt )
+subroutine adt_calc ( x1, x2, x3, x4, q, adt )
 
   implicit none
 
@@ -67,7 +67,7 @@ attributes (device) subroutine adt_calc ( x1, x2, x3, x4, q, adt )
 
 end subroutine adt_calc
 
-attributes (device) subroutine res_calc ( x1, x2, q1, q2, adt1, adt2, res1, res2 )
+subroutine res_calc ( x1, x2, q1, q2, adt1, adt2, res1, res2 )
 
   implicit none
 
@@ -118,7 +118,7 @@ attributes (device) subroutine res_calc ( x1, x2, q1, q2, adt1, adt2, res1, res2
 end subroutine res_calc
 
 
-attributes (device) subroutine bres_calc ( x1, x2, q1, adt1, res1, bound )
+subroutine bres_calc ( x1, x2, q1, adt1, res1, bound )
 
   implicit none
 
@@ -176,7 +176,7 @@ attributes (device) subroutine bres_calc ( x1, x2, q1, adt1, res1, bound )
 end subroutine bres_calc
 
 
-attributes (device) subroutine update ( qold, q, res, adt, rms )
+subroutine update ( qold, q, res, adt, rms )
 
   implicit none
 

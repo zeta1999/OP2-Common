@@ -1,7 +1,6 @@
 program AIRFOIL
   use OP2_FORTRAN_DECLARATIONS
   use OP2_Fortran_Reference
-  use OP2_Fortran_RT_Support
   use AIRFOIL_SEQ
   use OP2_CONSTANTS
   use IO
@@ -64,13 +63,14 @@ program AIRFOIL
   character(kind=c_char,len=4) :: adtName   = C_CHAR_'adt'//C_NULL_CHAR
   character(kind=c_char,len=4) :: resName   = C_CHAR_'res'//C_NULL_CHAR
 
-  character(kind=c_char,len=4) :: gamName   = C_CHAR_'gam'//C_NULL_CHAR
-  character(kind=c_char,len=4) :: gm1Name   = C_CHAR_'gm1'//C_NULL_CHAR
-  character(kind=c_char,len=4) :: cflName   = C_CHAR_'cfl'//C_NULL_CHAR
-  character(kind=c_char,len=4) :: epsName   = C_CHAR_'eps'//C_NULL_CHAR
-  character(kind=c_char,len=5) :: machName   = C_CHAR_'mach'//C_NULL_CHAR
-  character(kind=c_char,len=6) :: alphaName   = C_CHAR_'alpha'//C_NULL_CHAR
-  character(kind=c_char,len=5) :: qinfName   = C_CHAR_'qinf'//C_NULL_CHAR
+  character(len=4,kind=c_char) :: gamName = 'gam' // C_NULL_CHAR
+  character(len=4,kind=c_char) :: gm1Name = 'gm1' // C_NULL_CHAR
+  character(len=4,kind=c_char) :: cflName = 'cfl' // C_NULL_CHAR
+  character(len=4,kind=c_char) :: epsName = 'eps' // C_NULL_CHAR
+  character(len=5,kind=c_char) :: machName = 'mach' // C_NULL_CHAR
+  character(len=6,kind=c_char) :: alphaName = 'alpha' // C_NULL_CHAR
+  character(len=5,kind=c_char) :: qinfName = 'qinf' // C_NULL_CHAR
+
 
   integer(4) :: debugiter, retDebug
   real(8) :: datad

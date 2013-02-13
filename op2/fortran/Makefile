@@ -77,7 +77,7 @@ ifeq ($(OP2_COMPILER),pgi)
   MPICC	  	  = $(CC) -I$(MPI_INC) -L$(MPI_LIB)
   MPIF90	  = $(FC) -I$(MPI_INC) -L$(MPI_LIB)
   NO_MPI_MACRO    = -DNO_MPI
-  ALLTARGETS      = f_cuda
+  ALLTARGETS      = f_reference f_cuda
 else
 ifeq ($(OP2_COMPILER),intel)
   F_INC_MOD       = $(F_OP2_MOD)/intel
@@ -89,7 +89,7 @@ ifeq ($(OP2_COMPILER),intel)
   MPICC	  	  = mpicc $(OPT)
   MPIF90	  = mpif90 $(OPT)
   NO_MPI_MACRO    = -D NO_MPI
-  ALLTARGETS      = f_reference f_cuda#f_reference_hdf5 f_openmp f_mpi_seq_hydra f_openmp_hdf5 f_mpi_openmp_hydra
+  ALLTARGETS      = f_reference f_reference_hdf5 f_openmp f_mpi_seq_hydra f_openmp_hdf5 f_mpi_openmp_hydra
 else
 print:
 	@echo "unrecognised value for OP2_COMPILER"
@@ -120,6 +120,7 @@ f_reference: $(C_OP2_INC)/op_lib_core.h $(C_OP2_SRC)/core/op_lib_core.c \
 						 $(F_OP2_SRC)/op2_for_reference.F90 \
 						 $(F_OP2_SRC)/op2_C_reference.c \
 						 $(F_OP2_SRC)/op2_hdf5_dummy.c \
+						 $(F_OP2_SRC)/op2_for_rt_support.F90 \
 						 directories
 	$(CC) $(CFLAGS) -I$(C_OP2_INC) -c $(C_OP2_SRC)/core/op_lib_core.c -o $(F_OP2_OBJ)/op_lib_core.o
 	$(CC) $(CFLAGS) -I$(C_OP2_INC) -c $(C_OP2_SRC)/sequential/op_seq.c -o $(F_OP2_OBJ)/op_seq.o
@@ -132,6 +133,7 @@ f_reference: $(C_OP2_INC)/op_lib_core.h $(C_OP2_SRC)/core/op_lib_core.c \
 	$(FC) $(FFLAGS) -c $(F_OP2_SRC)/op2_cpp_reference.F90 -o $(F_OP2_OBJ)/op2_for_reference.o
 	$(CC) $(CFLAGS) $(NO_MPI_MACRO) -I$(C_OP2_INC) -I$(MPI_INC) -c $(F_OP2_SRC)/op2_C_reference.c -o $(F_OP2_OBJ)/op2_C_reference.o
 	$(CC) $(CFLAGS)	-I$(C_OP2_INC) -c $(F_OP2_SRC)/op2_hdf5_dummy.c -o $(F_OP2_OBJ)/op2_hdf5_dummy.o
+	$(FC) $(FFLAGS) -c $(F_OP2_SRC)/op2_for_rt_support.F90 -o $(F_OP2_OBJ)/op2_for_rt_support.o
 	ar -r $(F_OP2_LIB)/libop2_for_reference.a \
 				$(F_OP2_OBJ)/op_lib_core.o \
 				$(F_OP2_OBJ)/op_seq.o \
@@ -141,7 +143,8 @@ f_reference: $(C_OP2_INC)/op_lib_core.h $(C_OP2_SRC)/core/op_lib_core.c \
 				$(F_OP2_OBJ)/op2_for_C_wrappers.o \
 				$(F_OP2_OBJ)/op2_for_declarations.o \
 				$(F_OP2_OBJ)/op2_C_reference.o \
-				$(F_OP2_OBJ)/op2_hdf5_dummy.o
+				$(F_OP2_OBJ)/op2_hdf5_dummy.o \
+				$(F_OP2_OBJ)/op2_for_rt_support.o
 
 
 # Sequential back-end with support of HDF5 routines
