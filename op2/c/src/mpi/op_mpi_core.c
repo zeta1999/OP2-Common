@@ -1566,19 +1566,19 @@ void op_mpi_reduce_double(op_arg* arg, double* data)
 
     if(arg->acc == OP_INC)//global reduction
     {
-      MPI_Allreduce((double *)arg->data, (double *)&result, arg->dim, MPI_DOUBLE,
+      MPI_Allreduce((double *)arg->data, result, arg->dim, MPI_DOUBLE,
           MPI_SUM, OP_MPI_WORLD);
       memcpy(arg->data, &result, sizeof(double)*arg->dim);
     }
     else if(arg->acc == OP_MAX)//global maximum
     {
-      MPI_Allreduce((double *)arg->data, &result, arg->dim, MPI_DOUBLE,
+      MPI_Allreduce((double *)arg->data, result, arg->dim, MPI_DOUBLE,
           MPI_MAX, OP_MPI_WORLD);
       memcpy(arg->data, &result, sizeof(double)*arg->dim);;
     }
     else if(arg->acc == OP_MIN)//global minimum
     {
-      MPI_Allreduce((double *)arg->data, &result, arg->dim, MPI_DOUBLE,
+      MPI_Allreduce((double *)arg->data, result, arg->dim, MPI_DOUBLE,
           MPI_MIN, OP_MPI_WORLD);
       memcpy(arg->data, &result, sizeof(double)*arg->dim);
     }
@@ -1598,19 +1598,19 @@ void op_mpi_reduce_int(op_arg* arg, int* data)
 
     if(arg->acc == OP_INC)//global reduction
     {
-      MPI_Allreduce((int *)arg->data, &result, arg->dim, MPI_INT,
+      MPI_Allreduce((int *)arg->data, result, arg->dim, MPI_INT,
           MPI_SUM, OP_MPI_WORLD);
       memcpy(arg->data, &result, sizeof(int)*arg->dim);
     }
     else if(arg->acc == OP_MAX)//global maximum
     {
-      MPI_Allreduce((int *)arg->data, &result, arg->dim, MPI_INT,
+      MPI_Allreduce((int *)arg->data, result, arg->dim, MPI_INT,
           MPI_MAX, OP_MPI_WORLD);
       memcpy(arg->data, &result, sizeof(int)*arg->dim);;
     }
     else if(arg->acc == OP_MIN)//global minimum
     {
-      MPI_Allreduce((int *)arg->data, &result, arg->dim, MPI_INT,
+      MPI_Allreduce((int *)arg->data, result, arg->dim, MPI_INT,
           MPI_MIN, OP_MPI_WORLD);
       memcpy(arg->data, &result, sizeof(int)*arg->dim);
     }
