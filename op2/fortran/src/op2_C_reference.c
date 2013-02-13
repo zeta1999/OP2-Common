@@ -174,15 +174,10 @@ void op_args_check(op_set set, int nargs, op_arg *args,
       ARG_SET_LIST(N);                                                  \
       (*kernel)(PTR_LIST(N));                                           \
     }                                                                   \
-    printf("Done looping\n");						\
     if ( n_upper == set->core_size ) op_mpi_wait_all (N,args);      \
-    printf("Done wait all\n");                                           \
     op_mpi_set_dirtybit (N, args);                                      \
-    printf("Done dirtibit\n");                                           \
     REDUCE_LIST(N)                                                      \
-    printf("Done reducing\n");                                           \
     FREE_LIST(N)                                                        \
-    printf("Done freeing\n");                                           \
  }
 
 OP_LOOP(1)  OP_LOOP(2)  OP_LOOP(3)  OP_LOOP(4)  OP_LOOP(5)  OP_LOOP(6)  OP_LOOP(7)  OP_LOOP(8)  OP_LOOP(9)  OP_LOOP(10)
