@@ -24,10 +24,14 @@ PTSCOTCH_LIB 	= -L$(PTSCOTCH_INSTALL_PATH)/lib/ -lptscotch \
 FLINK = -L$(F_OP2_LIB)
 FMODS = -I$(F_OP2_MOD)
 
-all: clean cfunctions  airfoil_cuda
+all: clean cfunctions airfoil_seq airfoil_cuda
 
 cfunctions: debug.c
 	$(IC) $(OPT) $(DEBUG) -c debug.c
+
+airfoil_seq: airfoil_seqfun.F90 airfoil.F90 constants.F95 input.F90
+	$(FC) $(OPT) $(FMODS) -c constants.F95 input.F90 airfoil_seqfun.F90 airfoil.F90
+	$(FC) $(OPT) $(FLINK) constants.o airfoil.o input.o airfoil_seqfun.o -o airfoil_seq -lop2_for_seq
 
 airfoil_cuda: airfoil_op.F90 save_soln_kernel.CUF adt_calc_kernel.CUF input.F90 \
 	res_calc_kernel.CUF bres_calc_kernel.CUF update_kernel.CUF constants.F95 input.F90 cudaConfigurationParams.F95
