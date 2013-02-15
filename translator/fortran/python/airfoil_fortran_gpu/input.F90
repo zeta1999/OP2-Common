@@ -141,6 +141,30 @@ subroutine initialise_flow_field ( ncell, q, res )
     end do
   end do
 
-  end subroutine initialise_flow_field
+end subroutine initialise_flow_field
+
+subroutine initialise_constants ( )
+
+  ! local variables
+  real(8) :: p, r, u, e
+
+  gam = 1.4
+  gm1 = 1.4 - 1.0
+  cfl = 0.9
+  eps = 0.05
+
+  mach  = 0.4
+  alpha = 3.0 * atan(1.0) / 45.0
+  p     = 1.0
+  r     = 1.0
+  u     = sqrt ( gam * p / r ) * mach
+  e     = p / ( r * gm1 ) + 0.5 * u * u
+
+  qinf(1) = r
+  qinf(2) = r * u
+  qinf(3) = 0.0
+  qinf(4) = r * e
+
+end subroutine initialise_constants
 
 end module

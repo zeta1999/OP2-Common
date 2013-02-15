@@ -24,7 +24,7 @@ PTSCOTCH_LIB 	= -L$(PTSCOTCH_INSTALL_PATH)/lib/ -lptscotch \
 FLINK = -L$(F_OP2_LIB)
 FMODS = -I$(F_OP2_MOD)
 
-all: clean cfunctions airfoil_seq airfoil_cuda
+all: clean cfunctions airfoil_seq airfoil_cuda airfoil_hdf5_seq airfoil_hdf5_cuda
 
 cfunctions: debug.c
 	$(IC) $(OPT) $(DEBUG) -c debug.c
@@ -33,15 +33,26 @@ airfoil_seq: airfoil_seqfun.F90 airfoil.F90 constants.F95 input.F90
 	$(FC) $(OPT) $(FMODS) -c constants.F95 input.F90 airfoil_seqfun.F90 airfoil.F90
 	$(FC) $(OPT) $(FLINK) constants.o airfoil.o input.o airfoil_seqfun.o -o airfoil_seq -lop2_for_reference
 
+airfoil_hdf5_seq: airfoil_seqfun.F90 airfoil_hdf5.F90 constants.F95 input.F90
+	$(FC) $(OPT) $(FMODS) -c constants.F95 input.F90 airfoil_seqfun.F90 airfoil_hdf5.F90
+	$(FC) $(OPT) $(FLINK) constants.o airfoil_hdf5.o input.o airfoil_seqfun.o -o airfoil_hdf5_seq -lop2_for_reference_hdf5 $(HDF5_LIB) $(MPI_LIB) -lz
+
+
 airfoil_cuda: airfoil_op.F90 save_soln_kernel.CUF adt_calc_kernel.CUF input.F90 \
 	res_calc_kernel.CUF bres_calc_kernel.CUF update_kernel.CUF constants.F95 input.F90 cudaConfigurationParams.F95
 	$(FC) $(OPT) $(OPENMP) $(FMODS) $(FLINK) -DOP2_WITH_CUDAFOR cudaConfigurationParams.F95 constants.F95 input.F90 \
 	save_soln_kernel.CUF update_kernel.CUF bres_calc_kernel.CUF \
 	res_calc_kernel.CUF adt_calc_kernel.CUF airfoil_op.F90 -o airfoil_cuda -lop2_for_cuda
 
+airfoil_hdf5_cuda: airfoil_hdf5_op.F90 save_soln_kernel.CUF adt_calc_kernel.CUF input.F90 \
+        res_calc_kernel.CUF bres_calc_kernel.CUF update_kernel.CUF constants.F95 input.F90 cudaConfigurationParams.F95
+	$(FC) $(OPT) $(OPENMP) $(FMODS) $(FLINK) -DOP2_WITH_CUDAFOR cudaConfigurationParams.F95 constants.F95 input.F90 \
+        save_soln_kernel.CUF update_kernel.CUF bres_calc_kernel.CUF \
+        res_calc_kernel.CUF adt_calc_kernel.CUF airfoil_hdf5_op.F90 -o airfoil_hdf5_cuda -lop2_for_cuda_hydra $(HDF5_LIB) $(MPI_LIB) -lz
+
 clean:
 	rm -f *.o
 	rm -f *.mod
 	rm -f $(EXEC)
 	rm -f *~
-	rm -f airfoil_seq airfoil_cuda
+	rm -f airfoil_seq airfoil_cuda airfoil_hdf5_seq airfoil_hdf5_cuda

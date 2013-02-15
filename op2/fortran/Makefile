@@ -77,7 +77,7 @@ ifeq ($(OP2_COMPILER),pgi)
   MPICC	  	  = $(CC) -I$(MPI_INC) -L$(MPI_LIB)
   MPIF90	  = $(FC) -I$(MPI_INC) -L$(MPI_LIB)
   NO_MPI_MACRO    = -DNO_MPI
-  ALLTARGETS      = f_reference f_cuda
+  ALLTARGETS      = f_reference f_reference_hdf5 f_cuda f_cuda_hydra
 else
 ifeq ($(OP2_COMPILER),intel)
   F_INC_MOD       = $(F_OP2_MOD)/intel
