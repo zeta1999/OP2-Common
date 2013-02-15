@@ -213,5 +213,5 @@ program AIRFOIL
 
   call op_timers ( endTime )
   write (*,*), 'Max total runtime =', endTime - startTime,'seconds'
-
+  call op_exit (  )
 end program AIRFOIL

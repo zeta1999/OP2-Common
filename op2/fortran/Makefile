@@ -65,19 +65,19 @@ ifeq ($(OP2_COMPILER),gnu)
 else
 ifeq ($(OP2_COMPILER),pgi)
   F_INC_MOD       = $(F_OP2_MOD)/pgi
-  CC	   	  = nvcc -O3
-  FC		  = pgfortran -O3
+  CC	   	  = nvcc -O0 -g
+  FC		  = pgfortran -O0 -g
   FFLAGS          = -module $(F_INC_MOD) $(DEBUG_FLAGS)
-  NVCC            = nvcc -O3
-  PGCC            = pgcc -O3
+  NVCC            = nvcc -O0 -g -G
+  PGCC            = pgcc -O0 -g
   PGCFLAGS        = -Xcompiler="-std=c99 -Wall -fPIC -pedantic -pipe" $(DEBUG_FLAGS)
-  PGFC            = pgfortran -O3
+  PGFC            = pgfortran -O0 -g
   PGFFLAGS        = -module  $(F_INC_MOD) -Mcuda=4.2 -Minform=inform -DOP2_WITH_CUDAFOR $(DEBUG_FLAGS) -Mvect –Mvect=cachesize:12288
   CFLAGS          = $(PGCFLAGS)
   MPICC	  	  = $(CC) -I$(MPI_INC) -L$(MPI_LIB)
   MPIF90	  = $(FC) -I$(MPI_INC) -L$(MPI_LIB)
   NO_MPI_MACRO    = -DNO_MPI
-  ALLTARGETS      = f_reference f_reference_hdf5 f_cuda f_cuda_hydra
+  ALLTARGETS      = f_reference f_reference_hdf5 f_cuda f_cuda_hydra f_mpi_cuda_hydra
 else
 ifeq ($(OP2_COMPILER),intel)
   F_INC_MOD       = $(F_OP2_MOD)/intel
