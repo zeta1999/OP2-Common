@@ -11,7 +11,7 @@ integer(4) function getPartitionSize (name, size)
   character(len=*) :: name
   integer(4) :: size
 
-  getPartitionSize = 128
+  getPartitionSize = 256
 
 end function
 
@@ -22,7 +22,7 @@ integer(4) function getBlockSize (name, size)
   character(len=*) :: name
   integer(4) :: size
 
-  getBlockSize = 128
+  getBlockSize = 256
 
 end function
 

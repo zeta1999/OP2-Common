@@ -1,10 +1,10 @@
 IC = pgcc
-FC = pgfortran
+FC = pgfortran #-g
 
 PREPROCESSOR = -fpp
 
 CPPLINK = -lstdc++
-OPT = -Mcuda=4.2 -Minform=inform -O0 -g #-fast
+OPT = -Mcuda=4.2 -Minform=inform -O3 #-Mcuda=cc20 -fast
 OP2 = $(OP2_INSTALL_PATH)
 
 F_OP2_MOD = $(OP2)/fortran/mod/$(OP2_COMPILER)
