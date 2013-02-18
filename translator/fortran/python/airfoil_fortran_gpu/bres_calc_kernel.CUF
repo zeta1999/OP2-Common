@@ -519,9 +519,9 @@ attributes (host) SUBROUTINE bres_calc_host( userSubroutine, set, &
     threadSynchRet = cudaThreadSynchronize()
     blockOffset = blockOffset + blocksPerGrid
 
-    CALL op_mpi_set_dirtybit(numberOfOpDats,opArgArray)
-
   END DO
+
+  CALL op_mpi_set_dirtybit(numberOfOpDats,opArgArray)
 
   istat = cudaEventRecord(endTimeKernel,0)
   istat = cudaEventSynchronize(endTimeKernel)

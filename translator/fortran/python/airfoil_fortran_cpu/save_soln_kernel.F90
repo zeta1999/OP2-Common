@@ -103,7 +103,6 @@ SUBROUTINE save_soln_host( userSubroutine, set, &
 
   returnMPIHaloExchange = op_mpi_halo_exchanges(set%setCPtr,numberOfOpDats,opArgArray)
   IF (returnMPIHaloExchange .EQ. 0) THEN
-    CALL op_mpi_wait_all(numberOfOpDats,opArgArray)
     CALL op_mpi_set_dirtybit(numberOfOpDats,opArgArray)
     RETURN
   END IF

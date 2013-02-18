@@ -283,6 +283,63 @@ def op2_gen_cuda(master, date, consts, kernels):
     code('')
 
 ##########################################################################
+#  Reduction kernel function - if an OP_GBL exists
+##########################################################################
+    if reduct > 0:
+      comm('Reduction cuda kernel'); depth = depth +2;
+      code('attributes (device) SUBROUTINE ReductionFloat8(reductionResult,inputValue,reductionOperation)')
+      code('REAL(kind=8), DIMENSION(:), DEVICE :: reductionResult')
+      code('REAL(kind=8), DIMENSION(1:1) :: inputValue')
+      code('INTEGER(kind=4), VALUE :: reductionOperation')
+      code('REAL(kind=8), DIMENSION(0:*), SHARED :: sharedDouble8')
+      code('INTEGER(kind=4) :: i1')
+      code('INTEGER(kind=4) :: threadID')
+      code('threadID = threadIdx%x - 1')
+      code('i1 = ishft(blockDim%x,-1)')
+      code('CALL syncthreads()')
+      code('sharedDouble8(threadID) = inputValue(1)')
+
+      code('DO WHILE (i1 > 0)')
+      code('  CALL syncthreads()')
+      code('  IF (threadID < i1) THEN')
+      code('    SELECT CASE(reductionOperation)')
+      code('      CASE (0)')
+      code('        sharedDouble8(threadID) = sharedDouble8(threadID) + sharedDouble8(threadID + i1)')
+      code('      CASE (1)')
+      code('        IF (sharedDouble8(threadID + i1) < sharedDouble8(threadID)) THEN')
+      code('          sharedDouble8(threadID) = sharedDouble8(threadID + i1)')
+      code('        END IF')
+      code('      CASE (2)')
+      code('        IF (sharedDouble8(threadID + i1) > sharedDouble8(threadID)) THEN')
+      code('          sharedDouble8(threadID) = sharedDouble8(threadID + i1)')
+      code('        END IF')
+      code('    END SELECT')
+      code('  END IF')
+      code('  i1 = ishft(i1,-1)')
+      code('END DO')
+
+      code('CALL syncthreads()')
+
+      code('IF (threadID .EQ. 0) THEN')
+      code('  SELECT CASE(reductionOperation)')
+      code('    CASE (0)')
+      code('      reductionResult(1) = reductionResult(1) + sharedDouble8(0)')
+      code('    CASE (1)')
+      code('      IF (sharedDouble8(0) < reductionResult(1)) THEN')
+      code('        reductionResult(1) = sharedDouble8(0)')
+      code('      END IF')
+      code('    CASE (2)')
+      code('      IF (sharedDouble8(0) > reductionResult(1)) THEN')
+      code('        reductionResult(1) = sharedDouble8(0)')
+      code('      END IF')
+      code('  END SELECT')
+      code('END IF')
+
+      code('CALL syncthreads()')
+      code('END SUBROUTINE')
+      code('')
+
+##########################################################################
 #  Generate CUDA kernel function
 ##########################################################################
     comm('CUDA kernel function')
@@ -712,7 +769,10 @@ def op2_gen_cuda(master, date, consts, kernels):
       code('opArgArray('+str(g_m+1)+') = opArg'+str(g_m+1))
     code('')
 
-    IF('set%setPtr%size .EQ. 0')
+    code('returnMPIHaloExchange = op_mpi_halo_exchanges(set%setCPtr,numberOfOpDats,opArgArray)')
+    IF('returnMPIHaloExchange .EQ. 0')
+    code('CALL op_mpi_wait_all(numberOfOpDats,opArgArray)')
+    code('CALL op_mpi_set_dirtybit(numberOfOpDats,opArgArray)')
     code('RETURN')
     ENDIF()
     code('')
