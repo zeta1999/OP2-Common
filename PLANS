@@ -1,0 +1,7 @@
+Here are the plans for the sparse tiling optimization to be introduced in OP2.
+
+0) (DEV STATUS) Introducing an Inspector/Executor framework to enable tiling over multiple loops. 
+This implements the algorithm exposed by Carlo in the "global" MAPDES meeting with both Imperial and Oxford people. 
+Ask f.luporini12 at imperial dot ac dot uk for further info about that.
+1) (TODO) Preliminary tests on airfoil. 
+2) (TODO) Automatization in OP2-Common
