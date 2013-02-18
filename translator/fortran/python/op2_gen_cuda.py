@@ -983,11 +983,14 @@ def op2_gen_cuda(master, date, consts, kernels):
         code('')
         code('deallocate( reductionArrayHost'+str(g_m+1)+' )')
         code('deallocate( reductionArrayDevice'+str(g_m+1)+' )')
-        code('calledTimes = calledTimes + 1')
-        code('istat = cudaEventRecord(endTimeHost,0)') #end timer for reduction
-        code('istat = cudaEventSynchronize(endTimeHost)')
-        code('istat = cudaEventElapsedTime(accumulatorHostTime,startTimeHost,endTimeHost)')
-        code('loopTimeHost'+name+' = loopTimeHost'+name+' + accumulatorHostTime')
+        code('CALL op_mpi_reduce_double(opArg'+str(g_m+1)+',opArg'+str(g_m+1)+'%data)')
+        code('')
+
+    code('calledTimes = calledTimes + 1')
+    code('istat = cudaEventRecord(endTimeHost,0)') #end timer for reduction
+    code('istat = cudaEventSynchronize(endTimeHost)')
+    code('istat = cudaEventElapsedTime(accumulatorHostTime,startTimeHost,endTimeHost)')
+    code('loopTimeHost'+name+' = loopTimeHost'+name+' + accumulatorHostTime')
 
     depth = depth - 2
     code('END SUBROUTINE')
