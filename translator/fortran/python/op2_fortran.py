@@ -129,7 +129,7 @@ def op_parse_calls(text):
 def op_decl_const_parse(text):
     consts = []
     num_const = 0
-    search = "op_decl_const"
+    search = "call op_decl_const"
     i = text.find(search)
     while i > -1:
       const_string = text[text.find('(',i)+1: text.find(')',i+13)]
@@ -151,7 +151,7 @@ def op_decl_const_parse(text):
 
       consts.append(temp)
 
-      i=text.find(search, i+13)
+      i=text.find(search, i+18)
       num_const = num_const + 1
 
     return (consts)
@@ -598,7 +598,6 @@ for a in range(1,len(sys.argv)):
   locs = sorted(loc_header+loc_consts+loc_loops)
 
 
-
 #
 # process header, loops and constants
 #
@@ -620,6 +619,13 @@ for a in range(1,len(sys.argv)):
 
       fid.write(line[2:len(line)]);
       loc_old = locs[loc]+25
+      continue
+
+    if locs[loc] in loc_consts:# stripping the op_decl_consts -- as there is no implentation required
+      line = ''
+      fid.write(line);
+      endofcall = text.find('\n', locs[loc])
+      loc_old = endofcall+1
       continue
 
     if locs[loc] in loc_loops:
@@ -647,8 +653,6 @@ for a in range(1,len(sys.argv)):
 
        loc_old = endofcall+1
        continue
-
-
 
   fid.write(text[loc_old:])
   fid.close()
