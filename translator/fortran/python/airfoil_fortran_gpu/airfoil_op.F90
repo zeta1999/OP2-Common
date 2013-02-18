@@ -107,7 +107,7 @@ program AIRFOIL
   call getSetInfo ( nnode, ncell, nedge, nbedge, cell, edge, ecell, bedge, becell, bound, x, q, qold, res, adt )
 
   print *, "Initialising constants"
-  call initialise_flow_field ( ncell, q, res )
+    !call initialise_constants ( )
 
   do iter = 1, 4*ncell
     res(iter) = 0.0
@@ -147,6 +147,8 @@ program AIRFOIL
   !call op_decl_const (mach, 1, machName)
   !call op_decl_const (alpha, 1, alphaName)
   !call op_decl_const (qinf, 4, qinfName)
+
+  call initialise_flow_field ( ncell, q, res )
 
   ! start timer
   call op_timers ( startTime )

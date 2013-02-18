@@ -2,8 +2,6 @@ MODULE OP2_CONSTANTS
 
   use cudafor
 
-  !common / aifoilconsts / gam, gm1, cfl, eps, mach, alpha, air_const, qinf(4)
-
   real(8), constant :: gam
   real(8), constant :: gm1
   real(8), constant :: cfl
