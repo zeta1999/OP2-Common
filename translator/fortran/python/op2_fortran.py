@@ -595,7 +595,7 @@ for a in range(init_ctr,len(sys.argv)):
               'indaccs': indaccs,
               'indtyps': indtyps,
               'invinds': invinds }
-              
+
       if hydra==1:
         search = 'use '+src_file.split('.')[0].upper()+'_KERNELS_'+name
         print search
@@ -610,7 +610,7 @@ for a in range(init_ctr,len(sys.argv)):
             temp['mod_file'] = search
           else:
             print'  ERROR: no module file found!  '
-            
+
       kernels.append(temp)
 
 ########################## output source file  ############################
@@ -682,7 +682,7 @@ for a in range(init_ctr,len(sys.argv)):
          if arguments <> loop_args[curr_loop]['nargs'] - 1:
            line = line + '), &\n'
          else:
-           line = line + ')) \n'
+           line = line + '))\n'
 
        fid.write(line)
 
