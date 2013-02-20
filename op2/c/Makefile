@@ -7,8 +7,20 @@
 # HDF5_INSTALL_PATH
 # MPI_INSTALL_PATH
 #
-# OP2_COMPILER (gnu,intel,etc)
+OP2_COMPILER = gnu
 #
+
+#
+# enable sparse tiling's vtk file generation
+#
+
+#VTK = ON  #{ON, OFF}
+
+#ifeq ($(VTK), ON)
+VTKCOMP = -DVTK_ON
+#else
+#	VTKCOMP = -DVTK_OFF
+#endif
 
 #
 # set paths for various files
@@ -73,6 +85,18 @@ HDF5_LIB = -L$(HDF5_INSTALL_PATH)/lib -lhdf5 -lz
 .PHONY: clean mklib
 
 all: clean core hdf5 seq openmp mpi_seq cuda mpi_cuda
+
+tiling: clean core seq openmp tile
+
+tile: mklib $(SRC)/tiling/inspector.c $(SRC)/tiling/executor.c $(SRC)/tiling/tile.c 		
+	$(CXX) $(CXXFLAGS) $(VTKCOMP) -I$(INC)/tiling -c $(SRC)/tiling/inspector.c -o $(OBJ)/inspector.o  
+	$(CXX) $(CXXFLAGS) $(VTKCOMP) -I$(INC)/tiling -c $(SRC)/tiling/executor.c -o $(OBJ)/executor.o  
+	$(CXX) $(CXXFLAGS) $(VTKCOMP) -I$(INC)/tiling -c $(SRC)/tiling/tile.c -o $(OBJ)/tile.o  
+	$(CXX) $(CXXFLAGS) $(VTKCOMP) -I$(INC)/tiling -c $(SRC)/tiling/invert.c -o $(OBJ)/invert.o  
+	$(CXX) $(CXXFLAGS) $(VTKCOMP) -I$(INC)/tiling -c $(SRC)/tiling/plotmesh.c -o $(OBJ)/plotmesh.o  
+
+	ar -r $(LIB)/libop2_st.a $(OBJ)/invert.o $(OBJ)/inspector.o \
+	$(OBJ)/executor.o $(OBJ)/tile.o $(OBJ)/plotmesh.o
 
 mklib:
 	@mkdir -p $(LIB) $(OBJ)
