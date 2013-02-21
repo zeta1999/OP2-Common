@@ -39,6 +39,10 @@ import datetime
 import op2_gen_openmp
 from op2_gen_openmp import *
 
+#import openmp code generation function
+import op2_gen_cuda
+from op2_gen_cuda import *
+
 
 #
 # declare constants
@@ -124,34 +128,26 @@ def op_parse_calls(text):
 ##########################################################################
 
 def op_decl_const_parse(text):
+    """Parsing for op_decl_const calls"""
+
     consts = []
-    num_const = 0
-    search = "op_decl_const"
-    i = text.find(search)
-    while i > -1:
-      const_string = text[text.find('(',i)+1: text.find(')',i+13)]
-      #print 'Args found at index i : '+const_string
+    for m in re.finditer('call(.+)op_decl_const(.*)\((.*)\)', text):
+        args = m.group(3).split(',')
 
-      #remove comments
-      const_string = comment_remover(const_string)
+        # check for syntax errors
+        if len(args) != 3:
+            print 'Error in op_decl_const : must have three arguments'
+            return
 
-      #check for syntax errors
-      if len(const_string.split(',')) <> 3:
-        print 'Error in op_decl_const : must have three arguments'
-        return
+        consts.append({
+            'loc': m.start(),
+            'dim': args[0].strip(),
+            'type': args[1].strip(),
+            'name': args[2].strip(),
+            'name2': args[2].strip()
+            })
 
-      temp = {'loc': i,
-        'dim':const_string.split(',')[1],
-        'type': const_string.split(',')[2],
-        'name':const_string.split(',')[0],
-        'name2':const_string.split(',')[0]}
-
-      consts.append(temp)
-
-      i=text.find(search, i+13)
-      num_const = num_const + 1
-
-    return (consts)
+    return consts
 #end of op_decl_const_parse
 
 ##########################################################################
@@ -596,7 +592,7 @@ for a in range(init_ctr,len(sys.argv)):
               'indaccs': indaccs,
               'indtyps': indtyps,
               'invinds': invinds }
-              
+
       if hydra==1:
         search = 'use '+src_file.split('.')[0].upper()+'_KERNELS_'+name
         i = text.rfind(search)
@@ -609,7 +605,7 @@ for a in range(init_ctr,len(sys.argv)):
             temp['mod_file'] = search
           else:
             print'  ERROR: no module file found!  '
-            
+
       kernels.append(temp)
 
 ########################## output source file  ############################
@@ -662,6 +658,13 @@ for a in range(init_ctr,len(sys.argv)):
       loc_old = locs[loc]+25
       continue
 
+    if locs[loc] in loc_consts:# stripping the op_decl_consts -- as there is no implentation required
+      line = ''
+      fid.write(line);
+      endofcall = text.find('\n', locs[loc])
+      loc_old = endofcall+1
+      continue
+
     if locs[loc] in loc_loops:
        indent = indent + ' '*len('op_par_loop')
        endofcall = arg_parse(text,locs[loc]+11)
@@ -683,7 +686,7 @@ for a in range(init_ctr,len(sys.argv)):
          if arguments <> loop_args[curr_loop]['nargs'] - 1:
            line = line + '), &\n'
          else:
-           line = line + ')) \n'
+           line = line + '))\n'
 
        fid.write(line)
 
@@ -736,5 +739,5 @@ if npart==0 and nhdf5>0:
 #                      ** END MAIN APPLICATION **
 ##########################################################################
 
-op2_gen_openmp(str(sys.argv[init_ctr]), date, consts, kernels, hydra)
-#op2_gen_cuda(str(sys.argv[1]), date, consts, kernels)
+#op2_gen_openmp(str(sys.argv[init_ctr]), date, consts, kernels, hydra)
+op2_gen_cuda(str(sys.argv[1]), date, consts, kernels)
