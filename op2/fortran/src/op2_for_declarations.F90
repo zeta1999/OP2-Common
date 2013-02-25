@@ -641,7 +641,7 @@ contains
 
     dat_dummy = dat
     constdim_dummy = constdim
-    opname_dummy = opname
+    opname_dummy = opname//C_NULL_CHAR
 
   end subroutine op_decl_const_integer_4
 
@@ -658,7 +658,7 @@ contains
 
     dat_dummy = dat
     constdim_dummy = constdim
-    opname_dummy = opname
+    opname_dummy = opname//C_NULL_CHAR
 
   end subroutine op_decl_const_real_8
 
@@ -675,7 +675,7 @@ contains
 
     dat_dummy = dat
     constdim_dummy = constdim
-    opname_dummy = opname
+    opname_dummy = opname//C_NULL_CHAR
 
   end subroutine op_decl_const_scalar_integer_4
 
@@ -692,7 +692,7 @@ contains
 
     dat_dummy = dat
     constdim_dummy = constdim
-    opname_dummy = opname
+    opname_dummy = opname//C_NULL_CHAR
 
   end subroutine op_decl_const_scalar_real_8
 
@@ -709,7 +709,7 @@ contains
 
     dat_dummy = dat
     constdim_dummy = constdim
-    opname_dummy = opname
+    opname_dummy = opname//C_NULL_CHAR
 
   end subroutine op_decl_const_logical
 
@@ -773,7 +773,7 @@ contains
     integer(kind=c_int) :: dim
     integer(kind=c_int) :: access
     character(kind=c_char,len=*) :: type
-    
+
     ! warning: access is in FORTRAN style, while the C style is required here
     op_arg_gbl_python_r8_scalar = op_arg_gbl_c ( c_loc (dat), dim, C_CHAR_'double'//C_NULL_CHAR, 8, access-1 )
     !op_arg_gbl_python_r8_scalar = op_arg_gbl_c ( dat%dataCPtr, dat%dataPtr%dim, dat%dataPtr%type, access-1 )
@@ -914,7 +914,7 @@ contains
     op_arg_gbl_python_logical_2dim = op_arg_gbl_c ( c_loc (dat), dim, C_CHAR_'bool'//C_NULL_CHAR, 8, access-1 )
     !op_arg_gbl_python_logical_2dim = op_arg_gbl_c ( dat%dataCPtr, dat%dataPtr%dim, dat%dataPtr%type, access-1 )
 
-  end function op_arg_gbl_python_logical_2dim  
+  end function op_arg_gbl_python_logical_2dim
 
   subroutine op_get_dat ( opdat )
 
