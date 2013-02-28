@@ -67,7 +67,7 @@ void op_exchange_halo(op_arg* arg)
   op_dat dat = arg->dat;
 
   //need to exchange both direct and indirect data sets if they are dirty
-  if((arg->acc == OP_READ || arg->acc == OP_RW /* good for debug || arg->acc == OP_INC*/) &&
+  if((arg->opt) && (arg->acc == OP_READ || arg->acc == OP_RW /* good for debug || arg->acc == OP_INC*/) &&
       (dat->dirtybit == 1)) {
 
     //printf("Exchanging Halo of data array %10s\n",dat->name);
@@ -180,7 +180,7 @@ void op_exchange_halo(op_arg* arg)
 
 void op_wait_all(op_arg* arg)
 {
-  if(arg->argtype == OP_ARG_DAT && arg->sent == 1)
+  if(arg->opt && arg->argtype == OP_ARG_DAT && arg->sent == 1)
   {
     op_dat dat = arg->dat;
     MPI_Waitall(((op_mpi_buffer)(dat->mpi_buffer))->s_num_req,
