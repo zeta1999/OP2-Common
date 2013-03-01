@@ -796,10 +796,10 @@ def op2_gen_cuda(master, date, consts, kernels):
       code('')
       code('numberOfIndirectOpDats = '+str(ninds))
       code('')
-      code('partitionSize = getPartitionSize(userSubroutine,set%setPtr%size)')
+      code('partitionSize = getPartitionSize(userSubroutine//C_NULL_CHAR,set%setPtr%size)')
       code('')
       code('planRet_'+name+' = FortranPlanCaller( &')
-      code('& userSubroutine, &')
+      code('& userSubroutine//C_NULL_CHAR, &')
       code('& set%setCPtr, &')
       code('& partitionSize, &')
       code('& numberOfOpDats, &')
@@ -810,7 +810,7 @@ def op2_gen_cuda(master, date, consts, kernels):
     else:
       code('')
       code('blocksPerGrid = 200')
-      code('threadsPerBlock = getBlockSize(userSubroutine,set%setPtr%size)')
+      code('threadsPerBlock = getBlockSize(userSubroutine//C_NULL_CHAR,set%setPtr%size)')
       code('warpSize = OP_WARPSIZE')
       code('dynamicSharedMemorySize = 32')
       code('sharedMemoryOffset = dynamicSharedMemorySize * OP_WARPSIZE')
@@ -933,7 +933,7 @@ def op2_gen_cuda(master, date, consts, kernels):
     if ninds > 0:
       code('blockOffset = 0')
       code('')
-      code('threadsPerBlock = getBlockSize(userSubroutine,set%setPtr%size)')
+      code('threadsPerBlock = getBlockSize(userSubroutine//C_NULL_CHAR,set%setPtr%size)')
 
       DO('i2','0','actualPlan_'+name+'%ncolors')
       code('blocksPerGrid = ncolblk(i2 + 1)')

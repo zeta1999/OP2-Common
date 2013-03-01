@@ -729,7 +729,7 @@ def op2_gen_openmp(master, date, consts, kernels, hydra):
       code('numberOfIndirectOpDats = '+str(ninds))
       code('')
       code('planRet_'+name+' = FortranPlanCaller( &')
-      code('& userSubroutine, &')
+      code('& userSubroutine//C_NULL_CHAR, &')
       code('& set%setCPtr, &')
       code('& partitionSize, &')
       code('& numberOfOpDats, &')
