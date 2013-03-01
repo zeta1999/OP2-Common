@@ -21,23 +21,32 @@ ifeq ($(OP2_COMPILER),gnu)
 
 else
 ifeq ($(OP2_COMPILER),pgi)
-CC = pgcc
-FC = pgfortran -Mcuda=cuda4.2
-MPIF90 = $(FC) -I$(MPI_INC) -L$(MPI_LIB)
-OPT = -DOP_PART_SIZE_1=$(PART_SIZE_ENV) -O2
-OPENMP = -mp
-CPPLINK = -pgcpplibs
+  CC = pgcc
+  FC = pgfortran -Mcuda=cuda4.2
+  MPIF90 = $(FC) -I$(MPI_INC) -L$(MPI_LIB)
+  OPT = -DOP_PART_SIZE_1=$(PART_SIZE_ENV) -O2
+  OPENMP = -mp
+  CPPLINK = -pgcpplibs
 else
 ifeq ($(OP2_COMPILER),intel)
-IC = icc
-FC = ifort
-MPIF90 =  $(FC) -I$(MPI_INC) -L$(MPI_LIB)
-OPENMP = -openmp
-OPT = -DOP_PART_SIZE_1=$(PART_SIZE_ENV) -O2 -xSSE4.2 -vec-report
-CPPLINK = -lstdc++
+  CC = icc
+  FC = ifort
+  MPIF90 =  $(FC) -I$(MPI_INC) -L$(MPI_LIB)
+  OPENMP = -openmp
+  OPT = -DOP_PART_SIZE_1=$(PART_SIZE_ENV) -O2 -xSSE4.2 -vec-report
+  CPPLINK = -lstdc++
+else
+ifeq ($(OP2_COMPILER),cray)
+  CC = CC
+  FC = ftn -em -p $(F_OP2_MOD)
+  MPIF90 = $(FC) -I$(MPI_INC) -L$(MPI_LIB)
+  OPT = -O2 -DOP_PART_SIZE_1=$(PART_SIZE_ENV)
+  OPENMP = -h omp -lomp
+  CPPLINK = -hnopgas_runtime
 else
 print:
 	echo "unrecognised value for OP2_COMPILER"
+endif
 endif
 endif
 endif
