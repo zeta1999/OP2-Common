@@ -943,59 +943,7 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size,
       transfer3 += fac * ind_sizes[m + b * ninds] * sizeof ( int );
     }
   }
-  if (strcmp(name,"VISCWALL")==0) {
-   int ntot; 
-int err = 0;
-  for ( int m = 0; m < ninds; m++ )
-  {
-    int m2 = 0;
-    while ( inds[m2] != m )
-      m2++;
 
-    int halo_size = (OP_plans[ip].maps[m2]->to)->exec_size +
-      (OP_plans[ip].maps[m2]->to)->nonexec_size;
-    int set_size = OP_plans[ip].maps[m2]->to->size + halo_size;
-
-    ntot = 0;
-
-    for ( int n = 0; n < nblocks; n++ )
-    {
-      int last = -1;
-      for ( int e = ntot; e < ntot + OP_plans[ip].ind_sizes[m + n * ninds]; e++ )
-      {
-        err += ( OP_plans[ip].ind_maps[m][e] <= last );
-        last = OP_plans[ip].ind_maps[m][e];
-        printf("%d ", last);
-        if (err > 0) printf ("err at e = %d, last = %d, content = %d\n", e, last, OP_plans[ip].ind_maps[m][e]);
-      }
-      err += ( last >= set_size );
-      if (err > 0) printf ("err last = %d > set_size = %d\n", last, set_size);
-
-      ntot += OP_plans[ip].ind_sizes[m + n * ninds];
-    }
-  }
-  for ( int m = 0; m < OP_plans[ip].nargs; m++ )
-  {
-    if ( OP_plans[ip].maps[m] != NULL )
-    {
-      op_map map = OP_plans[ip].maps[m];
-      int m2 = inds[m];
-
-      ntot = 0;
-      for ( int n = 0; n < nblocks; n++ )
-      {
-        for ( int e = ntot; e < ntot + OP_plans[ip].nelems[n]; e++ )
-        {
-          int p_local = OP_plans[ip].loc_maps[m][e];
-          printf("%d ", p_local);
-          int p_global = OP_plans[ip].ind_maps[m2][p_local + OP_plans[ip].ind_offs[m2 + n * ninds]];
-          err += ( p_global != map->map[OP_plans[ip].idxs[m] + e * map->dim] );
-        }
-        ntot += OP_plans[ip].nelems[n];
-      }
-    }
-  }
-  }
   /* print out useful information */
 
   if ( OP_diags > 1 )
