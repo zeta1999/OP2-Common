@@ -413,6 +413,12 @@ module OP2_Fortran_Declarations
 
     end subroutine op_print_dat_to_binfile_c
 
+   subroutine op_write_hdf5_c (fileName) BIND(C,name='op_write_hdf5')
+      use, intrinsic :: ISO_C_BINDING
+
+      character(len=1,kind=c_char) :: fileName(*)
+    end subroutine op_write_hdf5_c
+
     logical(kind=c_bool) function isCNullPointer_c (ptr) BIND(C,name='isCNullPointer')
       use, intrinsic :: ISO_C_BINDING
 
@@ -422,6 +428,12 @@ module OP2_Fortran_Declarations
     subroutine op_timing_output () BIND(C,name='op_timing_output')
 
     end subroutine op_timing_output
+
+    subroutine op_print_c (line) BIND(C,name='op_printf')
+      use, intrinsic :: ISO_C_BINDING
+
+      character(len=1,kind=c_char) :: line(*)
+    end subroutine op_print_c
 
   end interface
 
@@ -1006,6 +1018,18 @@ contains
 
   end function
 
+  subroutine op_write_hdf5 (file_name)
+
+    use, intrinsic :: ISO_C_BINDING
+
+    implicit none
+
+    character(kind=c_char,len=*) :: file_name
+
+    call op_write_hdf5_c (file_name//C_NULL_CHAR)
+
+  end subroutine
+
   subroutine op_print_dat_to_binfile (dat, fileName)
 
     type(op_dat) :: dat
@@ -1022,5 +1046,17 @@ contains
     call op_mpi_rank_c (rank)
 
   end subroutine op_mpi_rank
+
+  subroutine op_print (line)
+
+    use, intrinsic :: ISO_C_BINDING
+
+    implicit none
+
+    character(kind=c_char,len=*) :: line
+
+    call op_print_c (line//'\n'//C_NULL_CHAR)
+
+  end subroutine
 
 end module OP2_Fortran_Declarations

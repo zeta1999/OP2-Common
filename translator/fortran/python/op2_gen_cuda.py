@@ -279,7 +279,7 @@ def op2_gen_cuda(master, date, consts, kernels):
     code('CONTAINS')
     code('')
     comm('user function')
-    code('attributes (device) & ')
+    code('attributes (device) &')
     code('#include "'+name+'.inc"')
     code('')
     code('')
@@ -482,7 +482,7 @@ def op2_gen_cuda(master, date, consts, kernels):
       for g_m in range(0,ninds):
         if accs[invinds[g_m]] == OP_INC:
           for m in range (0,int(idxs[g_m])):
-            DO('i2','0','opDatDimensions%opDat'+str(invinds[g_m]+1+m)+'Dimension ')
+            DO('i2','0','opDatDimensions%opDat'+str(invinds[g_m]+1+m)+'Dimension')
             code('opDat'+str(invinds[g_m]+1+m)+'Local(i2) = 0')
             ENDDO()
 
@@ -752,6 +752,7 @@ def op2_gen_cuda(master, date, consts, kernels):
     code('INTEGER(kind=4) :: istat')
     code('REAL(kind=4) :: accumulatorHostTime')
     code('REAL(kind=4) :: accumulatorKernelTime')
+    code('REAL(kind=8) :: KT_double')
     code('TYPE ( cudaEvent )  :: startTimeHost')
     code('TYPE ( cudaEvent )  :: endTimeHost')
     code('TYPE ( cudaEvent )  :: startTimeKernel')
@@ -795,10 +796,10 @@ def op2_gen_cuda(master, date, consts, kernels):
       code('')
       code('numberOfIndirectOpDats = '+str(ninds))
       code('')
-      code('partitionSize = getPartitionSize(userSubroutine,set%setPtr%size)')
+      code('partitionSize = getPartitionSize(userSubroutine//C_NULL_CHAR,set%setPtr%size)')
       code('')
       code('planRet_'+name+' = FortranPlanCaller( &')
-      code('& userSubroutine, &')
+      code('& userSubroutine//C_NULL_CHAR, &')
       code('& set%setCPtr, &')
       code('& partitionSize, &')
       code('& numberOfOpDats, &')
@@ -809,7 +810,7 @@ def op2_gen_cuda(master, date, consts, kernels):
     else:
       code('')
       code('blocksPerGrid = 200')
-      code('threadsPerBlock = getBlockSize(userSubroutine,set%setPtr%size)')
+      code('threadsPerBlock = getBlockSize(userSubroutine//C_NULL_CHAR,set%setPtr%size)')
       code('warpSize = OP_WARPSIZE')
       code('dynamicSharedMemorySize = 32')
       code('sharedMemoryOffset = dynamicSharedMemorySize * OP_WARPSIZE')
@@ -932,7 +933,7 @@ def op2_gen_cuda(master, date, consts, kernels):
     if ninds > 0:
       code('blockOffset = 0')
       code('')
-      code('threadsPerBlock = getBlockSize(userSubroutine,set%setPtr%size)')
+      code('threadsPerBlock = getBlockSize(userSubroutine//C_NULL_CHAR,set%setPtr%size)')
 
       DO('i2','0','actualPlan_'+name+'%ncolors')
       code('blocksPerGrid = ncolblk(i2 + 1)')
@@ -988,12 +989,19 @@ def op2_gen_cuda(master, date, consts, kernels):
         code('deallocate( reductionArrayDevice'+str(g_m+1)+' )')
         code('CALL op_mpi_reduce_double(opArg'+str(g_m+1)+',opArg'+str(g_m+1)+'%data)')
         code('')
+        code('calledTimes = calledTimes + 1')
+        code('istat = cudaEventRecord(endTimeHost,0)') #end timer for reduction
+        code('istat = cudaEventSynchronize(endTimeHost)')
+        code('istat = cudaEventElapsedTime(accumulatorHostTime,startTimeHost,endTimeHost)')
+        code('loopTimeHost'+name+' = loopTimeHost'+name+' + accumulatorHostTime')
 
-    code('calledTimes = calledTimes + 1')
-    code('istat = cudaEventRecord(endTimeHost,0)') #end timer for reduction
-    code('istat = cudaEventSynchronize(endTimeHost)')
-    code('istat = cudaEventElapsedTime(accumulatorHostTime,startTimeHost,endTimeHost)')
-    code('loopTimeHost'+name+' = loopTimeHost'+name+' + accumulatorHostTime')
+    code('KT_double = REAL(accumulatorKernelTime / 1000.00)')
+    code('returnSetKernelTiming = setKernelTime('+str(nk)+' , userSubroutine//C_NULL_CHAR, &')
+
+    if ninds > 0:
+      code('& KT_double, actualPlan_'+name+'%transfer,actualPlan_'+name+'%transfer2)')
+    else:
+      code('& KT_double, 0.00000,0.00000)')
 
     depth = depth - 2
     code('END SUBROUTINE')
