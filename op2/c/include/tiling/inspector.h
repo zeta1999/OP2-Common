@@ -32,6 +32,7 @@ typedef struct {
   
 #ifdef VTK_ON
   int* setColor;  //array of colors, one for each element of the set
+  int coloring;   //1 if the loop will be colored.
 #endif
   
   char debug[DEBUGMSGLENGTH];
@@ -43,22 +44,24 @@ typedef struct {
  */
 typedef struct {
   int size;         //size of the base set
-  int* v2pOrig;     //v2p mapping given by metis 
+  
+  int* v2v;         //mapping from original v to renumbered v
+  int* v2pOrig;     //renumbered v2p mapping 
   int* colOrig;     //current color for each element of v2p
   
   int ncolors;      //total number of colors determined by the inspector
   int* p2c;         //mapping from partitions to colors
   
   int ntiles;       //number of tiles for this inspector
+  int* partSize;    //initial size of the tiles. The size is ntiles
   tile_t** tiles;   //tiles of the inspector
   
   int nloops;       //number of loops crossed 
   loop_t** loops;   //loops crossed 
   int loopCounter;  //count the number of loops currently add to the inspector
   
-  int* p2v;         //mapping from partitions to vertices
-  int* v2v;         //mapping from v to v in p2v 
-  int* partSize;    //initial size of the tiles. The size is ntiles
+  int* p2v;         //mapping from partitions to original vertices
+  int* v2p;         //mapping from original vertices to partitions
   
   int incidence;    //maximum incidence of the mesh
   
@@ -129,5 +132,10 @@ int addParLoop (inspector_t* insp, char* loopname, int setSize, int* indirection
  * colors     : partitionID -> color 
  */
 int partitionAndColor (inspector_t* insp, int vertices, int* e2v, int mapsize);
+
+/*
+ * Print out some information about the inspector
+ */
+void inspectorDiagnostic (inspector_t* insp);
 
 #endif

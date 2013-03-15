@@ -17,10 +17,12 @@ OP2_COMPILER = gnu
 #VTK = ON  #{ON, OFF}
 
 #ifeq ($(VTK), ON)
-VTKCOMP = -DVTK_ON
+VTKCOMP  = -DVTK_ON
 #else
 #	VTKCOMP = -DVTK_OFF
 #endif
+
+COLORING = -DK_COLORING
 
 #
 # set paths for various files
@@ -41,7 +43,7 @@ ifeq ($(OP2_COMPILER),gnu)
 	CC       := gcc
 	CCFLAGS  := -std=c99 -fPIC -DUNIX -Wall #-g
 	CXX      := g++
-	CXXFLAGS := -std=c99 -fPIC -DUNIX -Wall #-g -Wextra
+	CXXFLAGS := -fPIC -DUNIX -Wall #-g -Wextra
 	MPICXX   := /usr/bin/mpiCC
 	MPIFLAGS := $(CXXFLAGS)
 else
@@ -89,7 +91,7 @@ all: clean core hdf5 seq openmp mpi_seq cuda mpi_cuda
 tiling: clean core seq openmp tile
 
 tile: mklib $(SRC)/tiling/inspector.c $(SRC)/tiling/executor.c $(SRC)/tiling/tile.c 		
-	$(CXX) $(CXXFLAGS) $(VTKCOMP) -I$(INC)/tiling -c $(SRC)/tiling/inspector.c -o $(OBJ)/inspector.o  
+	$(CXX) $(CXXFLAGS) $(VTKCOMP) $(COLORING) -I$(INC)/tiling -c $(SRC)/tiling/inspector.c -o $(OBJ)/inspector.o  
 	$(CXX) $(CXXFLAGS) $(VTKCOMP) -I$(INC)/tiling -c $(SRC)/tiling/executor.c -o $(OBJ)/executor.o  
 	$(CXX) $(CXXFLAGS) $(VTKCOMP) -I$(INC)/tiling -c $(SRC)/tiling/tile.c -o $(OBJ)/tile.o  
 	$(CXX) $(CXXFLAGS) $(VTKCOMP) -I$(INC)/tiling -c $(SRC)/tiling/invert.c -o $(OBJ)/invert.o  

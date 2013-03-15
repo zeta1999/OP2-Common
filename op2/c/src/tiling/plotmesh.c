@@ -84,6 +84,9 @@ int printVtuFile (inspector_t* insp, vtu_mesh_t* mesh)
     // aliases
     loop_t* loop = insp->loops[i];
     
+    if (! loop->coloring)
+      continue;
+    
     char filename[LOOPNAMELENGTH + VTK_DIR_MAX + 1];
     sprintf (filename, "%s/loop%d-%s.vtk", VTK_DIR, i, loop->loopname);
     

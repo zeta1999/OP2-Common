@@ -10,7 +10,12 @@
 #include "inspector.h"
 #include "invert.h"
 
-static int checkColor (loop_t *loop, const int *color, const int *partition, const int *verticesColor, const int *verticesPartition, const int *verticesAdjColor, const int *verticesAdjPartition, const int *incidence, int maxIncidence);
+
+static int kDistantColouring (int k, int nvertices, const int* p2v, const int* v2v, const int* v2v_offset,
+                              int nparts, const int* partSize, const int* v2p, int** new_v2e, int** new_v2e_offset);
+static int checkColor (loop_t *loop, const int *color, const int *partition, const int *verticesColor,
+                       const int *verticesPartition, const int *verticesAdjColor,
+                       const int *verticesAdjPartition, const int *incidence, int maxIncidence);
 
 #if (DEBUG > 1)
 static void printColoring (inspector_t *insp, loop_t *loop, int *entityColor, int *entityTile,
@@ -39,7 +44,7 @@ int metisPartition (int vertices, int _nparts, idx_t* xadj, idx_t* adjncy, int**
   
   METIS_SetDefaultOptions(options);
   options[METIS_OPTION_NUMBERING] = 0;		  
-  options[METIS_OPTION_CONTIG] = 1;
+  //options[METIS_OPTION_CONTIG] = 1;
   
   //output
   idx_t objval;	// edge-cut 
@@ -88,7 +93,7 @@ static void printColoring (inspector_t *insp, loop_t *loop, int *entityColor, in
 }
 #endif
 
-void printInspector (inspector_t* insp)
+void inspectorDiagnostic (inspector_t* insp)
 {
   if ( !insp )
   {
@@ -101,6 +106,11 @@ void printInspector (inspector_t* insp)
   printf("Number of tiles:           %d\n", insp->ntiles);
   printf("MAX incidence of the mesh: %d\n", insp->incidence);
 
+  printf("Tiles' size:\n");
+  for (int b = 0; b < insp->ntiles; b++ )
+    printf("%d: %d    ", b, insp->partSize[b]);
+  printf ("\n");
+  
   printf("\nInitial coloring set:\n\t");
   if ( insp->colOrig )
     for (int i = 0; i < insp->size; i++ )
@@ -225,9 +235,14 @@ static int checkColor (loop_t *loop, const int *color, const int *partition, con
           //In that case, the coloring is messed up
           if (entityColor == verticesAdjColor[currentVertex*maxIncidence + j] && entityTile != verticesAdjPartition[currentVertex*maxIncidence + j])
           {
+#ifdef VTK_ON
+            loop->setColor[e] = 30;
+            printf ("%s: (%d, %d, %d) found (%d, %d) through adjacent vertex %d\n", loop->loopname, e, entityColor, entityTile, verticesAdjColor[currentVertex*maxIncidence + j], verticesAdjPartition[currentVertex*maxIncidence + j], currentVertex);
+#elif
             snprintf (loop->debug, DEBUGMSGLENGTH, "(%d, %d, %d) found (%d, %d) through adjacent vertex %d",
                       e, entityColor, entityTile, verticesAdjColor[currentVertex*maxIncidence + j], verticesAdjPartition[currentVertex*maxIncidence + j], currentVertex);
             return INSPOP_WRONGCOLOR;
+#endif
           }
         }
       }
@@ -400,6 +415,7 @@ int runInspector (inspector_t* insp, int baseSetIndex)
 #ifdef VTK_ON
     // save loop color
     memcpy (startLoop->setColor, workLoopColor, startLoop->setSize*sizeof(int));
+    startLoop->coloring = 1;
 #endif
     
     // 4) check coloring
@@ -470,6 +486,7 @@ int runInspector (inspector_t* insp, int baseSetIndex)
 #ifdef VTK_ON
     // save loop color
     memcpy (startLoop->setColor, workLoopColor, startLoop->setSize*sizeof(int));
+    startLoop->coloring = 1;
 #endif
     
     // 4) check coloring
@@ -479,7 +496,7 @@ int runInspector (inspector_t* insp, int baseSetIndex)
       snprintf (insp->debug, DEBUGMSGLENGTH + LOOPNAMELENGTH, "Coloring loop %s resulted in messing up colors\n%s", startLoop->loopname, startLoop->debug);
       return INSPOP_WRONGCOLOR;
     }
-
+    
 #if (DEBUG > 1)
     for (int i = 0; i < insp->size * insp->incidence; i++)
     {
@@ -525,6 +542,7 @@ int addParLoop (inspector_t* insp, char* loopname, int setSize, int* indirection
   
 #ifdef VTK_ON
   insp->loops[insp->loopCounter]->setColor = (int*) malloc (setSize*sizeof(int));
+  insp->loops[insp->loopCounter]->coloring = 0;
 #endif
   
   // add the parloop to each tile of the inspector
@@ -547,13 +565,15 @@ int partitionAndColor (inspector_t* insp, int vertices, int* e2v, int mapsize)
 
 #if (DEBUG > 0)   
   for (int i = 0; i < mapsize; i++)
-    printf("v2e[i] = %d\n", v2e[i]);
+    printf("v2e[%d] = %d\n", i, v2e[i]);
+  for (int i = 0; i < mapsize; i++)
+    printf("v2v[%d] = %d\n", i, adjncy[i]);
   for (int i = 0; i < vertices+1; i++)
-    printf("v2e_offset[i] = %d\n", v2e_offset[i]);  
+    printf("v2e_offset[%d] = %d\n", i, v2e_offset[i]);
 #endif  
   
   int* v2p;
-  metisPartition (vertices, insp->ntiles, (idx_t*) v2e_offset, (idx_t*) adjncy, &v2p); //TODO: 2 is just a fixed value for the example..
+  metisPartition (vertices, insp->ntiles, (idx_t*) v2e_offset, (idx_t*) adjncy, &v2p); 
   
   // compute the mapping p2v as it is needed to determine a coloring scheme
   int* p2v = (int*) malloc ( vertices * sizeof(int) );
@@ -562,6 +582,7 @@ int partitionAndColor (inspector_t* insp, int vertices, int* e2v, int mapsize)
   invertMapping (v2p, vertices, insp->ntiles, 1, 1, p2v, NULL, p2v_offset, NULL);
   
   // add the p2v mapping and the partition sizes to the inspector
+  insp->v2p = v2p;
   insp->p2v = p2v;
   for ( int b = 0; b < insp->ntiles; b++ )
     insp->partSize[b] = p2v_offset[b + 1] - p2v_offset[b];
@@ -570,6 +591,17 @@ int partitionAndColor (inspector_t* insp, int vertices, int* e2v, int mapsize)
   int* colors = (int*) malloc (insp->ntiles * sizeof (int));
   for ( int b = 0; b < insp->ntiles; b++ ) 
     colors[b] = -1;
+  
+  // k-distant colouring if requested (TODO: now enabled by default)
+  int* new_v2e, * new_v2e_offset;
+  if (insp->nloops > 1)
+  {
+    //kDistantColouring (insp->nloops, vertices, p2v, adjncy, v2e_offset, insp->ntiles, insp->partSize,
+    //                  v2p, &new_v2e, &new_v2e_offset);
+    kDistantColouring (2, vertices, p2v, adjncy, v2e_offset, insp->ntiles, insp->partSize,
+                       v2p, &new_v2e, &new_v2e_offset);
+    
+  }
   
   int repeat = 1;
   int ncolor = 0;
@@ -583,35 +615,42 @@ int partitionAndColor (inspector_t* insp, int vertices, int* e2v, int mapsize)
   prev_offset = 0; 
   next_offset = 0;
   
+#ifdef K_COLORING
+  typedef struct tile_color {
+    int size;
+    
+    
+  } tile_color_t;
+  
+#endif
   // coloring algorithm
-  while ( repeat )
+  while (repeat)
   {
     repeat = 0;
     
     // zero out color arrays
-    for ( int e = 0; e < totSize; e++ )
+    for (int e = 0; e < totSize; e++)
       work[e] = 0;
     
     // starts trying to color all blocks
-    for ( int b = 0; b < insp->ntiles; b++ )
+    for (int b = 0; b < insp->ntiles; b++)
     {
       prev_offset = next_offset;
       
       //adjusts offsets of partitions
-      if ( prev_offset + insp->partSize[b] >= vertices ) // last partition can be smaller than partition size
+      if (prev_offset + insp->partSize[b] >= vertices) // last partition can be smaller than partition size
         next_offset = vertices;
       else
         next_offset = prev_offset + insp->partSize[b];
       
-      if ( colors[b] == -1 )
+      if (colors[b] == -1)
       {
         unsigned int mask = 0;
-        
-        for ( int e = prev_offset; e < next_offset; e++ ) 
+        for (int e = prev_offset; e < next_offset; e++)
         {
           int v = p2v[e];
-          for ( int j = 0; j < (v2e_offset[v + 1] - v2e_offset[v]); j++ )  
-              mask |= work[v2e[v2e_offset[v] + j]]; // set bits of mask
+          for (int j = 0; j < (v2e_offset[v + 1] - v2e_offset[v]); j++)
+            mask |= work[v2e[v2e_offset[v] + j]]; // set bits of mask
         }
         
 #if (DEBUG > 0) 
@@ -685,16 +724,116 @@ int partitionAndColor (inspector_t* insp, int vertices, int* e2v, int mapsize)
    printf("\n");
    */
   
-  free (offset);
   
+  free (offset);
   free (work);
   
   free (p2v_offset);
   free (v2e_offset);
   free (adjncy);
   free (v2e);
+  free (new_v2e);
+  free (new_v2e_offset);
   
   return INSPOP_OK;
+}
+
+
+/* K-DISTANT COLOURING */
+//TODO: use global const variables to relieve argument passing
+
+int __k;
+const int* __v2v;
+const int* __v2v_offset;
+const int* __v2p;
+
+static void findAdjacentPartitions (int part, int vertex, int distance, int* new_v2e, int* new_v2e_offset)
+{
+  // base case
+  if (distance < __k)
+  {
+    for (int i = 0; i < __v2v_offset[vertex + 1] - __v2v_offset[vertex]; i++)
+      findAdjacentPartitions (part, __v2v[__v2v_offset[vertex] + i], distance + 1, new_v2e, new_v2e_offset);
+  }
+  
+  // add current vertex if not already present
+  // TODO: can be HIGHLY optimised
+  int p = __v2p[vertex];
+  
+  if (part == p)
+    return;
+  
+  int offset = *new_v2e_offset;
+  //printf ("current vertex: %d, current part: %d, offset: %d\n", vertex, p, offset);
+  int dup = 0;
+  for (int j = 0; j < offset; j++)
+    if (p == new_v2e[j])
+      dup = 1;
+  
+  if (! dup)
+    new_v2e[offset++] = p;
+  
+  *new_v2e_offset = offset;
+}
+
+static int kDistantColouring (int distance, int nvertices, const int* p2v, const int* v2v, const int* v2v_offset,
+                              int nparts, const int* partSize, const int* v2p, int** new_v2e, int** new_v2e_offset)
+{
+  // allocate array for the new mesh to be stored
+  int max_incidence = nparts; // worst case
+  int* _new_v2e_offset = (int*) calloc (nparts + 1, sizeof(int));
+  int* _new_v2e = (int*) malloc (sizeof(int)*nparts*max_incidence);
+  
+  int prev_offset = 0, next_offset = 0;
+  
+  // set global const variables
+  __k = distance;
+  __v2v = v2v;
+  __v2v_offset = v2v_offset;
+  __v2p = v2p;
+  
+  // for each partition - TODO: parallelize openmp
+  for (int b = 0; b < nparts; b++)
+  {
+    prev_offset = next_offset;
+    
+    //adjusts offsets of partitions
+    if (prev_offset + partSize[b] >= nvertices) // last partition can be smaller than partition size
+      next_offset = nvertices;
+    else
+      next_offset = prev_offset + partSize[b];
+    
+    // for each vertex in a partition 
+    for (int i = prev_offset; i < next_offset; i++)
+    {
+      // Recursively, up to the desired distance
+      printf ("Examined vertex: %d, Tile: %d\n", p2v[i], b);
+      findAdjacentPartitions (b, p2v[i], 0, &_new_v2e[nparts*b], &_new_v2e_offset[b+1]);
+      // oss: current vertex is indirectly added to new_v2e as being a neighbour of an adjacent vertex
+    }
+  }
+  
+  //TODO align the new mesh in contiguous blocks
+  
+  printf ("printing the partition-layered mesh\n");
+  printf ("offset are: \n  %d, ", _new_v2e_offset[0]);
+  for (int b = 0; b < nparts; b++)
+    printf ("%d, ", _new_v2e_offset[b+1]);
+  printf("\n");
+  for (int b = 0; b < nparts; b++)
+  {
+    int nedges = _new_v2e_offset[b+1];
+    printf ("Tile %d - NEdges: %d\n  ", b, nedges);
+    for (int e = 0; e < nedges; e++)
+    {
+      printf ("%d ", _new_v2e[nparts*b + e]);
+    }
+    printf("\n");
+  }
+  
+  *new_v2e = _new_v2e;
+  *new_v2e_offset = _new_v2e_offset;
+  return 0;
 }
 
 

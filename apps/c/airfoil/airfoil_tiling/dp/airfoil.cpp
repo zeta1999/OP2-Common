@@ -232,7 +232,7 @@ int main(int argc, char **argv)
 
   // initialising and running the inspector
   
-  int npartitions = 100; // TODO
+  int npartitions = 5000; // TODO
   
   /*
   for (int n=0; n<nnode; n++) {
@@ -249,19 +249,25 @@ int main(int argc, char **argv)
   addParLoop (insp, "edges1", nedge, pedge->map, nedge * 2);
   
   op_printf ("added parallel loops\n");
+  op_printf ("running inspector\n");
   
-  runInspector (insp, 0);
+  if (runInspector (insp, 0) == INSPOP_WRONGCOLOR)
+    op_printf ("%s\n", insp->debug);
+  else
+    op_printf ("coloring went fine\n");
+
   
-  op_printf ("run inspector\n");
   
   //for (int i = 0; i < nedge*2 / 1000; i += 2)
   //  printf ("%d %d\n", pedge->map[i*2], pedge->map[i*2 + 1]);
-  
   vtu_mesh_t* mesh = createVtuMesh (nnode, nedge, ncell, x, pedge->map, pcell->map, D2);
   printVtuFile (insp, mesh);
   freeVtuMesh (mesh);
-  
-  //printInspector (insp);
+
+  // DEBUG
+  const int size = 6;
+  int verticesToPrint[size] = {1039, 1040, 1041, 1360, 1361, 1362};
+  //inspectorDiagnostic (insp);
   
   freeInspector (insp);
 
