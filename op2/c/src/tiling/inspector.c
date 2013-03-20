@@ -596,9 +596,9 @@ int partitionAndColor (inspector_t* insp, int vertices, int* e2v, int mapsize)
   // create a k-distant mesh
   int totSize;
   int* new_v2e, *new_v2e_size;
-  kDistantMesh (/*insp->nloops*/ 2, vertices, p2v, adjncy, v2e_offset, insp->ntiles, insp->partSize,
+  kDistantMesh (insp->nloops + 2, vertices, p2v, adjncy, v2e_offset, insp->ntiles, insp->partSize,
                       v2p, &new_v2e, &new_v2e_size, &totSize);
-  
+  printf("nloops = %d\n", insp->nloops);
   
   int repeat = 1;
   int ncolor = 0;
@@ -611,8 +611,8 @@ int partitionAndColor (inspector_t* insp, int vertices, int* e2v, int mapsize)
   prev_offset = 0; 
   next_offset = 0;
   
-  printf ("prima del colouring, totSize = %d\n", totSize);
-  printf ("new_mesh = %d %d %d %d %d %d \n", new_v2e[0], new_v2e[1], new_v2e[2], new_v2e[3], new_v2e[4], new_v2e[5]);
+  //printf ("prima del colouring, totSize = %d\n", totSize);
+  //printf ("new_mesh = %d %d %d %d %d %d \n", new_v2e[0], new_v2e[1], new_v2e[2], new_v2e[3], new_v2e[4], new_v2e[5]);
   
   // coloring algorithm
   while (repeat)
@@ -790,7 +790,7 @@ static int kDistantMesh (int distance, int nvertices, const int* p2v, const int*
     _new_v2v_offsets[b + 1] = _new_v2v_offsets[b] + _new_v2v_size[b];
   }
 
-//#if (DEBUG > 0)
+#if (DEBUG > 0)
   printf ("printing the partition-layered mesh\n");
   printf ("offsets are: \n  ");
   for (int b = 0; b < nparts; b++)
@@ -805,7 +805,7 @@ static int kDistantMesh (int distance, int nvertices, const int* p2v, const int*
     }
     printf("\n");
   }
-//#endif
+#endif
   
   // create the actual new_v2e mapping from the current new_v2v mapping
   int* new_mesh = (int*) malloc (sizeof(int)*totSize);

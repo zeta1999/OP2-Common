@@ -232,7 +232,7 @@ int main(int argc, char **argv)
 
   // initialising and running the inspector
   
-  int npartitions = 5000; // TODO
+  int npartitions = 1000; // TODO
   
   /*
   for (int n=0; n<nnode; n++) {
@@ -264,9 +264,6 @@ int main(int argc, char **argv)
   printVtuFile (insp, mesh);
   freeVtuMesh (mesh);
 
-  // DEBUG
-  const int size = 6;
-  int verticesToPrint[size] = {1039, 1040, 1041, 1360, 1361, 1362};
   //inspectorDiagnostic (insp);
   
   freeInspector (insp);
