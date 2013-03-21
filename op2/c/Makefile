@@ -49,8 +49,17 @@ ifeq ($(OP2_COMPILER),pgi)
 	MPICXX	 := /home/gihan/openmpi-pgi/bin/mpiCC
 	MPIFLAGS := $(CXXFLAGS)
 else
+ifeq ($(OP2_COMPILER),cray)
+	CC       := cc
+	CCFLAGS  := -O3
+	CXX      := CC
+	CXXFLAGS := $(CCFLAGS)
+	MPICXX   := CC
+	MPIFLAGS := $(CXXFLAGS)
+else
 print:
 	@echo "unrecognised value for OP2_COMPILER"
+endif
 endif
 endif
 endif
@@ -59,8 +68,8 @@ NVCCFLAGS	= -O3 -arch=sm_20 -m64 -Xptxas -dlcm=ca -Xptxas=-v -use_fast_math #-g 
 
 PARMETIS_INCLUDE_PATH ?= $(PARMETIS_INSTALL_PATH)
 PARMETIS_LIB_PATH ?= $(PARMETIS_INSTALL_PATH)
-PARMETIS_INC = -I$(PARMETIS_INCLUDE_PATH) -DHAVE_PARMETIS
-PARMETIS_LIB = -L$(PARMETIS_LIB_PATH) -lparmetis -lmetis
+PARMETIS_INC = -I$(PARMETIS_INCLUDE_PATH)/include -DHAVE_PARMETIS
+PARMETIS_LIB = -L$(PARMETIS_LIB_PATH)/lib -lparmetis -lmetis
 
 PTSCOTCH_INCLUDE_PATH ?= $(PTSCOTCH_INSTALL_PATH)/include
 PTSCOTCH_LIB_PATH ?= $(PTSCOTCH_INSTALL_PATH)/lib

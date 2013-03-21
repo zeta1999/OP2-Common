@@ -449,10 +449,10 @@ module OP2_Fortran_Declarations
 
     end subroutine op_timing_output
 
-    subroutine op_print_c (line) BIND(C,name='op_printf')
-      use, intrinsic :: ISO_C_BINDING
+    subroutine op_print_c (line) BIND(C,name='op_print')
+      use ISO_C_BINDING
 
-      character(len=1,kind=c_char) :: line(*)
+      character(kind=c_char) :: line(*)
     end subroutine op_print_c
 
   end interface
@@ -480,9 +480,9 @@ module OP2_Fortran_Declarations
     module procedure op_arg_dat_python
   end interface op_arg_dat
 
-  interface op_opt_arg_dat
-    module procedure op_opt_arg_dat_python
-  end interface op_opt_arg_dat
+  !interface op_opt_arg_dat
+  !  module procedure op_opt_arg_dat_python
+  !end interface op_opt_arg_dat
 
 contains
 
@@ -774,7 +774,7 @@ contains
       op_arg_dat_python = op_arg_dat_c ( dat%dataCPtr, idx, C_NULL_PTR,  dat%dataPtr%dim, dat%dataPtr%type, access-1 )
     else
       if (dat%dataPtr%dim .ne. dim) then
-        print *, "Wrong dim",dim,dat%dataPtr%dim 
+        print *, "Wrong dim",dim,dat%dataPtr%dim
       endif
       ! warning: access and idx are in FORTRAN style, while the C style is required here
       if ( map%mapPtr%dim .eq. 0 ) then
@@ -789,7 +789,7 @@ contains
 
   end function op_arg_dat_python
 
-  type(op_arg) function op_opt_arg_dat_python (opt, dat, idx, map, dim, type, access)
+  type(op_arg) function op_opt_arg_dat (opt, dat, idx, map, dim, type, access)
 
     use, intrinsic :: ISO_C_BINDING
 
@@ -812,17 +812,17 @@ contains
 
     ! warning: access and idx are in FORTRAN style, while the C style is required here
     if (opt) then
-	    if ( map%mapPtr%dim .eq. 0 ) then
-	      ! OP_ID case (does not decrement idx)
-	      op_opt_arg_dat_python = op_opt_arg_dat_c ( opt_int, dat%dataCPtr, idx, C_NULL_PTR,  dat%dataPtr%dim, dat%dataPtr%type, access-1 )
-	    else
-	      op_opt_arg_dat_python = op_opt_arg_dat_c ( opt_int, dat%dataCPtr, idx-1, map%mapCPtr,  dat%dataPtr%dim, dat%dataPtr%type, access-1 )
-	    endif
-	else
-	    op_opt_arg_dat_python = op_opt_arg_dat_c ( opt_int, C_NULL_PTR, idx, C_NULL_PTR,  dim, C_NULL_PTR, access-1 )
-	endif
+      if ( map%mapPtr%dim .eq. 0 ) then
+        ! OP_ID case (does not decrement idx)
+        op_opt_arg_dat = op_opt_arg_dat_c ( opt_int, dat%dataCPtr, idx, C_NULL_PTR,  dat%dataPtr%dim, dat%dataPtr%type, access-1 )
+      else
+        op_opt_arg_dat = op_opt_arg_dat_c ( opt_int, dat%dataCPtr, idx-1, map%mapCPtr,  dat%dataPtr%dim, dat%dataPtr%type, access-1 )
+      endif
+  else
+      op_opt_arg_dat = op_opt_arg_dat_c ( opt_int, C_NULL_PTR, idx, C_NULL_PTR,  dim, C_NULL_PTR, access-1 )
+  endif
 
-  end function op_opt_arg_dat_python
+  end function op_opt_arg_dat
 
     INTEGER function op_get_size (set )
 
@@ -1116,7 +1116,7 @@ contains
 
     character(kind=c_char,len=*) :: line
 
-    call op_print_c (line//'\n'//C_NULL_CHAR)
+    call op_print_c (line//C_NULL_CHAR)
 
   end subroutine
 
