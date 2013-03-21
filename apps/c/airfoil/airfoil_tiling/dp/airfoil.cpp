@@ -1,30 +1,4 @@
 /*
- set       size
- -------------------
- nodes     721801
- edges    1438600
- bedges       2800
- cells     720000
- 
- map        dim       from         to
- -----------------------------------------
- pedge          2      edges      nodes
- pecell          2      edges      cells
- pbedge          2     bedges      nodes
- pbecell          1     bedges      cells
- pcell          4      cells      nodes
- 
- dat        dim        set
- ------------------------------
- p_bound          1     bedges
- p_x          2      nodes
- p_q          4      cells
- p_qold          4      cells
- p_adt          1      cells
- p_res          4      cells
- */
-
-/*
  * Open source copyright declaration based on BSD open source template:
  * http://www.opensource.org/licenses/bsd-license.php
  *
@@ -86,7 +60,9 @@ double gam, gm1, cfl, eps, mach, alpha, qinf[4];
 // Tiling header file
 //
 
+#include "executor.h"
 #include "inspector.h"
+#include "invert.h"
 #include "test.h"
 #include "plotmesh.h"
 
@@ -232,50 +208,51 @@ int main(int argc, char **argv)
 
   // initialising and running the inspector
   
-  int npartitions = 1000; // TODO
+  int nvertices = 250; // TODO
   
-  /*
-  for (int n=0; n<nnode; n++) {
-    op_printf ("%d %d \n", pedge->map[2*n], pedge->map[2*n+1]);
-  }
-  */
-   
   op_printf ("running inspector\n");
   
-  inspector_t* insp = initInspector (nnode, npartitions, 2);
+  inspector_t* insp = initInspector (nnode, nvertices, 2);
   partitionAndColor (insp, nnode, pedge->map, nedge*2); // TODO: breaking abstraction
   
   addParLoop (insp, "cells1", ncell, pcell->map, ncell * 4);
   addParLoop (insp, "edges1", nedge, pedge->map, nedge * 2);
   
   op_printf ("added parallel loops\n");
-  op_printf ("running inspector\n");
   
   if (runInspector (insp, 0) == INSPOP_WRONGCOLOR)
     op_printf ("%s\n", insp->debug);
   else
     op_printf ("coloring went fine\n");
-
   
+  // print the mesh
   
-  //for (int i = 0; i < nedge*2 / 1000; i += 2)
-  //  printf ("%d %d\n", pedge->map[i*2], pedge->map[i*2 + 1]);
   vtu_mesh_t* mesh = createVtuMesh (nnode, nedge, ncell, x, pedge->map, pcell->map, D2);
   printVtuFile (insp, mesh);
   freeVtuMesh (mesh);
-
+  
   //inspectorDiagnostic (insp);
   
-  freeInspector (insp);
-
-  op_printf ("inspector destroyed\n");
+  // build the new data array with values in proper positions
+  int x_size = 2*nnode;
+  double* new_x = (double *) malloc(x_size*sizeof(double));
+  for (int i = 0; i < nnode; i++)
+  {
+    new_x[2*insp->v2v[i]] = x[2*i];
+    new_x[2*insp->v2v[i] + 1] = x[2*i + 1];
+  }
+  
+  printf("running executor\n");
+  executor_t* exec = initExecutor (insp);
+  int ncolors = exec->ncolors;
   
   //initialise timers for total execution wall time
   op_timers(&cpu_t1, &wall_t1);
 
   // main time-marching loop
 
-  niter = 1000;
+  //niter = 1000;
+  niter = 100;
 
   for(int iter=1; iter<=niter; iter++) {
 
@@ -290,7 +267,65 @@ int main(int argc, char **argv)
     for(int k=0; k<2; k++) {
 
       // calculate area/timstep
-
+      
+      // tiled execution of the first two loops
+      int* renum_pcell = insp->loops[0]->indMap;
+      int* renum_pedge = insp->loops[1]->indMap;
+      
+      /*printf ("cell 0: [%f, %f], [%f, %f], [%f, %f], [%f, %f]\n",
+              x[renum_pcell[0]*2], x[renum_pcell[0]*2+1],
+              x[renum_pcell[1]*2], x[renum_pcell[1]*2+1],
+              x[renum_pcell[2]*2], x[renum_pcell[2]*2+1],
+              x[renum_pcell[3]*2], x[renum_pcell[3]*2+1]);*/
+      
+      //for each colour
+      for (int i = 0; i < ncolors; i++)
+      {
+        // for all tiles of this color
+        int tile_size;
+        int first_tile = exec->offset[i];
+        int last_tile = exec->offset[i + 1];
+        for (int j = first_tile; j < last_tile; j++)
+        {
+          // execute the tile
+          tile_t* tile = exec->tiles[exec->c2p[j]];
+          
+          // loop adt_calc
+          tile_size = tile->curSize[0];
+          for (int k = 0; k < tile_size; k++)
+          {
+            int cell = tile->element[0][k];
+       
+            adt_calc (  new_x + renum_pcell[cell*4 + 0]*2,
+                        new_x + renum_pcell[cell*4 + 1]*2,
+                        new_x + renum_pcell[cell*4 + 2]*2,
+                        new_x + renum_pcell[cell*4 + 3]*2,
+                        q + cell*4,
+                        adt + cell);
+          }
+          
+          // loop res_calc
+          tile_size = tile->curSize[1];
+          for (int k = 0; k < tile_size; k++)
+          {
+            int edge = tile->element[1][k];
+            
+            res_calc ( new_x + renum_pedge[edge*2 + 0]*2,
+                       new_x + renum_pedge[edge*2 + 1]*2,
+                       q     + ecell[edge*2 + 0]*4,
+                       q     + ecell[edge*2 + 1]*4,
+                       adt   + ecell[edge*2 + 0]*1,
+                       adt   + ecell[edge*2 + 1]*1,
+                       res   + ecell[edge*2 + 0]*4,
+                       res   + ecell[edge*2 + 1]*4
+                      );
+          }
+          
+        }
+       
+      }
+      
+      /*
       op_par_loop(adt_calc,"adt_calc",cells,
           op_arg_dat(p_x,   0,pcell, 2,"double",OP_READ ),
           op_arg_dat(p_x,   1,pcell, 2,"double",OP_READ ),
@@ -298,9 +333,10 @@ int main(int argc, char **argv)
           op_arg_dat(p_x,   3,pcell, 2,"double",OP_READ ),
           op_arg_dat(p_q,  -1,OP_ID, 4,"double",OP_READ ),
           op_arg_dat(p_adt,-1,OP_ID, 1,"double",OP_WRITE));
-
+      
+      
       // calculate flux residual
-
+      
       op_par_loop(res_calc,"res_calc",edges,
           op_arg_dat(p_x,    0,pedge, 2,"double",OP_READ),
           op_arg_dat(p_x,    1,pedge, 2,"double",OP_READ),
@@ -310,7 +346,7 @@ int main(int argc, char **argv)
           op_arg_dat(p_adt,  1,pecell,1,"double",OP_READ),
           op_arg_dat(p_res,  0,pecell,4,"double",OP_INC ),
           op_arg_dat(p_res,  1,pecell,4,"double",OP_INC ));
-
+      */
       op_par_loop(bres_calc,"bres_calc",bedges,
           op_arg_dat(p_x,     0,pbedge, 2,"double",OP_READ),
           op_arg_dat(p_x,     1,pbedge, 2,"double",OP_READ),
@@ -333,7 +369,8 @@ int main(int argc, char **argv)
 
     // print iteration history
     rms = sqrt(rms/(double) op_get_size(cells));
-    if (iter%100 == 0)
+    //if (iter%100 == 0)
+    if (iter%10 == 0)
       op_printf(" %d  %10.5e \n",iter,rms);
   }
 
@@ -348,6 +385,12 @@ int main(int argc, char **argv)
 
   op_exit();
 
+  
+  freeInspector (insp);
+  op_printf ("inspector destroyed\n");
+  freeExecutor (exec);
+  op_printf ("executor destroyed\n");
+  
   free(cell);
   free(edge);
   free(ecell);
@@ -355,6 +398,7 @@ int main(int argc, char **argv)
   free(becell);
   free(bound);
   free(x);
+  free(new_x);
   free(q);
   free(qold);
   free(res);

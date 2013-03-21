@@ -7,6 +7,9 @@
  *
  */
 
+#ifndef _EXECUTOR_H_
+#define _EXECUTOR_H_
+
 #include "inspector.h"
 
 #define SINGLECOLOR	1
@@ -38,4 +41,6 @@ executor_t* initExecutor (inspector_t* insp);
  */
 int execute (executor_t* exec, int ncolors);
 
-void freeExecutor ();
+void freeExecutor (executor_t* exec);
+
+#endif

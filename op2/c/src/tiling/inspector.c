@@ -523,12 +523,12 @@ int runInspector (inspector_t* insp, int baseSetIndex)
 
 int addParLoop (inspector_t* insp, char* loopname, int setSize, int* indirectionMap, int mapSize)
 {
-  if ( insp->loopCounter >= insp->nloops )
+  if (insp->loopCounter >= insp->nloops)
     return INSPOP_MAXLOOP;
   
   //create a new mapping for the parloop, from the original OP2 indirectionMap to the new one which reflects the new position of vertices in p2v
   int* renumberedMap = (int*) malloc (mapSize * sizeof(int));
-  newCodomain (indirectionMap, mapSize, insp->v2v, renumberedMap );
+  newCodomain (indirectionMap, mapSize, insp->v2v, renumberedMap);
   
   // store parloop parameters into insp
   insp->loops[insp->loopCounter] = (loop_t*) malloc (sizeof(loop_t));

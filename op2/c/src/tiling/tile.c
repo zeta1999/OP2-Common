@@ -54,7 +54,6 @@ int runTile (tile_t* tile)
     for (int j = 0; j < tile->curSize[i]; j++)
       printf("%d ", tile->element[i][j] );
     printf("\n");
-    
   }
   
   return 0;

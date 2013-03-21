@@ -42,8 +42,8 @@ int execute (executor_t* exec, int ncolors)
   for (int i = 0; i < colorsToCompute; i++)
   {
     int curColor = exec->computedColors;
-    for (int j = exec->offset[curColor]; j < exec->offset[curColor + 1]; j++ )
-      runTile (exec->tiles[exec->c2p[ j ]]);
+    for (int j = exec->offset[curColor]; j < exec->offset[curColor + 1]; j++)
+      runTile (exec->tiles[exec->c2p[j]]);
     
     exec->computedColors++;
   }
