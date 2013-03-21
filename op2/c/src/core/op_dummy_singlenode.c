@@ -55,12 +55,6 @@ void op_mpi_wait_all(int nargs, op_arg *args)
   (void)args;
 }
 
-void op_mpi_global_reduction(int nargs, op_arg *args)
-{
-  (void)nargs;
-  (void)args;
-}
-
 void op_mpi_reset_halos(int nargs, op_arg *args)
 {
   (void)nargs;
