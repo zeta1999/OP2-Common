@@ -272,12 +272,6 @@ int main(int argc, char **argv)
       int* renum_pcell = insp->loops[0]->indMap;
       int* renum_pedge = insp->loops[1]->indMap;
       
-      /*printf ("cell 0: [%f, %f], [%f, %f], [%f, %f], [%f, %f]\n",
-              x[renum_pcell[0]*2], x[renum_pcell[0]*2+1],
-              x[renum_pcell[1]*2], x[renum_pcell[1]*2+1],
-              x[renum_pcell[2]*2], x[renum_pcell[2]*2+1],
-              x[renum_pcell[3]*2], x[renum_pcell[3]*2+1]);*/
-      
       //for each colour
       for (int i = 0; i < ncolors; i++)
       {

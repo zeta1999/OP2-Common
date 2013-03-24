@@ -46,7 +46,7 @@ int addElement (tile_t* tile, int loop, int el);
 int addLoop (tile_t* tile, int size, char* setName);
 
 /*
- * Run an entire tile
+ * Run an entire tile - TODO: currently just for debugging purposes
  */
 int runTile (tile_t* tile);
 

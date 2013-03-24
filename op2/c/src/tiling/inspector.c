@@ -459,7 +459,7 @@ int runInspector (inspector_t* insp, int baseSetIndex)
     int step = startLoop->mapSize / startLoop->setSize;
     for (int e = 0; e < startLoop->setSize; e++)
     {
-      int newColor = - 1;
+      int newColor = insp->ncolors;
       int entityColor = workLoopColor[e]; //the color previously assigned to the entity is initially assumed to be the maximum one
       int entityPartition = workLoopPartition[e];
       
@@ -467,7 +467,7 @@ int runInspector (inspector_t* insp, int baseSetIndex)
       for (int i = 0; i < step; i++)
       {
         int currentVertex = startLoop->indMap[e * step + i];
-        newColor = MAX (entityColor, workVertices[currentVertex]);
+        newColor = MIN (entityColor, workVertices[currentVertex]);
         
         if (newColor != workVertices[currentVertex])
         {
@@ -525,11 +525,22 @@ int addParLoop (inspector_t* insp, char* loopname, int setSize, int* indirection
 {
   if (insp->loopCounter >= insp->nloops)
     return INSPOP_MAXLOOP;
-  
-  //create a new mapping for the parloop, from the original OP2 indirectionMap to the new one which reflects the new position of vertices in p2v
+
+  // create a new mapping for the parloop, from the original OP2 indirectionMap to the new one which reflects the new position of vertices in p2v
   int* renumberedMap = (int*) malloc (mapSize * sizeof(int));
-  newCodomain (indirectionMap, mapSize, insp->v2v, renumberedMap);
   
+  if (! indirectionMap)
+  {
+    // verteces loop 
+    mapSize = setSize;
+    memcpy (renumberedMap, insp->v2v, sizeof(int)*setSize);
+  }
+  else
+  {
+    // indirect loop
+    newCodomain (indirectionMap, mapSize, insp->v2v, renumberedMap);
+  }
+    
   // store parloop parameters into insp
   insp->loops[insp->loopCounter] = (loop_t*) malloc (sizeof(loop_t));
   

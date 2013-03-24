@@ -188,7 +188,8 @@ int main(int argc, char **argv)
   // set constants and initialise flow field and residual
 
   op_printf("initialising flow field \n");
-
+  op_printf("prova \n");
+  
   gam = 1.4f;
   gm1 = gam - 1.0f;
   cfl = 0.9f;
