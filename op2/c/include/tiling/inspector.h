@@ -38,8 +38,8 @@ typedef struct {
   op_loop_type type; // direct or indirect loop write/inc
   
 #ifdef VTK_ON
-  int* setColor;  // array of colors, one for each element of the set
-  int coloring;   // 1 if the loop will be colored.
+  int* setColor;     // array of colors, one for each element of the set
+  int coloring;      // 1 if the loop will be colored.
 #endif
   
   char debug[DEBUGMSGLENGTH];

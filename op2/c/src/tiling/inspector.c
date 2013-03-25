@@ -16,7 +16,7 @@ static int kDistantMesh (int k, int nvertices, const int* p2v, const int* v2v, c
                          int** new_v2e_size, int* new_size);
 static int checkColor (loop_t *loop, const int *color, const int *partition, const int *verticesColor,
                        const int *verticesPartition, const int *verticesAdjColor,
-                       const int *verticesAdjPartition, const int *incidence, int maxIncidence);
+                       const int *verticesAdjPartition, const int *incidence, int maxIncidence, int* p2v);
 
 #if (DEBUG > 1)
 static void printColoring (inspector_t *insp, loop_t *loop, int *entityColor, int *entityTile,
@@ -209,7 +209,7 @@ void freeInspector (inspector_t* insp)
   
 }
 
-static int checkColor (loop_t *loop, const int *color, const int *partition, const int *verticesColor, const int *verticesPartition, const int *verticesAdjColor, const int *verticesAdjPartition, const int *incidence, int maxIncidence)
+static int checkColor (loop_t *loop, const int *color, const int *partition, const int *verticesColor, const int *verticesPartition, const int *verticesAdjColor, const int *verticesAdjPartition, const int *incidence, int maxIncidence, int* p2v)
 {
   //aliases
   int setSize = loop->setSize;
@@ -238,10 +238,10 @@ static int checkColor (loop_t *loop, const int *color, const int *partition, con
           {
 #ifdef VTK_ON
             loop->setColor[e] = 30;
-            printf ("%s: (%d, %d, %d) found (%d, %d) through adjacent vertex %d\n", loop->loopname, e, entityColor, entityTile, verticesAdjColor[currentVertex*maxIncidence + j], verticesAdjPartition[currentVertex*maxIncidence + j], currentVertex);
+            printf ("%s: (%d, %d, %d) found (%d, %d) through adjacent vertex %d\n", loop->loopname, e, entityColor, entityTile, verticesAdjColor[currentVertex*maxIncidence + j], verticesAdjPartition[currentVertex*maxIncidence + j], p2v[currentVertex]);
 #elif
             snprintf (loop->debug, DEBUGMSGLENGTH, "(%d, %d, %d) found (%d, %d) through adjacent vertex %d",
-                      e, entityColor, entityTile, verticesAdjColor[currentVertex*maxIncidence + j], verticesAdjPartition[currentVertex*maxIncidence + j], currentVertex);
+                      e, entityColor, entityTile, verticesAdjColor[currentVertex*maxIncidence + j], verticesAdjPartition[currentVertex*maxIncidence + j], p2v[currentVertex]);
             return INSPOP_WRONGCOLOR;
 #endif
           }
@@ -380,6 +380,7 @@ int runInspector (inspector_t* insp, int baseSetIndex)
     // save loop color
     memcpy (startLoop->setColor, workLoopColor, startLoop->setSize*sizeof(int));
     startLoop->coloring = 1;
+    printf("coloured onward loop %s\n", startLoop->loopname);
 #endif
     
     // if the loop is a direct one, no need to update tile dependencies
@@ -428,7 +429,7 @@ int runInspector (inspector_t* insp, int baseSetIndex)
 #endif
     
     // 4) check coloring
-    int coloring = checkColor (startLoop, workLoopColor, workLoopPartition, workVertices, workVerticesPartition, verticesAdjacentColor, verticesAdjacentPartition, inserted, insp->incidence);
+    int coloring = checkColor (startLoop, workLoopColor, workLoopPartition, workVertices, workVerticesPartition, verticesAdjacentColor, verticesAdjacentPartition, inserted, insp->incidence, insp->p2v);
     if (coloring != INSPOP_OK) 
     {
       snprintf (insp->debug, DEBUGMSGLENGTH + LOOPNAMELENGTH, "Coloring loop %s resulted in messing up colors\n%s", startLoop->loopname, startLoop->debug);
@@ -462,6 +463,7 @@ int runInspector (inspector_t* insp, int baseSetIndex)
     // save loop color
     memcpy (startLoop->setColor, workLoopColor, startLoop->setSize*sizeof(int));
     startLoop->coloring = 1;
+    printf("coloured backward loop %s\n", startLoop->loopname);
 #endif
     
     // if the loop is a direct one, no need to update tile dependencies
@@ -507,7 +509,7 @@ int runInspector (inspector_t* insp, int baseSetIndex)
 #endif
     
     // 4) check coloring
-    int coloring = checkColor (startLoop, workLoopColor, workLoopPartition, workVertices, workVerticesPartition, verticesAdjacentColor, verticesAdjacentPartition, inserted, insp->incidence);
+    int coloring = checkColor (startLoop, workLoopColor, workLoopPartition, workVertices, workVerticesPartition, verticesAdjacentColor, verticesAdjacentPartition, inserted, insp->incidence, insp->p2v);
     if (coloring != INSPOP_OK)
     {
       snprintf (insp->debug, DEBUGMSGLENGTH + LOOPNAMELENGTH, "Coloring loop %s resulted in messing up colors\n%s", startLoop->loopname, startLoop->debug);
@@ -627,9 +629,8 @@ int partitionAndColor (inspector_t* insp, int vertices, int* e2v, int mapsize)
   // create a k-distant mesh
   int totSize;
   int* new_v2e, *new_v2e_size;
-  kDistantMesh (insp->nloops + 2, vertices, p2v, adjncy, v2e_offset, insp->ntiles, insp->partSize,
+  kDistantMesh (insp->nloops, vertices, p2v, adjncy, v2e_offset, insp->ntiles, insp->partSize,
                       v2p, &new_v2e, &new_v2e_size, &totSize);
-  printf("nloops = %d\n", insp->nloops);
   
   int repeat = 1;
   int ncolor = 0;

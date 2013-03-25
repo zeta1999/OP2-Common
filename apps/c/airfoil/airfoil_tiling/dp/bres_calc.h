@@ -1,5 +1,6 @@
 inline void bres_calc(double *x1,  double *x2,  double *q1,
                       double *adt1,double *res1,int *bound) {
+  //printf("%f %f %f %f %f %f %f %d\n", x1[0], x1[1], x2[0], x2[1], q1[0], adt1[0], res1[0], bound[0]);
   double dx,dy,mu, ri, p1,vol1, p2,vol2, f;
 
   dx = x1[0] - x2[0];

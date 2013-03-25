@@ -202,7 +202,7 @@ int main(int argc, char **argv)
 
   // main time-marching loop
 
-  niter = 1000;
+  niter = 10;
 
   for(int iter=1; iter<=niter; iter++) {
 
@@ -217,7 +217,7 @@ int main(int argc, char **argv)
     for(int k=0; k<2; k++) {
 
       // calculate area/timstep
-      
+      rms = 0.0;
       
       op_par_loop(adt_calc,"adt_calc",cells,
           op_arg_dat(p_x,   0,pcell, 2,"double",OP_READ ),
@@ -250,7 +250,7 @@ int main(int argc, char **argv)
       
       // update flow field
       
-      rms = 0.0;
+      //rms = 0.0;
       
       op_par_loop(update,"update",cells,
           op_arg_dat(p_qold,-1,OP_ID, 4,"double",OP_READ ),
