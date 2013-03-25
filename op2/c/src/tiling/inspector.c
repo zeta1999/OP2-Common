@@ -376,6 +376,16 @@ int runInspector (inspector_t* insp, int baseSetIndex)
     // 1) color the loop
     doMaxColor (insp->tiles, workVerticesPartition, workVertices, startLoop, workLoopColor, workLoopPartition, s);
     
+#ifdef VTK_ON
+    // save loop color
+    memcpy (startLoop->setColor, workLoopColor, startLoop->setSize*sizeof(int));
+    startLoop->coloring = 1;
+#endif
+    
+    // if the loop is a direct one, no need to update tile dependencies
+    if (startLoop->type == OP_DIRECT)
+      continue;
+    
     // 2) prepare data for the subsequent loop coloring
     //set to -1 each entry of the vertex second color array
     for (int i = 0; i < insp->size; i++)
@@ -413,12 +423,6 @@ int runInspector (inspector_t* insp, int baseSetIndex)
     printColoring (insp, startLoop, workLoopColor, workLoopPartition, workVertices, workVerticesPartition, verticesAdjacentColor, verticesAdjacentPartition);
 #endif
     
-#ifdef VTK_ON
-    // save loop color
-    memcpy (startLoop->setColor, workLoopColor, startLoop->setSize*sizeof(int));
-    startLoop->coloring = 1;
-#endif
-    
     // 4) check coloring
     int coloring = checkColor (startLoop, workLoopColor, workLoopPartition, workVertices, workVerticesPartition, verticesAdjacentColor, verticesAdjacentPartition, inserted, insp->incidence);
     if (coloring != INSPOP_OK) 
@@ -450,8 +454,19 @@ int runInspector (inspector_t* insp, int baseSetIndex)
     // 1) color the loop
     doMinColor (insp->tiles, workVerticesPartition, workVertices, startLoop, workLoopColor, workLoopPartition, s);
     
+#ifdef VTK_ON
+    // save loop color
+    memcpy (startLoop->setColor, workLoopColor, startLoop->setSize*sizeof(int));
+    startLoop->coloring = 1;
+#endif
+    
+    // if the loop is a direct one, no need to update tile dependencies
+    if (startLoop->type == OP_DIRECT)
+      continue;
+    
     // 2) prepare data for the subsequent loop coloring
-    //set to -1 each entry of the vertex second color array
+    // set to -1 each entry of the vertex second color array touched by
+    // at least one element of the main set
     for (int i = 0; i < insp->size; i++)
       workVertices[i] = -1;
     
@@ -482,12 +497,6 @@ int runInspector (inspector_t* insp, int baseSetIndex)
     
 #if (DEBUG > 1)
     printColoring (insp, startLoop, workLoopColor, workLoopPartition, workVertices, workVerticesPartition, verticesAdjacentColor, verticesAdjacentPartition);
-#endif
-    
-#ifdef VTK_ON
-    // save loop color
-    memcpy (startLoop->setColor, workLoopColor, startLoop->setSize*sizeof(int));
-    startLoop->coloring = 1;
 #endif
     
     // 4) check coloring
@@ -521,11 +530,14 @@ int runInspector (inspector_t* insp, int baseSetIndex)
   return INSPOP_OK;
 }
 
-int addParLoop (inspector_t* insp, char* loopname, int setSize, int* indirectionMap, int mapSize)
+int addParLoop (inspector_t* insp, char* loopname, int setSize, int* indirectionMap, int mapSize, op_loop_type loop_type)
 {
   if (insp->loopCounter >= insp->nloops)
     return INSPOP_MAXLOOP;
 
+  if (! indirectionMap && loop_type == OP_INDIRECT)
+    return INSPOP_WRONGPAR;
+  
   // create a new mapping for the parloop, from the original OP2 indirectionMap to the new one which reflects the new position of vertices in p2v
   int* renumberedMap = (int*) malloc (mapSize * sizeof(int));
   
@@ -550,6 +562,7 @@ int addParLoop (inspector_t* insp, char* loopname, int setSize, int* indirection
   insp->loops[insp->loopCounter]->setSize = setSize;
   insp->loops[insp->loopCounter]->indMap = renumberedMap; 
   insp->loops[insp->loopCounter]->mapSize = mapSize;
+  insp->loops[insp->loopCounter]->type = loop_type;
   //insp->loops[insp->loopCounter]->workColor = (int*) malloc (setSize * sizeof(int));
   
 #ifdef VTK_ON
@@ -724,7 +737,7 @@ int partitionAndColor (inspector_t* insp, int vertices, int* e2v, int mapsize)
 
 
 /* K-DISTANT COLOURING */
-//TODO: use global const variables to relieve argument passing
+//TODO: using global const variables to relieve argument passing
 
 int __k;
 const int* __v2v;

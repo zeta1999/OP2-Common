@@ -21,18 +21,25 @@
 #define LOOPNAMELENGTH 32
 #define DEBUGMSGLENGTH 128
 
+enum op_loop_type {
+  OP_DIRECT,
+  OP_INDIRECT
+};
+
 /* This struct contains information about a specific par loop
  *
  */
 typedef struct {
-  char* loopname; //name/identifier of the parloop
-  int setSize;    //size of the iteration set
-  int* indMap;    //indirect map to the renumbered base set
-  int mapSize;    //size of indMap
+  char* loopname;    // name/identifier of the parloop
+  int   setSize;     // size of the iteration set
+  int*  indMap;      // indirect map to the renumbered base set
+  int   mapSize;     // size of indMap
+  
+  op_loop_type type; // direct or indirect loop write/inc
   
 #ifdef VTK_ON
-  int* setColor;  //array of colors, one for each element of the set
-  int coloring;   //1 if the loop will be colored.
+  int* setColor;  // array of colors, one for each element of the set
+  int coloring;   // 1 if the loop will be colored.
 #endif
   
   char debug[DEBUGMSGLENGTH];
@@ -111,11 +118,11 @@ int runInspector (inspector_t* insp, int baseSetIndex);
  * insp           : inspector
  * loopname       : string identifying the parallel loop
  * setSize        : size of the iteration set
- * indirectionMap : indirect map used by the loop to access the base set
+ * indirectionMap : indirect map used by the loop set to access the base set
  * mapSize        : size of indirectionMap
  *
  */
-int addParLoop (inspector_t* insp, char* loopname, int setSize, int* indirectionMap, int mapSize);
+int addParLoop (inspector_t* insp, char* loopname, int setSize, int* indirectionMap, int mapSize, op_loop_type loop_type);
 
 /*
  * This function can be called just once after the inspector initialization.

@@ -212,11 +212,12 @@ int main(int argc, char **argv)
   
   op_printf ("running inspector\n");
   
-  inspector_t* insp = initInspector (nnode, nvertices, 2);
+  inspector_t* insp = initInspector (nnode, nvertices, 3);
   partitionAndColor (insp, nnode, pedge->map, nedge*2); // TODO: breaking abstraction
   
-  addParLoop (insp, "cells1", ncell, pcell->map, ncell * 4);
-  addParLoop (insp, "edges1", nedge, pedge->map, nedge * 2);
+  addParLoop (insp, "cells1", ncell, pcell->map, ncell * 4, OP_DIRECT);
+  addParLoop (insp, "edges1", nedge, pedge->map, nedge * 2, OP_INDIRECT);
+  //addParLoop (insp, "bedges1", nedge, pedge->map, nedge * 2, OP_INDIRECT);
   
   op_printf ("added parallel loops\n");
   
@@ -252,7 +253,7 @@ int main(int argc, char **argv)
   // main time-marching loop
 
   //niter = 1000;
-  niter = 100;
+  niter = 10;
 
   for(int iter=1; iter<=niter; iter++) {
 
@@ -348,11 +349,11 @@ int main(int argc, char **argv)
           op_arg_dat(p_adt,   0,pbecell,1,"double",OP_READ),
           op_arg_dat(p_res,   0,pbecell,4,"double",OP_INC ),
           op_arg_dat(p_bound,-1,OP_ID  ,1,"int",  OP_READ));
-
+      
       // update flow field
-
+      
       rms = 0.0;
-
+      
       op_par_loop(update,"update",cells,
           op_arg_dat(p_qold,-1,OP_ID, 4,"double",OP_READ ),
           op_arg_dat(p_q,   -1,OP_ID, 4,"double",OP_WRITE),
