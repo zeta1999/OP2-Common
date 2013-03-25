@@ -386,13 +386,17 @@ int runInspector (inspector_t* insp, int baseSetIndex)
     if (startLoop->type == OP_DIRECT)
       continue;
     
+    // incidence of the set
+    int step = startLoop->mapSize / startLoop->setSize;
+    
     // 2) prepare data for the subsequent loop coloring
-    //set to -1 each entry of the vertex second color array
-    for (int i = 0; i < insp->size; i++)
-      workVertices[i] = -1;
+    // set to -1 each entry of the vertex second color array touched by
+    // at least one element of the main set
+    for (int e = 0; e < startLoop->setSize; e++)
+      for (int i = 0; i < step; i++)
+        workVertices[startLoop->indMap[e * step + i]] = -1;
     
     // 3) compute the vertices second color based on workLoopColor, workPartition and workArray
-    int step = startLoop->mapSize / startLoop->setSize;
     for (int e = 0; e < startLoop->setSize; e++)
     {
       int newColor = - 1;
@@ -464,14 +468,17 @@ int runInspector (inspector_t* insp, int baseSetIndex)
     if (startLoop->type == OP_DIRECT)
       continue;
     
+    // incidence of the set
+    int step = startLoop->mapSize / startLoop->setSize;
+    
     // 2) prepare data for the subsequent loop coloring
     // set to -1 each entry of the vertex second color array touched by
     // at least one element of the main set
-    for (int i = 0; i < insp->size; i++)
-      workVertices[i] = -1;
+    for (int e = 0; e < startLoop->setSize; e++)
+      for (int i = 0; i < step; i++)
+        workVertices[startLoop->indMap[e * step + i]] = -1;
     
     // 3) compute the vertices second color based on workLoopColor, workPartition and workArray
-    int step = startLoop->mapSize / startLoop->setSize;
     for (int e = 0; e < startLoop->setSize; e++)
     {
       int newColor = insp->ncolors;
