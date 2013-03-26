@@ -239,18 +239,20 @@ int main(int argc, char **argv)
   
   op_printf ("running inspector\n");
   
+  /*
   int* all_edge  = (int *) malloc (2*(nbedge+nedge)*sizeof(int));
   memcpy (all_edge, edge, sizeof(int)*2*nedge);
   memcpy (all_edge + 2*nedge, bedge, sizeof(int)*2*nbedge);
-  
-  inspector_t* insp = initInspector (nnode, nvertices, 4);
-  //partitionAndColor (insp, nnode, pedge->map, nedge*2); // TODO: breaking abstraction
-  partitionAndColor (insp, nnode, all_edge, (nedge+nbedge)*2); // TODO: breaking
+  */
+   
+  inspector_t* insp = initInspector (nnode, nvertices, 2);
+  partitionAndColor (insp, nnode, pedge->map, nedge*2); // TODO: breaking abstraction
+  //partitionAndColor (insp, nnode, all_edge, (nedge+nbedge)*2); // TODO: breaking
   
   addParLoop (insp, "cells1", ncell, pcell->map, ncell * 4, OP_INDIRECT);
   addParLoop (insp, "edges1", nedge, pedge->map, nedge * 2, OP_INDIRECT);
-  addParLoop (insp, "bedges1", nbedge, pbedge->map, nbedge * 2, OP_INDIRECT);
-  addParLoop (insp, "cells2", ncell, pcell->map, ncell * 4, OP_DIRECT);
+  //addParLoop (insp, "bedges1", nbedge, pbedge->map, nbedge * 2, OP_INDIRECT);
+  //addParLoop (insp, "cells2", ncell, pcell->map, ncell * 4, OP_DIRECT);
   
   op_printf ("added parallel loops\n");
   
