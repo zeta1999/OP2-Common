@@ -287,6 +287,8 @@ int main(int argc, char **argv)
         int tile_size;
         int first_tile = exec->offset[i];
         int last_tile = exec->offset[i + 1];
+        
+        #pragma omp parallel for
         for (int j = first_tile; j < last_tile; j++)
         {
           // execute the tile
