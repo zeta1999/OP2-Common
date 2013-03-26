@@ -272,8 +272,7 @@ int main(int argc, char **argv)
   
   // main time-marching loop
   
-  //niter = 1000;
-  niter = 100;
+  niter = 1000;
   
   for(int iter=1; iter<=niter; iter++) {
 
