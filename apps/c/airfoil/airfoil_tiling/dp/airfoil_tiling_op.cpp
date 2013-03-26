@@ -162,7 +162,6 @@ int main(int argc, char **argv)
   // set constants and initialise flow field and residual
 
   op_printf("initialising flow field \n");
-  op_printf("prova \n");
   
   gam = 1.4f;
   gm1 = gam - 1.0f;
@@ -277,7 +276,7 @@ int main(int argc, char **argv)
     op_par_loop_save_soln("save_soln",cells,
                op_arg_dat(p_q,-1,OP_ID,4,"double",OP_READ),
                op_arg_dat(p_qold,-1,OP_ID,4,"double",OP_WRITE));
-
+   
     // predictor/corrector update loop
 
     for(int k=0; k<2; k++) {
@@ -289,7 +288,7 @@ int main(int argc, char **argv)
       //int* renum2_pcell  = insp->loops[3]->indMap;
       
       rms = 0.0;
-      
+
       //for each colour
       for (int i = 0; i < ncolors; i++)
       {
@@ -298,12 +297,12 @@ int main(int argc, char **argv)
         int first_tile = exec->offset[i];
         int last_tile = exec->offset[i + 1];
         
-        #pragma omp parallel for
+        #pragma omp parallel for private(tile_size)
         for (int j = first_tile; j < last_tile; j++)
         {
           // execute the tile
           tile_t* tile = exec->tiles[exec->c2p[j]];
-          
+        
           // loop adt_calc (calculate area/timstep)
           tile_size = tile->curSize[0];
           for (int k = 0; k < tile_size; k++)
@@ -317,7 +316,7 @@ int main(int argc, char **argv)
                       q     + cell*4,
                       adt   + cell);
           }
-          
+
           // loop res_calc
           tile_size = tile->curSize[1];
           for (int k = 0; k < tile_size; k++)
@@ -347,7 +346,7 @@ int main(int argc, char **argv)
                        res   + becell[edge + 0]*4,
                        bound + edge);
           }
-          
+
           // loop update
           tile_size = tile->curSize[3];
           for (int k = 0; k < tile_size; k++)
@@ -374,8 +373,8 @@ int main(int argc, char **argv)
   op_timers(&cpu_t2, &wall_t2);
 
   //output the result dat array to files
-  op_print_dat_to_txtfile(p_q, "out_grid_op.dat"); //ASCI
-  op_print_dat_to_binfile(p_q, "out_grid_op.bin"); //Binary
+  op_print_dat_to_txtfile(p_q, "out_grid_tile_op.dat"); //ASCI
+  op_print_dat_to_binfile(p_q, "out_grid_tile_op.bin"); //Binary
 
   op_timing_output();
   op_printf("Max total runtime = \n%f\n",wall_t2-wall_t1);
