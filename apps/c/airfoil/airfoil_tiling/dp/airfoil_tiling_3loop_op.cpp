@@ -78,6 +78,29 @@ void op_par_loop_save_soln(char const *, op_set,
                            op_arg,
                            op_arg );
 
+void op_par_loop_bres_calc(char const *, op_set,
+  op_arg,
+  op_arg,
+  op_arg,
+  op_arg,
+  op_arg,
+  op_arg );
+
+void op_par_loop_update(char const *, op_set,
+  op_arg,
+  op_arg,
+  op_arg,
+  op_arg,
+  op_arg );
+
+void op_par_loop_bres_calc(char const *, op_set,
+  op_arg,
+  op_arg,
+  op_arg,
+  op_arg,
+  op_arg,
+  op_arg );
+
 //
 // kernel routines for parallel loops
 //
@@ -200,15 +223,13 @@ int main(int argc, char **argv)
   //op_map pbecell = op_decl_map(bedges,cells,1,becell,"pbecell");
   op_map pcell   = op_decl_map(cells, nodes,4,cell,  "pcell");
 
-  /* TODO: not used yet
-  op_dat p_bound = op_decl_dat(bedges,1,"int"  ,bound,"p_bound");
-  op_dat p_x     = op_decl_dat(nodes ,2,"double",x    ,"p_x");
+  //op_dat p_bound = op_decl_dat(bedges,1,"int"  ,bound,"p_bound");
+  //op_dat p_x     = op_decl_dat(nodes ,2,"double",x    ,"p_x");
   op_dat p_adt   = op_decl_dat(cells ,1,"double",adt  ,"p_adt");
   op_dat p_res   = op_decl_dat(cells ,4,"double",res  ,"p_res");
-  */
   op_dat p_q     = op_decl_dat(cells ,4,"double",q    ,"p_q");
   op_dat p_qold  = op_decl_dat(cells ,4,"double",qold ,"p_qold");
-
+  
   op_decl_const2("gam",1,"double",&gam  );
   op_decl_const2("gm1",1,"double",&gm1  );
   op_decl_const2("cfl",1,"double",&cfl  );
@@ -263,17 +284,16 @@ int main(int argc, char **argv)
   
   //initialise timers for total execution wall time
   op_timers(&cpu_t1, &wall_t1);
+
+  // main time-marching loop
+
+  niter = 1000;
   
   // tiled execution of the first two loops
   int* renum_pcell  = insp->loops[0]->indMap;
   int* renum_pedge  = insp->loops[1]->indMap;
   int* renum_pbedge = insp->loops[2]->indMap;
   //int* renum2_pcell  = insp->loops[3]->indMap;
-  
-  // main time-marching loop
-  
-  //niter = 1000;
-  niter = 100;
   
   for(int iter=1; iter<=niter; iter++) {
 
@@ -282,10 +302,18 @@ int main(int argc, char **argv)
     op_par_loop_save_soln("save_soln",cells,
                op_arg_dat(p_q,-1,OP_ID,4,"double",OP_READ),
                op_arg_dat(p_qold,-1,OP_ID,4,"double",OP_WRITE));
-   
+  /* 
+    printf ("iter = %d\n", iter);
+    printf ("qold: %f %f %f %f\n", q[0], q[1], q[2], q[3]);
+    printf ("qold: %f %f %f %f\n", q[40], q[41], q[42], q[43]);
+    printf ("qold: %f %f %f %f\n", q[80], q[81], q[82], q[83]);
+    printf ("qold: %f %f %f %f\n", q[120], q[121], q[122], q[123]);
+    printf ("qold: %f %f %f %f\n", q[160], q[161], q[162], q[163]);
+*/
     // predictor/corrector update loop
 
     for(int k=0; k<2; k++) {
+    
       
       rms = 0.0;
 
@@ -346,22 +374,21 @@ int main(int argc, char **argv)
                        res   + becell[edge + 0]*4,
                        bound + edge);
           }
-
-          // loop update
-          tile_size = tile->curSize[3];
-          for (int k = 0; k < tile_size; k++)
-          {
-            int cell = tile->element[3][k];
-            
-            update    (qold  + cell*4,
-                       q     + cell*4,
-                       res   + cell*4,
-                       adt   + cell,
-                       &rms);
-          }
-          
-        }
+         
+        }        
       }
+ 
+      // update flow field
+
+      rms = 0.0;
+
+      op_par_loop_update("update",cells,
+                 op_arg_dat(p_qold,-1,OP_ID,4,"double",OP_READ),
+                 op_arg_dat(p_q,-1,OP_ID,4,"double",OP_WRITE),
+                 op_arg_dat(p_res,-1,OP_ID,4,"double",OP_RW),
+                 op_arg_dat(p_adt,-1,OP_ID,1,"double",OP_READ),
+                 op_arg_gbl(&rms,1,"double",OP_INC));
+
     }
 
     // print iteration history

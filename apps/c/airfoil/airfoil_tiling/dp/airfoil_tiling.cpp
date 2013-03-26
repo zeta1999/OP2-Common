@@ -259,6 +259,12 @@ int main(int argc, char **argv)
   //initialise timers for total execution wall time
   op_timers(&cpu_t1, &wall_t1);
   
+  // tiled execution of the first two loops
+  int* renum_pcell  = insp->loops[0]->indMap;
+  int* renum_pedge  = insp->loops[1]->indMap;
+  int* renum_pbedge = insp->loops[2]->indMap;
+  //int* renum2_pcell  = insp->loops[3]->indMap;
+  
   // main time-marching loop
   
   //niter = 1000;
@@ -275,12 +281,6 @@ int main(int argc, char **argv)
     // predictor/corrector update loop
     
     for(int k=0; k<2; k++) {
-            
-      // tiled execution of the first two loops
-      int* renum_pcell  = insp->loops[0]->indMap;
-      int* renum_pedge  = insp->loops[1]->indMap;
-      int* renum_pbedge = insp->loops[2]->indMap;
-      //int* renum2_pcell  = insp->loops[3]->indMap;
       
       rms = 0.0;
       
