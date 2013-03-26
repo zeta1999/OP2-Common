@@ -71,6 +71,14 @@ int op2_stride = 1;
 #include "invert.h"
 
 //
+// op_par_loop declarations
+//
+
+void op_par_loop_save_soln(char const *, op_set,
+                           op_arg,
+                           op_arg );
+
+//
 // kernel routines for parallel loops
 //
 
@@ -188,17 +196,19 @@ int main(int argc, char **argv)
   op_set cells  = op_decl_set(ncell,  "cells");
 
   op_map pedge   = op_decl_map(edges, nodes,2,edge,  "pedge");
-  op_map pecell  = op_decl_map(edges, cells,2,ecell, "pecell");
+  //op_map pecell  = op_decl_map(edges, cells,2,ecell, "pecell");
   op_map pbedge  = op_decl_map(bedges,nodes,2,bedge, "pbedge");
-  op_map pbecell = op_decl_map(bedges,cells,1,becell,"pbecell");
+  //op_map pbecell = op_decl_map(bedges,cells,1,becell,"pbecell");
   op_map pcell   = op_decl_map(cells, nodes,4,cell,  "pcell");
 
+  /* TODO: not used yet
   op_dat p_bound = op_decl_dat(bedges,1,"int"  ,bound,"p_bound");
   op_dat p_x     = op_decl_dat(nodes ,2,"double",x    ,"p_x");
-  op_dat p_q     = op_decl_dat(cells ,4,"double",q    ,"p_q");
-  op_dat p_qold  = op_decl_dat(cells ,4,"double",qold ,"p_qold");
   op_dat p_adt   = op_decl_dat(cells ,1,"double",adt  ,"p_adt");
   op_dat p_res   = op_decl_dat(cells ,4,"double",res  ,"p_res");
+  */
+  op_dat p_q     = op_decl_dat(cells ,4,"double",q    ,"p_q");
+  op_dat p_qold  = op_decl_dat(cells ,4,"double",qold ,"p_qold");
 
   op_decl_const2("gam",1,"double",&gam  );
   op_decl_const2("gm1",1,"double",&gm1  );
@@ -276,7 +286,7 @@ int main(int argc, char **argv)
       int* renum_pcell  = insp->loops[0]->indMap;
       int* renum_pedge  = insp->loops[1]->indMap;
       int* renum_pbedge = insp->loops[2]->indMap;
-      int* renum2_pcell  = insp->loops[3]->indMap;
+      //int* renum2_pcell  = insp->loops[3]->indMap;
       
       rms = 0.0;
       
