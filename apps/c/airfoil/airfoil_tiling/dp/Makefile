@@ -194,4 +194,4 @@ test_tile: testTile.c
 #
 
 clean:
-		rm -f airfoil_seq airfoil_openmp airfoil_cuda airfoil_mpi airfoil_mpi_cuda airfoil_mpi_openmp *.o
+		rm -f airfoil_seq airfoil_openmp airfoil_cuda airfoil_mpi airfoil_mpi_cuda airfoil_mpi_openmp airfoil_tile_seq airfoil_tile_openmp *.o

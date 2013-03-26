@@ -239,7 +239,7 @@ static int checkColor (loop_t *loop, const int *color, const int *partition, con
 #ifdef VTK_ON
             loop->setColor[e] = 30;
             printf ("%s: (%d, %d, %d) found (%d, %d) through adjacent vertex %d\n", loop->loopname, e, entityColor, entityTile, verticesAdjColor[currentVertex*maxIncidence + j], verticesAdjPartition[currentVertex*maxIncidence + j], p2v[currentVertex]);
-#elif
+#else
             snprintf (loop->debug, DEBUGMSGLENGTH, "(%d, %d, %d) found (%d, %d) through adjacent vertex %d",
                       e, entityColor, entityTile, verticesAdjColor[currentVertex*maxIncidence + j], verticesAdjPartition[currentVertex*maxIncidence + j], p2v[currentVertex]);
             return INSPOP_WRONGCOLOR;
