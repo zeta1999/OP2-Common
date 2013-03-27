@@ -266,8 +266,6 @@ void op_mpi_set_dirtybit(int nargs, op_arg *args);
 
 void op_mpi_wait_all(int nargs, op_arg* args);
 
-void op_mpi_global_reduction(int nargs, op_arg* args);
-
 void op_mpi_reset_halos(int nargs, op_arg* args);
 
 void op_mpi_reduce_float(op_arg *args, float* data);
