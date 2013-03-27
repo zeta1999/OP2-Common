@@ -352,7 +352,7 @@ int runInspector (inspector_t* insp, int baseSetIndex)
   for (int i = 0; i < insp->nloops; i++) 
     maxLoopSize = MAX (maxLoopSize, insp->loops[i]->setSize);
   
-  //two working arrays for loop second color and partition, both sized to the largest iteration set that has to be worked out
+  //two working arrays for loop color and partition, both sized to the largest iteration set that has to be worked out
   int* workLoopColor = (int*) malloc (maxLoopSize * sizeof(int));
   int* workLoopPartition = (int*) malloc (maxLoopSize * sizeof(int)); //for entities second partition
   
@@ -629,7 +629,7 @@ int partitionAndColor (inspector_t* insp, int vertices, int* e2v, int mapsize)
   // create a k-distant mesh
   int totSize;
   int* new_v2e, *new_v2e_size;
-  kDistantMesh (insp->nloops, vertices, p2v, adjncy, v2e_offset, insp->ntiles, insp->partSize,
+  kDistantMesh (insp->nloops + 2, vertices, p2v, adjncy, v2e_offset, insp->ntiles, insp->partSize,
                       v2p, &new_v2e, &new_v2e_size, &totSize);
   
   int repeat = 1;
