@@ -81,7 +81,7 @@ all: clean airfoil_seq airfoil_openmp airfoil_mpi airfoil_mpi_openmp airfoil_cud
 # make just tiling-enabled test cases
 #
 
-tiling: clean airfoil_seq airfoil_tile_seq airfoil_tile_1loop_seq airfoil_tile_2loop_seq airfoil_openmp airfoil_tile_openmp airfoil_tile_2loop_openmp airfoil_tile_3loop_openmp
+tiling: clean airfoil_seq airfoil_tile_seq airfoil_tile_1loop_seq airfoil_tile_2loop_seq airfoil_openmp airfoil_tile_openmp airfoil_tile_1loop_openmp airfoil_tile_2loop_openmp airfoil_tile_3loop_openmp
 	mkdir -p GeneratedVTUFiles	
 
 #
@@ -123,6 +123,14 @@ airfoil_tile_openmp:	airfoil_tiling_op.cpp airfoil_kernels.cpp \
                 Makefile
 		$(CPP) $(VAR) $(CPPFLAGS) $(OMPFLAGS) $(OP2_INC) $(TILE_INC) $(OP2_LIB) airfoil_tiling_op.cpp airfoil_kernels.cpp -lop2_st -lm -lmetis -lop2_openmp -o airfoil_tile_openmp
 
+airfoil_tile_1loop_openmp:	airfoil_tiling_1loop_op.cpp airfoil_kernels.cpp \
+		save_soln_kernel.cpp  save_soln.h \
+		adt_calc_kernel.cpp   adt_calc.h  \
+		res_calc_kernel.cpp   res_calc.h  \
+		bres_calc_kernel.cpp  bres_calc.h \
+		update_kernel.cpp     update.h    \
+                Makefile
+		$(CPP) $(VAR) $(CPPFLAGS) $(OMPFLAGS) $(OP2_INC) $(TILE_INC) $(OP2_LIB) airfoil_tiling_1loop_op.cpp airfoil_kernels.cpp -lop2_st -lm -lmetis -lop2_openmp -o airfoil_tile_1loop_openmp
 
 airfoil_tile_2loop_openmp:	airfoil_tiling_2loop_op.cpp airfoil_kernels.cpp \
 		save_soln_kernel.cpp  save_soln.h \
@@ -218,4 +226,4 @@ test_tile: testTile.c
 #
 
 clean:
-		rm -f airfoil_seq airfoil_openmp airfoil_cuda airfoil_mpi airfoil_mpi_cuda airfoil_mpi_openmp airfoil_tile_seq airfoil_tile_openmp airfoil_tile_2loop_openmp airfoil_tile_3loop_openmp airfoil_tile_2loop_seq airfoil_tile_1loop_seq *.o
+		rm -f airfoil_seq airfoil_openmp airfoil_cuda airfoil_mpi airfoil_mpi_cuda airfoil_mpi_openmp airfoil_tile_seq airfoil_tile_openmp airfoil_tile_2loop_openmp airfoil_tile_3loop_openmp airfoil_tile_2loop_seq airfoil_tile_1loop_seq airfoil_tile_1loop_openmp *.o
