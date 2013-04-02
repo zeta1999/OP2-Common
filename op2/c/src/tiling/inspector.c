@@ -590,12 +590,12 @@ int addParLoop (inspector_t* insp, char* loopname, int setSize, int* indirection
 int partitionAndColor (inspector_t* insp, int vertices, int* e2v, int mapsize)
 {	
   // invert the mapping, v2e is needed to compute coloring
-  int* v2e 	= (int*) malloc ( mapsize * sizeof(int) );
-  int* v2e_offset	= (int*) calloc ( vertices + 1, sizeof(int) ); 
-  int* adjncy = (int*) malloc ( mapsize * sizeof(int) );
+  int* v2e 	= (int*) malloc (mapsize * sizeof(int));
+  int* v2e_offset	= (int*) calloc (vertices + 1, sizeof(int));
+  int* adjncy = (int*) malloc (mapsize * sizeof(int));
   
   //invert mapping, i.e. creates v2e mapping, and call metis to compute the partitioning
-  invertMapping ( e2v, mapsize, vertices, 2, 1, v2e, adjncy, v2e_offset, &insp->incidence);
+  invertMapping (e2v, mapsize, vertices, 2, 1, v2e, adjncy, v2e_offset, &insp->incidence);
 
 #if (DEBUG > 0)   
   for (int i = 0; i < mapsize; i++)
@@ -610,20 +610,20 @@ int partitionAndColor (inspector_t* insp, int vertices, int* e2v, int mapsize)
   metisPartition (vertices, insp->ntiles, (idx_t*) v2e_offset, (idx_t*) adjncy, &v2p); 
   
   // compute the mapping p2v as it is needed to determine a coloring scheme
-  int* p2v = (int*) malloc ( vertices * sizeof(int) );
-  int* p2v_offset = (int*) calloc ( insp->ntiles + 1, sizeof(int) );
+  int* p2v = (int*) malloc (vertices * sizeof(int));
+  int* p2v_offset = (int*) calloc (insp->ntiles + 1, sizeof(int));
   
   invertMapping (v2p, vertices, insp->ntiles, 1, 1, p2v, NULL, p2v_offset, NULL);
   
   // add the p2v mapping and the partition sizes to the inspector
   insp->v2p = v2p;
   insp->p2v = p2v;
-  for ( int b = 0; b < insp->ntiles; b++ )
+  for (int b = 0; b < insp->ntiles; b++)
     insp->partSize[b] = p2v_offset[b + 1] - p2v_offset[b];
   
   // init colors
   int* colors = (int*) malloc (insp->ntiles * sizeof (int));
-  for ( int b = 0; b < insp->ntiles; b++ ) 
+  for (int b = 0; b < insp->ntiles; b++) 
     colors[b] = -1;
   
   // create a k-distant mesh
@@ -673,13 +673,13 @@ int partitionAndColor (inspector_t* insp, int vertices, int* e2v, int mapsize)
         
 #if (DEBUG > 0) 
         printf ("WORK LOADED: [ ");
-        for ( int i = 0; i < totSize; i++ )
-          printf ("%d ", work[i] );
+        for (int i = 0; i < totSize; i++)
+          printf ("%d ", work[i]);
         printf ("]\n");
 #endif
         
-        int color = ffs( ~mask ) - 1; // find first bit not set
-        if ( color == -1 )
+        int color = ffs(~mask) - 1; // find first bit not set
+        if (color == -1)
         { //run out of colors on this pass
           repeat = 1;
         }
@@ -687,11 +687,11 @@ int partitionAndColor (inspector_t* insp, int vertices, int* e2v, int mapsize)
         {
           colors[b] = ncolor + color;
           mask = 1 << color;
-          ncolors = MAX( ncolors, ncolor + color + 1 );
+          ncolors = MAX(ncolors, ncolor + color + 1);
           
-          for ( int e = prev_offset; e < next_offset; e++ )
+          for (int e = prev_offset; e < next_offset; e++)
           {
-            for ( int j = 0; j < new_v2e_size[b]; j++ )
+            for (int j = 0; j < new_v2e_size[b]; j++)
               work[new_v2e[prev_offset + j]] |= mask;
           }
         }

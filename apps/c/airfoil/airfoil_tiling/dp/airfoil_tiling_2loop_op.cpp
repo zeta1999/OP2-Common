@@ -157,6 +157,14 @@ int main(int argc, char **argv)
                                    &cell[4*n+2], &cell[4*n+3]) != 4) {
       op_printf("error reading from new_grid.dat\n"); exit(-1);
     }
+    if (cell[4*n] >= 800 && cell[4*n] <= 1200)
+      cell[4*n] = 1200 - cell[4*n];
+    if (cell[4*n+1] >= 800 && cell[4*n+1] <= 1200)
+      cell[4*n+1] = 1200 - cell[4*n+1];
+    if (cell[4*n+2] >= 800 && cell[4*n+2] <= 1200)
+      cell[4*n+2] = 1200 - cell[4*n+2];
+    if (cell[4*n+3] >= 800 && cell[4*n+3] <= 1200)
+      cell[4*n+3] = 1200 - cell[4*n+3];
   }
 
   for (int n=0; n<nedge; n++) {
@@ -164,6 +172,10 @@ int main(int argc, char **argv)
                                    &ecell[2*n],&ecell[2*n+1]) != 4) {
       op_printf("error reading from new_grid.dat\n"); exit(-1);
     }
+    if (edge[2*n] >= 800 && edge[2*n] <= 1200)
+      edge[2*n] = 1200 - edge[2*n];
+    if (edge[2*n+1] >= 800 && edge[2*n+1] <= 1200)
+      edge[2*n+1] = 1200 - edge[2*n+1];
   }
 
   for (int n=0; n<nbedge; n++) {
