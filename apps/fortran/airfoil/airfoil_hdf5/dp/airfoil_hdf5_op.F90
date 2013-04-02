@@ -11,7 +11,6 @@ program AIRFOIL
   use BRES_CALC_MODULE
   use UPDATE_MODULE
   use OP2_Fortran_RT_Support
-  use AIRFOIL_SEQ
   use OP2_CONSTANTS
   use IO
   use, intrinsic :: ISO_C_BINDING
