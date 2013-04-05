@@ -34,12 +34,12 @@ import re
 import datetime
 
 #import openmp code generation function
-import op2_gen_openmp
-from op2_gen_openmp import *
+#import op2_gen_openmp
+#from op2_gen_openmp import *
 
 #import openmp code generation function
-import op2_gen_mpiseq
-from op2_gen_mpiseq import *
+#import op2_gen_mpiseq
+#from op2_gen_mpiseq import *
 
 #import openmp code generation function
 import op2_gen_cuda
@@ -159,7 +159,7 @@ def typechange(text):
   elif '"logical"' in text:
     return '"logical"'
   return text
-  
+
 
 def get_arg_dat(arg_string, j):
   loc = arg_parse(arg_string,j+1)
@@ -202,7 +202,7 @@ def get_arg_dat(arg_string, j):
   if temp_dat['typ']=='"logical"':
     temp_dat['typ']='"logical*1"'
   return temp_dat
-  
+
 def get_opt_arg_dat(arg_string, j):
   loc = arg_parse(arg_string,j+1)
   dat_args_string = arg_string[arg_string.find('(',j)+1:loc]
@@ -243,7 +243,7 @@ def get_opt_arg_dat(arg_string, j):
     temp_dat['typ']='"INTEGER(kind=4)"'
   if temp_dat['typ']=='"logical"':
     temp_dat['typ']='"logical*1"'
-    
+
   return temp_dat
 
 def get_arg_gbl(arg_string, k):
@@ -310,7 +310,7 @@ def op_par_loop_parse(text):
 
       while j > -1 or k > -1 or l > -1:
         index = min(j if (j > -1) else sys.maxint,k if (k > -1) else sys.maxint,l if (l > -1) else sys.maxint)
-        
+
         if index == j:
           temp_dat = get_arg_dat(arg_string,j)
           #append this struct to a temporary list/array
@@ -329,13 +329,13 @@ def op_par_loop_parse(text):
           temp_args.append(temp_dat)
           num_args = num_args + 1
           l = arg_string.find(search4, l+15)
-            
+
       temp = {'loc':i,
               'name1':arg_string.split(',')[0].strip(),
               'set':arg_string.split(',')[1].strip(),
               'args':temp_args,
               'nargs':num_args}
-      
+
       loop_args.append(temp)
       i=text.find(search, i+10)
 
@@ -463,7 +463,7 @@ for a in range(init_ctr,len(sys.argv)):
     for m in range (0,nargs):
       arg_type =  loop_args[i]['args'][m]['type']
       args =  loop_args[i]['args'][m]
-      
+
       if arg_type.strip() == 'op_arg_dat' or arg_type.strip() == 'op_opt_arg_dat':
         var[m] = args['dat']
         idxs[m] =  args['idx']
@@ -492,7 +492,7 @@ for a in range(init_ctr,len(sys.argv)):
           print 'unknown access type for argument '+str(m)
         else:
           accs[m] = l+1
-        
+
         if arg_type.strip() == 'op_opt_arg_dat':
           optflags[m] = 1
         else:
@@ -808,5 +808,5 @@ if npart==0 and nhdf5>0:
 ##########################################################################
 
 #op2_gen_openmp(str(sys.argv[init_ctr]), date, consts, kernels, hydra)
-op2_gen_mpiseq(str(sys.argv[init_ctr]), date, consts, kernels, hydra)
-#op2_gen_cuda(str(sys.argv[1]), date, consts, kernels)
+#op2_gen_mpiseq(str(sys.argv[init_ctr]), date, consts, kernels, hydra)
+op2_gen_cuda(str(sys.argv[1]), date, consts, kernels)
