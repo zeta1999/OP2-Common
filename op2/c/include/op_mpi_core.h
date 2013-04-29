@@ -83,6 +83,8 @@ typedef struct {
   op_set set;
   //global index of each element held in this MPI process
   int *g_index;
+  //global reordered index of each element held in this MPI process
+  int *g_order;
   //partition to which each element belongs
   int *elem_part;
   //indicates if this set is partitioned 1 if partitioned 0 if not
@@ -275,6 +277,8 @@ void op_partition_meshkway(op_map primary_map); //does not work
 *******************************************************************************/
 
 void op_partition_ptscotch(op_map primary_map);
+void op_reorder_ptscotch(op_map primary_map);
+
 #endif
 
 

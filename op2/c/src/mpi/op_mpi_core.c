@@ -2178,7 +2178,7 @@ void op_mpi_exit()
   //free memory allocated to halos and mpi_buffers
   op_halo_destroy();
   //return all op_dats, op_maps back to original element order
-  op_partition_reverse();
+  //op_partition_reverse();
   //print each mpi process's timing info for each kernel
 
 }
