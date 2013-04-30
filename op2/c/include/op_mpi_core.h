@@ -88,6 +88,8 @@ typedef struct {
   //partition to which each element belongs
   int *elem_part;
   //indicates if this set is partitioned 1 if partitioned 0 if not
+  int is_reordered;
+  //indicates if this set is partitioned 1 if partitioned 0 if not
   int is_partitioned;
 } part_core;
 
@@ -171,7 +173,7 @@ extern "C" {
 * Utility function prototypes
 *******************************************************************************/
 
-void decl_partition(op_set set, int* g_index, int* partition);
+void decl_partition(op_set set, int* g_index, int * g_order, int* elem_part);
 
 void get_part_range(int** part_range, int my_rank, int comm_size, MPI_Comm Comm);
 

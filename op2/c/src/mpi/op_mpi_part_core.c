@@ -176,7 +176,6 @@ static int* create_exp_list_2(op_set set, int* temp_list, halo_list h_list,
     free(temp_part);
   }
 
-
   h_list->set = set;
   h_list->size = total_size;
   h_list->ranks = ranks;
@@ -377,6 +376,7 @@ static int partition_from_set(op_map map, int my_rank, int comm_size, int** part
 
   return 1;
 }
+
 
 /*******************************************************************************
  * Routine to use the partitioned map->from set to partition the map->to set
@@ -609,9 +609,160 @@ static int partition_to_set(op_map map, int my_rank, int comm_size, int** part_r
 }
 
 /*******************************************************************************
- * Routine to partition all secondary sets using primary set partition
+ * Routine to use the reordered map->from set to reorder the map->to set
  *******************************************************************************/
 
+static int reorder_to_set(op_map map, int my_rank, int comm_size, int** part_range)
+{
+  return 1;
+}
+
+/*******************************************************************************
+ * Routine to use the reordered map->to set to reorder the map->from set
+ *******************************************************************************/
+
+static int reorder_from_set(op_map map, int my_rank, int comm_size, int** part_range)
+{
+  return 1;
+}
+
+/*******************************************************************************
+ * Routine to determine the partition for all sets using a global reordering
+ *******************************************************************************/
+static void partition_from_reordering(op_set primary_set, int my_rank, int comm_size)
+{
+  int sets_partitioned = 0;
+
+  // Compute global partition range information for each set
+  int** part_range = (int **)xmalloc(OP_set_index*sizeof(int*));
+  get_part_range(part_range,my_rank,comm_size, OP_PART_WORLD);
+
+  for(int s = 0; s<OP_set_index; s++) {
+    op_set set = OP_set_list[s];
+    int *elem_part = (int*) xmalloc(set->size*sizeof(int));
+    for(int i = 0; i<set->size; i++) {
+      int local_index;
+      elem_part[i] = get_partition(OP_part_list[set->index]->g_order[i],
+                     part_range[set->index], &local_index,comm_size);
+    }
+    OP_part_list[set->index]->elem_part = elem_part;
+    OP_part_list[set->index]->is_partitioned = 1;
+    sets_partitioned++;
+
+    if(OP_part_list[set->index]->is_reordered != 1) {
+      op_printf("set %s is not reordered - using original ordering for partitioning\n",
+          set->name);
+    }
+  }
+
+  op_printf("Sets Partitioned = %d\n",sets_partitioned);
+  //cleanup
+  for(int i = 0; i<OP_set_index; i++)free(part_range[i]);free(part_range);
+}
+
+/*******************************************************************************
+ * Routine to reorder all secondary sets using primary set reordering
+ *******************************************************************************/
+static void reorder_all(op_set primary_set, int my_rank, int comm_size)
+{
+  // Compute global partition range information for each set
+  int** part_range = (int **)xmalloc(OP_set_index*sizeof(int*));
+  get_part_range(part_range,my_rank,comm_size, OP_PART_WORLD);
+
+  int sets_reordered = 1;
+  int maps_used = 0;
+
+  op_set all_reordered_sets[OP_set_index];
+  int all_used_maps[OP_map_index];
+  for(int i = 0; i<OP_map_index; i++) { all_used_maps[i] = -1;}
+
+  //begin with the reordered primary set
+  all_reordered_sets[0] = OP_set_list[primary_set->index];
+
+  int error = 0;
+  while(sets_reordered < OP_set_index && error == 0) {
+    int cost[OP_map_index];
+    for(int i = 0; i<OP_map_index; i++) cost[i] = 99;
+
+    //compute a "cost" associated with using each mapping table
+    for(int m=0; m<OP_map_index; m++) {
+      op_map map=OP_map_list[m];
+
+      if(linear_search(all_used_maps,map->index,0,maps_used-1)<0) { // if not used before
+        part to_set = OP_part_list[map->to->index];
+        part from_set = OP_part_list[map->from->index];
+
+        //partitioning a set using a mapping from a partitioned set costs
+        //more than partitioning a set using a mapping to a partitioned set
+        //i.e. preferance is given to the latter over the former
+        if(from_set->is_reordered == 1 &&
+            compare_all_sets(map->from,all_reordered_sets, sets_reordered)>=0)
+          cost[map->index] = 2;
+        else if(to_set->is_reordered == 1 &&
+            compare_all_sets(map->to,all_reordered_sets,sets_reordered)>=0)
+          cost[map->index] = 0;
+      }
+    }
+
+    while(1) {
+      int selected = min(cost, OP_map_index);
+
+      if(selected >= 0) {
+        op_map map=OP_map_list[selected];
+
+        //reorder using this map
+        part to_set = OP_part_list[map->to->index];
+        part from_set = OP_part_list[map->from->index];
+
+        if(to_set->is_reordered == 1) {
+          if( reorder_from_set(map, my_rank, comm_size, part_range) > 0) {
+            all_reordered_sets[sets_reordered++] = map->from;
+            all_used_maps[maps_used++] = map->index;
+            break;
+          }
+          else //reordering unsuccessful with this map- find another map
+            cost[selected] = 99;
+        }
+        else if(from_set->is_reordered == 1) {
+          if( reorder_to_set(map, my_rank, comm_size, part_range) > 0) {
+            all_reordered_sets[sets_reordered++] = map->to;
+            all_used_maps[maps_used++] = map->index;
+            break;
+          }
+          else //reordering unsuccessful with this map - find another map
+            cost[selected] = 99;
+        }
+      }
+      else { //reordering error;
+        printf("On rank %d: Reordering error\n",my_rank);
+        error = 1; break;
+      }
+    }
+  }
+
+  if(my_rank==MPI_ROOT) {
+    printf("Sets Reordered = %d\n",sets_reordered);
+    if(sets_reordered != OP_set_index){
+      for(int s=0; s<OP_set_index; s++) { //for each set
+        op_set set = OP_set_list[s];
+        part P=OP_part_list[set->index];
+        if(P->is_reordered != 1) {
+          printf("Unable to find mapping between primary set and %s \n",
+              P->set->name);
+        }
+      }
+      printf("Reordering aborted !\n");
+      MPI_Abort(OP_PART_WORLD, 1);
+    }
+  }
+
+  for(int i = 0; i<OP_set_index; i++)free(part_range[i]);free(part_range);
+
+}
+
+/*******************************************************************************
+ * Routine to partition all secondary sets using primary set partition
+ *******************************************************************************/
 static void partition_all(op_set primary_set, int my_rank, int comm_size)
 {
   // Compute global partition range information for each set
@@ -629,18 +780,15 @@ static void partition_all(op_set primary_set, int my_rank, int comm_size)
   all_partitioned_sets[0] = OP_set_list[primary_set->index];
 
   int error = 0;
-  while(sets_partitioned < OP_set_index && error == 0)
-  {
+  while(sets_partitioned < OP_set_index && error == 0) {
     int cost[OP_map_index];
     for(int i = 0; i<OP_map_index; i++) cost[i] = 99;
 
     //compute a "cost" associated with using each mapping table
-    for(int m=0; m<OP_map_index; m++)
-    {
+    for(int m=0; m<OP_map_index; m++) {
       op_map map=OP_map_list[m];
 
-      if(linear_search(all_used_maps,map->index,0,maps_used-1)<0)// if not used before
-      {
+      if(linear_search(all_used_maps,map->index,0,maps_used-1)<0) {// if not used before
         part to_set = OP_part_list[map->to->index];
         part from_set = OP_part_list[map->from->index];
 
@@ -656,22 +804,18 @@ static void partition_all(op_set primary_set, int my_rank, int comm_size)
       }
     }
 
-    while(1)
-    {
+    while(1) {
       int selected = min(cost, OP_map_index);
 
-      if(selected >= 0)
-      {
+      if(selected >= 0) {
         op_map map=OP_map_list[selected];
 
         //partition using this map
         part to_set = OP_part_list[map->to->index];
         part from_set = OP_part_list[map->from->index];
 
-        if(to_set->is_partitioned == 1)
-        {
-          if( partition_from_set(map, my_rank, comm_size, part_range) > 0)
-          {
+        if(to_set->is_partitioned == 1) {
+          if( partition_from_set(map, my_rank, comm_size, part_range) > 0) {
             all_partitioned_sets[sets_partitioned++] = map->from;
             all_used_maps[maps_used++] = map->index;
             break;
@@ -679,10 +823,8 @@ static void partition_all(op_set primary_set, int my_rank, int comm_size)
           else //partitioning unsuccessful with this map- find another map
             cost[selected] = 99;
         }
-        else if(from_set->is_partitioned == 1)
-        {
-          if( partition_to_set(map, my_rank, comm_size, part_range) > 0)
-          {
+        else if(from_set->is_partitioned == 1) {
+          if( partition_to_set(map, my_rank, comm_size, part_range) > 0) {
             all_partitioned_sets[sets_partitioned++] = map->to;
             all_used_maps[maps_used++] = map->index;
             break;
@@ -691,24 +833,20 @@ static void partition_all(op_set primary_set, int my_rank, int comm_size)
             cost[selected] = 99;
         }
       }
-      else //partitioning error;
-      {
+      else {//partitioning error;
         printf("On rank %d: Partitioning error\n",my_rank);
         error = 1; break;
       }
     }
   }
 
-  if(my_rank==MPI_ROOT)
-  {
+  if(my_rank==MPI_ROOT) {
     printf("Sets partitioned = %d\n",sets_partitioned);
-    if(sets_partitioned != OP_set_index)
-    {
+    if(sets_partitioned != OP_set_index) {
       for(int s=0; s<OP_set_index; s++) { //for each set
         op_set set = OP_set_list[s];
         part P=OP_part_list[set->index];
-        if(P->is_partitioned != 1)
-        {
+        if(P->is_partitioned != 1) {
           printf("Unable to find mapping between primary set and %s \n",
               P->set->name);
         }
@@ -738,30 +876,25 @@ static void renumber_maps(int my_rank, int comm_size)
     int cap = 1000; int count = 0;
     int* req_list = (int *)xmalloc(cap*sizeof(int));
 
-    for(int i = 0; i< map->from->size; i++)
-    {
+    for(int i = 0; i< map->from->size; i++) {
       int local_index;
-      for(int j=0; j<map->dim; j++)
-      {
+      for(int j=0; j<map->dim; j++) {
         local_index = binary_search(OP_part_list[map->to->index]->g_index,
             map->map[i*map->dim+j], 0, map->to->size-1);
 
-        if(count>=cap)
-        {
+        if(count>=cap) {
           cap = cap*2;
           req_list = (int *)xrealloc(req_list, cap*sizeof(int));
         }
 
-        if(local_index < 0) // not in this partition
-        {
+        if(local_index < 0) { // not in this partition
           //store the global index of the element
           req_list[count++] = map->map[i*map->dim+j];
         }
       }
     }
     //sort and remove duplicates
-    if(count > 0)
-    {
+    if(count > 0) {
       quickSort(req_list, 0, count-1);
       count = removeDups(req_list, count);
       req_list = (int *)xrealloc(req_list, count*sizeof(int));
@@ -779,8 +912,7 @@ static void renumber_maps(int my_rank, int comm_size)
     //prepare for an allgatherv
     int disp = 0;
     int* displs = (int *)xmalloc(comm_size*sizeof(int));
-    for(int i = 0; i<comm_size; i++)
-    {
+    for(int i = 0; i<comm_size; i++) {
       displs[i] =   disp;
       disp = disp + recv_count[i];
     }
@@ -792,8 +924,7 @@ static void renumber_maps(int my_rank, int comm_size)
         MPI_INT, OP_PART_WORLD);
     free(req_list);
 
-    if(g_count > 0)
-    {
+    if(g_count > 0) {
       quickSort(g_index, 0, g_count-1);
       g_count = removeDups(g_index, g_count);
       g_index = (int *)xrealloc(g_index, g_count*sizeof(int));
@@ -808,17 +939,15 @@ static void renumber_maps(int my_rank, int comm_size)
     int *exp_g_index = (int *)xmalloc(sizeof(int)*g_count);
 
     int exp_count = 0;
-    for(int i = 0; i<g_count; i++)
-    {
+    for(int i = 0; i<g_count; i++) {
       int local_index = binary_search(OP_part_list[map->to->index]->g_index,
           g_index[i],0,map->to->size-1);
       int global_index;
-      if(local_index >= 0)
-      {
+      if(local_index >= 0) {
         exp_g_index[exp_count] = g_index[i];
-
-        global_index = get_global_index(local_index, my_rank,
-            part_range[map->to->index], comm_size);
+        //global_index = get_global_index(local_index, my_rank,
+        //    part_range[map->to->index], comm_size);
+        global_index = OP_part_list[map->to->index]->g_order[local_index];
         exp_index[exp_count++] = global_index;
       }
     }
@@ -833,8 +962,7 @@ static void renumber_maps(int my_rank, int comm_size)
     disp = 0; free(displs);
     displs = (int *)xmalloc(comm_size*sizeof(int));
 
-    for(int i = 0; i<comm_size; i++)
-    {
+    for(int i = 0; i<comm_size; i++) {
       displs[i] =   disp;
       disp = disp + recv_count[i];
     }
@@ -858,34 +986,29 @@ static void renumber_maps(int my_rank, int comm_size)
     free(exp_g_index);
 
     //sort all_imp_index according to g_index array
-    if(g_count > 0)quickSort_2(g_index, all_imp_index, 0, g_count-1);
+    if(g_count > 0) quickSort_2(g_index, all_imp_index, 0, g_count-1);
 
     //now we hopefully have all the informattion required to renumber this map
     //so now, again go through each entry of this mapping table and renumber
-    for(int i = 0; i< map->from->size; i++)
-    {
+    for(int i = 0; i< map->from->size; i++) {
       int local_index, global_index;
-      for(int j=0; j < map->dim; j++)
-      {
+      for(int j=0; j < map->dim; j++) {
         local_index = binary_search(OP_part_list[map->to->index]->g_index,
             map->map[i*map->dim+j], 0, map->to->size-1);
 
-        if(local_index < 0) // not in this partition
-        {
+        if(local_index < 0) {// not in this partition
           //need to search through g_index array
           int found = binary_search(g_index,map->map[i*map->dim+j],
               0, g_count-1);
           if(found < 0) printf("Problem in renumbering\n");
-          else
-          {
+          else {
             OP_map_list[map->index]-> map[i*map->dim+j] =
               all_imp_index[found];
           }
-        }
-        else //in this partition
-        {
-          global_index = get_global_index(local_index, my_rank,
-              part_range[map->to->index], comm_size);
+        } else {//in this partition
+          //global_index = get_global_index(local_index, my_rank,
+          //    part_range[map->to->index], comm_size);
+          global_index = OP_part_list[map->to->index]->g_order[local_index];
           OP_map_list[map->index]->map[i*map->dim+j] = global_index;
         }
       }
@@ -1189,7 +1312,6 @@ static void migrate_all(int my_rank, int comm_size)
 
       if(compare_sets(dat->set,set)==1) //this data array is defines on this set
       {
-
         //prepare bits of the data array to be exported
         char** sbuf = (char **)xmalloc(exp->ranks_size*sizeof(char *));
 
@@ -1324,9 +1446,8 @@ static void migrate_all(int my_rank, int comm_size)
     }
   }
 
-  /*--STEP 3 - Update Partitioning Information and Sort Set Elements------------*/
+  /*--STEP 3 - Update Partitioning Information and Sort Set Elements-----------*/
 
-  //need to exchange the original g_index
   for(int s=0; s<OP_set_index; s++) { //for each set
     op_set set=OP_set_list[s];
 
@@ -1335,10 +1456,66 @@ static void migrate_all(int my_rank, int comm_size)
 
     MPI_Request request_send[exp->ranks_size];
 
-    //prepare bits of the original g_index array to be exported
+    //
+    //need to exchange the new ordering g_order -----------
+    //
+
+    //prepare bits of the ordering g_order array to be exported
     int** sbuf = (int **)xmalloc(exp->ranks_size*sizeof(int *));
 
-    //send original g_index values to relevant mpi processes
+    //send ordering g_order values to relevant mpi processes
+    for(int i=0; i<exp->ranks_size; i++) {
+      sbuf[i] = (int *)xmalloc(exp->sizes[i]*sizeof(int));
+      for(int j = 0; j<exp->sizes[i]; j++)
+      {
+        sbuf[i][j] = OP_part_list[set->index]->
+          g_order[exp->list[exp->disps[i]+j]];
+      }
+      MPI_Isend(sbuf[i],  exp->sizes[i],
+          MPI_INT, exp->ranks[i],
+          s, OP_PART_WORLD, &request_send[i]);
+    }
+
+    int *rbuf = (int *)xmalloc(sizeof(int)*imp->size);
+
+    //receive ordering g_order values from relevant mpi processes
+    for(int i=0; i < imp->ranks_size; i++) {
+
+      MPI_Recv(&rbuf[imp->disps[i]],imp->sizes[i],
+          MPI_INT, imp->ranks[i], s,
+          OP_PART_WORLD, MPI_STATUSES_IGNORE);
+    }
+    MPI_Waitall(exp->ranks_size,request_send, MPI_STATUSES_IGNORE );
+    for(int i=0; i < exp->ranks_size; i++) free(sbuf[i]); free(sbuf);
+
+    //delete the g_order entirs that has been sent and create a
+    //modified g_order
+    int* new_g_order = (int *)xmalloc(sizeof(int)*(set->size+imp->size));
+
+    count = 0;
+    for(int i = 0; i < set->size;i++)//iterate over old size of the g_order array
+    {
+      if(OP_part_list[set->index]->elem_part[i] == my_rank)
+      {
+        new_g_order[count] = OP_part_list[set->index]->g_order[i];
+        count++;
+      }
+    }
+
+    memcpy(&new_g_order[count],(void *)rbuf,sizeof(int)*imp->size);
+    count = count+imp->size;
+    new_g_order = (int *)xrealloc(new_g_order,sizeof(int)*count);
+    free(rbuf);
+
+
+    //
+    //need to exchange the original ordering g_index --------------
+    //
+
+    //prepare bits of the ordering g_index array to be exported
+    sbuf = (int **)xmalloc(exp->ranks_size*sizeof(int *));
+
+    //send ordering g_index values to relevant mpi processes
     for(int i=0; i<exp->ranks_size; i++) {
       sbuf[i] = (int *)xmalloc(exp->sizes[i]*sizeof(int));
       for(int j = 0; j<exp->sizes[i]; j++)
@@ -1351,10 +1528,9 @@ static void migrate_all(int my_rank, int comm_size)
           s, OP_PART_WORLD, &request_send[i]);
     }
 
+    rbuf = (int *)xmalloc(sizeof(int)*imp->size);
 
-    int *rbuf = (int *)xmalloc(sizeof(int)*imp->size);
-
-    //receive original g_index values from relevant mpi processes
+    //receive ordering g_index values from relevant mpi processes
     for(int i=0; i < imp->ranks_size; i++) {
 
       MPI_Recv(&rbuf[imp->disps[i]],imp->sizes[i],
@@ -1381,14 +1557,20 @@ static void migrate_all(int my_rank, int comm_size)
     memcpy(&new_g_index[count],(void *)rbuf,sizeof(int)*imp->size);
     count = count+imp->size;
     new_g_index = (int *)xrealloc(new_g_index,sizeof(int)*count);
+    free(rbuf);
+
+    //
+    // store orderings
+    //
     int* new_part = (int *)xmalloc(sizeof(int)*count);
     for(int i = 0; i< count; i++)new_part[i] = my_rank;
 
-    free(rbuf);
+    free(OP_part_list[set->index]->g_order);
     free(OP_part_list[set->index]->g_index);
     free(OP_part_list[set->index]->elem_part);
 
     OP_part_list[set->index]->elem_part = new_part;
+    OP_part_list[set->index]->g_order = new_g_order;
     OP_part_list[set->index]->g_index = new_g_index;
 
     OP_set_list[set->index]->size = count;
@@ -1411,7 +1593,11 @@ static void migrate_all(int my_rank, int comm_size)
   }
 
   //finally .... need to sort for each set, data on the set and mapping tables
-  //from this set accordiing to the OP_part_list[set.index]->g_index array values.
+  //from this set accordiing to the OP_part_list[set->index]->g_order array values.
+
+  int** part_range = (int **)xmalloc(OP_set_index*sizeof(int*));
+  get_part_range(part_range,my_rank,comm_size, OP_PART_WORLD);
+
   for(int s=0; s<OP_set_index; s++) { //for each set
     op_set set=OP_set_list[s];
 
@@ -1425,7 +1611,7 @@ static void migrate_all(int my_rank, int comm_size)
         if(set->size > 0)
         {
           int* temp = (int *)xmalloc(sizeof(int)*set->size);
-          memcpy(temp, (void *)OP_part_list[set->index]->g_index,
+          memcpy(temp, (void *)OP_part_list[set->index]->g_order,
               sizeof(int)*set->size);
           quickSort_dat(temp,dat->data, 0, set->size-1, dat->size);
           free(temp);
@@ -1442,7 +1628,7 @@ static void migrate_all(int my_rank, int comm_size)
         if(set->size > 0)
         {
           int* temp = (int *)xmalloc(sizeof(int)*set->size);
-          memcpy(temp, (void *)OP_part_list[set->index]->g_index,
+          memcpy(temp, (void *)OP_part_list[set->index]->g_order,
               sizeof(int)*set->size);
           quickSort_map(temp,OP_map_list[map->index]->map, 0,
               set->size-1, map->dim);
@@ -1450,8 +1636,18 @@ static void migrate_all(int my_rank, int comm_size)
         }
       }
     }
-    if(set->size > 0)
-      quickSort(OP_part_list[set->index]->g_index, 0, set->size-1);
+    if(set->size > 0) {
+      quickSort_2(OP_part_list[set->index]->g_order,
+        OP_part_list[set->index]->g_index,0, set->size-1);
+
+      for(int i = 0; i< set->size; i++) {
+        OP_part_list[set->index]->g_order[i] =
+        get_global_index(i, my_rank, part_range[set->index], comm_size);
+      }
+
+      quickSort_2(OP_part_list[set->index]->g_index,
+      OP_part_list[set->index]->g_order, 0, set->size-1);
+    }
   }
 
   //cleanup
@@ -1460,11 +1656,11 @@ static void migrate_all(int my_rank, int comm_size)
     op_set set=OP_set_list[s];
     free(pe_list[set->index]->ranks);free(pe_list[set->index]->disps);
     free(pe_list[set->index]->sizes);free(pe_list[set->index]->list);
-
     free(pi_list[set->index]->ranks);free(pi_list[set->index]->disps);
     free(pi_list[set->index]->sizes);free(pi_list[set->index]->list);
     free(pe_list[set->index]);free(pi_list[set->index]);
   }
+  for(int i = 0; i<OP_set_index; i++)free(part_range[i]);free(part_range);
 }
 
 /*******************************************************************************
@@ -1512,9 +1708,12 @@ void op_partition_random(op_set primary_set)
     op_set set=OP_set_list[s];
     //printf("set %s size = %d\n", set.name, set.size);
     int *g_index = (int *)xmalloc(sizeof(int)*set->size);
-    for(int i = 0; i< set->size; i++)
+    int *g_order = (int *)xmalloc(sizeof(int)*set->size);
+    for(int i = 0; i< set->size; i++) {
       g_index[i] = get_global_index(i,my_rank, part_range[set->index],comm_size);
-    decl_partition(set, g_index, NULL);
+      g_order[i] = g_index[i];
+    }
+    decl_partition(set, g_index, g_order, NULL);
   }
 
   /*-----STEP 1 - Partition Primary set using a random number generator --------*/
@@ -1662,9 +1861,12 @@ void op_partition_geom(op_dat coords)
     op_set set=OP_set_list[s];
     //printf("set %s size = %d\n", set.name, set.size);
     int *g_index = (int *)xmalloc(sizeof(int)*set->size);
-    for(int i = 0; i< set->size; i++)
+    int *g_order = (int *)xmalloc(sizeof(int)*set->size);
+    for(int i = 0; i< set->size; i++) {
       g_index[i] = get_global_index(i,my_rank, part_range[set->index],comm_size);
-    decl_partition(set, g_index, NULL);
+      g_order[i] = g_index[i];
+    }
+    decl_partition(set, g_index, g_order, NULL);
   }
 
   /*--- STEP 1 - Partition primary set using its coordinates (1D,2D or 3D) -----*/
@@ -1801,9 +2003,12 @@ void op_partition_kway(op_map primary_map)
     op_set set=OP_set_list[s];
     //printf("set %s size = %d\n", set.name, set.size);
     int *g_index = (int *)xmalloc(sizeof(int)*set->size);
-    for(int i = 0; i< set->size; i++)
+    int *g_order = (int *)xmalloc(sizeof(int)*set->size);
+    for(int i = 0; i< set->size; i++) {
       g_index[i] = get_global_index(i,my_rank, part_range[set->index],comm_size);
-    decl_partition(set, g_index, NULL);
+      g_order[i] = g_index[i];
+    }
+    decl_partition(set, g_index, g_order, NULL);
   }
 
   /*--STEP 1 - Construct adjacency list of the to-set of the primary_map -------*/
@@ -2165,9 +2370,12 @@ void op_partition_geomkway(op_dat coords, op_map primary_map)
     op_set set=OP_set_list[s];
     //printf("set %s size = %d\n", set.name, set.size);
     int *g_index = (int *)xmalloc(sizeof(int)*set->size);
-    for(int i = 0; i< set->size; i++)
+    int *g_order = (int *)xmalloc(sizeof(int)*set->size);
+    for(int i = 0; i< set->size; i++) {
       g_index[i] = get_global_index(i,my_rank, part_range[set->index],comm_size);
-    decl_partition(set, g_index, NULL);
+      g_order[i] = g_index[i];
+    }
+    decl_partition(set, g_index, g_order, NULL);
   }
 
   /*--- STEP 1 - Set up coordinates (1D,2D or 3D) data structures   ------------*/
@@ -2565,9 +2773,12 @@ void op_partition_meshkway(op_map primary_map) //not working !!
     op_set set=OP_set_list[s];
     //printf("set %s size = %d\n", set.name, set.size);
     int *g_index = (int *)xmalloc(sizeof(int)*set->size);
-    for(int i = 0; i< set->size; i++)
+    int *g_order = (int *)xmalloc(sizeof(int)*set->size);
+    for(int i = 0; i< set->size; i++) {
       g_index[i] = get_global_index(i,my_rank, part_range[set->index],comm_size);
-    decl_partition(set, g_index, NULL);
+      g_order[i] = g_index[i];
+    }
+    decl_partition(set, g_index, g_order, NULL);
   }
 
   /*--STEP 1 - Construct adjacency list of the to-set of the primary_map
@@ -2728,9 +2939,12 @@ void op_partition_ptscotch(op_map primary_map)
     op_set set=OP_set_list[s];
     //printf("set %s size = %d\n", set.name, set.size);
     int *g_index = (int *)xmalloc(sizeof(int)*set->size);
-    for(int i = 0; i< set->size; i++)
+    int *g_order = (int *)xmalloc(sizeof(int)*set->size);
+    for(int i = 0; i< set->size; i++) {
       g_index[i] = get_global_index(i,my_rank, part_range[set->index],comm_size);
-    decl_partition(set, g_index, NULL);
+      g_order[i] = g_index[i];
+    }
+    decl_partition(set, g_index, g_order, NULL);
   }
 
   /*--STEP 1 - Construct adjacency list of the to-set of the primary_map -------*/
@@ -3004,8 +3218,8 @@ void op_partition_ptscotch(op_map primary_map)
 
   //initialise partition strategy struct
   SCOTCH_Strat *straptr = SCOTCH_stratAlloc();
-  //const char * strategyString = "SCOTCH_STRATSCALABILITY";
   SCOTCH_stratInit(straptr);
+  //SCOTCH_stratDgraphMapBuild(straptr, SCOTCH_STRATSCALABILITY, comm_size, comm_size, 0.00);
 
   //partition the graph
   SCOTCH_dgraphPart(grafptr, comm_size, straptr, partloctab);
@@ -3104,9 +3318,12 @@ void op_reorder_ptscotch(op_map primary_map)
     op_set set=OP_set_list[s];
     //printf("set %s size = %d\n", set.name, set.size);
     int *g_index = (int *)xmalloc(sizeof(int)*set->size);
-    for(int i = 0; i< set->size; i++)
+    int *g_order = (int *)xmalloc(sizeof(int)*set->size);
+    for(int i = 0; i< set->size; i++) {
       g_index[i] = get_global_index(i,my_rank, part_range[set->index],comm_size);
-    decl_partition(set, g_index, NULL);
+      g_order[i] = g_index[i];
+    }
+    decl_partition(set, g_index, g_order, NULL);
   }
 
   /*--STEP 1 - Construct adjacency list of the to-set of the primary_map -------*/
@@ -3224,23 +3441,18 @@ void op_reorder_ptscotch(op_map primary_map)
   for(int i = 0; i<primary_map->to->size; i++)adj_cap[i] = primary_map->dim;
   for(int i = 0; i<primary_map->to->size; i++)adj[i] = NULL;
   for(int i = 0; i<primary_map->to->size; i++)adj[i] = (int *)xmalloc(adj_cap[i]*sizeof(int));
-  //for(int i = 0; i<primary_map->to->size; i++)adj[i] = (int *)calloc(adj_cap[i], sizeof(int));
-
 
   //go through each from-element of local primary_map and construct adjacency list
   for(int i = 0; i<primary_map->from->size; i++)
   {
     int part, local_index;
-    for(int j=0; j < primary_map->dim; j++) { //for each element pointed at by this entry
+    for(int j=0; j < primary_map->dim; j++) {
       part = get_partition(primary_map->map[i*primary_map->dim+j],
           part_range[primary_map->to->index],&local_index,comm_size);
 
-      if(part == my_rank)
-      {
-        for(int k = 0; k<primary_map->dim; k++)
-        {
-          if(adj_i[local_index] >= adj_cap[local_index])
-          {
+      if(part == my_rank) {
+        for(int k = 0; k<primary_map->dim; k++) {
+          if(adj_i[local_index] >= adj_cap[local_index]) {
             adj_cap[local_index] = adj_cap[local_index]*2;
             adj[local_index] = (int *)xrealloc(adj[local_index],
                 adj_cap[local_index]*sizeof(int));
@@ -3253,19 +3465,15 @@ void op_reorder_ptscotch(op_map primary_map)
   }
 
   //go through each from-element of foreign primary_map and add to adjacency list
-  for(int i = 0; i<imp_list->size; i++)
-  {
+  for(int i = 0; i<imp_list->size; i++) {
     int part, local_index;
-    for(int j=0; j < primary_map->dim; j++) { //for each element pointed at by this entry
+    for(int j=0; j < primary_map->dim; j++) {
       part = get_partition(foreign_maps[i*primary_map->dim+j],
           part_range[primary_map->to->index],&local_index,comm_size);
 
-      if(part == my_rank)
-      {
-        for(int k = 0; k<primary_map->dim; k++)
-        {
-          if(adj_i[local_index] >= adj_cap[local_index])
-          {
+      if(part == my_rank) {
+        for(int k = 0; k<primary_map->dim; k++) {
+          if(adj_i[local_index] >= adj_cap[local_index]) {
             adj_cap[local_index] = adj_cap[local_index]*2;
             adj[local_index] = (int *)xrealloc(adj[local_index],
                 adj_cap[local_index]*sizeof(int));
@@ -3278,9 +3486,7 @@ void op_reorder_ptscotch(op_map primary_map)
   }
   free(foreign_maps);
 
-  //
-  //Setup graph data structures for PT-Scotch
-  //
+  /*--STEP 2 - Setup graph data structures for PT-Scotch -------*/
 
   SCOTCH_Dgraph *grafptr = SCOTCH_dgraphAlloc();
   SCOTCH_dgraphInit(grafptr, OP_PART_WORLD);
@@ -3349,11 +3555,11 @@ void op_reorder_ptscotch(op_map primary_map)
   SCOTCH_Num *edgegsttab = NULL; //not needed
   SCOTCH_Num *edloloctab = NULL;//not needed
 
-  //clean up before calling Partitioner
-  //for(int i = 0; i<OP_set_index; i++)free(part_range[i]);free(part_range);
+  //clean up before calling reordering
   free(imp_list->list);free(imp_list->disps);free(imp_list->ranks);free(imp_list->sizes);
   free(exp_list->list);free(exp_list->disps);free(exp_list->ranks);free(exp_list->sizes);
   free(imp_list);free(exp_list);
+  for(int i = 0; i<OP_set_index; i++)free(part_range[i]);free(part_range);
 
   //build a PT-Scotch graph
   SCOTCH_dgraphBuild(grafptr, baseval, vertlocnbr, vertlocmax, vertloctab,
@@ -3365,12 +3571,10 @@ void op_reorder_ptscotch(op_map primary_map)
     MPI_Abort(OP_PART_WORLD, 2);
   }
 
-  //
-  //Setup reordering data structures for PT-Scotch
-  //
+  /*--STEP 3 - Setup reordering data structures for PT-Scotch -------*/
 
   SCOTCH_Dordering* ordeptr = SCOTCH_dorderAlloc();
-  SCOTCH_Num *permloctab = (SCOTCH_Num*) malloc(primary_map->to->size*sizeof(SCOTCH_Num));
+  SCOTCH_Num *permloctab = (SCOTCH_Num*) xmalloc(primary_map->to->size*sizeof(SCOTCH_Num));
   for(int i = 0; i < primary_map->to->size; i++){ permloctab[i] = -99; }
 
   scotch_test = SCOTCH_dgraphOrderInit(grafptr, ordeptr);
@@ -3401,7 +3605,6 @@ void op_reorder_ptscotch(op_map primary_map)
 
   free(edgeloctab);free(vertloctab);
 
-
   //saniti check to see if all elements have an index
   for(int i = 0; i<primary_map->to->size; i++)
   {
@@ -3413,19 +3616,6 @@ void op_reorder_ptscotch(op_map primary_map)
     }
   }
 
-  //compute the partitioning using the new reordering
-  OP_part_list[primary_map->to->index]->elem_part = permloctab;
-  for(int i = 0; i<primary_map->to->size; i++)
-  {
-    int local_index;
-    OP_part_list[primary_map->to->index]->elem_part[i] =
-    get_partition(permloctab[i], part_range[primary_map->to->index],
-      &local_index,comm_size);
-  }
-  OP_part_list[primary_map->to->index]->is_partitioned = 1;
-
-  //free(permloctab);
-
   //free strat struct
   SCOTCH_stratExit(straptr);
   SCOTCH_dgraphOrderExit(grafptr, ordeptr);
@@ -3433,10 +3623,19 @@ void op_reorder_ptscotch(op_map primary_map)
   //free PT-Scotch allocated memory space
   free(grafptr);
 
-  /*-STEP 2 - Partition all other sets,migrate data and renumber mapping tables-*/
+  //store repordering for this set
+  OP_part_list[primary_map->to->index]->g_order = permloctab;
+  OP_part_list[primary_map->to->index]->is_reordered = 1;
 
-  //partition all other sets
-  partition_all(primary_map->to, my_rank, comm_size);
+  /*--STEP 4 - Reorder all other sets */
+
+  reorder_all(primary_map->to, my_rank, comm_size);
+
+
+  /*--STEP 5 - Partition all sets, migrate data and renumber mapping tables-------*/
+
+  //partition all sets using the new reordering
+  partition_from_reordering(primary_map->to, my_rank, comm_size);
 
   //migrate data, sort elements
   migrate_all(my_rank, comm_size);
@@ -3450,9 +3649,6 @@ void op_reorder_ptscotch(op_map primary_map)
   MPI_Reduce(&time,&max_time,1,MPI_DOUBLE, MPI_MAX,MPI_ROOT, OP_PART_WORLD);
   MPI_Comm_free(&OP_PART_WORLD);
   if(my_rank==MPI_ROOT)printf("Max total PT-Scotch partitioning time = %lf\n",max_time);
-
-  //cleanup
-  for(int i = 0; i<OP_set_index; i++)free(part_range[i]);free(part_range);
 
 }
 

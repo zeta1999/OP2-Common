@@ -93,13 +93,15 @@ int** orig_part_range = NULL;
  * Routine to declare partition information for a given set
  *******************************************************************************/
 
-void decl_partition(op_set set, int* g_index, int* partition)
+void decl_partition(op_set set, int* g_index, int * g_order, int* elem_part)
 {
   part p = (part) xmalloc(sizeof(part_core));
   p->set = set;
   p->g_index = g_index;
-  p->elem_part = partition;
+  p->elem_part = elem_part;
+  p->g_order = g_order;
   p->is_partitioned = 0;
+  p->is_reordered = 0;
   OP_part_list[set->index] = p;
   OP_part_index++;
 }
@@ -1223,14 +1225,16 @@ void op_halo_create()
       op_set set=OP_set_list[s];
       //printf("set %s size = %d\n", set.name, set.size);
       int *g_index = (int *)xmalloc(sizeof(int)*set->size);
+      int *g_order = (int *)xmalloc(sizeof(int)*set->size);
       int *partition = (int *)xmalloc(sizeof(int)*set->size);
       for(int i = 0; i< set->size; i++)
       {
         g_index[i] = get_global_index(i,my_rank,
             part_range[set->index],comm_size);
+        g_order[i] = g_index[i];
         partition[i] = my_rank;
       }
-      decl_partition(set, g_index, partition);
+      decl_partition(set, g_index, g_order, partition);
 
       //combine core_elems and exp_elems to one memory block
       int* temp = (int *)xmalloc(sizeof(int)*set->size);
