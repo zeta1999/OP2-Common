@@ -136,9 +136,9 @@ int main(int argc, char **argv)
   op_write_const_hdf5("qinf",4,"double",(char *)qinf,  "new_grid_out.h5");*/
 
   //trigger partitioning and halo creation routines
-  //op_partition("PTSCOTCH", "REORDER", cells, pecell, p_x);
+  op_partition("PTSCOTCH", "REORDER", cells, pecell, p_x);
   //op_partition("PTSCOTCH", "KWAY", cells, pecell, p_x);
-  op_partition("RANDOM", "KWAY", cells, pecell, p_x);
+  //op_partition("RANDOM", "KWAY", cells, pecell, p_x);
 
   int g_ncell = op_get_size(cells);
 

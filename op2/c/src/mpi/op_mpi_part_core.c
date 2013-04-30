@@ -83,17 +83,27 @@ static int frequencyof(int value, int* array, int size)
 }
 
 /*******************************************************************************
+ * Utility function to find minimum number in an array
+ *******************************************************************************/
+
+static int minimum(int* array, int size)
+{
+  int min = array[0];
+  for(int i = 0; i<size; i++)
+    if(array[i] < min) min = array[i];
+  return min;
+}
+
+/*******************************************************************************
  * Utility function to find the mode of a set of numbers in an array
  *******************************************************************************/
 
 static int find_mode(int* array, int size)
 {
   int count = 0, mode = array[0], current;
-  for(int i=0; i<size; i++)
-  {
+  for(int i=0; i<size; i++) {
     current = frequencyof(array[i], array, size);
-    if(count< current)
-    {
+    if(count< current) {
       count = current;
       mode = array[i];
     }
@@ -107,9 +117,8 @@ static int find_mode(int* array, int size)
 
 static int compare_all_sets(op_set target_set, op_set other_sets[], int size)
 {
-  for(int i = 0; i < size; i++)
-  {
-    if(compare_sets(target_set, other_sets[i])==1)return i;
+  for(int i = 0; i < size; i++) {
+    if(compare_sets(target_set, other_sets[i])==1) return i;
   }
   return -1;
 }
@@ -132,31 +141,26 @@ static int* create_exp_list_2(op_set set, int* temp_list, halo_list h_list,
   int index = 0; int total_size = 0;
 
   //negative values set as an initialisation
-  for(int r = 0;r<comm_size;r++)
-  {
+  for(int r = 0;r<comm_size;r++) {
     disps[r] = ranks[r] = -99;
     sizes[r] = 0;
   }
 
-  for(int r = 0;r<comm_size;r++)
-  {
+  for(int r = 0;r<comm_size;r++) {
     sizes[index] = 0;
     disps[index] = 0;
     int* temp_to = (int *) xmalloc((size/3)*sizeof(int));
     int* temp_part = (int *) xmalloc((size/3)*sizeof(int));
 
-    for(int i = 0;i<size;i=i+3)
-    {
-      if(temp_list[i]==r)
-      {
+    for(int i = 0;i<size;i=i+3) {
+      if(temp_list[i]==r) {
         temp_to[sizes[index]] = temp_list[i+1];
         temp_part[sizes[index]] = temp_list[i+2];
         sizes[index]++;
       }
     }
 
-    if(sizes[index]>0)
-    {
+    if(sizes[index]>0) {
       ranks[index] = r;
       //no sorting
       total_size = total_size + sizes[index];
@@ -165,8 +169,7 @@ static int* create_exp_list_2(op_set set, int* temp_list, halo_list h_list,
         disps[index] = disps[index-1] +  sizes[index-1];
 
       //add to end of t_list and p_list
-      for(int e = 0;e<sizes[index];e++)
-      {
+      for(int e = 0;e<sizes[index];e++) {
         to_list[disps[index]+e] = temp_to[e];
         part_list[disps[index]+e] = temp_part[e];
       }
@@ -199,8 +202,7 @@ static void create_imp_list_2(op_set set, int* temp_list, halo_list h_list,
   (void)my_rank;
   int* disps = (int *) xmalloc(comm_size*sizeof(int));
   disps[0] = 0;
-  for(int i=0; i<ranks_size; i++)
-  {
+  for(int i=0; i<ranks_size; i++) {
     if(i>0)disps[i] = disps[i-1]+sizes[i-1];
   }
 
@@ -228,21 +230,17 @@ static int partition_from_set(op_map map, int my_rank, int comm_size, int** part
   halo_list pi_list = (halo_list) xmalloc(sizeof(halo_list_core));
 
   //go through the map and build an import list of the non-local "to" elements
-  for(int i = 0; i < map->from->size; i++)
-  {
+  for(int i = 0; i < map->from->size; i++) {
     int part, local_index;
-    for(int j = 0; j<map->dim; j++)
-    {
+    for(int j = 0; j<map->dim; j++) {
       part = get_partition(map->map[i*map->dim+j],
           part_range[map->to->index],&local_index,comm_size);
-      if(count>=cap)
-      {
+      if(count>=cap) {
         cap = cap*2;
         temp_list = (int *)xrealloc(temp_list,cap*sizeof(int));
       }
 
-      if(part != my_rank)
-      {
+      if(part != my_rank) {
         temp_list[count++] = part;
         temp_list[count++] = local_index;
       }
@@ -292,13 +290,11 @@ static int partition_from_set(op_map map, int my_rank, int comm_size, int** part
 
   //first - prepare partition information of the "to" set element to be exported
   int** sbuf = (int **)xmalloc(pe_list->ranks_size*sizeof(int *));
-  for(int i = 0; i < pe_list->ranks_size; i++)
-  {
+  for(int i = 0; i < pe_list->ranks_size; i++) {
     //printf("export to %d from rank %d set %s of size %d\n",
     //   pe_list->ranks[i], my_rank, map->to->name, pe_list->sizes[i] );
     sbuf[i] = (int *)xmalloc(pe_list->sizes[i]*sizeof(int));
-    for(int j = 0; j<pe_list->sizes[i]; j++)
-    {
+    for(int j = 0; j<pe_list->sizes[i]; j++) {
       int elem = pe_list->list[pe_list->disps[i]+j];
       sbuf[i][j] = p_set->elem_part[elem];
     }
@@ -316,7 +312,6 @@ static int partition_from_set(op_map map, int my_rank, int comm_size, int** part
     MPI_Recv(&imp_part[pi_list->disps[i]],
         pi_list->sizes[i], MPI_INT, pi_list->ranks[i], 2,
         OP_PART_WORLD, MPI_STATUSES_IGNORE);
-
   }
   MPI_Waitall(pe_list->ranks_size,request_send_p, MPI_STATUSES_IGNORE );
   for(int i = 0; i<pe_list->ranks_size; i++) free(sbuf[i]);free(sbuf);
@@ -327,35 +322,29 @@ static int partition_from_set(op_map map, int my_rank, int comm_size, int** part
 
   //go through the mapping table and the imported partition information and
   //partition the "from" set
-  for(int i = 0; i<map->from->size; i++)
-  {
+  for(int i = 0; i<map->from->size; i++) {
     int part, local_index;
     int found_parts[map->dim];
-    for(int j = 0; j < map->dim; j++)
-    {
+    for(int j = 0; j < map->dim; j++) {
       part = get_partition(map->map[i*map->dim+j],
-          part_range[map->to->index],&local_index,comm_size);
+        part_range[map->to->index],&local_index,comm_size);
 
       if(part == my_rank)
         found_parts[j] = p_set->elem_part[local_index];
-      else //get partition information from imported data
-      {
+      else { //get partition information from imported data
         int r = binary_search(pi_list->ranks,part,0,pi_list->ranks_size-1);
-        if(r >= 0)
-        {
+        if(r >= 0) {
           int elem = binary_search(&pi_list->list[pi_list->disps[r]],
               local_index,0,pi_list->sizes[r]-1);
           if(elem >= 0)
             found_parts[j] = imp_part[elem];
-          else
-          {
+          else {
             printf("Element %d not found in partition import list\n",
                 local_index);
             MPI_Abort(OP_PART_WORLD, 2);
           }
         }
-        else
-        {
+        else {
           printf("Rank %d not found in partition import list\n", part);
           MPI_Abort(OP_PART_WORLD, 2);
         }
@@ -623,6 +612,158 @@ static int reorder_to_set(op_map map, int my_rank, int comm_size, int** part_ran
 
 static int reorder_from_set(op_map map, int my_rank, int comm_size, int** part_range)
 {
+  (void)my_rank;
+  part p_set = OP_part_list[map->to->index];
+
+  int cap = 100; int count = 0;
+  int* temp_list = (int*) xmalloc(cap*sizeof(int));
+
+  halo_list pi_list = (halo_list) xmalloc(sizeof(halo_list_core));
+
+  //go through the map and build an import list of the non-local "to" elements
+  for(int i = 0; i < map->from->size; i++) {
+    int part, local_index;
+    for(int j = 0; j<map->dim; j++) {
+      part = get_partition(map->map[i*map->dim+j],
+          part_range[map->to->index],&local_index,comm_size);
+      if(count>=cap) {
+        cap = cap*2;
+        temp_list = (int *)xrealloc(temp_list,cap*sizeof(int));
+      }
+
+      if(part != my_rank) {
+        temp_list[count++] = part;
+        temp_list[count++] = local_index;
+      }
+    }
+  }
+  create_export_list(map->to,temp_list, pi_list, count, comm_size, my_rank);
+  free(temp_list);
+
+  //now, discover neighbors and create export list of "to" elements
+  int ranks_size = 0;
+
+  int* neighbors = (int *)xmalloc(comm_size*sizeof(int));
+  int* sizes = (int *)xmalloc(comm_size*sizeof(int));
+
+  halo_list pe_list = (halo_list) xmalloc(sizeof(halo_list_core));
+  find_neighbors_set(pi_list, neighbors, sizes, &ranks_size, my_rank,
+      comm_size, OP_PART_WORLD);
+
+  MPI_Request request_send[pi_list->ranks_size];
+  int* rbuf;
+  cap = 0; count = 0;
+
+  for(int i=0; i < pi_list->ranks_size; i++) {
+    int* sbuf = &pi_list->list[pi_list->disps[i]];
+    MPI_Isend( sbuf,  pi_list->sizes[i],  MPI_INT, pi_list->ranks[i], 1,
+        OP_PART_WORLD, &request_send[i] );
+  }
+
+  for(int i=0; i< ranks_size; i++) cap = cap + sizes[i];
+  temp_list = (int *)xmalloc(cap*sizeof(int));
+
+  for(int i=0; i<ranks_size; i++) {
+    rbuf = (int *)xmalloc(sizes[i]*sizeof(int));
+    MPI_Recv(rbuf, sizes[i], MPI_INT, neighbors[i], 1, OP_PART_WORLD,
+        MPI_STATUSES_IGNORE );
+    memcpy(&temp_list[count],(void *)&rbuf[0],sizes[i]*sizeof(int));
+    count = count + sizes[i];
+    free(rbuf);
+  }
+  MPI_Waitall(pi_list->ranks_size,request_send, MPI_STATUSES_IGNORE );
+  create_import_list(map->to,temp_list, pe_list, count,
+      neighbors, sizes, ranks_size, comm_size, my_rank);
+
+  //use the import and export lists to exchange order information of
+  //this "to" set
+  MPI_Request request_send_p[pe_list->ranks_size];
+
+  //first - prepare element order information of the "to" set element to be exported
+  int** sbuf = (int **)xmalloc(pe_list->ranks_size*sizeof(int *));
+  for(int i = 0; i < pe_list->ranks_size; i++) {
+    //printf("export to %d from rank %d set %s of size %d\n",
+    //   pe_list->ranks[i], my_rank, map->to->name, pe_list->sizes[i] );
+    sbuf[i] = (int *)xmalloc(pe_list->sizes[i]*sizeof(int));
+    for(int j = 0; j<pe_list->sizes[i]; j++) {
+      int elem = pe_list->list[pe_list->disps[i]+j];
+      sbuf[i][j] = p_set->g_order[elem];
+    }
+    MPI_Isend(sbuf[i],  pe_list->sizes[i],  MPI_INT, pe_list->ranks[i],
+        2, OP_PART_WORLD, &request_send_p[i]);
+  }
+
+  //second - prepare space for the incomming element order information of the "to" set
+  int* imp_ord = (int *)xmalloc(sizeof(int)*pi_list->size);
+
+  //third - receive
+  for(int i=0; i<pi_list->ranks_size; i++) {
+    //printf("import from %d to rank %d set %s of size %d\n",
+    //    pi_list->ranks[i], my_rank, map->to->name, pi_list->sizes[i] );
+    MPI_Recv(&imp_ord[pi_list->disps[i]],
+        pi_list->sizes[i], MPI_INT, pi_list->ranks[i], 2,
+        OP_PART_WORLD, MPI_STATUSES_IGNORE);
+  }
+  MPI_Waitall(pe_list->ranks_size,request_send_p, MPI_STATUSES_IGNORE );
+  for(int i = 0; i<pe_list->ranks_size; i++) free(sbuf[i]);free(sbuf);
+
+
+  //allocate memory to hold the order details for the set thats going to be
+  //reordered
+  int* ordering = (int *)xmalloc(sizeof(int)*map->from->size);
+
+  //go through the mapping table and the imported order information and
+  //reorder the "from" set
+  for(int i = 0; i<map->from->size; i++) {
+    int part, local_index;
+    int found_orders[map->dim];
+    for(int j = 0; j < map->dim; j++) {
+      part = get_partition(map->map[i*map->dim+j],
+        part_range[map->to->index],&local_index,comm_size);
+
+      if(part == my_rank)
+        found_orders[j] = p_set->g_order[local_index];
+      else { //get order information from imported data
+        int r = binary_search(pi_list->ranks,part,0,pi_list->ranks_size-1);
+        if(r >= 0) {
+          int elem = binary_search(&pi_list->list[pi_list->disps[r]],
+              local_index,0,pi_list->sizes[r]-1);
+          if(elem >= 0)
+            found_orders[j] = imp_ord[elem];
+          else {
+            printf("Element %d not found in partition import list\n", local_index);
+            MPI_Abort(OP_PART_WORLD, 2);
+          }
+        }
+        else {
+          printf("Rank %d not found in partition import list\n", part);
+          MPI_Abort(OP_PART_WORLD, 2);
+        }
+      }
+    }
+    ordering[i] = minimum(found_orders, map->dim);
+  }
+
+  //allgather the ordering array
+
+  //sort the new ordering to get the final ordering of the "from" set
+  quickSort_2(ordering, p_set->g_index, 0, map->from->size -1);
+  for(int i = 0; i<map->from->size; i++) {
+    ordering[i] =  get_global_index(i, my_rank, part_range[map->from->index], comm_size);
+  }
+  quickSort_2(p_set->g_index,ordering, 0, map->from->size -1);
+
+  //scatter the sorted ordering with the new order index
+
+  OP_part_list[map->from->index]->g_order = ordering;
+  OP_part_list[map->from->index]->is_reordered = 1;
+
+  //cleanup
+  free(imp_ord);
+  free(pi_list->list);free(pi_list->ranks);free(pi_list->sizes);
+  free(pi_list->disps);free(pi_list);
+  free(pe_list->list);free(pe_list->ranks);free(pe_list->sizes);
+  free(pe_list->disps);free(pe_list);
   return 1;
 }
 
@@ -945,8 +1086,6 @@ static void renumber_maps(int my_rank, int comm_size)
       int global_index;
       if(local_index >= 0) {
         exp_g_index[exp_count] = g_index[i];
-        //global_index = get_global_index(local_index, my_rank,
-        //    part_range[map->to->index], comm_size);
         global_index = OP_part_list[map->to->index]->g_order[local_index];
         exp_index[exp_count++] = global_index;
       }
@@ -1006,8 +1145,6 @@ static void renumber_maps(int my_rank, int comm_size)
               all_imp_index[found];
           }
         } else {//in this partition
-          //global_index = get_global_index(local_index, my_rank,
-          //    part_range[map->to->index], comm_size);
           global_index = OP_part_list[map->to->index]->g_order[local_index];
           OP_map_list[map->index]->map[i*map->dim+j] = global_index;
         }
@@ -1222,12 +1359,9 @@ static void migrate_all(int my_rank, int comm_size)
     count = 0;cap = 1000;
     temp_list = (int *)xmalloc(cap*sizeof(int));
 
-    for(int i = 0; i < set->size; i++)
-    {
-      if(p->elem_part[i] != my_rank)
-      {
-        if(count>=cap)
-        {
+    for(int i = 0; i < set->size; i++) {
+      if(p->elem_part[i] != my_rank) {
+        if(count>=cap) {
           cap = cap*2;
           temp_list = (int *)xrealloc(temp_list, cap*sizeof(int));
         }
@@ -1310,23 +1444,20 @@ static void migrate_all(int my_rank, int comm_size)
       d++; //increase tag to do mpi comm for the next op_dat
       op_dat dat = item->dat;
 
-      if(compare_sets(dat->set,set)==1) //this data array is defines on this set
-      {
+      if(compare_sets(dat->set,set)==1) { //this data array is defines on this set
+
         //prepare bits of the data array to be exported
         char** sbuf = (char **)xmalloc(exp->ranks_size*sizeof(char *));
 
         for(int i=0; i < exp->ranks_size; i++) {
           sbuf[i] = (char *)xmalloc(exp->sizes[i]*dat->size);
-          for(int j = 0; j<exp->sizes[i]; j++)
-          {
+          for(int j = 0; j<exp->sizes[i]; j++) {
             int index = exp->list[exp->disps[i]+j];
-            memcpy(&sbuf[i][j*dat->size],
-                (void *)&dat->data[dat->size*(index)],dat->size);
+            memcpy(&sbuf[i][j*dat->size], (void *)&dat->data[dat->size*(index)],dat->size);
           }
           //printf("export from %d to %d data %10s, number of elements of size %d | sending:\n ",
           //    my_rank,exp->ranks[i],dat->name,exp->sizes[i]);
-          MPI_Isend(sbuf[i], dat->size*exp->sizes[i],
-              MPI_CHAR, exp->ranks[i],
+          MPI_Isend(sbuf[i], dat->size*exp->sizes[i], MPI_CHAR, exp->ranks[i],
               d, OP_PART_WORLD, &request_send[i]);
         }
 
@@ -1346,18 +1477,14 @@ static void migrate_all(int my_rank, int comm_size)
         char* new_dat = (char *)xmalloc(dat->size*(set->size+imp->size));
 
         count = 0;
-        for(int i = 0; i < dat->set->size;i++)//iterate over old set size
-        {
-          if(OP_part_list[set->index]->elem_part[i] == my_rank)
-          {
-            memcpy(&new_dat[count*dat->size],
-                (void *)&dat->data[dat->size*i],dat->size);
+        for(int i = 0; i < dat->set->size;i++) {//iterate over old set size
+          if(OP_part_list[set->index]->elem_part[i] == my_rank) {
+            memcpy(&new_dat[count*dat->size], (void *)&dat->data[dat->size*i],dat->size);
             count++;
           }
         }
 
-        memcpy(&new_dat[count*dat->size],(void *)rbuf,
-            dat->size*imp->size);
+        memcpy(&new_dat[count*dat->size],(void *)rbuf, dat->size*imp->size);
         count = count+imp->size;
         new_dat = (char *)xrealloc(new_dat,dat->size*count);
         free(rbuf);
@@ -1381,20 +1508,16 @@ static void migrate_all(int my_rank, int comm_size)
     for(int m=0; m<OP_map_index; m++) { //for each maping table
       op_map map=OP_map_list[m];
 
-      if(compare_sets(map->from,set)==1) //need to select mappings FROM this set
-      {
+      if(compare_sets(map->from,set)==1) { //need to select mappings FROM this set
         //prepare bits of the mapping tables to be exported
         int** sbuf = (int **)xmalloc(exp->ranks_size*sizeof(int *));
 
         //send mapping table entirs to relevant mpi processes
         for(int i=0; i<exp->ranks_size; i++) {
           sbuf[i] = (int *)xmalloc(exp->sizes[i]*map->dim*sizeof(int));
-          for(int j = 0; j<exp->sizes[i]; j++)
-          {
-            for(int p = 0; p< map->dim; p++)
-            {
-              sbuf[i][j*map->dim+p] =
-                map->map[map->dim*(exp->list[exp->disps[i]+j])+p];
+          for(int j = 0; j<exp->sizes[i]; j++) {
+            for(int p = 0; p< map->dim; p++) {
+              sbuf[i][j*map->dim+p] = map->map[map->dim*(exp->list[exp->disps[i]+j])+p];
             }
           }
           //printf("\n export from %d to %d map %10s, number of elements of size %d | sending:\n ",
@@ -1424,18 +1547,14 @@ static void migrate_all(int my_rank, int comm_size)
         int* new_map = (int *)xmalloc(sizeof(int)*(set->size+imp->size)*map->dim);
 
         count = 0;
-        for(int i = 0; i < map->from->size;i++)//iterate over old size of the maping table
-        {
-          if(OP_part_list[map->from->index]->elem_part[i] == my_rank)
-          {
-            memcpy(&new_map[count*map->dim],
-                (void *)&OP_map_list[map->index]-> map[map->dim*i],
-                map->dim*sizeof(int));
+        for(int i = 0; i < map->from->size;i++) {//iterate over old size of the maping table
+          if(OP_part_list[map->from->index]->elem_part[i] == my_rank) {
+            memcpy(&new_map[count*map->dim],(void *)&OP_map_list[map->index]->map[map->dim*i],
+              map->dim*sizeof(int));
             count++;
           }
         }
-        memcpy(&new_map[count*map->dim],(void *)rbuf,
-            map->dim*sizeof(int)*imp->size);
+        memcpy(&new_map[count*map->dim],(void *)rbuf, map->dim*sizeof(int)*imp->size);
         count = count+imp->size;
         new_map = (int *)xrealloc(new_map,sizeof(int)*count*map->dim);
 
@@ -1466,8 +1585,7 @@ static void migrate_all(int my_rank, int comm_size)
     //send ordering g_order values to relevant mpi processes
     for(int i=0; i<exp->ranks_size; i++) {
       sbuf[i] = (int *)xmalloc(exp->sizes[i]*sizeof(int));
-      for(int j = 0; j<exp->sizes[i]; j++)
-      {
+      for(int j = 0; j<exp->sizes[i]; j++) {
         sbuf[i][j] = OP_part_list[set->index]->
           g_order[exp->list[exp->disps[i]+j]];
       }
@@ -1493,10 +1611,8 @@ static void migrate_all(int my_rank, int comm_size)
     int* new_g_order = (int *)xmalloc(sizeof(int)*(set->size+imp->size));
 
     count = 0;
-    for(int i = 0; i < set->size;i++)//iterate over old size of the g_order array
-    {
-      if(OP_part_list[set->index]->elem_part[i] == my_rank)
-      {
+    for(int i = 0; i < set->size;i++) {//iterate over old size of the g_order array
+      if(OP_part_list[set->index]->elem_part[i] == my_rank) {
         new_g_order[count] = OP_part_list[set->index]->g_order[i];
         count++;
       }
@@ -1532,7 +1648,6 @@ static void migrate_all(int my_rank, int comm_size)
 
     //receive ordering g_index values from relevant mpi processes
     for(int i=0; i < imp->ranks_size; i++) {
-
       MPI_Recv(&rbuf[imp->disps[i]],imp->sizes[i],
           MPI_INT, imp->ranks[i], s,
           OP_PART_WORLD, MPI_STATUSES_IGNORE);
@@ -1545,10 +1660,8 @@ static void migrate_all(int my_rank, int comm_size)
     int* new_g_index = (int *)xmalloc(sizeof(int)*(set->size+imp->size));
 
     count = 0;
-    for(int i = 0; i < set->size;i++)//iterate over old size of the g_index array
-    {
-      if(OP_part_list[set->index]->elem_part[i] == my_rank)
-      {
+    for(int i = 0; i < set->size;i++) {//iterate over old size of the g_index array
+      if(OP_part_list[set->index]->elem_part[i] == my_rank) {
         new_g_index[count] = OP_part_list[set->index]->g_index[i];
         count++;
       }
@@ -1606,13 +1719,10 @@ static void migrate_all(int my_rank, int comm_size)
     TAILQ_FOREACH(item, &OP_dat_list, entries) {
       op_dat dat = item->dat;
 
-      if(compare_sets(dat->set,set) == 1)
-      {
-        if(set->size > 0)
-        {
+      if(compare_sets(dat->set,set) == 1) {
+        if(set->size > 0) {
           int* temp = (int *)xmalloc(sizeof(int)*set->size);
-          memcpy(temp, (void *)OP_part_list[set->index]->g_order,
-              sizeof(int)*set->size);
+          memcpy(temp, (void *)OP_part_list[set->index]->g_order, sizeof(int)*set->size);
           quickSort_dat(temp,dat->data, 0, set->size-1, dat->size);
           free(temp);
         }
@@ -1625,17 +1735,16 @@ static void migrate_all(int my_rank, int comm_size)
 
       if(compare_sets(map->from,set) == 1)
       {
-        if(set->size > 0)
-        {
+        if(set->size > 0) {
           int* temp = (int *)xmalloc(sizeof(int)*set->size);
-          memcpy(temp, (void *)OP_part_list[set->index]->g_order,
-              sizeof(int)*set->size);
-          quickSort_map(temp,OP_map_list[map->index]->map, 0,
-              set->size-1, map->dim);
+          memcpy(temp, (void *)OP_part_list[set->index]->g_order, sizeof(int)*set->size);
+          quickSort_map(temp,OP_map_list[map->index]->map, 0, set->size-1, map->dim);
           free(temp);
         }
       }
     }
+
+    //finally set up the correct global index for renumbering
     if(set->size > 0) {
       quickSort_2(OP_part_list[set->index]->g_order,
         OP_part_list[set->index]->g_index,0, set->size-1);

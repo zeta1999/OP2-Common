@@ -160,7 +160,8 @@ int main(int argc, char **argv)
 
   op_diagnostic_output();
 
-  op_partition("PTSCOTCH", "KWAY", cells, pcell, p_xm);
+  //op_partition("PTSCOTCH", "KWAY", cells, pcell, p_xm);
+  op_partition("PTSCOTCH", "REORDER", cells, pcell, p_xm);
 
   op_printf("nodes: %d cells: %d bnodes: %d\n", nodes->size, cells->size, bnodes->size);
   nnode = op_get_size(nodes);
