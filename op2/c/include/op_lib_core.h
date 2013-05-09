@@ -74,6 +74,7 @@ typedef unsigned long long ull;
 extern int OP_diags;
 
 extern int OP_cache_line_size;
+extern double OP_hybrid_balance;
 
 extern int OP_hybrid_gpu;
 
@@ -260,6 +261,8 @@ void op_dump_dat ( op_dat data );
 void op_print_dat_to_binfile_core(op_dat dat, const char *file_name);
 
 void op_print_dat_to_txtfile_core(op_dat dat, const char* file_name);
+
+void op_printf(const char* format, ...);
 
 /*******************************************************************************
 * Core MPI lib function prototypes

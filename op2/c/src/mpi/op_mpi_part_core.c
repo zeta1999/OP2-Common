@@ -53,11 +53,15 @@
 //ptscotch header
 #ifdef HAVE_PTSCOTCH
 #include <ptscotch.h>
+
 #endif
 
 //parmetis header
 #ifdef HAVE_PARMETIS
 #include <parmetis.h>
+#ifdef PARMETIS_VER_4
+typedef idx_t idxtype;
+#endif
 #endif
 
 #include <op_mpi_core.h>
@@ -2049,11 +2053,18 @@ void op_partition_kway(op_map primary_map)
   idxtype numflag = 0;
   idxtype wgtflag = 0;
   int options[3] = {1,3,15};
-
+  
+  int *hybrid_flags = (int *)malloc(comm_size*sizeof(int));
+  MPI_Allgather( &OP_hybrid_gpu, 1, MPI_INT,  hybrid_flags,
+      1,MPI_INT,OP_PART_WORLD);
+  double total = 0;
+  for (int i = 0; i < comm_size; i++)
+    total += hybrid_flags[i] == 1 ? OP_hybrid_balance : 1.0;
+  
   idxtype ncon = 1;
   float *tpwgts = (float *)xmalloc(comm_size*sizeof(float)*ncon);
-  for(int i = 0; i<comm_size*ncon; i++)tpwgts[i] = (float)1.0/(float)comm_size;
-
+  for(int i = 0; i<comm_size*ncon; i++) tpwgts[i] = hybrid_flags[i] == 1 ? OP_hybrid_balance/total : 1.0/total;
+  
   float *ubvec = (float *)xmalloc(sizeof(float)*ncon);
   *ubvec = 1.05;
 
@@ -3177,4 +3188,3 @@ void partition(const char* lib_name, const char* lib_routine,
   op_halo_create();
 
 }
-

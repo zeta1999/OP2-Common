@@ -3,7 +3,7 @@ program AIRFOIL
   use OP2_FORTRAN_HDF5_DECLARATIONS
   use OP2_Fortran_Reference
   use OP2_Fortran_RT_Support
-!  use AIRFOIL_SEQ
+  use AIRFOIL_SEQ
   use OP2_CONSTANTS
   use IO
   use, intrinsic :: ISO_C_BINDING
@@ -104,7 +104,7 @@ program AIRFOIL
     do k = 1, 2
 
       ! calculate area/timstep
-      call op_par_loop_6 ( adt_calc, cells, &
+      call op_par_loop_7 ( adt_calc, cells, &
                          & op_opt_arg_dat (.FALSE., p_dummy,1, pcell, 2,"real(8)", OP_READ), &
                          & op_arg_dat (p_x,    1, pcell, 2,"real(8)", OP_READ), &
                          & op_arg_dat (p_x,    2, pcell, 2,"real(8)", OP_READ), &
@@ -124,8 +124,8 @@ program AIRFOIL
                          & op_opt_arg_dat (.TRUE., p_res,  1, pecell, 4,"real(8)", OP_INC),  &
                          & op_arg_dat (p_res,  2, pecell, 4,"real(8)", OP_INC))
 
-      call op_par_loop_6 ( bres_calc, bedges, &
-                         & op_arg_gbl (qinf, 4, "real(8)", OP_READ),
+      call op_par_loop_7 ( bres_calc, bedges, &
+                         & op_arg_gbl (qinf, 4, "real(8)", OP_READ), &
                          & op_arg_dat (p_x,      1, pbedge, 2,"real(8)",  OP_READ), &
                          & op_arg_dat (p_x,      2, pbedge, 2,"real(8)",  OP_READ), &
                          & op_arg_dat (p_q,      1, pbecell, 4,"real(8)", OP_READ), &

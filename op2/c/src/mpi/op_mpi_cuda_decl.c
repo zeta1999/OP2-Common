@@ -315,20 +315,22 @@ op_decl_const_char ( int dim, char const * type, int size, char * dat,
 void
 op_exit (  )
 {
+  if (OP_hybrid_gpu) {
   //need to free buffer_d used for mpi comms in each op_dat
-  op_dat_entry *item;
-  TAILQ_FOREACH(item, &OP_dat_list, entries)
-  {
-    if (strstr( item->dat->type, ":soa")!= NULL) {
-      cutilSafeCall (cudaFree((item->dat)->buffer_d_r));
+    op_dat_entry *item;
+    TAILQ_FOREACH(item, &OP_dat_list, entries)
+    {
+      if (strstr( item->dat->type, ":soa")!= NULL) {
+        cutilSafeCall (cudaFree((item->dat)->buffer_d_r));
+      }
+      cutilSafeCall (cudaFree((item->dat)->buffer_d));
     }
-    cutilSafeCall (cudaFree((item->dat)->buffer_d));
   }
 
   op_mpi_exit();
-  op_cuda_exit();            // frees dat_d memory
-  op_rt_exit();              // frees plan memory
-  op_exit_core();            // frees lib core variables
+  if (OP_hybrid_gpu) op_cuda_exit(); // frees dat_d memory
+  op_rt_exit();                      // frees plan memory
+  op_exit_core();                    // frees lib core variables
 
   int flag = 0;
   MPI_Finalized(&flag);

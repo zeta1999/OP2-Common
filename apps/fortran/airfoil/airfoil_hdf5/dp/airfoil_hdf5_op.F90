@@ -87,7 +87,7 @@ program AIRFOIL
 
   call op_partition ('PARMETIS','KWAY', edges, pecell, p_x)
   ncellr = real(op_get_size(cells))
-  print *, "ncellr", ncellr
+  print *, getHybridGPU(), "ncellr", cells%setPtr%size
 
   ! start timer
   call op_timers ( startTime )

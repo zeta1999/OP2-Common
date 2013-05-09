@@ -47,7 +47,9 @@ int OP_diags = 0,
     OP_block_size = 64,
     OP_cache_line_size = 128,
     OP_gpu_direct = 0;
-
+    
+double OP_hybrid_balance = 1.0;
+  
 int OP_hybrid_gpu = 0;
 
 int OP_set_index = 0, OP_set_max = 0,
@@ -112,6 +114,13 @@ void
 {
   OP_diags = diags;
 
+  if ( getenv ( "OP_HYBRID_BALANCE" ) )
+  {
+    char* val = getenv ( "OP_HYBRID_BALANCE" );
+    OP_hybrid_balance = atof ( val );
+    op_printf ( "\n OP_hybrid_balance  = %g \n", OP_hybrid_balance );
+  }
+
 #ifdef OP_BLOCK_SIZE
   OP_block_size = OP_BLOCK_SIZE;
 #endif
@@ -125,25 +134,25 @@ void
     if ( strncmp ( argv[n], "OP_BLOCK_SIZE=", 14 ) == 0 )
     {
       OP_block_size = atoi ( argv[n] + 14 );
-      printf ( "\n OP_block_size = %d \n", OP_block_size );
+      op_printf ( "\n OP_block_size = %d \n", OP_block_size );
     }
 
     if ( strncmp ( argv[n], "OP_PART_SIZE=", 13 ) == 0 )
     {
       OP_part_size = atoi ( argv[n] + 13 );
-      printf ( "\n OP_part_size  = %d \n", OP_part_size );
+      op_printf ( "\n OP_part_size  = %d \n", OP_part_size );
     }
 
     if ( strncmp ( argv[n], "OP_CACHE_LINE_SIZE=", 19 ) == 0 )
     {
       OP_cache_line_size = atoi ( argv[n] + 19 );
-      printf ( "\n OP_cache_line_size  = %d \n", OP_cache_line_size );
+      op_printf ( "\n OP_cache_line_size  = %d \n", OP_cache_line_size );
     }
 
     if ( strncmp ( argv[n], "-gpudirect", 10 ) == 0 )
     {
       OP_gpu_direct = 1;
-      printf ( "\n Enabling GPU Direct \n" );
+      op_printf ( "\n Enabling GPU Direct \n" );
     }
 
   }
