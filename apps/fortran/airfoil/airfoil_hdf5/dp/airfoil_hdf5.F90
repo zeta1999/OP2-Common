@@ -112,7 +112,7 @@ program AIRFOIL
                          & op_arg_dat (p_x,    4, pcell, 2,"real(8)", OP_READ), &
                          & op_arg_dat (p_q,   -1, OP_ID, 4,"real(8)", OP_READ), &
                          & op_arg_dat (p_adt, -1, OP_ID, 1,"real(8)", OP_WRITE))
-
+     
       ! calculate flux residual
       call op_par_loop_8 ( res_calc, edges, &
                          & op_opt_arg_dat (.TRUE.,p_x,    1, pedge, 2,"real(8)",  OP_READ), &
@@ -123,7 +123,9 @@ program AIRFOIL
                          & op_arg_dat (p_adt,  2, pecell, 1,"real(8)", OP_READ), &
                          & op_opt_arg_dat (.TRUE., p_res,  1, pecell, 4,"real(8)", OP_INC),  &
                          & op_arg_dat (p_res,  2, pecell, 4,"real(8)", OP_INC))
-
+     call op_print_dat_to_binfile (p_res, &
+    & "p_res_ref"//CHAR(0))
+     call EXIT(0)
       call op_par_loop_7 ( bres_calc, bedges, &
                          & op_arg_gbl (qinf, 4, "real(8)", OP_READ), &
                          & op_arg_dat (p_x,      1, pbedge, 2,"real(8)",  OP_READ), &
