@@ -1272,9 +1272,9 @@ def op2_gen_cuda(master, date, consts, kernels, hydra):
     comm('Stub for CPU execution')
     code('')
 ##########################################################################
-#  Generate SEQ host stub
+#  Generate OpenMP host stub
 ##########################################################################
-    code('attributes(host) SUBROUTINE '+name+'_host_cpu( userSubroutine, set, &'); depth = depth + 2
+    code('SUBROUTINE '+name+'_host_cpu( userSubroutine, set, &'); depth = depth + 2
     for g_m in range(0,nargs):
       if g_m == nargs-1:
         code('& opArg'+str(g_m+1)+' )')
@@ -1310,7 +1310,7 @@ def op2_gen_cuda(master, date, consts, kernels, hydra):
         code('')
       if maps[g_m] == OP_GBL:
         code(typs[g_m]+', POINTER, DIMENSION(:) :: opDat'+str(g_m+1)+'Local')
-    
+
     for g_m in range(0,nargs):
       if maps[g_m] == OP_MAP and optflags[g_m]==1:
         code(typs[g_m]+', POINTER, DIMENSION(:) :: opDat'+str(g_m+1)+'OptPtr')
@@ -1346,12 +1346,12 @@ def op2_gen_cuda(master, date, consts, kernels, hydra):
     else:
       code('INTEGER(kind=4) :: sliceStart')
       code('INTEGER(kind=4) :: sliceEnd')
-  
+
     code('')
     for g_m in range(0,nargs):
       if maps[g_m] == OP_GBL and accs[g_m] == OP_INC:
         code(typs[g_m]+', DIMENSION(:), ALLOCATABLE :: reductionArrayHost'+str(g_m+1))
-  
+
     code('')
     code('INTEGER(kind=4) :: i1,i2,n')
 
@@ -1389,6 +1389,8 @@ def op2_gen_cuda(master, date, consts, kernels, hydra):
     code_pre('#else')
     code_pre('  numberOfThreads = 1')
     code_pre('#endif')
+    depth = depth + 2
+
 
     if ninds > 0:
       for g_m in range(0,nargs):
@@ -1407,11 +1409,11 @@ def op2_gen_cuda(master, date, consts, kernels, hydra):
       code('& indirectionDescriptorArray)')
       code('')
       code('CALL c_f_pointer(planRet_'+name+',actualPlan_'+name+')')
-      code('CALL c_f_pointer(actualPlan_'+name+'%ncolblk,ncolblk_'+name+',(/set%setPtr%size/))')
+      code('CALL c_f_pointer(actualPlan_'+name+'%ncolblk,ncolblk_'+name+',(/actualPlan_'+name+'%ncolors_core/))')
       code('CALL c_f_pointer(actualPlan_'+name+'%blkmap,blkmap_'+name+',(/actualPlan_'+name+'%nblocks/))')
       code('CALL c_f_pointer(actualPlan_'+name+'%offset,offset_'+name+',(/actualPlan_'+name+'%nblocks/))')
       code('CALL c_f_pointer(actualPlan_'+name+'%nelems,nelems_'+name+',(/actualPlan_'+name+'%nblocks/))')
-  
+
     code('')
     code('opSetCore => set%setPtr')
     code('')
@@ -1563,7 +1565,7 @@ def op2_gen_cuda(master, date, consts, kernels, hydra):
       ENDDO()
       ENDDO()
       code('!$OMP END PARALLEL DO')
-  
+
 
     IF('(n_upper .EQ. 0) .OR. (n_upper .EQ. opSetCore%core_size)')
     code('CALL op_mpi_wait_all(numberOfOpDats,opArgArray)')
