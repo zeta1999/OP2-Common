@@ -45,6 +45,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <likwid.h>
 
 // global constants
 
@@ -84,7 +85,7 @@ int main(int argc, char **argv)
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
 
   // read in grid
-  
+
   op_printf("reading in grid \n");
 
   FILE *fp;
@@ -196,14 +197,14 @@ int main(int argc, char **argv)
 
   op_diagnostic_output();
 
-  
+
   //initialise timers for total execution wall time
   op_timers(&cpu_t1, &wall_t1);
 
   // main time-marching loop
 
   niter = 1000;
-
+  likwid_markerInit();
   for(int iter=1; iter<=niter; iter++) {
 
     // save old flow solution
@@ -218,7 +219,7 @@ int main(int argc, char **argv)
 
       // calculate area/timstep
       rms = 0.0;
-      
+      likwid_markerStartRegion("accumulate");
       op_par_loop(adt_calc,"adt_calc",cells,
           op_arg_dat(p_x,   0,pcell, 2,"double",OP_READ ),
           op_arg_dat(p_x,   1,pcell, 2,"double",OP_READ ),
@@ -226,10 +227,10 @@ int main(int argc, char **argv)
           op_arg_dat(p_x,   3,pcell, 2,"double",OP_READ ),
           op_arg_dat(p_q,  -1,OP_ID, 4,"double",OP_READ ),
           op_arg_dat(p_adt,-1,OP_ID, 1,"double",OP_WRITE));
-      
-      
+
+
       // calculate flux residual
-      
+
       op_par_loop(res_calc,"res_calc",edges,
           op_arg_dat(p_x,    0,pedge, 2,"double",OP_READ),
           op_arg_dat(p_x,    1,pedge, 2,"double",OP_READ),
@@ -239,7 +240,8 @@ int main(int argc, char **argv)
           op_arg_dat(p_adt,  1,pecell,1,"double",OP_READ),
           op_arg_dat(p_res,  0,pecell,4,"double",OP_INC ),
           op_arg_dat(p_res,  1,pecell,4,"double",OP_INC ));
-      
+
+      likwid_markerStopRegion("accumulate");
       op_par_loop(bres_calc,"bres_calc",bedges,
           op_arg_dat(p_x,     0,pbedge, 2,"double",OP_READ),
           op_arg_dat(p_x,     1,pbedge, 2,"double",OP_READ),
@@ -247,11 +249,11 @@ int main(int argc, char **argv)
           op_arg_dat(p_adt,   0,pbecell,1,"double",OP_READ),
           op_arg_dat(p_res,   0,pbecell,4,"double",OP_INC ),
           op_arg_dat(p_bound,-1,OP_ID  ,1,"int",  OP_READ));
-      
+
       // update flow field
-      
+
       //rms = 0.0;
-      
+
       op_par_loop(update,"update",cells,
           op_arg_dat(p_qold,-1,OP_ID, 4,"double",OP_READ ),
           op_arg_dat(p_q,   -1,OP_ID, 4,"double",OP_WRITE),
@@ -262,12 +264,13 @@ int main(int argc, char **argv)
 
     // print iteration history
     rms = sqrt(rms/(double) op_get_size(cells));
-    //if (iter%100 == 0)
-    if (iter%10 == 0)
+    if (iter%100 == 0)
+    //if (iter%10 == 0)
       op_printf(" %d  %10.5e \n",iter,rms);
   }
 
   op_timers(&cpu_t2, &wall_t2);
+  likwid_markerClose();
 
   //output the result dat array to files
   op_print_dat_to_txtfile(p_q, "out_grid_seq.dat"); //ASCI
@@ -278,7 +281,7 @@ int main(int argc, char **argv)
 
   op_exit();
 
-  
+
   free(cell);
   free(edge);
   free(ecell);

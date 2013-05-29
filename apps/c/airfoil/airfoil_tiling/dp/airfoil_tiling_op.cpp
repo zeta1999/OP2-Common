@@ -49,6 +49,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <likwid.h>
 
 // global constants
 
@@ -162,7 +163,7 @@ int main(int argc, char **argv)
   // set constants and initialise flow field and residual
 
   op_printf("initialising flow field \n");
-  
+
   gam = 1.4f;
   gm1 = gam - 1.0f;
   cfl = 0.9f;
@@ -220,33 +221,33 @@ int main(int argc, char **argv)
   op_diagnostic_output();
 
   // initialising and running the inspector
-  
+
   int nvertices = 1000; // TODO
-  
+
   op_printf ("running inspector\n");
-  
+
   int* all_edge  = (int *) malloc (2*(nbedge+nedge)*sizeof(int));
   memcpy (all_edge, edge, sizeof(int)*2*nedge);
   memcpy (all_edge + 2*nedge, bedge, sizeof(int)*2*nbedge);
-  
+
   inspector_t* insp = initInspector (nnode, nvertices, 4);
   //partitionAndColor (insp, nnode, pedge->map, nedge*2); // TODO: breaking abstraction
   partitionAndColor (insp, nnode, all_edge, (nedge+nbedge)*2); // TODO: breaking
-  
+
   addParLoop (insp, "cells1", ncell, pcell->map, ncell * 4, OP_INDIRECT);
   addParLoop (insp, "edges1", nedge, pedge->map, nedge * 2, OP_INDIRECT);
   addParLoop (insp, "bedges1", nbedge, pbedge->map, nbedge * 2, OP_INDIRECT);
   addParLoop (insp, "cells2", ncell, pcell->map, ncell * 4, OP_DIRECT);
-  
+
   op_printf ("added parallel loops\n");
-  
+
   if (runInspector (insp, 0) == INSPOP_WRONGCOLOR)
     op_printf ("%s\n", insp->debug);
   else
     op_printf ("coloring went fine\n");
-  
+
   //inspectorDiagnostic (insp);
-  
+
   // build the new data array with values in proper positions
   int x_size = 2*nnode;
   double* new_x = (double *) malloc(x_size*sizeof(double));
@@ -255,25 +256,26 @@ int main(int argc, char **argv)
     new_x[2*insp->v2v[i]] = x[2*i];
     new_x[2*insp->v2v[i] + 1] = x[2*i + 1];
   }
-  
+
   printf("running executor\n");
   executor_t* exec = initExecutor (insp);
   int ncolors = exec->ncolors;
-  
-  
+
+
   //initialise timers for total execution wall time
   op_timers(&cpu_t1, &wall_t1);
-  
+
   // tiled execution of the first two loops
   int* renum_pcell  = insp->loops[0]->indMap;
   int* renum_pedge  = insp->loops[1]->indMap;
   int* renum_pbedge = insp->loops[2]->indMap;
   //int* renum2_pcell  = insp->loops[3]->indMap;
-  
+
   // main time-marching loop
-  
+
   niter = 1000;
-  
+  likwid_markerInit();
+
   for(int iter=1; iter<=niter; iter++) {
 
     // save old flow solution
@@ -281,11 +283,11 @@ int main(int argc, char **argv)
     op_par_loop_save_soln("save_soln",cells,
                op_arg_dat(p_q,-1,OP_ID,4,"double",OP_READ),
                op_arg_dat(p_qold,-1,OP_ID,4,"double",OP_WRITE));
-   
+
     // predictor/corrector update loop
 
     for(int k=0; k<2; k++) {
-      
+
       rms = 0.0;
 
       //for each colour
@@ -295,19 +297,21 @@ int main(int argc, char **argv)
         int tile_size;
         int first_tile = exec->offset[i];
         int last_tile = exec->offset[i + 1];
-        
+
         #pragma omp parallel for private(tile_size)
         for (int j = first_tile; j < last_tile; j++)
         {
+          likwid_markerThreadInit();
+          likwid_markerStartRegion("accumulate");
           // execute the tile
           tile_t* tile = exec->tiles[exec->c2p[j]];
-        
+
           // loop adt_calc (calculate area/timstep)
           tile_size = tile->curSize[0];
           for (int k = 0; k < tile_size; k++)
           {
             int cell = tile->element[0][k];
-            
+
             adt_calc (new_x + renum_pcell[cell*4 + 0]*2,
                       new_x + renum_pcell[cell*4 + 1]*2,
                       new_x + renum_pcell[cell*4 + 2]*2,
@@ -321,7 +325,7 @@ int main(int argc, char **argv)
           for (int k = 0; k < tile_size; k++)
           {
             int edge = tile->element[1][k];
-            
+
             res_calc (new_x + renum_pedge[edge*2 + 0]*2,
                       new_x + renum_pedge[edge*2 + 1]*2,
                       q     + ecell[edge*2 + 0]*4,
@@ -331,13 +335,13 @@ int main(int argc, char **argv)
                       res   + ecell[edge*2 + 0]*4,
                       res   + ecell[edge*2 + 1]*4);
           }
-          
+
           // loop bres_calc
           tile_size = tile->curSize[2];
           for (int k = 0; k < tile_size; k++)
           {
             int edge = tile->element[2][k];
-            
+
             bres_calc (new_x + renum_pbedge[edge*2 + 0]*2,
                        new_x + renum_pbedge[edge*2 + 1]*2,
                        q     + becell[edge + 0]*4,
@@ -351,15 +355,18 @@ int main(int argc, char **argv)
           for (int k = 0; k < tile_size; k++)
           {
             int cell = tile->element[3][k];
-            
+
             update    (qold  + cell*4,
                        q     + cell*4,
                        res   + cell*4,
                        adt   + cell,
                        &rms);
           }
-          
+
+
+          likwid_markerStopRegion("accumulate");
         }
+
       }
     }
 
@@ -370,6 +377,7 @@ int main(int argc, char **argv)
   }
 
   op_timers(&cpu_t2, &wall_t2);
+  likwid_markerClose();
 
   //output the result dat array to files
   op_print_dat_to_txtfile(p_q, "out_grid_tile_op.dat"); //ASCI
@@ -384,7 +392,7 @@ int main(int argc, char **argv)
   op_printf ("inspector destroyed\n");
   freeExecutor (exec);
   op_printf ("executor destroyed\n");
-  
+
   free(all_edge);
   free(cell);
   free(edge);

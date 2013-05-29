@@ -7,7 +7,7 @@
 # HDF5_INSTALL_PATH
 #
 # OP2_INSTALL_PATH
-# OP2_COMPILER (gnu,intel,etc)
+OP2_COMPILER=gnu
 #
 
 #
