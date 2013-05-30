@@ -45,7 +45,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include <likwid.h>
 
 // global constants
 
@@ -204,7 +203,7 @@ int main(int argc, char **argv)
   // main time-marching loop
 
   niter = 1000;
-  likwid_markerInit();
+
   for(int iter=1; iter<=niter; iter++) {
 
     // save old flow solution
@@ -219,7 +218,6 @@ int main(int argc, char **argv)
 
       // calculate area/timstep
       rms = 0.0;
-      likwid_markerStartRegion("accumulate");
       op_par_loop(adt_calc,"adt_calc",cells,
           op_arg_dat(p_x,   0,pcell, 2,"double",OP_READ ),
           op_arg_dat(p_x,   1,pcell, 2,"double",OP_READ ),
@@ -241,7 +239,6 @@ int main(int argc, char **argv)
           op_arg_dat(p_res,  0,pecell,4,"double",OP_INC ),
           op_arg_dat(p_res,  1,pecell,4,"double",OP_INC ));
 
-      likwid_markerStopRegion("accumulate");
       op_par_loop(bres_calc,"bres_calc",bedges,
           op_arg_dat(p_x,     0,pbedge, 2,"double",OP_READ),
           op_arg_dat(p_x,     1,pbedge, 2,"double",OP_READ),
@@ -265,12 +262,10 @@ int main(int argc, char **argv)
     // print iteration history
     rms = sqrt(rms/(double) op_get_size(cells));
     if (iter%100 == 0)
-    //if (iter%10 == 0)
       op_printf(" %d  %10.5e \n",iter,rms);
   }
 
   op_timers(&cpu_t2, &wall_t2);
-  likwid_markerClose();
 
   //output the result dat array to files
   op_print_dat_to_txtfile(p_q, "out_grid_seq.dat"); //ASCI

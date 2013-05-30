@@ -45,6 +45,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <likwid.h>
 
 // global constants
 
@@ -56,15 +57,6 @@ double gam, gm1, cfl, eps, mach, alpha, qinf[4];
 
 #include "op_seq.h"
 
-//
-// Tiling header file
-//
-
-#include "executor.h"
-#include "inspector.h"
-#include "invert.h"
-#include "test.h"
-#include "plotmesh.h"
 
 //
 // kernel routines for parallel loops
@@ -126,21 +118,21 @@ int main(int argc, char **argv)
 
   for (int n=0; n<ncell; n++) {
     if (fscanf(fp,"%d %d %d %d \n",&cell[4*n  ], &cell[4*n+1],
-               &cell[4*n+2], &cell[4*n+3]) != 4) {
+                                   &cell[4*n+2], &cell[4*n+3]) != 4) {
       op_printf("error reading from new_grid.dat\n"); exit(-1);
     }
   }
 
   for (int n=0; n<nedge; n++) {
     if (fscanf(fp,"%d %d %d %d \n",&edge[2*n], &edge[2*n+1],
-               &ecell[2*n],&ecell[2*n+1]) != 4) {
+                                   &ecell[2*n],&ecell[2*n+1]) != 4) {
       op_printf("error reading from new_grid.dat\n"); exit(-1);
     }
   }
 
   for (int n=0; n<nbedge; n++) {
     if (fscanf(fp,"%d %d %d %d \n",&bedge[2*n],&bedge[2*n+1],
-               &becell[n], &bound[n]) != 4) {
+                                   &becell[n], &bound[n]) != 4) {
       op_printf("error reading from new_grid.dat\n"); exit(-1);
     }
   }
@@ -170,7 +162,7 @@ int main(int argc, char **argv)
 
   for (int n=0; n<ncell; n++) {
     for (int m=0; m<4; m++) {
-      q[4*n+m] = qinf[m];
+        q[4*n+m] = qinf[m];
       res[4*n+m] = 0.0f;
     }
   }
@@ -190,63 +182,20 @@ int main(int argc, char **argv)
 
   op_dat p_bound = op_decl_dat(bedges,1,"int"  ,bound,"p_bound");
   op_dat p_x     = op_decl_dat(nodes ,2,"double",x    ,"p_x");
-  op_dat p_adt   = op_decl_dat(cells ,1,"double",adt  ,"p_adt");
-  op_dat p_res   = op_decl_dat(cells ,4,"double",res  ,"p_res");
   op_dat p_q     = op_decl_dat(cells ,4,"double",q    ,"p_q");
   op_dat p_qold  = op_decl_dat(cells ,4,"double",qold ,"p_qold");
+  op_dat p_adt   = op_decl_dat(cells ,1,"double",adt  ,"p_adt");
+  op_dat p_res   = op_decl_dat(cells ,4,"double",res  ,"p_res");
 
-  op_decl_const2("gam",1,"double",&gam  );
-  op_decl_const2("gm1",1,"double",&gm1  );
-  op_decl_const2("cfl",1,"double",&cfl  );
-  op_decl_const2("eps",1,"double",&eps  );
-  op_decl_const2("mach",1,"double",&mach );
-  op_decl_const2("alpha",1,"double",&alpha);
-  op_decl_const2("qinf",4,"double",qinf  );
+  op_decl_const(1,"double",&gam  );
+  op_decl_const(1,"double",&gm1  );
+  op_decl_const(1,"double",&cfl  );
+  op_decl_const(1,"double",&eps  );
+  op_decl_const(1,"double",&mach );
+  op_decl_const(1,"double",&alpha);
+  op_decl_const(4,"double",qinf  );
 
   op_diagnostic_output();
-
-  // initialising and running the inspector
-
-  int nvertices = 1000; // TODO
-
-  op_printf ("running inspector\n");
-
-  /*
-   int* all_edge  = (int *) malloc (2*(nbedge+nedge)*sizeof(int));
-   memcpy (all_edge, edge, sizeof(int)*2*nedge);
-   memcpy (all_edge + 2*nedge, bedge, sizeof(int)*2*nbedge);
-   */
-
-  inspector_t* insp = initInspector (nnode, nvertices, 2);
-  partitionAndColor (insp, nnode, pedge->map, nedge*2); // TODO: breaking abstraction
-  //partitionAndColor (insp, nnode, all_edge, (nedge+nbedge)*2); // TODO: breaking
-
-  addParLoop (insp, "cells1", ncell, pcell->map, ncell * 4, OP_INDIRECT);
-  addParLoop (insp, "edges1", nedge, pedge->map, nedge * 2, OP_INDIRECT);
-  //addParLoop (insp, "bedges1", nbedge, pbedge->map, nbedge * 2, OP_INDIRECT);
-  //addParLoop (insp, "cells2", ncell, pcell->map, ncell * 4, OP_DIRECT);
-
-  op_printf ("added parallel loops\n");
-
-  if (runInspector (insp, 0) == INSPOP_WRONGCOLOR)
-    op_printf ("%s\n", insp->debug);
-  else
-    op_printf ("coloring went fine\n");
-
-  //inspectorDiagnostic (insp);
-
-  // build the new data array with values in proper positions
-  int x_size = 2*nnode;
-  double* new_x = (double *) malloc(x_size*sizeof(double));
-  for (int i = 0; i < nnode; i++)
-  {
-    new_x[2*insp->v2v[i]] = x[2*i];
-    new_x[2*insp->v2v[i] + 1] = x[2*i + 1];
-  }
-
-  printf("running executor\n");
-  executor_t* exec = initExecutor (insp);
-  int ncolors = exec->ncolors;
 
 
   //initialise timers for total execution wall time
@@ -255,116 +204,84 @@ int main(int argc, char **argv)
   // main time-marching loop
 
   niter = 1000;
-
-  // tiled execution of the first two loops
-  int* renum_pcell  = insp->loops[0]->indMap;
-  int* renum_pedge  = insp->loops[1]->indMap;
-  int* renum_pbedge = insp->loops[2]->indMap;
-  //int* renum2_pcell  = insp->loops[3]->indMap;
-
+  likwid_markerInit();
   for(int iter=1; iter<=niter; iter++) {
 
     // save old flow solution
 
     op_par_loop(save_soln,"save_soln", cells,
-                op_arg_dat(p_q,   -1,OP_ID, 4,"double",OP_READ ),
-                op_arg_dat(p_qold,-1,OP_ID, 4,"double",OP_WRITE));
-    /*
-     printf ("iter = %d\n", iter);
-     printf ("qold: %f %f %f %f\n", q[0], q[1], q[2], q[3]);
-     printf ("qold: %f %f %f %f\n", q[40], q[41], q[42], q[43]);
-     printf ("qold: %f %f %f %f\n", q[80], q[81], q[82], q[83]);
-     printf ("qold: %f %f %f %f\n", q[120], q[121], q[122], q[123]);
-     printf ("qold: %f %f %f %f\n", q[160], q[161], q[162], q[163]);
-     */
+      op_arg_dat(p_q,   -1,OP_ID, 4,"double",OP_READ ),
+      op_arg_dat(p_qold,-1,OP_ID, 4,"double",OP_WRITE));
+
     // predictor/corrector update loop
 
     for(int k=0; k<2; k++) {
 
-
+      // calculate area/timstep
       rms = 0.0;
+      likwid_markerStartRegion("accumulate");
+      op_par_loop(adt_calc,"adt_calc",cells,
+          op_arg_dat(p_x,   0,pcell, 2,"double",OP_READ ),
+          op_arg_dat(p_x,   1,pcell, 2,"double",OP_READ ),
+          op_arg_dat(p_x,   2,pcell, 2,"double",OP_READ ),
+          op_arg_dat(p_x,   3,pcell, 2,"double",OP_READ ),
+          op_arg_dat(p_q,  -1,OP_ID, 4,"double",OP_READ ),
+          op_arg_dat(p_adt,-1,OP_ID, 1,"double",OP_WRITE));
 
-      //for each colour
-      for (int i = 0; i < ncolors; i++)
-      {
-        // for all tiles of this color
-        int tile_size;
-        int first_tile = exec->offset[i];
-        int last_tile = exec->offset[i + 1];
 
-        for (int j = first_tile; j < last_tile; j++)
-        {
-          // execute the tile
-          tile_t* tile = exec->tiles[exec->c2p[j]];
-
-          // loop adt_calc (calculate area/timstep)
-          tile_size = tile->curSize[0];
-          for (int k = 0; k < tile_size; k++)
-          {
-            int cell = tile->element[0][k];
-
-            adt_calc (new_x + renum_pcell[cell*4 + 0]*2,
-                      new_x + renum_pcell[cell*4 + 1]*2,
-                      new_x + renum_pcell[cell*4 + 2]*2,
-                      new_x + renum_pcell[cell*4 + 3]*2,
-                      q     + cell*4,
-                      adt   + cell);
-          }
-        }
-      }
+      // calculate flux residual
 
       op_par_loop(res_calc,"res_calc",edges,
-                  op_arg_dat(p_x,    0,pedge, 2,"double",OP_READ),
-                  op_arg_dat(p_x,    1,pedge, 2,"double",OP_READ),
-                  op_arg_dat(p_q,    0,pecell,4,"double",OP_READ),
-                  op_arg_dat(p_q,    1,pecell,4,"double",OP_READ),
-                  op_arg_dat(p_adt,  0,pecell,1,"double",OP_READ),
-                  op_arg_dat(p_adt,  1,pecell,1,"double",OP_READ),
-                  op_arg_dat(p_res,  0,pecell,4,"double",OP_INC ),
-                  op_arg_dat(p_res,  1,pecell,4,"double",OP_INC ));
+          op_arg_dat(p_x,    0,pedge, 2,"double",OP_READ),
+          op_arg_dat(p_x,    1,pedge, 2,"double",OP_READ),
+          op_arg_dat(p_q,    0,pecell,4,"double",OP_READ),
+          op_arg_dat(p_q,    1,pecell,4,"double",OP_READ),
+          op_arg_dat(p_adt,  0,pecell,1,"double",OP_READ),
+          op_arg_dat(p_adt,  1,pecell,1,"double",OP_READ),
+          op_arg_dat(p_res,  0,pecell,4,"double",OP_INC ),
+          op_arg_dat(p_res,  1,pecell,4,"double",OP_INC ));
 
+      likwid_markerStopRegion("accumulate");
       op_par_loop(bres_calc,"bres_calc",bedges,
-                  op_arg_dat(p_x,     0,pbedge, 2,"double",OP_READ),
-                  op_arg_dat(p_x,     1,pbedge, 2,"double",OP_READ),
-                  op_arg_dat(p_q,     0,pbecell,4,"double",OP_READ),
-                  op_arg_dat(p_adt,   0,pbecell,1,"double",OP_READ),
-                  op_arg_dat(p_res,   0,pbecell,4,"double",OP_INC ),
-                  op_arg_dat(p_bound,-1,OP_ID  ,1,"int",  OP_READ));
+          op_arg_dat(p_x,     0,pbedge, 2,"double",OP_READ),
+          op_arg_dat(p_x,     1,pbedge, 2,"double",OP_READ),
+          op_arg_dat(p_q,     0,pbecell,4,"double",OP_READ),
+          op_arg_dat(p_adt,   0,pbecell,1,"double",OP_READ),
+          op_arg_dat(p_res,   0,pbecell,4,"double",OP_INC ),
+          op_arg_dat(p_bound,-1,OP_ID  ,1,"int",  OP_READ));
 
       // update flow field
 
-      op_par_loop(update,"update",cells,
-                  op_arg_dat(p_qold,-1,OP_ID, 4,"double",OP_READ ),
-                  op_arg_dat(p_q,   -1,OP_ID, 4,"double",OP_WRITE),
-                  op_arg_dat(p_res, -1,OP_ID, 4,"double",OP_RW   ),
-                  op_arg_dat(p_adt, -1,OP_ID, 1,"double",OP_READ ),
-                  op_arg_gbl(&rms,1,"double",OP_INC));
+      //rms = 0.0;
 
+      op_par_loop(update,"update",cells,
+          op_arg_dat(p_qold,-1,OP_ID, 4,"double",OP_READ ),
+          op_arg_dat(p_q,   -1,OP_ID, 4,"double",OP_WRITE),
+          op_arg_dat(p_res, -1,OP_ID, 4,"double",OP_RW   ),
+          op_arg_dat(p_adt, -1,OP_ID, 1,"double",OP_READ ),
+          op_arg_gbl(&rms,1,"double",OP_INC));
     }
 
     // print iteration history
     rms = sqrt(rms/(double) op_get_size(cells));
     if (iter%100 == 0)
+    //if (iter%10 == 0)
       op_printf(" %d  %10.5e \n",iter,rms);
   }
 
   op_timers(&cpu_t2, &wall_t2);
+  likwid_markerClose();
 
   //output the result dat array to files
-  op_print_dat_to_txtfile(p_q, "out_grid_tile_1loop.dat"); //ASCI
-  op_print_dat_to_binfile(p_q, "out_grid_tile_1loop.bin"); //Binary
+  op_print_dat_to_txtfile(p_q, "out_grid_seq.dat"); //ASCI
+  op_print_dat_to_binfile(p_q, "out_grid_seq.bin"); //Binary
 
   op_timing_output();
   op_printf("Max total runtime = \n%f\n",wall_t2-wall_t1);
 
   op_exit();
 
-  freeInspector (insp);
-  op_printf ("inspector destroyed\n");
-  freeExecutor (exec);
-  op_printf ("executor destroyed\n");
 
-  //free(all_edge);
   free(cell);
   free(edge);
   free(ecell);
@@ -372,7 +289,6 @@ int main(int argc, char **argv)
   free(becell);
   free(bound);
   free(x);
-  free(new_x);
   free(q);
   free(qold);
   free(res);

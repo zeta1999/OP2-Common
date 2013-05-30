@@ -45,6 +45,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <likwid.h>
 
 // global constants
 
@@ -129,6 +130,14 @@ int main(int argc, char **argv)
                &cell[4*n+2], &cell[4*n+3]) != 4) {
       op_printf("error reading from new_grid.dat\n"); exit(-1);
     }
+    if (cell[4*n] >= 800 && cell[4*n] <= 1200)
+      cell[4*n] = 1200 - cell[4*n];
+    if (cell[4*n+1] >= 800 && cell[4*n+1] <= 1200)
+      cell[4*n+1] = 1200 - cell[4*n+1];
+    if (cell[4*n+2] >= 800 && cell[4*n+2] <= 1200)
+      cell[4*n+2] = 1200 - cell[4*n+2];
+    if (cell[4*n+3] >= 800 && cell[4*n+3] <= 1200)
+      cell[4*n+3] = 1200 - cell[4*n+3];
   }
 
   for (int n=0; n<nedge; n++) {
@@ -136,6 +145,10 @@ int main(int argc, char **argv)
                &ecell[2*n],&ecell[2*n+1]) != 4) {
       op_printf("error reading from new_grid.dat\n"); exit(-1);
     }
+    if (edge[2*n] >= 800 && edge[2*n] <= 1200)
+      edge[2*n] = 1200 - edge[2*n];
+    if (edge[2*n+1] >= 800 && edge[2*n+1] <= 1200)
+      edge[2*n+1] = 1200 - edge[2*n+1];
   }
 
   for (int n=0; n<nbedge; n++) {
@@ -207,7 +220,7 @@ int main(int argc, char **argv)
 
   // initialising and running the inspector
 
-  int nvertices = 1000; // TODO
+  int nvertices = atoi(argv[1]); // TODO
 
   op_printf ("running inspector\n");
 
@@ -235,6 +248,12 @@ int main(int argc, char **argv)
 
   //inspectorDiagnostic (insp);
 
+  // print the mesh
+
+  vtu_mesh_t* mesh = createVtuMesh (nnode, nedge, ncell, x, pedge->map, pcell->map, D2);
+  printVtuFile (insp, mesh);
+  freeVtuMesh (mesh);
+
   // build the new data array with values in proper positions
   int x_size = 2*nnode;
   double* new_x = (double *) malloc(x_size*sizeof(double));
@@ -255,6 +274,7 @@ int main(int argc, char **argv)
   // main time-marching loop
 
   niter = 1000;
+  likwid_markerInit();
 
   // tiled execution of the first two loops
   int* renum_pcell  = insp->loops[0]->indMap;
@@ -284,8 +304,10 @@ int main(int argc, char **argv)
 
       rms = 0.0;
 
+      likwid_markerStartRegion("accumulate");
       //for each colour
       for (int i = 0; i < ncolors; i++)
+
       {
         // for all tiles of this color
         int tile_size;
@@ -294,6 +316,7 @@ int main(int argc, char **argv)
 
         for (int j = first_tile; j < last_tile; j++)
         {
+
           // execute the tile
           tile_t* tile = exec->tiles[exec->c2p[j]];
 
@@ -310,18 +333,25 @@ int main(int argc, char **argv)
                       q     + cell*4,
                       adt   + cell);
           }
+
+          // loop res_calc
+          tile_size = tile->curSize[1];
+          for (int k = 0; k < tile_size; k++)
+          {
+            int edge = tile->element[1][k];
+
+            res_calc (new_x + renum_pedge[edge*2 + 0]*2,
+                      new_x + renum_pedge[edge*2 + 1]*2,
+                      q     + ecell[edge*2 + 0]*4,
+                      q     + ecell[edge*2 + 1]*4,
+                      adt   + ecell[edge*2 + 0]*1,
+                      adt   + ecell[edge*2 + 1]*1,
+                      res   + ecell[edge*2 + 0]*4,
+                      res   + ecell[edge*2 + 1]*4);
+          }
         }
       }
-
-      op_par_loop(res_calc,"res_calc",edges,
-                  op_arg_dat(p_x,    0,pedge, 2,"double",OP_READ),
-                  op_arg_dat(p_x,    1,pedge, 2,"double",OP_READ),
-                  op_arg_dat(p_q,    0,pecell,4,"double",OP_READ),
-                  op_arg_dat(p_q,    1,pecell,4,"double",OP_READ),
-                  op_arg_dat(p_adt,  0,pecell,1,"double",OP_READ),
-                  op_arg_dat(p_adt,  1,pecell,1,"double",OP_READ),
-                  op_arg_dat(p_res,  0,pecell,4,"double",OP_INC ),
-                  op_arg_dat(p_res,  1,pecell,4,"double",OP_INC ));
+      likwid_markerStopRegion("accumulate");
 
       op_par_loop(bres_calc,"bres_calc",bedges,
                   op_arg_dat(p_x,     0,pbedge, 2,"double",OP_READ),
@@ -349,10 +379,11 @@ int main(int argc, char **argv)
   }
 
   op_timers(&cpu_t2, &wall_t2);
+  likwid_markerClose();
 
   //output the result dat array to files
-  op_print_dat_to_txtfile(p_q, "out_grid_tile_1loop.dat"); //ASCI
-  op_print_dat_to_binfile(p_q, "out_grid_tile_1loop.bin"); //Binary
+  op_print_dat_to_txtfile(p_q, "out_grid_tile_2loop.dat"); //ASCI
+  op_print_dat_to_binfile(p_q, "out_grid_tile_2loop.bin"); //Binary
 
   op_timing_output();
   op_printf("Max total runtime = \n%f\n",wall_t2-wall_t1);

@@ -49,7 +49,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include <likwid.h>
 
 // global constants
 
@@ -274,7 +273,6 @@ int main(int argc, char **argv)
   // main time-marching loop
 
   niter = 1000;
-  likwid_markerInit();
 
   for(int iter=1; iter<=niter; iter++) {
 
@@ -301,8 +299,6 @@ int main(int argc, char **argv)
         #pragma omp parallel for private(tile_size)
         for (int j = first_tile; j < last_tile; j++)
         {
-          likwid_markerThreadInit();
-          likwid_markerStartRegion("accumulate");
           // execute the tile
           tile_t* tile = exec->tiles[exec->c2p[j]];
 
@@ -363,8 +359,6 @@ int main(int argc, char **argv)
                        &rms);
           }
 
-
-          likwid_markerStopRegion("accumulate");
         }
 
       }
@@ -377,7 +371,6 @@ int main(int argc, char **argv)
   }
 
   op_timers(&cpu_t2, &wall_t2);
-  likwid_markerClose();
 
   //output the result dat array to files
   op_print_dat_to_txtfile(p_q, "out_grid_tile_op.dat"); //ASCI

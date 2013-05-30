@@ -45,7 +45,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include <likwid.h>
 
 // global constants
 
@@ -274,7 +273,6 @@ int main(int argc, char **argv)
   // main time-marching loop
 
   niter = 1000;
-  likwid_markerInit();
 
   // tiled execution of the first two loops
   int* renum_pcell  = insp->loops[0]->indMap;
@@ -304,7 +302,6 @@ int main(int argc, char **argv)
 
       rms = 0.0;
 
-      likwid_markerStartRegion("accumulate");
       //for each colour
       for (int i = 0; i < ncolors; i++)
 
@@ -351,7 +348,6 @@ int main(int argc, char **argv)
           }
         }
       }
-      likwid_markerStopRegion("accumulate");
 
       op_par_loop(bres_calc,"bres_calc",bedges,
                   op_arg_dat(p_x,     0,pbedge, 2,"double",OP_READ),
@@ -379,7 +375,6 @@ int main(int argc, char **argv)
   }
 
   op_timers(&cpu_t2, &wall_t2);
-  likwid_markerClose();
 
   //output the result dat array to files
   op_print_dat_to_txtfile(p_q, "out_grid_tile_2loop.dat"); //ASCI
