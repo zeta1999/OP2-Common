@@ -73,8 +73,8 @@ PTSCOTCH_INC 	= -I$(PTSCOTCH_INSTALL_PATH)/include -DHAVE_PTSCOTCH
 PTSCOTCH_LIB 	= -L$(PTSCOTCH_INSTALL_PATH)/lib/ -lptscotch \
                 -L$(PTSCOTCH_INSTALL_PATH)/lib/ -lptscotcherr
 
-LKWD_INC	= -I/usr/local/include
-LKWD_LIB	= -L/usr/local/lib -llikwid
+likwid: LKWD_INC	= -I/usr/local/include
+likwid: LKWD_LIB	= -L/usr/local/lib -llikwid
 
 #
 # master to make all versions
