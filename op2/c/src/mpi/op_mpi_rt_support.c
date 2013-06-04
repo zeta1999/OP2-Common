@@ -73,7 +73,7 @@ void op_download_dat(op_dat dat) {}
  * Main MPI Halo Exchange Function
  *******************************************************************************/
 
-void op_exchange_halo(op_arg* arg)
+void op_exchange_halo(op_arg* arg, int exec_flag)
 {
   //int my_rank, comm_size;
   //MPI_Comm_rank(OP_MPI_WORLD, &my_rank);
@@ -89,6 +89,7 @@ void op_exchange_halo(op_arg* arg)
     fflush(stdout);
     MPI_Abort(OP_MPI_WORLD, 2);
   }
+  if (exec_flag == 0 && arg->idx == -1) return;
 
   //need to exchange both direct and indirect data sets if they are dirty
   if((arg->acc == OP_READ || arg->acc == OP_RW /* good for debug || arg->acc == OP_INC*/) &&
@@ -198,7 +199,7 @@ void op_exchange_halo(op_arg* arg)
   }
 }
 
-void op_exchange_halo_cuda(op_arg* arg) {}
+void op_exchange_halo_cuda(op_arg* arg, int exec_flag) {}
   
 /*******************************************************************************
  * MPI Halo Exchange Wait-all Function (to complete the non-blocking comms)
