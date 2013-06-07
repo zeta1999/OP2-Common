@@ -153,7 +153,7 @@ mpi_seq: mklib $(INC)/op_seq.h $(SRC)/mpi/op_mpi_decl.c \
 	$(OBJ)/op_mpi_rt_support.o \
 	$(OBJ)/op_util.o \
 	$(OBJ)/op_mpi_hdf5.o \
-	$(OBJ)/op_mpi_util.o
+	$(OBJ)/op_mpi_util.o \
 	$(OBJ)/op_local_renumbering.o
 
 mpi_cuda: mklib $(SRC)/mpi/op_mpi_part_core.c \
@@ -195,7 +195,7 @@ mpi_cuda: mklib $(SRC)/mpi/op_mpi_part_core.c \
 	$(OBJ)/op_util.o \
 	$(OBJ)/op_mpi_hdf5.o \
 	$(OBJ)/op_mpi_cuda_kernels.o \
-	$(OBJ)/op_mpi_util.o
+	$(OBJ)/op_mpi_util.o \
 	$(OBJ)/op_local_renumbering.o
 
 clean:

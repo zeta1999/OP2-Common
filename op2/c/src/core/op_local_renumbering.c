@@ -125,7 +125,7 @@ int get_lone_elements_by_reverse_map(op_map primary_map, op_set set)
   printf("for set %s lone elements using map reversed %s: %d\n", set->name,
     primary_map->name, lone_elems);
 #endif
-  
+
   for(int i = 0; i<primary_map->to->size; i++)free(to[i]);
   free(adj_i);free(to);free(to_i);free(to_cap);
 
@@ -209,35 +209,28 @@ int* metis_call(op_map primary_map, op_set set, int elem_count,
   int part = num_part;
 
   idxtype wgtflag = 0;
-  int options[5] = {0};
+
+  int options[8] = {0};
   idxtype numflag = 0;
   int nn = elem_count+1;
 
   //free memory before calling METIS
   for(int i = 0; i<set->core_size; i++)free(adj[i]);
   free(adj_i);free(adj);
+  adjncy = (idxtype *)xrealloc(adjncy,sizeof(idxtype)*count);
+  idxtype *p = (idxtype *)xmalloc(sizeof(idxtype)*elem_count+1);
+  idxtype *ip = (idxtype *)xmalloc(sizeof(idxtype)*elem_count+1);
+  for(int i = 0; i < elem_count+1; i++){ p[i] = -99; ip[i] = -99; }
 
-  //call partitioner with the number of mini-partitions required and get the partition info array
-  if(nn > part)
-  {
-    adjncy = (idxtype *)xrealloc(adjncy,sizeof(idxtype)*count);
+  //METIS_PartGraphKway(&nn, xadj, adjncy, NULL, NULL, &wgtflag, &numflag,
+  //  &part, options, &edgecut, p);
 
-    idxtype *p = (idxtype *)xmalloc(sizeof(idxtype)*elem_count+1);
-    for(int i = 0; i < elem_count+1; i++){ p[i] = -99; }
-
-    METIS_PartGraphKway(&nn, xadj, adjncy, NULL, NULL, &wgtflag, &numflag,
-      &part, options, &edgecut, p);
-
-    //free memory used for METIS
-    free(xadj); free(adjncy);
-
-    return (int*)p;
-  }
+  METIS_NodeND(&nn, xadj, adjncy, &numflag, options, p, ip);
 
   //free memory used for METIS
-  free(xadj); free(adjncy);
+  free(xadj); free(adjncy); free(ip);
 
-  return NULL;
+    return (int*)p;
 }
 
 int* scotch_call(op_map primary_map, op_set set, int elem_count,
@@ -317,14 +310,31 @@ int* scotch_call(op_map primary_map, op_set set, int elem_count,
     }
 
     SCOTCH_Num *parttab = (SCOTCH_Num *)xmalloc(sizeof(SCOTCH_Num)*elem_count+1);
+    SCOTCH_Num *iparttab = (SCOTCH_Num *)xmalloc(sizeof(SCOTCH_Num)*elem_count+1);
+    SCOTCH_Num *cblkptr = (SCOTCH_Num *)xmalloc(sizeof(SCOTCH_Num)*elem_count+1);
     for(int i = 0; i < elem_count+1; i++){ parttab[i] = -99; }
 
     //initialise partition strategy struct
-    SCOTCH_Strat straptr;
-    SCOTCH_stratInit(&straptr);
+    SCOTCH_Strat *straptr = SCOTCH_stratAlloc();
+    SCOTCH_stratInit(straptr);
+
+    const char * strategyString = "g";
+    int mesg = SCOTCH_stratGraphOrder(straptr, strategyString);
+    if(mesg != 0){
+      op_printf("Error during setting strategy string. \n");
+      exit(-1);
+    }
+
+    mesg = SCOTCH_graphOrder(grafptr, straptr, parttab, iparttab, cblkptr, NULL, NULL);
+    if(mesg != 0){
+      op_printf("Error during SCOTCH_graphOrder() \n");
+      exit(-1);
+    }
+    SCOTCH_graphExit(grafptr);
 
     //partition the graph
-    SCOTCH_graphPart(grafptr, num_part, &straptr, parttab);
+    //SCOTCH_graphPart(grafptr, num_part, &straptr, parttab);
+
     free(edgetab);free(verttab);
 
     //saniti check to see if all elements were partitioned
@@ -339,7 +349,7 @@ int* scotch_call(op_map primary_map, op_set set, int elem_count,
     }
 
     //free strat struct
-    SCOTCH_stratExit(&straptr);
+    SCOTCH_stratExit(straptr);
 
     //free PT-Scotch allocated memory space
     free(grafptr);
@@ -525,7 +535,7 @@ void migrate_dats_and_maps()
     {
       //using the possition of the reordered_index array move the data on all
       //sets to the correct possition
-      
+
     //for each data array
     op_dat_entry *item;
     TAILQ_FOREACH(item, &OP_dat_list, entries) {
@@ -600,7 +610,7 @@ void migrate_dats_and_maps()
           OP_export_nonexec_list[set->index]->list[i] =
             reordered_index[set->index][local_index];
       }
-#if DEBUG      
+#if DEBUG
       printf("Reordering and data migration done for set %s\n",set->name);
 #endif
     }
@@ -670,8 +680,8 @@ void op_local_renumbering(int num_part /* const char *library*/)
     }
     else
     {
-      
-#if DEBUG      
+
+#if DEBUG
       printf("Best map for Set %s : %s \n", set->name,OP_map_list[best_map]->name);
 #endif
 
