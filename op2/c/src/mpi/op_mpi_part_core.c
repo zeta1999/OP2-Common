@@ -2963,7 +2963,7 @@ void partition(const char* lib_name, const char* lib_routine,
   op_halo_create();
 
   //trigger local renumbering routine if num_parts is greater than 1
-  if(num_parts>1)
-    op_local_renumbering(num_parts);
+  //if(num_parts>1)
+  op_local_renumbering(num_parts);
 }
 

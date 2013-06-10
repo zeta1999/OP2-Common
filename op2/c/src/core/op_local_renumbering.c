@@ -495,8 +495,8 @@ void reorder(op_map primary_map, op_set set, int num_part, int flag)
     printf("Lone vertices FOUND from using map %s for set %s = %d\n",
         primary_map->name, set->name, lone_vertices_index);
 
-  //int* p = metis_call(primary_map, set, elem_count, adj, adj_i, num_part);
-  int* p = scotch_call(primary_map, set, elem_count, adj, adj_i, num_part);
+  int* p = metis_call(primary_map, set, elem_count, adj, adj_i, num_part);
+  //int* p = scotch_call(primary_map, set, elem_count, adj, adj_i, num_part);
 
   if(p != NULL)
   {
