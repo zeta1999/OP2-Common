@@ -137,6 +137,7 @@ int main(int argc, char **argv)
       cell[4*n+2] = 1200 - cell[4*n+2];
     if (cell[4*n+3] >= 800 && cell[4*n+3] <= 1200)
       cell[4*n+3] = 1200 - cell[4*n+3];
+  
   }
 
   for (int n=0; n<nedge; n++) {
@@ -223,20 +224,11 @@ int main(int argc, char **argv)
 
   op_printf ("running inspector\n");
 
-  /*
-   int* all_edge  = (int *) malloc (2*(nbedge+nedge)*sizeof(int));
-   memcpy (all_edge, edge, sizeof(int)*2*nedge);
-   memcpy (all_edge + 2*nedge, bedge, sizeof(int)*2*nbedge);
-   */
-
   inspector_t* insp = initInspector (nnode, nvertices, 2);
   partitionAndColor (insp, nnode, pedge->map, nedge*2); // TODO: breaking abstraction
-  //partitionAndColor (insp, nnode, all_edge, (nedge+nbedge)*2); // TODO: breaking
 
   addParLoop (insp, "cells1", ncell, pcell->map, ncell * 4, OP_INDIRECT);
   addParLoop (insp, "edges1", nedge, pedge->map, nedge * 2, OP_INDIRECT);
-  //addParLoop (insp, "bedges1", nbedge, pbedge->map, nbedge * 2, OP_INDIRECT);
-  //addParLoop (insp, "cells2", ncell, pcell->map, ncell * 4, OP_DIRECT);
 
   op_printf ("added parallel loops\n");
 
@@ -245,7 +237,6 @@ int main(int argc, char **argv)
   else
     op_printf ("coloring went fine\n");
 
-  //inspectorDiagnostic (insp);
 
   // print the mesh
 
@@ -278,7 +269,6 @@ int main(int argc, char **argv)
   int* renum_pcell  = insp->loops[0]->indMap;
   int* renum_pedge  = insp->loops[1]->indMap;
   int* renum_pbedge = insp->loops[2]->indMap;
-  //int* renum2_pcell  = insp->loops[3]->indMap;
 
   for(int iter=1; iter<=niter; iter++) {
 
@@ -287,14 +277,7 @@ int main(int argc, char **argv)
     op_par_loop(save_soln,"save_soln", cells,
                 op_arg_dat(p_q,   -1,OP_ID, 4,"double",OP_READ ),
                 op_arg_dat(p_qold,-1,OP_ID, 4,"double",OP_WRITE));
-    /*
-     printf ("iter = %d\n", iter);
-     printf ("qold: %f %f %f %f\n", q[0], q[1], q[2], q[3]);
-     printf ("qold: %f %f %f %f\n", q[40], q[41], q[42], q[43]);
-     printf ("qold: %f %f %f %f\n", q[80], q[81], q[82], q[83]);
-     printf ("qold: %f %f %f %f\n", q[120], q[121], q[122], q[123]);
-     printf ("qold: %f %f %f %f\n", q[160], q[161], q[162], q[163]);
-     */
+    
     // predictor/corrector update loop
 
     for(int k=0; k<2; k++) {
