@@ -248,6 +248,7 @@ int main(int argc, char **argv)
 
   // main time-marching loop
 
+
   niter = 1000;
 
   for(int iter=1; iter<=niter; iter++) {
@@ -318,6 +319,10 @@ int main(int argc, char **argv)
 
   op_timing_output();
   op_printf("Max total runtime = \n%f\n",wall_t2-wall_t1);
+  
+  FILE* results = fopen ("times_airfoil_unstaged_openmp.txt", "a+");
+  fprintf (results, "%f\n", wall_t2-wall_t1); 
+  fclose (results);
 
   op_exit();
 

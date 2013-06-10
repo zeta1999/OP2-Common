@@ -130,6 +130,13 @@ int main(int argc, char **argv)
   //timer
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
 
+  // input arguments
+  if (argc != 3)
+  {
+    op_printf("Usage: ./airfoil tile_size output_file_name\n"); 
+    exit(-1);
+  }
+  
   // read in grid
 
   op_printf("reading in grid \n");
@@ -245,7 +252,7 @@ int main(int argc, char **argv)
 
   // initialising and running the inspector
   
-  int nvertices = 1000; // TODO
+  int nvertices = atoi(argv[1]); 
   
   op_printf ("running inspector\n");
   
@@ -400,6 +407,10 @@ int main(int argc, char **argv)
   op_timing_output();
   op_printf("Max total runtime = \n%f\n",wall_t2-wall_t1);
 
+  FILE* results = fopen (argv[2], "a+");
+  fprintf (results, "%f\n", wall_t2-wall_t1); 
+  fclose (results);
+  
   op_exit();
 
   freeInspector (insp);

@@ -117,8 +117,15 @@ int main(int argc, char **argv)
   int    nnode,ncell,nedge,nbedge,niter;
   double  rms;
 
-  //timer
-  double cpu_t1, cpu_t2, wall_t1, wall_t2;
+  // timer
+  double cpu_t1, cpu_t2, cpu_t3, cpu_t4, wall_t1, wall_t2, wall_t3, wall_t4;
+
+  // input arguments
+  if (argc != 4)
+  {
+    op_printf("Usage: ./airfoil tile_size output_results_filename output_2loops_results_filename \n"); 
+    exit(-1);
+  }
 
   // read in grid
 
@@ -152,19 +159,22 @@ int main(int argc, char **argv)
     }
   }
 
+#define L1 8000
+#define L2 12000
+
   for (int n=0; n<ncell; n++) {
     if (fscanf(fp,"%d %d %d %d \n",&cell[4*n  ], &cell[4*n+1],
                                    &cell[4*n+2], &cell[4*n+3]) != 4) {
       op_printf("error reading from new_grid.dat\n"); exit(-1);
     }
-    if (cell[4*n] >= 800 && cell[4*n] <= 1200)
-      cell[4*n] = 1200 - cell[4*n];
-    if (cell[4*n+1] >= 800 && cell[4*n+1] <= 1200)
-      cell[4*n+1] = 1200 - cell[4*n+1];
-    if (cell[4*n+2] >= 800 && cell[4*n+2] <= 1200)
-      cell[4*n+2] = 1200 - cell[4*n+2];
-    if (cell[4*n+3] >= 800 && cell[4*n+3] <= 1200)
-      cell[4*n+3] = 1200 - cell[4*n+3];
+    if (cell[4*n] >= L1 && cell[4*n] <= L2)
+      cell[4*n] = L2 - cell[4*n];
+    if (cell[4*n+1] >= L1 && cell[4*n+1] <= L2)
+      cell[4*n+1] = L2 - cell[4*n+1];
+    if (cell[4*n+2] >= L1 && cell[4*n+2] <= L2)
+      cell[4*n+2] = L2 - cell[4*n+2];
+    if (cell[4*n+3] >= L1 && cell[4*n+3] <= L2)
+      cell[4*n+3] = L2 - cell[4*n+3];
   }
 
   for (int n=0; n<nedge; n++) {
@@ -172,10 +182,10 @@ int main(int argc, char **argv)
                                    &ecell[2*n],&ecell[2*n+1]) != 4) {
       op_printf("error reading from new_grid.dat\n"); exit(-1);
     }
-    if (edge[2*n] >= 800 && edge[2*n] <= 1200)
-      edge[2*n] = 1200 - edge[2*n];
-    if (edge[2*n+1] >= 800 && edge[2*n+1] <= 1200)
-      edge[2*n+1] = 1200 - edge[2*n+1];
+    if (edge[2*n] >= L1 && edge[2*n] <= L2)
+      edge[2*n] = L2 - edge[2*n];
+    if (edge[2*n+1] >= L1 && edge[2*n+1] <= L2)
+      edge[2*n+1] = L2 - edge[2*n+1];
   }
 
   for (int n=0; n<nbedge; n++) {
@@ -247,24 +257,29 @@ int main(int argc, char **argv)
 
   // initialising and running the inspector
   
-  int nvertices = 1000; // TODO
+  int nvertices = atoi(argv[1]); 
   
-  op_printf ("running inspector\n");
-  
-  /*
-  int* all_edge  = (int *) malloc (2*(nbedge+nedge)*sizeof(int));
-  memcpy (all_edge, edge, sizeof(int)*2*nedge);
-  memcpy (all_edge + 2*nedge, bedge, sizeof(int)*2*nbedge);
-  */
-   
+  op_printf ("running inspector with tile size %d vertices\n", nvertices);
+ 
+  //initialise timers for total inspector wall time
+  op_timers(&cpu_t3, &wall_t3);
+ 
   inspector_t* insp = initInspector (nnode, nvertices, 2);
   partitionAndColor (insp, nnode, pedge->map, nedge*2); // TODO: breaking abstraction
-  //partitionAndColor (insp, nnode, all_edge, (nedge+nbedge)*2); // TODO: breaking
+  
+  int *colors = insp->p2c;
+  FILE* file_colors = fopen ("colors_computed.txt", "a+");
+  fprintf (file_colors, "Tile size: %d, computed %d colors\n", nvertices, insp->ncolors);
+  int* tiles_per_color = (int*) calloc (insp->ncolors, sizeof(int));
+  for (int b = 0; b < insp->ntiles; b++)
+    tiles_per_color[colors[b]]++;
+  for (int c = 0; c < insp->ncolors; c++)
+    fprintf (file_colors, "  Color %d: %d\n", c, tiles_per_color[c]);
+  free (tiles_per_color);
+  fclose (file_colors);
   
   addParLoop (insp, "cells1", ncell, pcell->map, ncell * 4, OP_INDIRECT);
   addParLoop (insp, "edges1", nedge, pedge->map, nedge * 2, OP_INDIRECT);
-  //addParLoop (insp, "bedges1", nbedge, pbedge->map, nbedge * 2, OP_INDIRECT);
-  //addParLoop (insp, "cells2", ncell, pcell->map, ncell * 4, OP_DIRECT);
   
   op_printf ("added parallel loops\n");
   
@@ -273,8 +288,9 @@ int main(int argc, char **argv)
   else
     op_printf ("coloring went fine\n");
   
-  //inspectorDiagnostic (insp);
-  
+  op_timers(&cpu_t4, &wall_t4);
+  op_printf("Inspector run-time = %f\n", wall_t4-wall_t3);  
+
   // build the new data array with values in proper positions
   int x_size = 2*nnode;
   double* new_x = (double *) malloc(x_size*sizeof(double));
@@ -309,14 +325,7 @@ int main(int argc, char **argv)
     op_par_loop_save_soln("save_soln",cells,
                op_arg_dat(p_q,-1,OP_ID,4,"double",OP_READ),
                op_arg_dat(p_qold,-1,OP_ID,4,"double",OP_WRITE));
-  /* 
-    printf ("iter = %d\n", iter);
-    printf ("qold: %f %f %f %f\n", q[0], q[1], q[2], q[3]);
-    printf ("qold: %f %f %f %f\n", q[40], q[41], q[42], q[43]);
-    printf ("qold: %f %f %f %f\n", q[80], q[81], q[82], q[83]);
-    printf ("qold: %f %f %f %f\n", q[120], q[121], q[122], q[123]);
-    printf ("qold: %f %f %f %f\n", q[160], q[161], q[162], q[163]);
-*/
+    
     // predictor/corrector update loop
 
     for(int k=0; k<2; k++) {
@@ -324,6 +333,14 @@ int main(int argc, char **argv)
       
       rms = 0.0;
 
+      double cpu_t1, cpu_t2, wall_t1=0, wall_t2=0;
+      char name[] = "tiled";
+      op_timing_realloc(2);
+      OP_kernels[2].name      = name;
+      OP_kernels[2].count    += 1;
+  
+      op_timers_core(&cpu_t1, &wall_t1);
+      
       //for each colour
       for (int i = 0; i < ncolors; i++)
       {
@@ -332,7 +349,7 @@ int main(int argc, char **argv)
         int first_tile = exec->offset[i];
         int last_tile = exec->offset[i + 1];
         
-        #pragma omp parallel for private(tile_size)
+        #pragma omp parallel for private(tile_size) 
         for (int j = first_tile; j < last_tile; j++)
         {
           // execute the tile
@@ -370,6 +387,9 @@ int main(int argc, char **argv)
         }        
       }
  
+      op_timers_core(&cpu_t2, &wall_t2);
+      OP_kernels[2].time     += wall_t2 - wall_t1;
+      
       op_par_loop_bres_calc("bres_calc",bedges,
                  op_arg_dat(p_x,0,pbedge,2,"double",OP_READ),
                  op_arg_dat(p_x,1,pbedge,2,"double",OP_READ),
@@ -406,6 +426,14 @@ int main(int argc, char **argv)
   op_timing_output();
   op_printf("Max total runtime = \n%f\n",wall_t2-wall_t1);
 
+  FILE* results = fopen (argv[2], "a+");
+  fprintf (results, "%f\n", wall_t2-wall_t1); 
+  fclose (results);
+
+  FILE* loop_results = fopen (argv[3], "a+");
+  fprintf (loop_results, "%f\n", OP_kernels[2].time); 
+  fclose (loop_results);
+  
   op_exit();
 
   freeInspector (insp);

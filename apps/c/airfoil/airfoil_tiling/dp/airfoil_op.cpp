@@ -320,6 +320,19 @@ int main(int argc, char **argv)
   op_timing_output();
   op_printf("Max total runtime = \n%f\n",wall_t2-wall_t1);
 
+#ifdef STAGING
+  FILE* results = fopen ("times_airfoil_openmp_staging.txt", "a+");
+  FILE* loop_results = fopen ("times_airfoil_openmp_staging_2loops.txt", "a+");
+#else
+  FILE* results = fopen ("times_airfoil_openmp_unstaging.txt", "a+");
+  FILE* loop_results = fopen ("times_airfoil_openmp_unstaging_2loops.txt", "a+");
+#endif
+  fprintf (results, "%f\n", wall_t2-wall_t1); 
+  fclose (results);
+
+  fprintf (loop_results, "%f\n", OP_kernels[1].time + OP_kernels[2].time);
+  fclose (loop_results);  
+
   op_exit();
 
   free(cell);

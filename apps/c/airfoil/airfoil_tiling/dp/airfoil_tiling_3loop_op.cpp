@@ -127,6 +127,13 @@ int main(int argc, char **argv)
   //timer
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
 
+  // input arguments
+  if (argc != 3)
+  {
+    op_printf("Usage: ./airfoil tile_size output_file_name\n"); 
+    exit(-1);
+  }
+  
   // read in grid
 
   op_printf("reading in grid \n");
@@ -164,6 +171,14 @@ int main(int argc, char **argv)
                                    &cell[4*n+2], &cell[4*n+3]) != 4) {
       op_printf("error reading from new_grid.dat\n"); exit(-1);
     }
+    if (cell[4*n] >= 800 && cell[4*n] <= 1200)
+      cell[4*n] = 1200 - cell[4*n];
+    if (cell[4*n+1] >= 800 && cell[4*n+1] <= 1200)
+      cell[4*n+1] = 1200 - cell[4*n+1];
+    if (cell[4*n+2] >= 800 && cell[4*n+2] <= 1200)
+      cell[4*n+2] = 1200 - cell[4*n+2];
+    if (cell[4*n+3] >= 800 && cell[4*n+3] <= 1200)
+      cell[4*n+3] = 1200 - cell[4*n+3];
   }
 
   for (int n=0; n<nedge; n++) {
@@ -171,6 +186,10 @@ int main(int argc, char **argv)
                                    &ecell[2*n],&ecell[2*n+1]) != 4) {
       op_printf("error reading from new_grid.dat\n"); exit(-1);
     }
+    if (edge[2*n] >= 800 && edge[2*n] <= 1200)
+      edge[2*n] = 1200 - edge[2*n];
+    if (edge[2*n+1] >= 800 && edge[2*n+1] <= 1200)
+      edge[2*n+1] = 1200 - edge[2*n+1];
   }
 
   for (int n=0; n<nbedge; n++) {
@@ -242,22 +261,21 @@ int main(int argc, char **argv)
 
   // initialising and running the inspector
   
-  int nvertices = 1000; // TODO
+  int nvertices = atoi(argv[1]); 
   
   op_printf ("running inspector\n");
-  
+ /* 
   int* all_edge  = (int *) malloc (2*(nbedge+nedge)*sizeof(int));
   memcpy (all_edge, edge, sizeof(int)*2*nedge);
   memcpy (all_edge + 2*nedge, bedge, sizeof(int)*2*nbedge);
-  
-  inspector_t* insp = initInspector (nnode, nvertices, 4);
-  //partitionAndColor (insp, nnode, pedge->map, nedge*2); // TODO: breaking abstraction
-  partitionAndColor (insp, nnode, all_edge, (nedge+nbedge)*2); // TODO: breaking
+ */
+  inspector_t* insp = initInspector (nnode, nvertices, 3);
+  partitionAndColor (insp, nnode, pedge->map, nedge*2); // TODO: breaking abstraction
+  //partitionAndColor (insp, nnode, all_edge, (nedge+nbedge)*2); // TODO: breaking
   
   addParLoop (insp, "cells1", ncell, pcell->map, ncell * 4, OP_INDIRECT);
   addParLoop (insp, "edges1", nedge, pedge->map, nedge * 2, OP_INDIRECT);
   addParLoop (insp, "bedges1", nbedge, pbedge->map, nbedge * 2, OP_INDIRECT);
-  addParLoop (insp, "cells2", ncell, pcell->map, ncell * 4, OP_DIRECT);
   
   op_printf ("added parallel loops\n");
   
@@ -406,6 +424,10 @@ int main(int argc, char **argv)
   op_timing_output();
   op_printf("Max total runtime = \n%f\n",wall_t2-wall_t1);
 
+  FILE* results = fopen (argv[2], "a+");
+  fprintf (results, "%f\n", wall_t2-wall_t1); 
+  fclose (results);
+  
   op_exit();
 
   freeInspector (insp);
@@ -413,7 +435,7 @@ int main(int argc, char **argv)
   freeExecutor (exec);
   op_printf ("executor destroyed\n");
   
-  free(all_edge);
+  //free(all_edge);
   free(cell);
   free(edge);
   free(ecell);

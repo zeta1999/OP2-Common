@@ -164,6 +164,8 @@ void op_par_loop_bres_calc(char const *name, op_set set,
     int part_size = OP_part_size;
   #endif
 
+  part_size = 1024;
+
   int set_size = op_mpi_halo_exchanges(set, nargs, args);
 
   // initialise timers

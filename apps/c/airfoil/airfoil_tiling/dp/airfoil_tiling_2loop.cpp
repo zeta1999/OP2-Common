@@ -89,8 +89,15 @@ int main(int argc, char **argv)
   int    nnode,ncell,nedge,nbedge,niter;
   double  rms;
   
-  //timer
-  double cpu_t1, cpu_t2, wall_t1, wall_t2;
+  // timer
+  double cpu_t1, cpu_t2, cpu_t3, cpu_t4, wall_t1, wall_t2, wall_t3, wall_t4;
+  
+  // input arguments
+  if (argc != 3)
+  {
+    op_printf("Usage: ./airfoil tile_size output_file_name\n"); 
+    exit(-1);
+  }
   
   // read in grid
   
@@ -219,24 +226,18 @@ int main(int argc, char **argv)
   
   // initialising and running the inspector
   
-  int nvertices = 1000; // TODO
+  int nvertices = atoi(argv[1]); 
   
   op_printf ("running inspector\n");
-  
-  /*
-   int* all_edge  = (int *) malloc (2*(nbedge+nedge)*sizeof(int));
-   memcpy (all_edge, edge, sizeof(int)*2*nedge);
-   memcpy (all_edge + 2*nedge, bedge, sizeof(int)*2*nbedge);
-   */
-  
+ 
+  //initialise timers for total inspector wall time
+  op_timers(&cpu_t3, &wall_t3);
+ 
   inspector_t* insp = initInspector (nnode, nvertices, 2);
   partitionAndColor (insp, nnode, pedge->map, nedge*2); // TODO: breaking abstraction
-  //partitionAndColor (insp, nnode, all_edge, (nedge+nbedge)*2); // TODO: breaking
   
   addParLoop (insp, "cells1", ncell, pcell->map, ncell * 4, OP_INDIRECT);
   addParLoop (insp, "edges1", nedge, pedge->map, nedge * 2, OP_INDIRECT);
-  //addParLoop (insp, "bedges1", nbedge, pbedge->map, nbedge * 2, OP_INDIRECT);
-  //addParLoop (insp, "cells2", ncell, pcell->map, ncell * 4, OP_DIRECT);
   
   op_printf ("added parallel loops\n");
   
@@ -244,6 +245,9 @@ int main(int argc, char **argv)
     op_printf ("%s\n", insp->debug);
   else
     op_printf ("coloring went fine\n");
+  
+  op_timers(&cpu_t4, &wall_t4);
+  op_printf("Inspector run-time = %f\n", wall_t4-wall_t3);  
   
   //inspectorDiagnostic (insp);
   
@@ -388,7 +392,6 @@ int main(int argc, char **argv)
   freeExecutor (exec);
   op_printf ("executor destroyed\n");
   
-  //free(all_edge);
   free(cell);
   free(edge);
   free(ecell);

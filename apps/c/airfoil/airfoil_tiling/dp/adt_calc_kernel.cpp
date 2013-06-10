@@ -9,6 +9,7 @@
 
 // x86 kernel function
 
+#ifdef STAGING
 void op_x86_adt_calc(
   int    blockIdx,
   double *ind_arg0,
@@ -75,7 +76,68 @@ void op_x86_adt_calc(
   }
 
 }
+#else
+void op_x86_adt_calc(
+  int    blockIdx,
+  double *ind_arg0,
+  int   *ind_map,
+  short *arg_map,
+  double *arg4,
+  double *arg5,
+  int   *ind_arg_sizes,
+  int   *ind_arg_offs,
+  int    block_offset,
+  int   *blkmap,
+  int   *offset,
+  int   *nelems,
+  int   *ncolors,
+  int   *colors,
+  int   set_size,
+  int   *glb_map) {
 
+
+  int   *ind_arg0_map, ind_arg0_size;
+  int    nelem, offset_b;
+
+  if (0==0) {
+
+    // get sizes and shift pointers and direct-mapped data
+
+    int blockId = blkmap[blockIdx + block_offset];
+    nelem    = nelems[blockId];
+    offset_b = offset[blockId];
+
+    ind_arg0_size = ind_arg_sizes[0+blockId*1];
+
+    ind_arg0_map = &ind_map[0*set_size] + ind_arg_offs[0+blockId*1];
+    //printf ("ind_arg_offs = %d\n", ind_arg_offs[blockId]);
+  }
+
+  // copy indirect datasets into shared memory or zero increment
+
+  //for (int n=0; n<ind_arg0_size; n++)
+  //  for (int d=0; d<2; d++)
+  //    ind_arg0_s[d+n*2] = ind_arg0[d+ind_arg0_map[n]*2];
+
+
+  // process set elements
+
+  for (int n=0; n<nelem; n++) {
+
+
+    // user-supplied kernel call
+    //printf ("nelem = %d, setsize = %d, offset_b = %d ind_arg0_size = %d\n", nelem, set_size, offset_b, ind_arg0_size);
+
+    adt_calc(  ind_arg0 + glb_map[4*(n+offset_b) + 0]*2,
+               ind_arg0 + glb_map[4*(n+offset_b) + 1]*2,
+               ind_arg0 + glb_map[4*(n+offset_b) + 2]*2,
+               ind_arg0 + glb_map[4*(n+offset_b) + 3]*2,
+               arg4+(n+offset_b)*4,
+               arg5+(n+offset_b)*1 );
+  }
+
+}
+#endif
 
 // host stub function
 
@@ -113,6 +175,8 @@ void op_par_loop_adt_calc(char const *name, op_set set,
     int part_size = OP_part_size;
   #endif
 
+  part_size = 1024;
+
   int set_size = op_mpi_halo_exchanges(set, nargs, args);
 
   // initialise timers
@@ -137,6 +201,7 @@ void op_par_loop_adt_calc(char const *name, op_set set,
 
       int nblocks = Plan->ncolblk[col];
 
+#ifdef STAGING
 #pragma omp parallel for
       for (int blockIdx=0; blockIdx<nblocks; blockIdx++)
       op_x86_adt_calc( blockIdx,
@@ -154,6 +219,26 @@ void op_par_loop_adt_calc(char const *name, op_set set,
          Plan->nthrcol,
          Plan->thrcol,
          set_size);
+#else
+#pragma omp parallel for
+      for (int blockIdx=0; blockIdx<nblocks; blockIdx++)
+      op_x86_adt_calc( blockIdx,
+         (double *)arg0.data,
+         Plan->ind_map,
+         Plan->loc_map,
+         (double *)arg4.data,
+         (double *)arg5.data,
+         Plan->ind_sizes,
+         Plan->ind_offs,
+         block_offset,
+         Plan->blkmap,
+         Plan->offset,
+         Plan->nelems,
+         Plan->nthrcol,
+         Plan->thrcol,
+         set_size,
+         (arg0.map)->map);
+#endif
 
       block_offset += nblocks;
     }

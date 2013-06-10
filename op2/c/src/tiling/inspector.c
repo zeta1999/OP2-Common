@@ -704,7 +704,7 @@ int partitionAndColor (inspector_t* insp, int vertices, int* e2v, int mapsize)
   //useful for executor
   insp->ncolors = ncolors;
   insp->p2c = colors; 
-  
+
   // create a mapping from the original base set to the new positions in the renumbered base set. This is useful to renumber all mapppings in game.
   int* mappingFunction = (int*) malloc (insp->size * sizeof(int));
   baseMapping (insp->p2v, insp->size, mappingFunction);
@@ -814,8 +814,22 @@ static int kDistantMesh (int distance, int nvertices, const int* p2v, const int*
     // for each vertex in a partition 
     for (int i = prev_offset; i < next_offset; i++)
     {
+      int vertex = p2v[i];
+      
+      // if it is not on the partition border, skip it
+      int border = 0;
+      for (int j = 0; j < v2v_offset[vertex+1] - v2v_offset[vertex]; j++)
+      {
+        if (v2p[v2v[v2v_offset[vertex]+j]] != b)
+        {
+          border = 1;
+          break;
+        }
+      }
+      
       // Recursively, up to the desired distance
-      findAdjacentPartitions (b, p2v[i], 0, &_new_v2v[nparts*b], &_new_v2v_size[b]);
+      if (border)
+        findAdjacentPartitions (b, vertex, 0, &_new_v2v[nparts*b], &_new_v2v_size[b]);
     }
     
     totSize += _new_v2v_size[b];

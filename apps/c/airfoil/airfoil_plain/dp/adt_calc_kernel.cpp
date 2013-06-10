@@ -64,7 +64,7 @@ void op_x86_adt_calc(
 
 
     // user-supplied kernel call
-
+    
 
     adt_calc(  ind_arg0_s+arg_map[0*set_size+n+offset_b]*2,
                ind_arg0_s+arg_map[1*set_size+n+offset_b]*2,
@@ -112,6 +112,8 @@ void op_par_loop_adt_calc(char const *name, op_set set,
   #else
     int part_size = OP_part_size;
   #endif
+
+  part_size = 1024;
 
   int set_size = op_mpi_halo_exchanges(set, nargs, args);
 

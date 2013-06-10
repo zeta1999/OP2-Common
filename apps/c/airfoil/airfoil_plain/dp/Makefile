@@ -2,12 +2,12 @@
 # The following environment variables should be predefined:
 #
 # CUDA_INSTALL_PATH
-# PARMETIS_INSTALL_PATH
+PARMETIS_INSTALL_PATH = /apps/parmetis/4.0.2
 # PTSCOTCH_INSTALL_PATH
 # HDF5_INSTALL_PATH
 #
-# OP2_INSTALL_PATH
-# OP2_COMPILER (gnu,intel,etc)
+OP2_INSTALL_PATH = ../../../../../op2
+OP2_COMPILER = intel
 #
 
 #
@@ -29,7 +29,7 @@ ifeq ($(OP2_COMPILER),gnu)
 else
 ifeq ($(OP2_COMPILER),intel)
   CPP		= icpc
-  CCFLAGS	= -O3 -vec-report -xSSE4.2 -parallel #-DCOMM_PERF#-g #-DCOMM_PERF #-DDEBUG
+  CCFLAGS	= -O3 -vec-report -xSSE4.2 -parallel -no-multibyte-chars #-DCOMM_PERF#-g #-DCOMM_PERF #-DDEBUG
   CPPFLAGS 	= $(CCFLAGS)
   OMPFLAGS	= -openmp -openmp-report2
   MPICPP	= mpiCC
