@@ -433,7 +433,6 @@ int runInspector (inspector_t* insp, int baseSetIndex)
     
 #if (DEBUG > 1)
     printColoring (insp, startLoop, workLoopColor, workLoopPartition, workVertices, workVerticesPartition, verticesAdjacentColor, verticesAdjacentPartition);
-#endif
     
     // 4) check coloring
     int coloring = checkColor (startLoop, workLoopColor, workLoopPartition, workVertices, workVerticesPartition, verticesAdjacentColor, verticesAdjacentPartition, inserted, insp->incidence, insp->p2v);
@@ -443,7 +442,6 @@ int runInspector (inspector_t* insp, int baseSetIndex)
       return INSPOP_WRONGCOLOR;
     }
 
-#if (DEBUG > 1)
     for (int i = 0; i < insp->size * insp->incidence; i++)
     {
       verticesAdjacentColor[i] = -1;
@@ -513,7 +511,6 @@ int runInspector (inspector_t* insp, int baseSetIndex)
     
 #if (DEBUG > 1)
     printColoring (insp, startLoop, workLoopColor, workLoopPartition, workVertices, workVerticesPartition, verticesAdjacentColor, verticesAdjacentPartition);
-#endif
     
     // 4) check coloring
     int coloring = checkColor (startLoop, workLoopColor, workLoopPartition, workVertices, workVerticesPartition, verticesAdjacentColor, verticesAdjacentPartition, inserted, insp->incidence, insp->p2v);
@@ -523,7 +520,6 @@ int runInspector (inspector_t* insp, int baseSetIndex)
       return INSPOP_WRONGCOLOR;
     }
     
-#if (DEBUG > 1)
     for (int i = 0; i < insp->size * insp->incidence; i++)
     {
       verticesAdjacentColor[i] = -1;
@@ -885,13 +881,14 @@ static int kDistantMesh (int distance, int nvertices, const int* p2v, const int*
   vertex_sets *v_sets = new vertex_sets[nvertices];
 
   // add local partition's ID
-  //printf(" nvertices = %d \n",nvertices);
+  #pragma omp parallel for schedule(static)
   for (int i = 0; i < nvertices; i++)
     v_sets[i].oldset.insert (v2p[i]);
 
   // compute the k-distant v2v array
   for (int k = 0; k < distance; k++)
   {
+    #pragma omp parallel for schedule(static)
     for (int i = 0; i < nvertices; i++)
     {
       // examine the neighboroud of each vertex
@@ -920,11 +917,13 @@ static int kDistantMesh (int distance, int nvertices, const int* p2v, const int*
     getchar();
 */
     // exchange old and new sets
+    #pragma omp parallel for schedule(static)
     for (int i = 0; i < nvertices; i++) 
       v_sets[i].oldset.insert(v_sets[i].newset.begin(), v_sets[i].newset.end());
   }
 
   // each vertex eliminates itself from its v2v set
+  #pragma omp parallel for schedule(static)
   for (int i = 0; i < nvertices; i++)
     v_sets[i].oldset.erase (v2p[i]);
   
@@ -995,6 +994,7 @@ static int kDistantMesh (int distance, int nvertices, const int* p2v, const int*
   int* new_mesh = (int*) malloc (sizeof(int)*totSize); 
   //printf ("totsize = %d\n", totSize);
   
+  #pragma omp parallel for schedule(static)
   for (int b = 0; b < nparts; b++)
   {
     //std::set<int> union_set = union_sets[b];

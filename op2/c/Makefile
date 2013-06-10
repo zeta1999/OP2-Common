@@ -41,15 +41,15 @@ CUDA_INC = -I$(CUDA_INSTALL_PATH)/include
 
 ifeq ($(OP2_COMPILER),gnu)
 	CC       := gcc
-	CCFLAGS  := -std=c99 -fPIC -DUNIX -Wall #-g
+	CCFLAGS  := -std=c99 -fPIC -DUNIX -Wall -fopenmp #-g
 	CXX      := g++
-	CXXFLAGS := -fPIC -DUNIX -Wall #-g -Wextra
+	CXXFLAGS := -fPIC -DUNIX -Wall -fopenmp #-g -Wextra
 	MPICXX   := /usr/bin/mpiCC
 	MPIFLAGS := $(CXXFLAGS)
 else
 ifeq ($(OP2_COMPILER),intel)
 	CC       := icc
-	CCFLAGS  := -O3 -vec-report -xSSE4.2 #-DCOMM_PERF #-DDEBUG -g
+	CCFLAGS  := -O3 -vec-report -fopenmp -xSSE4.2 #-DCOMM_PERF #-DDEBUG -g
 	CXX      := icpc
 	CXXFLAGS := $(CCFLAGS)
 	MPICXX   := mpiCC
