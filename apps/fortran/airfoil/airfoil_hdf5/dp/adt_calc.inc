@@ -24,5 +24,5 @@ SUBROUTINE adt_calc(x1,x2,x3,x4,q,adt)
   dx = x1(1) - x4(1)
   dy = x1(2) - x4(2)
   adt = adt + abs(u * dy - v * dx) + c * sqrt(dx * dx + dy * dy)
-  adt = adt / cfl 
+  adt = adt / cfl
 END SUBROUTINE
