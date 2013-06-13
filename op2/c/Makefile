@@ -42,20 +42,20 @@ ifeq ($(OP2_COMPILER),intel)
   MPIFLAGS := $(CXXFLAGS)
 else
 ifeq ($(OP2_COMPILER),pgi)
-  CC	 := pgcc
-  CCFLAGS	 := -O3
-  CXX	 := pgCC
+  CC	   := pgcc
+  CCFLAGS  := -O3
+  CXX	   := pgCC
   CXXFLAGS := $(CCFLAGS)
-  MPICXX	 := /home/gihan/openmpi-pgi/bin/mpiCC
+  MPICXX   := $(MPI_INSTALL_PATH)/bin/mpiCC
   MPIFLAGS := $(CXXFLAGS)
 else
 ifeq ($(OP2_COMPILER),cray)
-	CC       := cc
-	CCFLAGS  := -O3
-	CXX      := CC
-	CXXFLAGS := $(CCFLAGS)
-	MPICXX   := CC
-	MPIFLAGS := $(CXXFLAGS)
+  CC       := cc
+  CCFLAGS  := -O3
+  CXX      := CC
+  CXXFLAGS := $(CCFLAGS)
+  MPICXX   := CC
+  MPIFLAGS := $(CXXFLAGS)
 else
 print:
 	@echo "unrecognised value for OP2_COMPILER"
@@ -68,7 +68,7 @@ NVCCFLAGS	= -O3 -arch=sm_20 -m64 -Xptxas -dlcm=ca -Xptxas=-v -use_fast_math #-g 
 
 PARMETIS_INCLUDE_PATH ?= $(PARMETIS_INSTALL_PATH)
 PARMETIS_LIB_PATH ?= $(PARMETIS_INSTALL_PATH)
-PARMETIS_VER=4
+PARMETIS_VER=3
 ifeq ($(PARMETIS_VER),4)
   PARMETIS_INC = -I$(PARMETIS_INCLUDE_PATH)/include -DHAVE_PARMETIS -DPARMETIS_VER_4
   PARMETIS_LIB = -L$(PARMETIS_LIB_PATH)/lib -lparmetis -lmetis
@@ -87,7 +87,7 @@ HDF5_LIB = -L$(HDF5_INSTALL_PATH)/lib -lhdf5 -lz
 
 .PHONY: clean mklib
 
-all: clean core hdf5 seq openmp mpi_seq cuda mpi_cuda
+all: clean core hdf5 seq openmp mpi_seq cuda cuda mpi_cuda
 
 mklib:
 	@mkdir -p $(LIB) $(OBJ)
