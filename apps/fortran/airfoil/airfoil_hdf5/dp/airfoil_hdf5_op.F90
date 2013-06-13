@@ -12,7 +12,7 @@ program AIRFOIL
   use UPDATE_MODULE
   use OP2_Fortran_RT_Support
   use OP2_CONSTANTS
-  use AIRFOIL_SEQ
+!  use AIRFOIL_SEQ
   use IO
   use, intrinsic :: ISO_C_BINDING
 
