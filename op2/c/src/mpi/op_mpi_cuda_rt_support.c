@@ -79,20 +79,30 @@ void cutilDeviceInit( int argc, char ** argv )
   }
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-//  cudaError_t err = cudaSetDevice(rank);
+  if (getenv("OMPI_COMM_WORLD_LOCAL_RANK")!=NULL) {
+    printf("rank %d from OMPI_COMM_WORLD_LOCAL_RANK\n",rank);
+    rank = atoi(getenv("OMPI_COMM_WORLD_LOCAL_RANK"));
+  } else if (getenv("MV2_COMM_WORLD_LOCAL_RANK")!=NULL) {
+    rank = atoi(getenv("MV2_COMM_WORLD_LOCAL_RANK"));
+    printf("rank %d from MV2_COMM_WORLD_LOCAL_RANK\n",rank);
+  } else if (getenv("MPI_LOCALRANKID")!=NULL) {
+    rank = atoi(getenv("MPI_LOCALRANKID"));
+    printf("rank %d from MPI_LOCALRANKID\n",rank);
+  } else {
+    rank = rank%deviceCount;
+    printf("rank %d from rank(mod)deviceCount\n",rank);
+  }
+
   // Test we have access to a device
-//  if (err != cudaSuccess) {
   if (rank >= deviceCount) {
     OP_hybrid_gpu = 0;
   } else {
+    cudaError_t err = cudaSetDevice(rank);
     OP_hybrid_gpu = 1;
   }
-  
+  printf("rank %d, deviceCount = %d, hybridGPU = %d\n", rank, deviceCount, OP_hybrid_gpu );
   if (OP_hybrid_gpu) {
-    cudaFree(0);
-
     cutilSafeCall(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
-
     int deviceId = -1;
     cudaGetDevice(&deviceId);
     cudaDeviceProp_t deviceProp;
@@ -245,7 +255,7 @@ void op_exchange_halo(op_arg* arg, int exec_flag)
 
   if (exec_flag == 0 && arg->idx == -1) return;
   if (arg->opt == 0) return;
-  
+
   if(arg->sent == 1)
   {
     printf("Error: Halo exchange already in flight for dat %s\n", dat->name);
@@ -422,7 +432,7 @@ void op_partition(const char* lib_name, const char* lib_routine,
 {
   partition(lib_name, lib_routine, prime_set, prime_map, coords );
   if (!OP_hybrid_gpu) return;
-  
+
   for(int s = 0; s<OP_set_index; s++)
   {
     op_set set=OP_set_list[s];
@@ -434,11 +444,11 @@ void op_partition(const char* lib_name, const char* lib_routine,
           op_mv_halo_device(set, dat);
     }
   }
-  
+
   for (int m = 0; m<OP_map_index; m++) {
     //Upload maps in transposed form
     op_map map = OP_map_list[m];
-    int set_size = map->from->size+map->from->exec_size; 
+    int set_size = map->from->size+map->from->exec_size;
     int *temp_map = (int *)malloc(map->dim*set_size*sizeof(int));
     for (int i = 0; i < map->dim; i++) {
       for (int j = 0; j < set_size; j++) {
