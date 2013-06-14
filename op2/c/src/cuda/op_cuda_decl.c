@@ -153,7 +153,7 @@ op_map
 op_decl_map ( op_set from, op_set to, int dim, int * imap, char const * name )
 {
   op_map map = op_decl_map_core ( from, to, dim, imap, name );
-  int set_size = map->from->size; 
+  int set_size = map->from->size;
   int *temp_map = (int *)malloc(map->dim*set_size*sizeof(int));
   for (int i = 0; i < map->dim; i++) {
     for (int j = 0; j < set_size; j++) {
@@ -224,6 +224,19 @@ void op_print(const char* line)
 void op_timers(double * cpu, double * et)
 {
   op_timers_core(cpu,et);
+}
+
+int getSetSizeFromOpArg (op_arg * arg)
+{
+  return arg->opt ? arg->dat->set->size : 0;
+}
+
+void op_renumber(op_map base) {
+  (void)base;
+}
+
+int getHybridGPU() {
+  return OP_hybrid_gpu;
 }
 
 void op_exit()
