@@ -3475,7 +3475,7 @@ void partition(const char* lib_name, const char* lib_routine,
   //trigger halo creation routines
   op_halo_create();
   op_halo_permap_create();
-
+  if (prime_map) op_create_partitioned_blocks(prime_map);
 #ifdef DEBUG //sanity check to identify if the partitioning results in ophan elements
   int ctr = 0;
   for (int i = 0; i < prime_map->from->size; i++) {

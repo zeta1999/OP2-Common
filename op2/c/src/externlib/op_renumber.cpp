@@ -57,8 +57,7 @@ int compare (const void * a, const void * b)
 
 //propage renumbering based on a map that points to an already reordered set
 void propagate_reordering(op_set from, op_set to,
-  std::vector< std::vector <int> >& set_permutations,
-  std::vector< std::vector <int> >& set_ipermutations) {
+  std::vector< std::vector <int> >& set_permutations) {
 
   if(to->size == 0) return;
 
@@ -88,51 +87,100 @@ void propagate_reordering(op_set from, op_set to,
   for (int mapidx = 0; mapidx < OP_map_index; mapidx++) {
     op_map map = OP_map_list[mapidx];
     if (map->to == to && set_permutations[map->from->index].size()==0) {
-      propagate_reordering(to, map->from, set_permutations, set_ipermutations);
+      propagate_reordering(to, map->from, set_permutations);
     }
   }
 }
 
 void reorder_set(op_set set,
-  std::vector<std::vector<int> >& set_permutations,
-  std::vector<std::vector<int> >& set_ipermutations) {
+  int *set_permutations) {
 
-  if (set_permutations[set->index].size()==0) {
-    printf("No reordering for set %s, skipping...\n", set->name);
-    return;
-  }
-
-  if (set->size == 0) return;
+  int set_size = set->size + set->exec_size + set->nonexec_size;
+  if (set_size == 0) return;
 
   for (int mapidx = 0; mapidx < OP_map_index; mapidx++) {
     op_map map = OP_map_list[mapidx];
     if (map->from == set) {
-      int *tempmap = (int *)malloc(set->size*sizeof(int)*map->dim);
+      int *tempmap = (int *)malloc(set_size*sizeof(int)*map->dim);
 
-      for (int i = 0; i < set->size; i++)
+      for (int i = 0; i < set_size; i++)
         std::copy(map->map + map->dim*i, map->map + map->dim*(i+1),
-                  tempmap + map->dim*set_permutations[set->index][i]);
+                  tempmap + map->dim*set_permutations[i]);
       free(map->map);
       map->map = tempmap;
 
     } else if (map->to == set) {
-      for (int i = 0; i < map->from->size*map->dim; i++)
-        map->map[i] = set_permutations[set->index][map->map[i]];
+      for (int i = 0; i < (map->from->size+map->from->exec_size+map->from->nonexec_size)*map->dim; i++)
+        map->map[i] = set_permutations[map->map[i]];
     }
   }
   op_dat_entry *item;
   TAILQ_FOREACH(item, &OP_dat_list, entries) {
     op_dat dat = item->dat;
     if (dat->set == set && dat->data != NULL) {
-      char *tempdata = (char *)malloc((size_t)set->size*(size_t)dat->size);
-      for (unsigned long int i = 0; i < (unsigned long int)set->size; i++)
+      char *tempdata = (char *)malloc((size_t)set_size*(size_t)dat->size);
+      for (unsigned long int i = 0; i < (unsigned long int)set_size; i++)
         std::copy(dat->data + (unsigned long int)dat->size*i,
                   dat->data + (unsigned long int)dat->size*(i+1),
                   tempdata + (unsigned long int)dat->size*
-                  (unsigned long int)set_permutations[set->index][i]);
+                  (unsigned long int)set_permutations[i]);
       free(dat->data);
       dat->data = tempdata;
     }
+  }
+}
+
+void create_loopback(std::vector<int>& row_offsets,
+                     std::vector<int>& col_indices, op_map base) {
+  row_offsets.resize(base->to->size+1);
+  if (base->to == base->from) {
+    col_indices.resize(base->dim*base->from->size);
+    //if map is self-referencing, just create row_offsets with dim stride, and copy over col_indices
+    std::copy(base->map, base->map+base->dim*base->from->size, col_indices.begin());
+    row_offsets[0] = 0;
+    for (int i = 1; i < base->from->size+1; i++) row_offsets[i] = i*base->dim;
+  } else {
+    //otherwise, construct self-referencing map
+    col_indices.resize(base->from->size * (base->dim-1) * (base->dim)); //Worst case memory requirement
+
+    //construct map pointing back
+    std::vector<map2> loopback(base->from->size * base->dim);
+    for (int i = 0; i < base->from->size*base->dim; i++) {
+      loopback[i].a = base->map[i];
+      loopback[i].b = i/base->dim;
+    }
+    qsort(&loopback[0], loopback.size(), sizeof(map2), compare);
+
+    row_offsets[0] = 0;
+    row_offsets[1] = 0;
+    row_offsets[base->to->size] = 0;
+    for (int i = 0; i < base->dim; i++) {
+      if (base->map[base->dim*loopback[0].b+i] != 0)
+        col_indices[row_offsets[1]++] = base->map[base->dim*loopback[0].b+i];
+    }
+    int nodectr = 0;
+    for (int i = 1; i < base->from->size * base->dim; i++) {
+      if (loopback[i].a != loopback[i-1].a) {
+        nodectr++; row_offsets[nodectr+1] = row_offsets[nodectr];
+      }
+
+      for (int d1 = 0; d1 < base->dim; d1++) {
+        int id = base->map[base->dim*loopback[i].b+d1];
+        int add = (id != nodectr);
+        for (int d2 = row_offsets[nodectr]; (d2 < row_offsets[nodectr+1]) && add; d2++) {
+          if (col_indices[d2] == id) add = 0;
+        }
+        if (add) col_indices[row_offsets[nodectr+1]++] = id;
+      }
+    }
+    if (row_offsets[base->to->size] == 0) {
+      printf("Map %s is not an onto map from %s to %s, aborting renumbering...\n",
+        base->name, base->from->name, base->to->name);
+      return;
+    }
+    col_indices.resize(row_offsets[base->to->size]);
+    printf("Loopback map %s->%s constructed: %d, from set %s (%d)\n",
+      base->to->name, base->to->name, (int)col_indices.size(), base->from->name, base->from->size);
   }
 }
 
@@ -187,57 +235,9 @@ void op_renumber(op_map base) {
 //-----------------------------------------------------------------------------------------
 // Build adjacency list
 //-----------------------------------------------------------------------------------------
-  std::vector<int> row_offsets(base->to->size+1);
+  std::vector<int> row_offsets;
   std::vector<int> col_indices;
-  if (base->to == base->from) {
-    col_indices.resize(base->dim*base->from->size);
-    //if map is self-referencing, just create row_offsets with dim stride, and copy over col_indices
-    std::copy(base->map, base->map+base->dim*base->from->size, col_indices.begin());
-    row_offsets[0] = 0;
-    for (int i = 1; i < base->from->size+1; i++) row_offsets[i] = i*base->dim;
-  } else {
-    //otherwise, construct self-referencing map
-    col_indices.resize(base->from->size * (base->dim-1) * (base->dim)); //Worst case memory requirement
-
-    //construct map pointing back
-    std::vector<map2> loopback(base->from->size * base->dim);
-    for (int i = 0; i < base->from->size*base->dim; i++) {
-      loopback[i].a = base->map[i];
-      loopback[i].b = i/base->dim;
-    }
-    qsort(&loopback[0], loopback.size(), sizeof(map2), compare);
-
-    row_offsets[0] = 0;
-    row_offsets[1] = 0;
-    row_offsets[base->to->size] = 0;
-    for (int i = 0; i < base->dim; i++) {
-      if (base->map[base->dim*loopback[0].b+i] != 0)
-        col_indices[row_offsets[1]++] = base->map[base->dim*loopback[0].b+i];
-    }
-    int nodectr = 0;
-    for (int i = 1; i < base->from->size * base->dim; i++) {
-      if (loopback[i].a != loopback[i-1].a) {
-        nodectr++; row_offsets[nodectr+1] = row_offsets[nodectr];
-      }
-
-      for (int d1 = 0; d1 < base->dim; d1++) {
-        int id = base->map[base->dim*loopback[i].b+d1];
-        int add = (id != nodectr);
-        for (int d2 = row_offsets[nodectr]; (d2 < row_offsets[nodectr+1]) && add; d2++) {
-          if (col_indices[d2] == id) add = 0;
-        }
-        if (add) col_indices[row_offsets[nodectr+1]++] = id;
-      }
-    }
-    if (row_offsets[base->to->size] == 0) {
-      printf("Map %s is not an onto map from %s to %s, aborting renumbering...\n",
-        base->name, base->from->name, base->to->name);
-      return;
-    }
-    col_indices.resize(row_offsets[base->to->size]);
-    printf("Loopback map %s->%s constructed: %d, from set %s (%d)\n",
-      base->to->name, base->to->name, (int)col_indices.size(), base->from->name, base->from->size);
-  }
+  create_loopback(row_offsets,col_indices,base);
 
   if (generated_partvec == 0) {
 #ifdef PARMETIS_VER_4
@@ -317,14 +317,195 @@ void op_renumber(op_map base) {
   SCOTCH_stratExit(straptr);
 
   std::vector<std::vector<int> > set_permutations(OP_set_index);
-  std::vector<std::vector<int> > set_ipermutations(OP_set_index);
   set_permutations[base->to->index].resize(base->to->size);
   std::copy(permutation, permutation+base->to->size, set_permutations[base->to->index].begin());
-  set_ipermutations[base->to->index].resize(base->to->size);
-  std::copy(ipermutation, ipermutation+base->to->size, set_ipermutations[base->to->index].begin());
-  propagate_reordering(base->to, base->to, set_permutations, set_ipermutations);
+  propagate_reordering(base->to, base->to, set_permutations);
   for (int i = 0; i < OP_set_index; i++) {
-    reorder_set(OP_set_list[i], set_permutations, set_ipermutations);
+    if (set_permutations[i].size()) reorder_set(OP_set_list[i], &set_permutations[i][0]);
   }
   #endif
+}
+
+//propage partitioning based on a map that points to an already partitioned set
+void inherit_partitioning(op_set from, op_set to,
+  std::vector< std::vector <int> >& set_partitionings) {
+  int to_size = to->size + to->exec_size + to->nonexec_size;
+  if (to_size == 0) return;
+
+  //find a map that is (to)->(from), partition (to)
+  if (set_partitionings[to->index].size()==0) {
+    for (int mapidx = 0; mapidx < OP_map_index; mapidx++) {
+      op_map map = OP_map_list[mapidx];
+      if (map->to == from && map->from == to) {
+        set_partitionings[to->index].resize(to_size);
+        //if map is 1 or 2 dimensional, just pick the first
+        if (map->dim == 1 || map->dim == 2) {
+          for (int i = 0; i < to_size; i++) {
+            set_partitionings[to->index][i] =
+             set_partitionings[from->index][map->map[map->dim*i]];
+          }
+        } else {
+          //otherwise find the partition that an element has the most connections to
+          int *destinations = (int *)malloc(map->dim * sizeof(int));
+          for (int i = 0; i < to_size; i++) {
+            memset(destinations, 0, sizeof(int));
+            for (int j = 0; j < map->dim; j++) {
+              int found = j;
+              for (int k = 0; k < j; j++) {
+                if (set_partitionings[from->index][map->map[map->dim*i+j]] ==
+                    set_partitionings[from->index][map->map[map->dim*i+k]]) found = k;
+              }
+              destinations[found]++;
+            }
+            int target = 0;
+            for (int j = 0; j < map->dim; j++) {
+              target = destinations[j] > destinations[target] ? j : target;
+            }
+            set_partitionings[to->index][i] = set_partitionings[from->index][map->map[map->dim*i+target]];
+          }
+        }
+        break;
+      }
+    }
+  }
+  if (set_partitionings[to->index].size()==0) {
+    return;
+  }
+  //find any maps that is (*)->to, propagate reordering
+  for (int mapidx = 0; mapidx < OP_map_index; mapidx++) {
+    op_map map = OP_map_list[mapidx];
+    if (map->to == to && set_partitionings[map->from->index].size()==0) {
+      inherit_partitioning(to, map->from, set_partitionings);
+    }
+  }
+}
+
+void op_create_partitioned_blocks(op_map base) {
+  OP_set_permutations = (op_set_permutation *)malloc(OP_set_index*sizeof(op_set_permutation));
+  for (int i = 0; i < OP_set_index; i++) {
+    OP_set_permutations[i].set = OP_set_list[i];
+    OP_set_permutations[i].permutation = NULL;
+    OP_set_permutations[i].num_blocks = 0;
+    OP_set_permutations[i].block_offset = NULL;
+    OP_set_permutations[i].block_size_owned = NULL;
+    OP_set_permutations[i].block_size_full = NULL;
+  }
+
+  int set_size = base->to->size + base->to->exec_size + base->to->nonexec_size;
+  std::vector<int> row_offsets;
+  std::vector<int> col_indices;
+  create_loopback(row_offsets,col_indices,base);
+  int nparts = MAX((base->from->size+base->from->exec_size+base->from->nonexec_size)/512,60);
+  int *partvec = (int *)malloc(set_size * sizeof(int));
+
+  #ifdef HAVE_PTSCOTCH
+    SCOTCH_Num baseval = 0; // start numbering from 0
+    SCOTCH_Num vertnbr = set_size; // number of vertices in graph = number of cells in mesh
+    SCOTCH_Num edgenbr = row_offsets[set_size];
+    SCOTCH_Graph *graphptr = SCOTCH_graphAlloc();
+    SCOTCH_graphInit(graphptr);
+    SCOTCH_Num *verttab = &row_offsets[0];
+    SCOTCH_Num *vendtab = &verttab[1]; // Used to calculate vertex degree = verttab[i+1] - verttab[i]
+    SCOTCH_Num *velotab = NULL; // Vertex load = vertex weight
+    SCOTCH_Num *vlbltab = NULL;
+    SCOTCH_Num *edgetab = &col_indices[0];
+    SCOTCH_Num *edlotab = NULL; // Edge load = edge weight
+    SCOTCH_Num *parttab = (SCOTCH_Num*)partvec;
+    int mesg = 0;
+    mesg = SCOTCH_graphBuild(graphptr, baseval, vertnbr, verttab, vendtab,
+      velotab, vlbltab, edgenbr, edgetab, edlotab);
+    if(mesg != 0) {op_printf("Error during SCOTCH_graphBuild() \n");exit(-1);}
+    SCOTCH_Strat *straptr = SCOTCH_stratAlloc();
+    SCOTCH_stratInit(straptr);
+
+    mesg = SCOTCH_graphPart(graphptr,nparts, straptr, parttab);
+    if(mesg != 0) {op_printf("Error during SCOTCH_graphPart() \n");exit(-1);}
+    SCOTCH_graphExit(graphptr);
+    SCOTCH_stratExit(straptr);
+  #elif PARMETIS_VER_4
+    int nconstr = 1;
+    int edgecut;
+    int nparts = possible[i];
+    idx_t options[METIS_NOPTIONS];
+    METIS_SetDefaultOptions(options);
+    options[METIS_OPTION_OBJTYPE] = METIS_OBJTYPE_VOL;
+    options[METIS_OPTION_NCUTS] = 3;
+    options[METIS_OPTION_NSEPS] = 3;
+    options[METIS_OPTION_NUMBERING] = 0;
+    options[METIS_OPTION_MINCONN] = 1;
+
+    METIS_PartGraphKway(&set_size, &nconstr, &row_offsets[0],
+      &col_indices[0], NULL, NULL, NULL, &nparts, NULL, NULL, options, &edgecut, partvec);
+  #else
+    printf("No sutiable partitioner found!\n"); return;
+  #endif
+
+  //Inherit partitioning to other sets
+  std::vector<std::vector<int> > set_partitionings(OP_set_index);
+  set_partitionings[base->to->index].resize(set_size);
+  std::copy(partvec, partvec+set_size, set_partitionings[base->to->index].begin());
+  inherit_partitioning(base->to, base->to, set_partitionings);
+
+  //Create renumbering for each set
+  for (int i = 0; i < OP_set_index; i++) {
+    if (set_partitionings[i].size() == 0) {printf("Failed to inherit partitioning to set %s\n", OP_set_list[i]->name); continue;}
+    op_set set = OP_set_list[i];
+    int set_size = set->size + set->exec_size + set->nonexec_size;
+    std::vector<map2> ordering(set_size);
+    for (int j = 0; j < set_size; j++) {
+      ordering[j].a = set_partitionings[i][j];
+      ordering[j].b = j;
+    }
+    qsort(&ordering[0], ordering.size(), sizeof(map2), compare);
+    OP_set_permutations[i].permutation = (int *)malloc(set_size*sizeof(int));
+    int part_counter = 1;
+    for (int j = 0; j < set_size; j++) {
+      if (j > 0 && ordering[j].a != ordering[j-1].a) part_counter++;
+      OP_set_permutations[i].permutation[j] = ordering[j].b;
+    }
+    if (set_size / part_counter < 64) {
+      printf("Set %s too small for partitioned blocks\n", set->name);
+      set_partitionings[i].resize(0);
+      free(OP_set_permutations[i].permutation);
+      OP_set_permutations[i].permutation = NULL;
+      continue;
+    }
+    OP_set_permutations[i].num_blocks = part_counter;
+    OP_set_permutations[i].block_offset = (int*)malloc(part_counter * sizeof(int));
+    OP_set_permutations[i].block_size_owned = (int*)malloc(part_counter * sizeof(int));
+    OP_set_permutations[i].block_size_full = (int*)malloc(part_counter * sizeof(int));
+    part_counter = 0;
+    OP_set_permutations[i].block_offset[0] = 0;
+    for (int j = 0; j < set_size; j++) {
+      if (j > 0 && ordering[j].a != ordering[j-1].a) {
+        OP_set_permutations[i].block_size_full[part_counter] = j - OP_set_permutations[i].block_offset[part_counter];
+        OP_set_permutations[i].block_size_owned[part_counter] = OP_set_permutations[i].block_size_full[part_counter];
+        part_counter++;
+        OP_set_permutations[i].block_offset[part_counter] = j;
+      }
+    }
+    OP_set_permutations[i].block_size_full[part_counter] = set_size - OP_set_permutations[i].block_offset[part_counter];
+    OP_set_permutations[i].block_size_owned[part_counter] = OP_set_permutations[i].block_size_full[part_counter];
+
+    //Decrement owned size for halo elements
+    for (int j = set->size; j < set_size; j++) {
+      OP_set_permutations[i].block_size_owned[set_partitionings[i][j]]--;
+    }
+
+    //Flag partitions that contain boundary or halo elements
+    OP_set_permutations[i].has_boundary = (short *)calloc(part_counter,sizeof(short));
+    for (int j = 0; j < part_counter; j++) {
+      for (int k = OP_set_permutations[i].block_offset[j]; k < OP_set_permutations[i].block_size_full[j]; k++) {
+        if (OP_set_permutations[i].permutation[j] > set->core_size) {
+          OP_set_permutations[i].has_boundary[j] = 1;
+          break;
+        }
+      }
+    }
+  }
+
+  //Reorder sets
+  for (int i = 0; i < OP_set_index; i++) {
+    reorder_set(OP_set_list[i], OP_set_permutations[i].permutation);
+  }
 }

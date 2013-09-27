@@ -1806,6 +1806,61 @@ void op_halo_permap_create() {
 }
 
 /*******************************************************************************
+ * Routine to re-number halo lists based on renumbering for the set
+ *******************************************************************************/
+void op_renumber_misc(op_set set, int *renumbering) {
+  halo_list list = OP_export_exec_list[set->index];
+  for (int i = 0; i < list->size; i++) {
+    list->list[i] = renumbering[list->list[i]];
+  }
+  list = OP_export_nonexec_list[set->index];
+  for (int i = 0; i < list->size; i++) {
+    list->list[i] = renumbering[list->list[i]];
+  }
+  list = OP_import_exec_list[set->index];
+  list->list = (int*)malloc(list->size*sizeof(int));
+  for (int i = 0; i < list->size; i++) {
+    list->list[i] = renumbering[list->disps[0]+i];
+  }
+  list = OP_import_nonexec_list[set->index];
+  list->list = (int*)malloc(list->size*sizeof(int));
+  for (int i = 0; i < list->size; i++) {
+    list->list[i] = renumbering[list->disps[0]+i];
+  }
+  for (int m = 0; m < OP_map_index; m++) {
+    if (OP_map_partial_exchange[m] && OP_map_list[m]->to->index == set->index) {
+      list = OP_import_nonexec_permap[set->index];
+      for (int i = 0; i < list->size; i++) {
+        list->list[i] = renumbering[list->list[i]];
+      }
+      list = OP_export_nonexec_permap[set->index];
+      for (int i = 0; i < list->size; i++) {
+        list->list[i] = renumbering[list->list[i]];
+      }
+    }
+  }
+
+  //
+  // resize mpi_buffers to accommodate import data before scattering to actual positions
+  //
+  for (int i = 0; i < OP_set_index; i++) {
+    if (set_import_buffer_size[i] == 0) continue;
+    op_dat_entry *item;
+    TAILQ_FOREACH(item, &OP_dat_list, entries) {
+      op_dat dat = item->dat;
+      halo_list nonexec_e_list = OP_export_nonexec_list[i];
+      halo_list nonexec_i_list = OP_import_nonexec_list[i];
+      ((op_mpi_buffer)(dat->mpi_buffer))->buf_nonexec = (char *)xrealloc(((op_mpi_buffer)(dat->mpi_buffer))->buf_nonexec,
+                                                                         (nonexec_e_list->size + MAX(nonexec_i_list->size,set_import_buffer_size[i]))*dat->size);
+     halo_list exec_e_list = OP_export_exec_list[i];
+     halo_list exec_i_list = OP_import_exec_list[i];
+     ((op_mpi_buffer)(dat->mpi_buffer))->buf_exec = (char *)xrealloc(((op_mpi_buffer)(dat->mpi_buffer))->buf_exec,
+                                                                        (exec_e_list->size + exec_i_list->size)*dat->size);
+    }
+  }
+}
+
+/*******************************************************************************
  * Routine to Clean-up all MPI halos(called at the end of an OP2 MPI application)
  *******************************************************************************/
 

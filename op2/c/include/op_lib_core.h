@@ -315,6 +315,8 @@ void op_mpi_perf_comms(void *k_i, int nargs, op_arg *args);
 
 void op_renumber(op_map base);
 
+void op_create_partitioned_blocks(op_map base);
+void op_renumber_misc(op_set set, int *renumbering);
 
 /*******************************************************************************
 * Utility function to compare two op_sets and return 1 if they are identical

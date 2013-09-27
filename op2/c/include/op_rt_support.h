@@ -84,6 +84,18 @@ typedef struct {
 
 extern op_plan * OP_plans;
 
+typedef struct {
+  op_set set;               /* set permuted */
+  int   *permutation;       /* permutation of elements old_pos = permutation[i]*/
+  int    num_blocks;
+  int   *block_offset;      /* offsets to blocks formed by partitioned permutation */
+  int   *block_size_owned;  /* sizes of blocks formed by partitioned permutation, only owned nodes */
+  int   *block_size_full;   /* sizes of blocks formed by partitioned permutation, all nodes (incl. exec halo) */
+  short *has_boundary;      /* indicates whether partition contains boundary or halo elements */
+} op_set_permutation;
+
+extern op_set_permutation * OP_set_permutations;
+
 #ifdef __cplusplus
 extern "C" {
 #endif

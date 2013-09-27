@@ -126,9 +126,10 @@ void op_exchange_halo(op_arg* arg, int exec_flag)
 
     int init = dat->set->size*dat->size;
     for(int i=0; i < imp_exec_list->ranks_size; i++) {
-     // printf("import on to %d from %d data %10s, number of elements of size %d | recieving:\n ",
-     //       my_rank, imp_exec_list->ranks[i], dat->name, imp_exec_list->sizes[i]);
-      MPI_Irecv(&(dat->data[init+imp_exec_list->disps[i]*dat->size]),
+      char *ptr = OP_set_permutations[dat->set->index].permutation ?
+            &((op_mpi_buffer)(dat->mpi_buffer))->buf_exec[(exp_exec_list->size + imp_exec_list->disps[i])*dat->size] :
+            &(dat->data[init+imp_exec_list->disps[i]*dat->size]);
+      MPI_Irecv(ptr,
           dat->size*imp_exec_list->sizes[i],
           MPI_CHAR, imp_exec_list->ranks[i],
           dat->index, OP_MPI_WORLD,
@@ -157,8 +158,6 @@ void op_exchange_halo(op_arg* arg, int exec_flag)
             buf_nonexec[exp_nonexec_list->disps[i]*dat->size+j*dat->size],
             (void *)&dat->data[dat->size*(set_elem_index)],dat->size);
       }
-      //printf("export from %d to %d data %10s, number of elements of size %d | sending:\n ",
-      //          my_rank, exp_nonexec_list->ranks[i], dat->name,exp_nonexec_list->sizes[i]);
       MPI_Isend(&((op_mpi_buffer)(dat->mpi_buffer))->
           buf_nonexec[exp_nonexec_list->disps[i]*dat->size],
           dat->size*exp_nonexec_list->sizes[i],
@@ -170,9 +169,10 @@ void op_exchange_halo(op_arg* arg, int exec_flag)
 
     int nonexec_init = (dat->set->size+imp_exec_list->size)*dat->size;
     for(int i=0; i<imp_nonexec_list->ranks_size; i++) {
-      //printf("import on to %d from %d data %10s, number of elements of size %d | recieving:\n ",
-      //      my_rank, imp_nonexec_list->ranks[i], dat->name, imp_nonexec_list->sizes[i]);
-      MPI_Irecv(&(dat->data[nonexec_init+imp_nonexec_list->disps[i]*dat->size]),
+      char *ptr = OP_set_permutations[dat->set->index].permutation ?
+            &((op_mpi_buffer)(dat->mpi_buffer))->buf_nonexec[(exp_nonexec_list->size + imp_nonexec_list->disps[i])*dat->size] :
+            &(dat->data[nonexec_init+imp_nonexec_list->disps[i]*dat->size]);
+      MPI_Irecv(ptr,
           dat->size*imp_nonexec_list->sizes[i],
           MPI_CHAR, imp_nonexec_list->ranks[i],
           dat->index, OP_MPI_WORLD,
@@ -283,6 +283,21 @@ void op_wait_all(op_arg* arg)
         int set_elem_index = imp_nonexec_list->list[i];
         memcpy((void *)&dat->data[dat->size*(set_elem_index)],
           &buffer[i*dat->size],dat->size);
+      }
+    } else if (OP_set_permutations[dat->set->index].permutation) {
+      halo_list imp_exec_list = OP_import_exec_list[dat->set->index];
+      halo_list imp_nonexec_list = OP_import_nonexec_list[dat->set->index];
+      char *buffer_exec = &((op_mpi_buffer)(dat->mpi_buffer))->buf_exec[OP_export_exec_list[dat->set->index]->size*dat->size];
+      char *buffer_nonexec = &((op_mpi_buffer)(dat->mpi_buffer))->buf_nonexec[OP_export_nonexec_list[dat->set->index]->size*dat->size];
+      for (int i = 0; i < imp_exec_list->size; i++) {
+        int set_elem_index = imp_exec_list->list[i];
+        memcpy((void *)&dat->data[dat->size*(set_elem_index)],
+          &buffer_exec[i*dat->size],dat->size);
+      }
+      for (int i = 0; i < imp_nonexec_list->size; i++) {
+        int set_elem_index = imp_nonexec_list->list[i];
+        memcpy((void *)&dat->data[dat->size*(set_elem_index)],
+          &buffer_nonexec[i*dat->size],dat->size);
       }
     }
   }

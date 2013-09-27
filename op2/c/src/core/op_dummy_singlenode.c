@@ -156,6 +156,11 @@ int getSetSizeFromOpArg (op_arg * arg)
   return arg->opt ? arg->dat->set->size : 0;
 }
 
+void op_renumber_misc(op_set set, int *renumbering) {
+  (void)set;
+  (void)renumbering;
+}
+
 int op_is_root()
 {
   return 1;

@@ -497,6 +497,11 @@ void op_compute_moment(double t, double *first, double *second) {
   *second = t*t;
 }
 
+void op_renumber_misc(op_set set, int *renumbering) {
+  (void)set;
+  (void)renumbering;
+}
+
 int op_is_root()
 {
   return 1;

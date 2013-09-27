@@ -210,24 +210,35 @@ void scatter_data_from_buffer(op_arg arg)
   }
 }
 
-void scatter_data_from_buffer_partial(op_arg arg)
+void scatter_data_from_buffer_indexed(op_arg arg, int partial)
 {
   int threads = 192;
-  int blocks = 1+((OP_import_nonexec_permap[arg.map->index]->size-1)/192);
 
   if (strstr( arg.dat->type, ":soa")!= NULL) {
 
     int set_size = arg.dat->set->size + arg.dat->set->exec_size + arg.dat->set->nonexec_size;
-    int init = OP_export_nonexec_permap[arg.map->index]->size;
-    int copy_size = OP_import_nonexec_permap[arg.map->index]->size;
-
-    import_halo_scatter_partial_soa<<<blocks,threads>>>(import_nonexec_list_partial_d[arg.map->index], arg.data_d, copy_size,
-      arg.dat->size, arg.dat->buffer_d+init*arg.dat->size, set_size, arg.dat->dim );
+    int copy_size = partial ? OP_import_nonexec_permap[arg.map->index]->size : OP_import_exec_list[arg.dat->set->index]->size;
+    int blocks = 1+((copy_size-1)/192);
+    int *indices = partial ? import_nonexec_list_partial_d[arg.map->index] : import_exec_list_d[arg.dat->set->index];
+    if (copy_size) import_halo_scatter_partial_soa<<<blocks,threads>>>(indices, arg.data_d, copy_size,
+      arg.dat->size, arg.dat->buffer_d_r, set_size, arg.dat->dim );
+    if (!partial) {
+      int copy_size = OP_import_nonexec_list[arg.dat->set->index]->size;
+      int blocks = 1+((copy_size-1)/192);
+      if (copy_size) import_halo_scatter_partial_soa<<<blocks,threads>>>(import_nonexec_list_d[arg.dat->set->index], arg.data_d, copy_size,
+        arg.dat->size, arg.dat->buffer_d_r+OP_import_exec_list[arg.dat->set->index]->size*arg.dat->size, set_size, arg.dat->dim );
+    }
   } else {
-    int init = OP_export_nonexec_permap[arg.map->index]->size;
-    int copy_size = OP_import_nonexec_permap[arg.map->index]->size;
-
-    import_halo_scatter_partial<<<blocks,threads>>>(import_nonexec_list_partial_d[arg.map->index], arg.data_d, copy_size,
-      arg.dat->size, arg.dat->buffer_d+init*arg.dat->size, arg.dat->dim );
+    int copy_size = partial ? OP_import_nonexec_permap[arg.map->index]->size : OP_import_exec_list[arg.dat->set->index]->size;
+    int blocks = 1+((copy_size-1)/192);
+    int *indices = partial ? import_nonexec_list_partial_d[arg.map->index] : import_exec_list_d[arg.dat->set->index];
+    if (copy_size) import_halo_scatter_partial<<<blocks,threads>>>(indices, arg.data_d, copy_size,
+      arg.dat->size, arg.dat->buffer_d_r, arg.dat->dim );
+    if (!partial) {
+      int copy_size = OP_import_nonexec_list[arg.dat->set->index]->size;
+      int blocks = 1+((copy_size-1)/192);
+      if (copy_size) import_halo_scatter_partial<<<blocks,threads>>>(import_nonexec_list_d[arg.dat->set->index], arg.data_d, copy_size,
+        arg.dat->size, arg.dat->buffer_d_r+OP_import_exec_list[arg.dat->set->index]->size*arg.dat->size, arg.dat->dim );
+    }
   }
 }

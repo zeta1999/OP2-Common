@@ -46,6 +46,7 @@
 int OP_plan_index = 0, OP_plan_max = 0;
 op_plan * OP_plans;
 double OP_plan_time = 0;
+op_set_permutation *OP_set_permutations = NULL;
 
 extern op_kernel * OP_kernels;
 extern int OP_kern_max;
@@ -329,11 +330,13 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size,
 {
   //set exec length
   int exec_length = set->size;
+  int exec = 0;
   for(int i = 0; i< nargs; i++)
   {
     if(args[i].opt && args[i].idx != -1 && args[i].acc != OP_READ )
     {
       exec_length += set->exec_size;
+      exec = 1;
       break;
     }
   }
@@ -459,6 +462,16 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size,
     nblocks++;
   }
 
+  int partitioned = 0;
+  int max_bsize = bsize;
+  if (OP_set_permutations[set->index].permutation) {
+    partitioned = 1;
+    nblocks = OP_set_permutations[set->index].num_blocks;
+    for (int i = 0; i < nblocks; i++) {
+      max_bsize = MAX(max_bsize, (exec?OP_set_permutations[set->index].block_size_full[i]:OP_set_permutations[set->index].block_size_owned[i]));
+    }
+  }
+
   /* enlarge OP_plans array if needed */
 
   if ( ip == OP_plan_max )
@@ -541,7 +554,7 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size,
   OP_plans[ip].ninds_staged = ninds_staged;
   OP_plans[ip].part_size = part_size;
   OP_plans[ip].nblocks = nblocks;
-  OP_plans[ip].ncolors_core = 0;
+  OP_plans[ip].ncolors_core = partitioned ? 1 : 0;
   OP_plans[ip].ncolors_owned = 0;
   OP_plans[ip].count = 1;
   OP_plans[ip].inds_staged = inds_staged;
@@ -581,7 +594,7 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size,
   }
 
   int *work2;
-  work2 = ( int * ) malloc ( nargs * bsize * sizeof ( int ) );  /* max possibly needed */
+  work2 = ( int * ) malloc ( nargs * max_bsize * sizeof ( int ) );  /* max possibly needed */
 
   /* process set one block at a time */
 
@@ -601,6 +614,12 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size,
     } else {
       next_offset = prev_offset + bsize;
     }
+
+    if (partitioned) {
+      prev_offset = OP_set_permutations[set->index].block_offset[b];
+      next_offset = OP_set_permutations[set->index].block_offset[b]+(exec?OP_set_permutations[set->index].block_size_full[b]:OP_set_permutations[set->index].block_size_owned[b]);
+    }
+
     int bs = next_offset-prev_offset;
 
     offset[b] = prev_offset;  /* offset for block */
@@ -799,10 +818,19 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size,
       } else {
         next_offset = prev_offset + bsize;
       }
+      if (partitioned) {
+        prev_offset = OP_set_permutations[set->index].block_offset[b];
+        next_offset = OP_set_permutations[set->index].block_offset[b]+(exec?OP_set_permutations[set->index].block_size_full[b]:OP_set_permutations[set->index].block_size_owned[b]);
+      }
+
       if ( blk_col[b] == -1 )
       { // color not yet assigned to block
         uint mask = 0;
-        if (next_offset > set->core_size) { //should not use block colors from the core set when doing the non_core ones
+        if (partitioned) {
+          if (OP_set_permutations[set->index].has_boundary[b]) {
+            for (int shifter = 0; shifter < OP_plans[ip].ncolors_core; shifter++) mask |= 1<<shifter;
+          }
+        } else if (next_offset > set->core_size) { //should not use block colors from the core set when doing the non_core ones
           if (prev_offset <= set->core_size) OP_plans[ip].ncolors_core = ncolors;
           for (int shifter = 0; shifter < OP_plans[ip].ncolors_core; shifter++) mask |= 1<<shifter;
           if (prev_offset == set->size && indirect_reduce) OP_plans[ip].ncolors_owned = ncolors;
