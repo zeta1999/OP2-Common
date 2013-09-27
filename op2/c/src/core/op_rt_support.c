@@ -1044,8 +1044,8 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size,
     printf( " maximum block size     = %d \n", bsize );
     printf( " average thread colors  = %.2f \n", total_colors / nblocks );
     printf( " shared memory required = ");
-    for (int i = 0; i < ncolors-1; i++) printf(" %.2f KB,", OP_plans[ip].nsharedCol[i] / 1024.0f );
-    printf(" %.2f KB\n", OP_plans[ip].nsharedCol[ncolors-1] / 1024.0f );
+    for (int i = 0; i < ncolors-1; i++) printf(" %.2f KB (%d),", OP_plans[ip].nsharedCol[i] / 1024.0f,  OP_plans[ip].ncolblk[i]);
+    printf(" %.2f KB (%d)\n", OP_plans[ip].nsharedCol[ncolors-1] / 1024.0f, OP_plans[ip].ncolblk[ncolors-1] );
     printf( " average data reuse     = %.2f \n", maxbytes * ( exec_length / total_shared ) );
     printf( " data transfer (used)   = %.2f MB \n",
         OP_plans[ip].transfer / ( 1024.0f * 1024.0f ) );

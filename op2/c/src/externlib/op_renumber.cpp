@@ -46,6 +46,7 @@
 typedef struct {
   int a;
   int b;
+  int c;
 } map2;
 
 int compare (const void * a, const void * b)
@@ -101,9 +102,9 @@ void reorder_set(op_set set,
   for (int mapidx = 0; mapidx < OP_map_index; mapidx++) {
     op_map map = OP_map_list[mapidx];
     if (map->from == set) {
-      int *tempmap = (int *)malloc(set_size*sizeof(int)*map->dim);
+      int *tempmap = (int *)malloc((set->size + set->exec_size)*sizeof(int)*map->dim);
 
-      for (int i = 0; i < set_size; i++)
+      for (int i = 0; i < set->size + set->exec_size; i++)
         std::copy(map->map + map->dim*i, map->map + map->dim*(i+1),
                   tempmap + map->dim*set_permutations[i]);
       free(map->map);
@@ -132,55 +133,83 @@ void reorder_set(op_set set,
 
 void create_loopback(std::vector<int>& row_offsets,
                      std::vector<int>& col_indices, op_map base) {
-  row_offsets.resize(base->to->size+1);
+  int from_size = base->from->size+base->from->exec_size;//+base->from->nonexec_size;
+  int to_size = base->to->size+base->to->exec_size;//+base->to->nonexec_size;
+  row_offsets.resize(to_size+1);
   if (base->to == base->from) {
-    col_indices.resize(base->dim*base->from->size);
+    col_indices.resize(base->dim*from_size);
     //if map is self-referencing, just create row_offsets with dim stride, and copy over col_indices
-    std::copy(base->map, base->map+base->dim*base->from->size, col_indices.begin());
+    std::copy(base->map, base->map+base->dim*from_size, col_indices.begin());
     row_offsets[0] = 0;
-    for (int i = 1; i < base->from->size+1; i++) row_offsets[i] = i*base->dim;
+    for (int i = 1; i < from_size+1; i++) row_offsets[i] = i*base->dim;
   } else {
     //otherwise, construct self-referencing map
-    col_indices.resize(base->from->size * (base->dim-1) * (base->dim)); //Worst case memory requirement
+    int col_indices_size = 0; //Worst case memory requirement for base map
+    int loopback_size = 0;
+    for (int i = 0; i < OP_map_index; i++) {
+      if (OP_map_list[i]->to != base->to) continue;
+      col_indices_size += (OP_map_list[i]->from->size+OP_map_list[i]->from->exec_size)*(OP_map_list[i]->dim-1)*(OP_map_list[i]->dim);
+      loopback_size += (OP_map_list[i]->from->size+OP_map_list[i]->from->exec_size)*(OP_map_list[i]->dim);
+    }
+    col_indices.resize(col_indices_size);
 
     //construct map pointing back
-    std::vector<map2> loopback(base->from->size * base->dim);
-    for (int i = 0; i < base->from->size*base->dim; i++) {
-      loopback[i].a = base->map[i];
-      loopback[i].b = i/base->dim;
+    std::vector<map2> loopback(loopback_size);
+    int found  = 0;
+    int ctr = 0;
+    for (int m = 0; m < OP_map_index; m++) {
+      if (OP_map_list[m]->to != base->to) continue;
+      op_map map = OP_map_list[m];
+      for (int i = 0; i < (map->from->size+map->from->exec_size)*map->dim; i++) {
+        if (map->map[i] >= to_size) continue;
+        loopback[ctr].a = map->map[i];
+        loopback[ctr].b = i/map->dim;
+        loopback[ctr].c = m;
+        ctr++;
+        if (map->map[i] == to_size-1) found = 1;
+      }
     }
+    if (found == 0) printf("Last nonexec not found\n");
+    loopback_size = ctr;
+    loopback.resize(loopback_size);
     qsort(&loopback[0], loopback.size(), sizeof(map2), compare);
 
     row_offsets[0] = 0;
     row_offsets[1] = 0;
-    row_offsets[base->to->size] = 0;
+    row_offsets[to_size] = 0;
     for (int i = 0; i < base->dim; i++) {
-      if (base->map[base->dim*loopback[0].b+i] != 0)
-        col_indices[row_offsets[1]++] = base->map[base->dim*loopback[0].b+i];
+      if (OP_map_list[loopback[0].c]->map[OP_map_list[loopback[0].c]->dim*loopback[0].b+i] != 0)
+        col_indices[row_offsets[1]++] = OP_map_list[loopback[0].c]->map[OP_map_list[loopback[0].c]->dim*loopback[0].b+i];
     }
     int nodectr = 0;
-    for (int i = 1; i < base->from->size * base->dim; i++) {
+    for (int i = 1; i < loopback_size; i++) {
+      //If next row, increment row counter
       if (loopback[i].a != loopback[i-1].a) {
+        if (loopback[i].a != loopback[i-1].a+1) printf("Error, missing row during loopback construction!\n");
         nodectr++; row_offsets[nodectr+1] = row_offsets[nodectr];
       }
 
-      for (int d1 = 0; d1 < base->dim; d1++) {
-        int id = base->map[base->dim*loopback[i].b+d1];
+      for (int d1 = 0; d1 < OP_map_list[loopback[i].c]->dim; d1++) {
+        int id = OP_map_list[loopback[i].c]->map[OP_map_list[loopback[i].c]->dim*loopback[i].b+d1];
+        if (id >= to_size) continue;
+        //Check if not self
         int add = (id != nodectr);
+        //Check if it's already in the row
         for (int d2 = row_offsets[nodectr]; (d2 < row_offsets[nodectr+1]) && add; d2++) {
           if (col_indices[d2] == id) add = 0;
         }
+        //Add it to row
         if (add) col_indices[row_offsets[nodectr+1]++] = id;
       }
     }
-    if (row_offsets[base->to->size] == 0) {
+    if (row_offsets[to_size] == 0) {
       printf("Map %s is not an onto map from %s to %s, aborting renumbering...\n",
         base->name, base->from->name, base->to->name);
       return;
     }
-    col_indices.resize(row_offsets[base->to->size]);
+    col_indices.resize(row_offsets[to_size]);
     printf("Loopback map %s->%s constructed: %d, from set %s (%d)\n",
-      base->to->name, base->to->name, (int)col_indices.size(), base->from->name, base->from->size);
+      base->to->name, base->to->name, (int)col_indices.size(), base->from->name, from_size);
   }
 }
 
@@ -329,7 +358,7 @@ void op_renumber(op_map base) {
 //propage partitioning based on a map that points to an already partitioned set
 void inherit_partitioning(op_set from, op_set to,
   std::vector< std::vector <int> >& set_partitionings) {
-  int to_size = to->size + to->exec_size + to->nonexec_size;
+  int to_size = to->size + to->exec_size;
   if (to_size == 0) return;
 
   //find a map that is (to)->(from), partition (to)
@@ -341,8 +370,13 @@ void inherit_partitioning(op_set from, op_set to,
         //if map is 1 or 2 dimensional, just pick the first
         if (map->dim == 1 || map->dim == 2) {
           for (int i = 0; i < to_size; i++) {
+            int idx = -1;
+            for (int d = 0; d < map->dim; d++) {
+              if (map->map[map->dim*i+d]<from->size+from->exec_size) idx = map->map[map->dim*i+d];
+            }
+            if (idx==-1) printf("Error, orphan element found\n");
             set_partitionings[to->index][i] =
-             set_partitionings[from->index][map->map[map->dim*i]];
+             set_partitionings[from->index][idx];
           }
         } else {
           //otherwise find the partition that an element has the most connections to
@@ -351,7 +385,8 @@ void inherit_partitioning(op_set from, op_set to,
             memset(destinations, 0, sizeof(int));
             for (int j = 0; j < map->dim; j++) {
               int found = j;
-              for (int k = 0; k < j; j++) {
+              for (int k = 0; k < j; k++) {
+                if (map->map[map->dim*i+j] >= from->size+from->exec_size || map->map[map->dim*i+k] >= from->size+from->exec_size) continue;
                 if (set_partitionings[from->index][map->map[map->dim*i+j]] ==
                     set_partitionings[from->index][map->map[map->dim*i+k]]) found = k;
               }
@@ -361,6 +396,7 @@ void inherit_partitioning(op_set from, op_set to,
             for (int j = 0; j < map->dim; j++) {
               target = destinations[j] > destinations[target] ? j : target;
             }
+            if (destinations[target] == 0) printf("Error, orphan element found\n");
             set_partitionings[to->index][i] = set_partitionings[from->index][map->map[map->dim*i+target]];
           }
         }
@@ -390,12 +426,12 @@ void op_create_partitioned_blocks(op_map base) {
     OP_set_permutations[i].block_size_owned = NULL;
     OP_set_permutations[i].block_size_full = NULL;
   }
-
-  int set_size = base->to->size + base->to->exec_size + base->to->nonexec_size;
+  if (getenv("OP_MPI_EXPERIMENTAL")==NULL) return;
+  int set_size = base->to->size + base->to->exec_size;
   std::vector<int> row_offsets;
   std::vector<int> col_indices;
   create_loopback(row_offsets,col_indices,base);
-  int nparts = MAX((base->from->size+base->from->exec_size+base->from->nonexec_size)/512,60);
+  int nparts = MAX((base->from->size+base->from->exec_size)/512,60);
   int *partvec = (int *)malloc(set_size * sizeof(int));
 
   #ifdef HAVE_PTSCOTCH
@@ -450,19 +486,23 @@ void op_create_partitioned_blocks(op_map base) {
   for (int i = 0; i < OP_set_index; i++) {
     if (set_partitionings[i].size() == 0) {printf("Failed to inherit partitioning to set %s\n", OP_set_list[i]->name); continue;}
     op_set set = OP_set_list[i];
-    int set_size = set->size + set->exec_size + set->nonexec_size;
+    int set_size = set->size + set->exec_size;
     std::vector<map2> ordering(set_size);
     for (int j = 0; j < set_size; j++) {
       ordering[j].a = set_partitionings[i][j];
       ordering[j].b = j;
     }
     qsort(&ordering[0], ordering.size(), sizeof(map2), compare);
-    OP_set_permutations[i].permutation = (int *)malloc(set_size*sizeof(int));
+    OP_set_permutations[i].permutation = (int *)malloc((set_size+set->nonexec_size)*sizeof(int));
     int part_counter = 1;
     for (int j = 0; j < set_size; j++) {
       if (j > 0 && ordering[j].a != ordering[j-1].a) part_counter++;
-      OP_set_permutations[i].permutation[j] = ordering[j].b;
+      OP_set_permutations[i].permutation[ordering[j].b] = j;
     }
+    for (int j = set_size; j < set_size+set->nonexec_size; j++) {
+      OP_set_permutations[i].permutation[j] = j;
+    }
+
     if (set_size / part_counter < 64) {
       printf("Set %s too small for partitioned blocks\n", set->name);
       set_partitionings[i].resize(0);
@@ -506,6 +546,8 @@ void op_create_partitioned_blocks(op_map base) {
 
   //Reorder sets
   for (int i = 0; i < OP_set_index; i++) {
+    if (OP_set_permutations[i].permutation == NULL) continue;
     reorder_set(OP_set_list[i], OP_set_permutations[i].permutation);
+    op_renumber_misc(OP_set_list[i], &OP_set_permutations[i].permutation[0]);
   }
 }

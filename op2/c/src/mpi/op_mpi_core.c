@@ -1829,11 +1829,11 @@ void op_renumber_misc(op_set set, int *renumbering) {
   }
   for (int m = 0; m < OP_map_index; m++) {
     if (OP_map_partial_exchange[m] && OP_map_list[m]->to->index == set->index) {
-      list = OP_import_nonexec_permap[set->index];
+      list = OP_import_nonexec_permap[m];
       for (int i = 0; i < list->size; i++) {
         list->list[i] = renumbering[list->list[i]];
       }
-      list = OP_export_nonexec_permap[set->index];
+      list = OP_export_nonexec_permap[m];
       for (int i = 0; i < list->size; i++) {
         list->list[i] = renumbering[list->list[i]];
       }
