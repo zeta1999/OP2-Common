@@ -21,7 +21,7 @@ def comm(line):
   elif FORTRAN:
     file_text +='!  '+line+'\n'
   elif CPP:
-    file_text +=prefix+'//'+line+'\n'
+    file_text +=prefix+'//'+line.rstrip()+'\n'
 
 def rep(line,m):
   global dims, idxs, typs, indtyps, inddims
@@ -39,8 +39,12 @@ def rep(line,m):
 def code(text):
   global file_text, FORTRAN, CPP, g_m
   global depth
-  prefix = ' '*depth
-  file_text += prefix+rep(text,g_m)+'\n'
+  if text == '':
+    prefix = ''
+  else:
+    prefix = ' '*depth
+  file_text += prefix+rep(text,g_m).rstrip()+'\n'
+
 
 def FOR(i,start,finish):
   global file_text, FORTRAN, CPP, g_m

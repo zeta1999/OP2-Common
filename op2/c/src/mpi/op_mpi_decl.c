@@ -214,6 +214,10 @@ void op_print(const char* line)
 
 void op_exit()
 {
+  for (int m = 0; m<OP_map_index; m++) {
+    op_map map = OP_map_list[m];
+    free(map->map_d);
+  }
   op_mpi_exit();
   op_rt_exit();
   op_exit_core();

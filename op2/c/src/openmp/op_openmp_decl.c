@@ -158,6 +158,11 @@ op_exit (  )
 op_set
 op_decl_set ( int size, char const *name )
 {
+  for (int m = 0; m<OP_map_index; m++) {
+    //Convert maps to transposed form
+    op_map map = OP_map_list[m];
+    free(map->map_d);
+  }
   return op_decl_set_core ( size, name );
 }
 

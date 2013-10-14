@@ -50,7 +50,15 @@ op_set op_decl_set ( int size, char const * name )
 
 op_map op_decl_map ( op_set from, op_set to, int dim, int * imap, char const * name )
 {
-  return op_decl_map_core ( from, to, dim, imap, name );
+  op_map map = op_decl_map_core ( from, to, dim, imap, name );
+  int set_size = map->from->size+map->from->exec_size;
+  map->map_d = (int *)malloc(map->dim*set_size*sizeof(int));
+  for (int i = 0; i < map->dim; i++) {
+    for (int j = 0; j < set_size; j++) {
+      map->map_d[i*set_size + j] = map->map[map->dim*j+i];
+    }
+  }
+  return map;
 }
 
 op_dat op_decl_dat_char ( op_set set, int dim, char const * type, int size, char * data, char const * name )
@@ -155,6 +163,10 @@ void op_timers(double * cpu, double * et)
 
 void op_exit ()
 {
+  for (int m = 0; m<OP_map_index; m++) {
+    op_map map = OP_map_list[m];
+    free(map->map_d);
+  }
   op_exit_core ();
 }
 

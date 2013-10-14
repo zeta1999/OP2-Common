@@ -154,15 +154,13 @@ op_decl_map ( op_set from, op_set to, int dim, int * imap, char const * name )
 {
   op_map map = op_decl_map_core ( from, to, dim, imap, name );
   int set_size = map->from->size;
-  int *temp_map = (int *)malloc(map->dim*set_size*sizeof(int));
+  map->map_d = (int *)malloc(map->dim*set_size*sizeof(int));
   for (int i = 0; i < map->dim; i++) {
     for (int j = 0; j < set_size; j++) {
-      temp_map[i*set_size + j] = map->map[map->dim*j+i];
+      map->map_d[i*set_size + j] = map->map[map->dim*j+i];
     }
   }
-  op_cpHostToDevice ( ( void ** ) &( map->map_d ),
-                      ( void ** ) &( temp_map ), map->dim * set_size * sizeof(int) );
-  free(temp_map);
+  op_mvHostToDevice ( ( void ** ) &( map->map_d ), map->dim * set_size * sizeof(int) );
   return map;
 }
 

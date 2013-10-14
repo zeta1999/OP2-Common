@@ -21,7 +21,7 @@ def comm(line):
   elif FORTRAN:
     file_text +='!  '+line+'\n'
   elif CPP:
-    file_text +=prefix+'//'+line+'\n'
+    file_text +=prefix+'//'+line.rstrip()+'\n'
 
 def rep(line,m):
   global dims, idxs, typs, indtyps, inddims
@@ -39,8 +39,12 @@ def rep(line,m):
 def code(text):
   global file_text, FORTRAN, CPP, g_m
   global depth
-  prefix = ' '*depth
-  file_text += prefix+rep(text,g_m)+'\n'
+  if text == '':
+    prefix = ''
+  else:
+    prefix = ' '*depth
+  file_text += prefix+rep(text,g_m).rstrip()+'\n'
+
 
 def FOR(i,start,finish):
   global file_text, FORTRAN, CPP, g_m
@@ -117,6 +121,12 @@ def op2_gen_openmp(master, date, consts, kernels):
     indaccs = kernels[nk]['indaccs']
     indtyps = kernels[nk]['indtyps']
     invinds = kernels[nk]['invinds']
+    mapnames = kernels[nk]['mapnames']
+    invmapinds = kernels[nk]['invmapinds']
+    mapinds = kernels[nk]['mapinds']
+    nmaps = 0
+    if ninds > 0:
+      nmaps = max(mapinds)+1
 
     vec =  [m for m in range(0,nargs) if int(idxs[m])<0 and maps[m] == OP_MAP]
 
@@ -207,7 +217,7 @@ def op2_gen_openmp(master, date, consts, kernels):
     reduct = j > 0
 
 ##########################################################################
-#  start with OpenMP kernel function
+#  start with the user kernel function
 ##########################################################################
 
     FORTRAN = 0;
@@ -223,306 +233,12 @@ def op2_gen_openmp(master, date, consts, kernels):
     elif CPP:
       code('#include "'+name+'.h"')
 
-    comm('')
-    comm(' x86 kernel function')
-
-    if FORTRAN:
-      code('subroutine op_x86_'+name+'(')
-    elif CPP:
-      code('void op_x86_'+name+'(')
-
-    depth = 2
-
-    if ninds>0:
-      if FORTRAN:
-        code('integer(4)  blockIdx,')
-      elif CPP:
-        code('int    blockIdx,')
-
-    for g_m in range(0,ninds):
-      if FORTRAN:
-        code('INDTYP *ind_ARG,')
-      elif CPP:
-        code('INDTYP *ind_ARG,')
-
-    if ninds>0:
-      if FORTRAN:
-        code('int   *ind_map,')
-        code('short *arg_map,')
-      elif CPP:
-        code('int   *ind_map,')
-        code('short *arg_map,')
-
-    for g_m in range (0,nargs):
-      if maps[g_m]==OP_GBL and accs[g_m] == OP_READ:
-        # declared const for performance
-        if FORTRAN:
-          code('const TYP *ARG,')
-        elif CPP:
-          code('const TYP *ARG,')
-      elif maps[g_m]==OP_ID and ninds>0:
-        if FORTRAN:
-          code('ARG,')
-        elif CPP:
-          code('TYP *ARG,')
-      elif maps[g_m]==OP_GBL or maps[g_m]==OP_ID:
-        if FORTRAN:
-          code('ARG,')
-        elif CPP:
-          code('TYP *ARG,')
-
-    if ninds>0:
-      if FORTRAN:
-        code('ind_arg_sizes,')
-        code('ind_arg_offs, ')
-        code('block_offset, ')
-        code('blkmap,       ')
-        code('offset,       ')
-        code('nelems,       ')
-        code('ncolors,      ')
-        code('colors,       ')
-        code('set_size) {    ')
-        code('')
-      elif CPP:
-        code('int   *ind_arg_sizes,')
-        code('int   *ind_arg_offs, ')
-        code('int    block_offset, ')
-        code('int   *blkmap,       ')
-        code('int   *offset,       ')
-        code('int   *nelems,       ')
-        code('int   *ncolors,      ')
-        code('int   *colors,       ')
-        code('int   set_size) {    ')
-        code('')
-    else:
-      if FORTRAN:
-        code('start, finish )')
-      elif CPP:
-        code('int  start, int  finish ) {')
-      code('')
-
-    for g_m in range (0,nargs):
-      if maps[g_m]==OP_MAP and accs[g_m]==OP_INC:
-        code('TYP  ARG_l[DIM];')
-
-    for m in range (1,ninds+1):
-      g_m = m-1
-      v = [int(inds[i]==m) for i in range(len(inds))]
-      v_i = [vectorised[i] for i in range(len(inds)) if inds[i] == m]
-      if sum(v)>1 and sum(v_i)>0:
-        if indaccs[m-1] == OP_INC:
-          ind = int(max([idxs[i] for i in range(len(inds)) if inds[i]==m])) + 1
-          code('INDTYP *ARG_vec['+str(ind)+'] = {'); depth += 2;
-          for n in range(0,nargs):
-            if inds[n] == m:
-              g_m = n
-              code('ARG_l,')
-          depth -= 2
-          code('};')
-        else:
-          ind = int(max([idxs[i] for i in range(len(inds)) if inds[i]==m])) + 1
-          code('INDTYP *ARG_vec['+str(ind)+'];')
-#
-# lengthy code for general case with indirection
-#
-    if ninds>0:
-      code('')
-      for g_m in range (0,ninds):
-        code('int  *ind_ARG_map, ind_ARG_size;')
-      for g_m in range (0,ninds):
-        code('INDTYP *ind_ARG_s;')
-
-      if FORTRAN:
-        code('integer(4) :: nelem, offset_b, blockId')
-        code('character :: shared[64000]')
-      elif CPP:
-        code('int    nelem, offset_b;')
-        code('')
-        code('char shared[128000];')
-
-      code('')
-      IF('0==0')
-      code('')
-      comm(' get sizes and shift pointers and direct-mapped data')
-      code('')
-      code('int blockId = blkmap[blockIdx + block_offset];')
-      code('nelem    = nelems[blockId];')
-      code('offset_b = offset[blockId];')
-      code('')
-
-      for g_m in range (0,ninds):
-        code('ind_ARG_size = ind_arg_sizes['+str(g_m)+'+blockId*'+ str(ninds)+'];')
-      code('')
-      for m in range (1,ninds+1):
-        g_m = m-1
-        c = [i for i in range(len(inds)) if inds[i]==m]
-        code('ind_ARG_map = &ind_map['+str(cumulative_indirect_index[c[0]])+\
-        '*set_size] + ind_arg_offs['+str(m-1)+'+blockId*'+str(ninds)+'];')
-
-      code('')
-      comm(' set shared memory pointers')
-      code('int nbytes = 0;')
-
-      for g_m in range(0,ninds):
-        code('ind_ARG_s = (INDTYP *) &shared[nbytes];')
-        if g_m < ninds-1:
-          code('nbytes += ROUND_UP(ind_ARG_size*sizeof(INDTYP)*INDDIM);')
-      ENDIF()
-      code('')
-      comm(' copy indirect datasets into shared memory or zero increment')
-      code('')
-
-      for g_m in range(0,ninds):
-        if indaccs[g_m]==OP_READ or indaccs[g_m]==OP_RW or indaccs[g_m]==OP_INC:
-          FOR('n','0','INDARG_size')
-          FOR('d','0','INDDIM')
-          if indaccs[g_m]==OP_READ or indaccs[g_m]==OP_RW:
-            code('INDARG_s[d+n*INDDIM] = INDARG[d+INDARG_map[n]*INDDIM];')
-            code('')
-          elif indaccs[g_m]==OP_INC:
-            code('INDARG_s[d+n*INDDIM] = ZERO_INDTYP;')
-          ENDFOR()
-          ENDFOR()
-
-      code('')
-      comm(' process set elements')
-      code('')
-
-      if ind_inc:
-        FOR('n','0','nelem')
-        comm(' initialise local variables            ')
-        for g_m in range(0,nargs):
-          if maps[g_m]==OP_MAP and accs[g_m]==OP_INC:
-            FOR('d','0','DIM')
-            code('ARG_l[d] = ZERO_TYP;')
-            ENDFOR()
-      else:
-        FOR('n','0','nelem')
-
-#
-# simple alternative when no indirection
-#
-    else:
-      comm(' process set elements')
-      FOR('n','start','finish')
-
-#
-# kernel call
-#
-    # xxx: array of pointers for non-locals
-    for m in range(1,ninds+1):
-      s = [i for i in range(len(inds)) if inds[i]==m]
-      if sum(s)>1:
-        if indaccs[m-1] <> OP_INC:
-          code('')
-          ctr = 0
-          for n in range(0,nargs):
-            if inds[n] == m and vectorised[n]:
-              code('arg'+str(m-1)+'_vec['+str(ctr)+'] = ind_arg'+\
-              str(inds[n]-1)+'_s+arg_map['+str(cumulative_indirect_index[n])+\
-              '*set_size+n+offset_b]*'+str(dims[n])+';')
-              ctr = ctr+1
-
-    code('')
-    comm(' user-supplied kernel call')
-
-    line = name+'('
-    prefix = ' '*len(name)
-    a = 0 #only apply indentation if its not the 0th argument
-    indent =''
-    for m in range (0, nargs):
-      if a > 0:
-        indent = '     '+' '*len(name)
-
-      if maps[m] == OP_GBL:
-        line += rep(indent+'ARG,\n',m)
-        a = a+1
-      elif maps[m]==OP_MAP and  accs[m]==OP_INC and vectorised[m]==0:
-        line += rep(indent+'ARG_l,\n',m);
-        a = a+1
-      elif maps[m]==OP_MAP and vectorised[m]==0:
-        line += rep(indent+'ind_arg'+str(inds[m]-1)+'_s+arg_map['+\
-        str(cumulative_indirect_index[m])+'*set_size+n+offset_b]*DIM,\n',m)
-        a = a+1
-      elif maps[m]==OP_MAP and m == 0:
-        line += rep(indent+'ARG_vec,'+'\n',inds[m]-1)
-        a = a+1
-      elif maps[m]==OP_MAP and m>0 and vectorised[m] <> vectorised[m-1]: #xxx:vector
-        line += rep(indent+'ARG_vec,'+'\n',inds[m]-1)
-        a = a+1
-      elif maps[m]==OP_MAP and m>0 and vectorised[m] == vectorised[m-1]:
-        line = line
-        a = a+1
-      elif maps[m]==OP_ID:
-        if ninds>0:
-          line += rep(indent+'ARG+(n+offset_b)*DIM,'+'\n',m)
-          a = a+1
-        else:
-          line += rep(indent+'ARG+n*DIM,'+'\n',m)
-          a = a+1
-      else:
-        print 'internal error 1 '
-
-    code(line[0:-2]+');') #remove final ',' and \n
-
-#
-# updating for indirect kernels ...
-#
-    if ninds>0:
-      if ind_inc:
-        code('')
-        comm(' store local variables            ')
-
-        for g_m in range(0,nargs):
-          if maps[g_m] == OP_MAP and accs[g_m] == OP_INC:
-            code('int ARG_map = arg_map['+ str(cumulative_indirect_index[g_m])+\
-                '*set_size+n+offset_b];')
-        code('')
-
-        for g_m in range(0,nargs):
-          if maps[g_m] == OP_MAP and accs[g_m] == OP_INC:
-            FOR('d','0','DIM')
-            code('ind_arg'+str(inds[g_m]-1)+'_s[d+ARG_map*DIM] += ARG_l[d];')
-            ENDFOR()
-
-      ENDFOR()
-
-      s = [i for i in range(1,ninds+1) if indaccs[i-1]<> OP_READ]
-
-      if len(s)>0 and max(s)>0:
-        code('')
-        comm(' apply pointered write/increment')
-
-      for g_m in range(0,ninds):
-        if indaccs[g_m]==OP_WRITE or indaccs[g_m]==OP_RW or indaccs[g_m]==OP_INC:
-          FOR('n','0','INDARG_size')
-          FOR('d','0','INDDIM')
-          if indaccs[g_m]==OP_WRITE or indaccs[g_m]==OP_RW:
-            code('INDARG[d+INDARG_map[n]*INDDIM] = INDARG_s[d+n*INDDIM];')
-          elif indaccs[g_m]==OP_INC:
-            code('INDARG[d+INDARG_map[n]*INDDIM] += INDARG_s[d+n*INDDIM];')
-          ENDFOR()
-          ENDFOR()
-#
-# ... and direct kernels
-#
-    else:
-      depth -= 2
-      code('}')
-
-#
-# global reduction
-#
-    depth -= 2
-    code('}')
-    code('')
-
 ##########################################################################
 # then C++ stub function
 ##########################################################################
 
     code('')
-    comm(' host stub function          ')
+    comm(' host stub function')
     code('void op_par_loop_'+name+'(char const *name, op_set set,')
     depth += 2
 
@@ -563,6 +279,16 @@ def op2_gen_openmp(master, date, consts, kernels):
         code('args['+str(g_m)+'] = ARG;')
 
 #
+# start timing
+#
+    code('')
+    comm(' initialise timers')
+    code('double cpu_t1, cpu_t2, wall_t1, wall_t2;')
+    code('op_timing_realloc('+str(nk)+');')
+    code('op_timers_core(&cpu_t1, &wall_t1);')
+    code('')
+
+#
 #   indirect bits
 #
     if ninds>0:
@@ -597,15 +323,6 @@ def op2_gen_openmp(master, date, consts, kernels):
       ENDIF()
       code('')
       code('op_mpi_halo_exchanges(set, nargs, args);')
-
-#
-# start timing
-#
-    code('')
-    comm(' initialise timers')
-    code('double cpu_t1, cpu_t2, wall_t1, wall_t2;')
-    code('op_timers_core(&cpu_t1, &wall_t1);')
-    code('')
 
 #
 # set number of threads in x86 execution and create arrays for reduction
@@ -656,31 +373,32 @@ def op2_gen_openmp(master, date, consts, kernels):
       code('')
       code('#pragma omp parallel for')
       FOR('blockIdx','0','nblocks')
-      code('op_x86_'+name+'( blockIdx,')
-
-      for m in range(1,ninds+1):
-        g_m = invinds[m-1]
-        code('(TYP *)ARG.data,')
-
-      code('Plan->ind_map,')
-      code('Plan->loc_map,')
-
-      for m in range(0,nargs):
-        g_m = m
-        if inds[m]==0 and maps[m] == OP_GBL and accs[m] <> OP_READ:
-          code('&ARG_l[64*omp_get_thread_num()],')
-        elif inds[m]==0:
-          code('(TYP *)ARG.data,')
-
-      code('Plan->ind_sizes,')
-      code('Plan->ind_offs,')
-      code('block_offset,')
-      code('Plan->blkmap,')
-      code('Plan->offset,')
-      code('Plan->nelems,')
-      code('Plan->nthrcol,')
-      code('Plan->thrcol,')
-      code('set_size);')
+      code('int blockId  = Plan->blkmap[blockIdx + block_offset];')
+      code('int nelem    = Plan->nelems[blockId];')
+      code('int offset_b = Plan->offset[blockId];')
+      FOR('n','offset_b','offset_b+nelem')
+      if nmaps > 0:
+        k = []
+        for g_m in range(0,nargs):
+          if maps[g_m] == OP_MAP and (not mapinds[g_m] in k):
+            k = k + [mapinds[g_m]]
+            code('int map'+str(mapinds[g_m])+'idx = arg'+str(invmapinds[inds[g_m]-1])+'.map_data[n * arg'+str(invmapinds[inds[g_m]-1])+'.map->dim + '+idxs[g_m]+'];')
+      code('')
+      line = name+'('
+      indent = '\n'+' '*(depth+2)
+      for g_m in range(0,nargs):
+        if maps[g_m] == OP_ID:
+          line = line + indent + '&(('+typs[g_m]+'*)arg'+str(g_m)+'.data)['+str(dims[g_m])+' * n]'
+        if maps[g_m] == OP_MAP:
+          line = line + indent + '&(('+typs[g_m]+'*)arg'+str(invinds[inds[g_m]-1])+'.data)['+str(dims[g_m])+' * map'+str(mapinds[g_m])+'idx]'
+        if maps[g_m] == OP_GBL:
+          line = line + indent +'&arg'+str(g_m)+'_l[64*omp_get_thread_num()]'
+        if g_m < nargs-1:
+          line = line +','
+        else:
+           line = line +');'
+      code(line)
+      ENDFOR()
       ENDFOR()
       code('')
 
@@ -718,25 +436,34 @@ def op2_gen_openmp(master, date, consts, kernels):
       FOR('thr','0','nthreads')
       code('int start  = (set->size* thr)/nthreads;')
       code('int finish = (set->size*(thr+1))/nthreads;')
-      code('op_x86_'+name+'(')
-
+      FOR('n','start','finish')
+      line = name+'('
+      indent = '\n'+' '*(depth+2)
       for g_m in range(0,nargs):
-        indent = ''
-        if maps[g_m]==OP_GBL and accs[g_m] <> OP_READ:
-          code(indent+'ARG_l + thr*64,')
+        if maps[g_m] == OP_ID:
+          line = line + indent + '&(('+typs[g_m]+'*)arg'+str(g_m)+'.data)['+str(dims[g_m])+'*n]'
+        if maps[g_m] == OP_GBL:
+          line = line + indent +'&arg'+str(g_m)+'_l[64*omp_get_thread_num()]'
+        if g_m < nargs-1:
+          line = line +','
         else:
-          code(indent+'(TYP *) ARG.data,')
-
-      code('start, finish );')
+           line = line +');'
+      code(line)
+      ENDFOR()
       ENDFOR()
 
     if ninds>0:
-      code('op_timing_realloc('+str(nk)+');')
-      code('OP_kernels['+str(nk)+'].transfer  += Plan->transfer; ')
+      code('OP_kernels['+str(nk)+'].transfer  += Plan->transfer;')
       code('OP_kernels['+str(nk)+'].transfer2 += Plan->transfer2;')
 
     ENDIF()
     code('')
+
+    #zero set size issues
+    if ninds>0:
+      IF('set_size == 0 || set_size == set->core_size')
+      code('op_mpi_wait_all(nargs, args);')
+      ENDIF()
 
 #
 # combine reduction data from multiple OpenMP threads
@@ -759,8 +486,8 @@ def op2_gen_openmp(master, date, consts, kernels):
           ENDFOR()
         else:
           print 'internal error: invalid reduction option'
-        code('op_mpi_reduce(&ARG,ARGh);')
         ENDFOR()
+        code('op_mpi_reduce(&ARG,ARGh);')
 
     code('op_mpi_set_dirtybit(nargs, args);')
     code('')
@@ -771,7 +498,6 @@ def op2_gen_openmp(master, date, consts, kernels):
 
     comm(' update kernel record')
     code('op_timers_core(&cpu_t2, &wall_t2);')
-    code('op_timing_realloc('+str(nk)+');')
     code('OP_kernels[' +str(nk)+ '].name      = name;')
     code('OP_kernels[' +str(nk)+ '].count    += 1;')
     code('OP_kernels[' +str(nk)+ '].time     += wall_t2 - wall_t1;')

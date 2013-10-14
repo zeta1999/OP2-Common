@@ -188,6 +188,12 @@ op_plan * op_plan_get_stage ( char const * name, op_set set, int part_size,
 void op_cuda_exit ( )
 {
   if (!OP_hybrid_gpu) return;
+
+  for (int m = 0; m<OP_map_index; m++) {
+    op_map map = OP_map_list[m];
+    cutilSafeCall(cudaFree(map->map_d));
+  }
+
   op_dat_entry *item;
   TAILQ_FOREACH(item, &OP_dat_list, entries)
   {

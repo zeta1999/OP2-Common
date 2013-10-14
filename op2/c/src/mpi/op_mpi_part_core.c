@@ -3515,6 +3515,18 @@ void partition(const char* lib_name, const char* lib_routine,
   }
 
 
+
+  for (int m = 0; m<OP_map_index; m++) {
+    op_map map = OP_map_list[m];
+    int set_size = map->from->size+map->from->exec_size;
+    map->map_d = (int *)malloc(map->dim*set_size*sizeof(int));
+    for (int i = 0; i < map->dim; i++) {
+      for (int j = 0; j < set_size; j++) {
+        map->map_d[i*set_size + j] = map->map[map->dim*j+i];
+      }
+    }
+  }
+
 #ifdef DEBUG //sanity check to identify if the partitioning results in ophan elements
   int ctr = 0;
   for (int i = 0; i < prime_map->from->size; i++) {
