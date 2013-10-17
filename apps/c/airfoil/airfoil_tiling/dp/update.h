@@ -7,7 +7,7 @@ inline void update(double *qold, double *q, double *res, double *adt, double *rm
     del    = adti*res[n];
     q[n]   = qold[n] - del;
     res[n] = 0.0f;
-    *rms  += del*del;
+    //*rms  += del*del;
   }
 }
 

@@ -93,7 +93,6 @@ void op_par_loop_update(char const *, op_set,
   op_arg,
   op_arg );
 
-
 //
 // kernel routines for parallel loops
 //
@@ -117,15 +116,8 @@ int main(int argc, char **argv)
   int    nnode,ncell,nedge,nbedge,niter;
   double  rms;
 
-  // timer
+  //timer
   double cpu_t1, cpu_t2, cpu_t3, cpu_t4, wall_t1, wall_t2, wall_t3, wall_t4;
-
-  // input arguments
-  if (argc != 4)
-  {
-    op_printf("Usage: ./airfoil tile_size output_results_filename output_2loops_results_filename \n"); 
-    exit(-1);
-  }
 
   // read in grid
 
@@ -159,22 +151,19 @@ int main(int argc, char **argv)
     }
   }
 
-#define L1 800
-#define L2 1200
-
   for (int n=0; n<ncell; n++) {
     if (fscanf(fp,"%d %d %d %d \n",&cell[4*n  ], &cell[4*n+1],
                                    &cell[4*n+2], &cell[4*n+3]) != 4) {
       op_printf("error reading from new_grid.dat\n"); exit(-1);
     }
-    if (cell[4*n] >= L1 && cell[4*n] <= L2)
-      cell[4*n] = L2 - cell[4*n];
-    if (cell[4*n+1] >= L1 && cell[4*n+1] <= L2)
-      cell[4*n+1] = L2 - cell[4*n+1];
-    if (cell[4*n+2] >= L1 && cell[4*n+2] <= L2)
-      cell[4*n+2] = L2 - cell[4*n+2];
-    if (cell[4*n+3] >= L1 && cell[4*n+3] <= L2)
-      cell[4*n+3] = L2 - cell[4*n+3];
+    if (cell[4*n] >= 800 && cell[4*n] <= 1200)
+      cell[4*n] = 1200 - cell[4*n];
+    if (cell[4*n+1] >= 800 && cell[4*n+1] <= 1200)
+      cell[4*n+1] = 1200 - cell[4*n+1];
+    if (cell[4*n+2] >= 800 && cell[4*n+2] <= 1200)
+      cell[4*n+2] = 1200 - cell[4*n+2];
+    if (cell[4*n+3] >= 800 && cell[4*n+3] <= 1200)
+      cell[4*n+3] = 1200 - cell[4*n+3];
   }
 
   for (int n=0; n<nedge; n++) {
@@ -182,10 +171,10 @@ int main(int argc, char **argv)
                                    &ecell[2*n],&ecell[2*n+1]) != 4) {
       op_printf("error reading from new_grid.dat\n"); exit(-1);
     }
-    if (edge[2*n] >= L1 && edge[2*n] <= L2)
-      edge[2*n] = L2 - edge[2*n];
-    if (edge[2*n+1] >= L1 && edge[2*n+1] <= L2)
-      edge[2*n+1] = L2 - edge[2*n+1];
+    if (edge[2*n] >= 800 && edge[2*n] <= 1200)
+      edge[2*n] = 1200 - edge[2*n];
+    if (edge[2*n+1] >= 800 && edge[2*n+1] <= 1200)
+      edge[2*n+1] = 1200 - edge[2*n+1];
   }
 
   for (int n=0; n<nbedge; n++) {
@@ -233,18 +222,19 @@ int main(int argc, char **argv)
   op_set cells  = op_decl_set(ncell,  "cells");
 
   op_map pedge   = op_decl_map(edges, nodes,2,edge,  "pedge");
-  op_map pecell  = op_decl_map(edges, cells,2,ecell, "pecell");
+  //op_map pecell  = op_decl_map(edges, cells,2,ecell, "pecell");
   op_map pbedge  = op_decl_map(bedges,nodes,2,bedge, "pbedge");
   op_map pbecell = op_decl_map(bedges,cells,1,becell,"pbecell");
   op_map pcell   = op_decl_map(cells, nodes,4,cell,  "pcell");
 
+  
   op_dat p_bound = op_decl_dat(bedges,1,"int"  ,bound,"p_bound");
   op_dat p_x     = op_decl_dat(nodes ,2,"double",x    ,"p_x");
   op_dat p_adt   = op_decl_dat(cells ,1,"double",adt  ,"p_adt");
   op_dat p_res   = op_decl_dat(cells ,4,"double",res  ,"p_res");
   op_dat p_q     = op_decl_dat(cells ,4,"double",q    ,"p_q");
   op_dat p_qold  = op_decl_dat(cells ,4,"double",qold ,"p_qold");
-  
+
   op_decl_const2("gam",1,"double",&gam  );
   op_decl_const2("gm1",1,"double",&gm1  );
   op_decl_const2("cfl",1,"double",&cfl  );
@@ -260,13 +250,12 @@ int main(int argc, char **argv)
   int nvertices = atoi(argv[1]); 
   
   op_printf ("running inspector with tile size %d vertices\n", nvertices);
- 
-  //initialise timers for total inspector wall time
-  op_timers(&cpu_t3, &wall_t3);
- 
-  inspector_t* insp = initInspector (nnode, nvertices, 2);
-  partitionAndColor (insp, nnode, pedge->map, nedge*2); // TODO: breaking abstraction
   
+  op_timers(&cpu_t3, &wall_t3);
+  
+  inspector_t* insp = initInspector (nnode, nvertices, 6);
+  partitionAndColor (insp, nnode, pedge->map, nedge*2); // TODO: breaking abstraction
+ 
   int *colors = insp->p2c;
   FILE* file_colors = fopen ("colors_computed.txt", "a+");
   fprintf (file_colors, "Tile size: %d, computed %d colors\n", nvertices, insp->ncolors);
@@ -277,20 +266,26 @@ int main(int argc, char **argv)
     fprintf (file_colors, "  Color %d: %d\n", c, tiles_per_color[c]);
   free (tiles_per_color);
   fclose (file_colors);
-  
+ 
   addParLoop (insp, "cells1", ncell, pcell->map, ncell * 4, OP_INDIRECT);
   addParLoop (insp, "edges1", nedge, pedge->map, nedge * 2, OP_INDIRECT);
+  addParLoop (insp, "bedges1", nbedge, pbedge->map, nbedge * 2, OP_INDIRECT);
+  addParLoop (insp, "cells2", ncell, pcell->map, ncell * 4, OP_INDIRECT);
+  addParLoop (insp, "cells3", ncell, pcell->map, ncell * 4, OP_INDIRECT);
+  addParLoop (insp, "edges2", nedge, pedge->map, nedge * 2, OP_INDIRECT);
   
   op_printf ("added parallel loops\n");
   
-  if (runInspector (insp, 0) == INSPOP_WRONGCOLOR)
+  if (runInspector (insp, 2) == INSPOP_WRONGCOLOR)
     op_printf ("%s\n", insp->debug);
   else
     op_printf ("coloring went fine\n");
   
   op_timers(&cpu_t4, &wall_t4);
   op_printf("Inspector run-time = %f\n", wall_t4-wall_t3);  
-
+  
+  //inspectorDiagnostic (insp);
+  
   // build the new data array with values in proper positions
   int x_size = 2*nnode;
   double* new_x = (double *) malloc(x_size*sizeof(double));
@@ -307,16 +302,16 @@ int main(int argc, char **argv)
   
   //initialise timers for total execution wall time
   op_timers(&cpu_t1, &wall_t1);
-
-  // main time-marching loop
-
-  niter = 1000;
   
   // tiled execution of the first two loops
   int* renum_pcell  = insp->loops[0]->indMap;
   int* renum_pedge  = insp->loops[1]->indMap;
   int* renum_pbedge = insp->loops[2]->indMap;
   //int* renum2_pcell  = insp->loops[3]->indMap;
+  
+  // main time-marching loop
+  
+  niter = 1000;
   
   for(int iter=1; iter<=niter; iter++) {
 
@@ -325,22 +320,13 @@ int main(int argc, char **argv)
     op_par_loop_save_soln("save_soln",cells,
                op_arg_dat(p_q,-1,OP_ID,4,"double",OP_READ),
                op_arg_dat(p_qold,-1,OP_ID,4,"double",OP_WRITE));
-    
+   
     // predictor/corrector update loop
 
-    for(int k=0; k<2; k++) {
-    
+    for(int k=0; k<1; k++) { // notice now k<`1 instead of less than 2 due to unrolling
       
       rms = 0.0;
 
-      double cpu_t1, cpu_t2, wall_t1=0, wall_t2=0;
-      char name[] = "tiled";
-      op_timing_realloc(2);
-      OP_kernels[2].name      = name;
-      OP_kernels[2].count    += 1;
-  
-      op_timers_core(&cpu_t1, &wall_t1);
-      
       //for each colour
       for (int i = 0; i < ncolors; i++)
       {
@@ -349,7 +335,7 @@ int main(int argc, char **argv)
         int first_tile = exec->offset[i];
         int last_tile = exec->offset[i + 1];
         
-        #pragma omp parallel for private(tile_size) 
+        #pragma omp parallel for private(tile_size)
         for (int j = first_tile; j < last_tile; j++)
         {
           // execute the tile
@@ -384,31 +370,87 @@ int main(int argc, char **argv)
                       res   + ecell[edge*2 + 0]*4,
                       res   + ecell[edge*2 + 1]*4);
           }
-        }        
+          
+          // loop bres_calc
+          tile_size = tile->curSize[2];
+          for (int k = 0; k < tile_size; k++)
+          {
+            int edge = tile->element[2][k];
+            
+            bres_calc (new_x + renum_pbedge[edge*2 + 0]*2,
+                       new_x + renum_pbedge[edge*2 + 1]*2,
+                       q     + becell[edge + 0]*4,
+                       adt   + becell[edge + 0]*1,
+                       res   + becell[edge + 0]*4,
+                       bound + edge);
+          }
+
+          // loop update
+          tile_size = tile->curSize[3];
+          for (int k = 0; k < tile_size; k++)
+          {
+            int cell = tile->element[3][k];
+            
+            update    (qold  + cell*4,
+                       q     + cell*4,
+                       res   + cell*4,
+                       adt   + cell,
+                       &rms);
+          }
+
+	  // THIS IS WHERE THE UNROLLING BEGINS
+          tile_size = tile->curSize[4];
+          for (int k = 0; k < tile_size; k++)
+          {
+            int cell = tile->element[4][k];
+            
+            adt_calc (new_x + renum_pcell[cell*4 + 0]*2,
+                      new_x + renum_pcell[cell*4 + 1]*2,
+                      new_x + renum_pcell[cell*4 + 2]*2,
+                      new_x + renum_pcell[cell*4 + 3]*2,
+                      q     + cell*4,
+                      adt   + cell);
+          }
+
+          // loop res_calc
+          tile_size = tile->curSize[5];
+          for (int k = 0; k < tile_size; k++)
+          {
+            int edge = tile->element[5][k];
+            
+            res_calc (new_x + renum_pedge[edge*2 + 0]*2,
+                      new_x + renum_pedge[edge*2 + 1]*2,
+                      q     + ecell[edge*2 + 0]*4,
+                      q     + ecell[edge*2 + 1]*4,
+                      adt   + ecell[edge*2 + 0]*1,
+                      adt   + ecell[edge*2 + 1]*1,
+                      res   + ecell[edge*2 + 0]*4,
+                      res   + ecell[edge*2 + 1]*4);
+          }
+         
+        }
       }
- 
-      op_timers_core(&cpu_t2, &wall_t2);
-      OP_kernels[2].time     += wall_t2 - wall_t1;
       
-      op_par_loop_bres_calc("bres_calc",bedges,
-                 op_arg_dat(p_x,0,pbedge,2,"double",OP_READ),
-                 op_arg_dat(p_x,1,pbedge,2,"double",OP_READ),
-                 op_arg_dat(p_q,0,pbecell,4,"double",OP_READ),
-                 op_arg_dat(p_adt,0,pbecell,1,"double",OP_READ),
-                 op_arg_dat(p_res,0,pbecell,4,"double",OP_INC),
-                 op_arg_dat(p_bound,-1,OP_ID,1,"int",OP_READ));
+     op_par_loop_bres_calc("bres_calc",bedges,
+	 op_arg_dat(p_x,0,pbedge,2,"double",OP_READ),
+	 op_arg_dat(p_x,1,pbedge,2,"double",OP_READ),
+	 op_arg_dat(p_q,0,pbecell,4,"double",OP_READ),
+	 op_arg_dat(p_adt,0,pbecell,1,"double",OP_READ),
+	 op_arg_dat(p_res,0,pbecell,4,"double",OP_INC),
+	 op_arg_dat(p_bound,-1,OP_ID,1,"int",OP_READ));
 
       // update flow field
 
       rms = 0.0;
 
       op_par_loop_update("update",cells,
-                 op_arg_dat(p_qold,-1,OP_ID,4,"double",OP_READ),
-                 op_arg_dat(p_q,-1,OP_ID,4,"double",OP_WRITE),
-                 op_arg_dat(p_res,-1,OP_ID,4,"double",OP_RW),
-                 op_arg_dat(p_adt,-1,OP_ID,1,"double",OP_READ),
-                 op_arg_gbl(&rms,1,"double",OP_INC));
+	 op_arg_dat(p_qold,-1,OP_ID,4,"double",OP_READ),
+	 op_arg_dat(p_q,-1,OP_ID,4,"double",OP_WRITE),
+	 op_arg_dat(p_res,-1,OP_ID,4,"double",OP_RW),
+	 op_arg_dat(p_adt,-1,OP_ID,1,"double",OP_READ),
+	 op_arg_gbl(&rms,1,"double",OP_INC));
 
+ 
     }
 
     // print iteration history
@@ -420,20 +462,16 @@ int main(int argc, char **argv)
   op_timers(&cpu_t2, &wall_t2);
 
   //output the result dat array to files
-  op_print_dat_to_txtfile(p_q, "out_grid_tile_2loop_op.dat"); //ASCI
-  op_print_dat_to_binfile(p_q, "out_grid_tile_2loop_op.bin"); //Binary
+  op_print_dat_to_txtfile(p_q, "out_grid_tile_unrolled_op.dat"); //ASCI
+  op_print_dat_to_binfile(p_q, "out_grid_tile_unrolled_op.bin"); //Binary
 
   op_timing_output();
   op_printf("Max total runtime = \n%f\n",wall_t2-wall_t1);
-
+  
   FILE* results = fopen (argv[2], "a+");
   fprintf (results, "%f:%f\n", wall_t4-wall_t3, wall_t2-wall_t1); 
   fclose (results);
 
-  FILE* loop_results = fopen (argv[3], "a+");
-  fprintf (loop_results, "%f:%f\n", wall_t4-wall_t3, OP_kernels[2].time); 
-  fclose (loop_results);
-  
   op_exit();
 
   freeInspector (insp);
@@ -441,7 +479,6 @@ int main(int argc, char **argv)
   freeExecutor (exec);
   op_printf ("executor destroyed\n");
   
-  //free(all_edge);
   free(cell);
   free(edge);
   free(ecell);

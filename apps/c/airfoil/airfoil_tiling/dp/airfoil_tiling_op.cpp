@@ -233,22 +233,33 @@ int main(int argc, char **argv)
 
   // initialising and running the inspector
   
-  int nvertices = 1000; // TODO
+  int nvertices = atoi(argv[1]); 
   
   op_printf ("running inspector\n");
   
   
   inspector_t* insp = initInspector (nnode, nvertices, 4);
   partitionAndColor (insp, nnode, pedge->map, nedge*2); // TODO: breaking abstraction
-  
+ 
+  int *colors = insp->p2c;
+  FILE* file_colors = fopen ("colors_computed.txt", "a+");
+  fprintf (file_colors, "Tile size: %d, computed %d colors\n", nvertices, insp->ncolors);
+  int* tiles_per_color = (int*) calloc (insp->ncolors, sizeof(int));
+  for (int b = 0; b < insp->ntiles; b++)
+    tiles_per_color[colors[b]]++;
+  for (int c = 0; c < insp->ncolors; c++)
+    fprintf (file_colors, "  Color %d: %d\n", c, tiles_per_color[c]);
+  free (tiles_per_color);
+  fclose (file_colors);
+ 
   addParLoop (insp, "cells1", ncell, pcell->map, ncell * 4, OP_INDIRECT);
   addParLoop (insp, "edges1", nedge, pedge->map, nedge * 2, OP_INDIRECT);
   addParLoop (insp, "bedges1", nbedge, pbedge->map, nbedge * 2, OP_INDIRECT);
-  addParLoop (insp, "cells2", ncell, pcell->map, ncell * 4, OP_DIRECT);
+  addParLoop (insp, "cells2", ncell, pcell->map, ncell * 4, OP_INDIRECT);
   
   op_printf ("added parallel loops\n");
   
-  if (runInspector (insp, 0) == INSPOP_WRONGCOLOR)
+  if (runInspector (insp, 1) == INSPOP_WRONGCOLOR)
     op_printf ("%s\n", insp->debug);
   else
     op_printf ("coloring went fine\n");

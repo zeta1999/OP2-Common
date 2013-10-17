@@ -2,9 +2,9 @@
 # The following environment variables should be predefined:
 #
 # CUDA_INSTALL_PATH
-PARMETIS_INSTALL_PATH = /apps/parmetis/4.0.2
-# PTSCOTCH_INSTALL_PATH
-# HDF5_INSTALL_PATH
+PARMETIS_INSTALL_PATH=/apps/parmetis/3.1
+PTSCOTCH_INSTALL_PATH=/apps/scotch/5.1.12b
+HDF5_INSTALL_PATH=/apps/hdf5/1.8.5
 #
 OP2_INSTALL_PATH = ../../../../../op2
 OP2_COMPILER = intel
@@ -33,7 +33,7 @@ ifeq ($(OP2_COMPILER),intel)
   CCFLAGS	= -O3 -vec-report -xSSE4.2 -parallel -no-multibyte-chars  #-DCOMM_PERF#-g #-DCOMM_PERF #-DDEBUG
   CPPFLAGS 	= $(CCFLAGS)
   OMPFLAGS	= -openmp -openmp-report2
-  MPICPP	= mpiCC
+  MPICPP	= mpicc
   MPIFLAGS	= $(CPPFLAGS)
 else
 ifeq ($(OP2_COMPILER),pgi)
@@ -64,7 +64,9 @@ NVCCFLAGS	= -O3 -arch=sm_20 -Xptxas=-v -Dlcm=ca -use_fast_math #-g -G -O0
 #
 
 PARMETIS_INC 	= -I$(PARMETIS_INSTALL_PATH)/include/ -DHAVE_PARMETIS
-PARMETIS_LIB    = -L$(PARMETIS_INSTALL_PATH)/lib/ -lmetis
+PARMETIS_LIB    = -L$(PARMETIS_INSTALL_PATH)/lib -lparmetis -lmetis
+
+PARMETIS_TILE_LIB    = -L/apps/parmetis/4.0.2/lib/ -lmetis
 
 PTSCOTCH_INC 	= -I$(PTSCOTCH_INSTALL_PATH)/include -DHAVE_PTSCOTCH
 PTSCOTCH_LIB 	= -L$(PTSCOTCH_INSTALL_PATH)/lib/ -lptscotch \
@@ -123,7 +125,7 @@ airfoil_tile_openmp:	airfoil_tiling_op.cpp airfoil_kernels.cpp \
 		bres_calc_kernel.cpp  bres_calc.h \
 		update_kernel.cpp     update.h    \
                 Makefile
-		$(CPP) $(VAR) $(CPPFLAGS) $(OMPFLAGS) $(OP2_INC) $(TILE_INC) $(OP2_LIB) $(PARMETIS_LIB)  airfoil_tiling_op.cpp airfoil_kernels.cpp -lop2_st -lm -lmetis -lop2_openmp -o airfoil_tile_openmp
+		$(CPP) $(VAR) $(CPPFLAGS) $(OMPFLAGS) $(OP2_INC) $(TILE_INC) $(OP2_LIB) $(PARMETIS_TILE_LIB)  airfoil_tiling_op.cpp airfoil_kernels.cpp -lop2_st -lm -lmetis -lop2_openmp -o airfoil_tile_openmp
 
 airfoil_tile_1loop_openmp:	airfoil_tiling_1loop_op.cpp airfoil_kernels.cpp \
 		save_soln_kernel.cpp  save_soln.h \
@@ -132,7 +134,7 @@ airfoil_tile_1loop_openmp:	airfoil_tiling_1loop_op.cpp airfoil_kernels.cpp \
 		bres_calc_kernel.cpp  bres_calc.h \
 		update_kernel.cpp     update.h    \
                 Makefile
-		$(CPP) $(VAR) $(CPPFLAGS) $(OMPFLAGS) $(OP2_INC) $(TILE_INC) $(OP2_LIB) $(PARMETIS_LIB) airfoil_tiling_1loop_op.cpp airfoil_kernels.cpp -lop2_st -lm -lmetis -lop2_openmp -o airfoil_tile_1loop_openmp
+		$(CPP) $(VAR) $(CPPFLAGS) $(OMPFLAGS) $(OP2_INC) $(TILE_INC) $(OP2_LIB) $(PARMETIS_TILE_LIB) airfoil_tiling_1loop_op.cpp airfoil_kernels.cpp -lop2_st -lm -lmetis -lop2_openmp -o airfoil_tile_1loop_openmp
 
 airfoil_tile_2loop_openmp:	airfoil_tiling_2loop_op.cpp airfoil_kernels.cpp \
 		save_soln_kernel.cpp  save_soln.h \
@@ -141,7 +143,7 @@ airfoil_tile_2loop_openmp:	airfoil_tiling_2loop_op.cpp airfoil_kernels.cpp \
 		bres_calc_kernel.cpp  bres_calc.h \
 		update_kernel.cpp     update.h    \
                 Makefile
-		$(CPP) $(VAR) $(CPPFLAGS) $(OMPFLAGS) $(OP2_INC) $(TILE_INC) $(OP2_LIB) $(PARMETIS_LIB) airfoil_tiling_2loop_op.cpp airfoil_kernels.cpp -lop2_st -lm -lmetis -lop2_openmp -o airfoil_tile_2loop_openmp
+		$(CPP) $(VAR) $(CPPFLAGS) $(OMPFLAGS) $(OP2_INC) $(TILE_INC) $(OP2_LIB) $(PARMETIS_TILE_LIB) airfoil_tiling_2loop_op.cpp airfoil_kernels.cpp -lop2_st -lm -lmetis -lop2_openmp -o airfoil_tile_2loop_openmp
 
 airfoil_tile_3loop_openmp:      airfoil_tiling_3loop_op.cpp airfoil_kernels.cpp \
 		save_soln_kernel.cpp  save_soln.h \
@@ -150,7 +152,16 @@ airfoil_tile_3loop_openmp:      airfoil_tiling_3loop_op.cpp airfoil_kernels.cpp 
 		bres_calc_kernel.cpp  bres_calc.h \
 		update_kernel.cpp     update.h    \
 		Makefile
-		$(CPP) $(VAR) $(CPPFLAGS) $(OMPFLAGS) $(OP2_INC) $(TILE_INC) $(OP2_LIB) $(PARMETIS_LIB) airfoil_tiling_3loop_op.cpp airfoil_kernels.cpp -lop2_st -lm -lmetis -lop2_openmp -o airfoil_tile_3loop_openmp
+		$(CPP) $(VAR) $(CPPFLAGS) $(OMPFLAGS) $(OP2_INC) $(TILE_INC) $(OP2_LIB) $(PARMETIS_TILE_LIB) airfoil_tiling_3loop_op.cpp airfoil_kernels.cpp -lop2_st -lm -lmetis -lop2_openmp -o airfoil_tile_3loop_openmp
+
+airfoil_tile_unrolled:	airfoil_tiling_op.cpp airfoil_kernels.cpp \
+		save_soln_kernel.cpp  save_soln.h \
+		adt_calc_kernel.cpp   adt_calc.h  \
+		res_calc_kernel.cpp   res_calc.h  \
+		bres_calc_kernel.cpp  bres_calc.h \
+		update_kernel.cpp     update.h    \
+                Makefile
+		$(CPP) $(VAR) $(CPPFLAGS) $(OMPFLAGS) $(OP2_INC) $(TILE_INC) $(OP2_LIB) $(PARMETIS_TILE_LIB)  airfoil_tiling_unrolled_op.cpp airfoil_kernels.cpp -lop2_st -lm -lmetis -lop2_openmp -o airfoil_tile_unrolled
 
 airfoil_openmp_times: loop_times_airfoil_op.cpp airfoil_kernels.cpp \
 		save_soln_kernel.cpp  save_soln.h \
@@ -170,6 +181,7 @@ airfoil_tile_2loop_openmp_times: loop_times_airfoil_tiling_2loop_op.cpp airfoil_
                 update_kernel.cpp     update.h    \
                 Makefile
 		$(CPP) $(VAR) $(CPPFLAGS) $(OMPFLAGS) $(OP2_INC) $(TILE_INC) $(OP2_LIB) $(PARMETIS_LIB) loop_times_airfoil_tiling_2loop_op.cpp airfoil_kernels.cpp -lop2_st -lm -lmetis -lop2_openmp -o loop_times_airfoil_tile_2loop_openmp
+
 
 #
 # CUDA version using kernel files generated by op2.m
@@ -197,7 +209,6 @@ airfoil_kernels_cu.o:	airfoil_kernels.cu      \
 airfoil_mpi: airfoil_mpi.cpp save_soln.h adt_calc.h res_calc.h bres_calc.h Makefile
 	$(MPICPP) $(MPIFLAGS) $(OP2_INC) $(PARMETIS_INC) $(PTSCOTCH_INC) \
 	$(OP2_LIB) airfoil_mpi.cpp -lop2_mpi $(PARMETIS_LIB) $(PTSCOTCH_LIB) -o airfoil_mpi
-
 
 #
 # mpi with openmp-nodes version
@@ -247,4 +258,4 @@ test_tile: testTile.c
 #
 
 clean:
-		rm -f airfoil_seq airfoil_openmp airfoil_openmp_unstaged airfoil_cuda airfoil_mpi airfoil_mpi_cuda airfoil_mpi_openmp airfoil_tile_seq airfoil_tile_openmp airfoil_tile_2loop_openmp airfoil_tile_3loop_openmp airfoil_tile_2loop_seq airfoil_tile_1loop_seq airfoil_tile_1loop_openmp *.o
+		rm -f airfoil_seq airfoil_openmp airfoil_openmp_unstaged airfoil_cuda airfoil_mpi airfoil_mpi_cuda airfoil_mpi_openmp airfoil_tile_seq airfoil_tile_openmp airfoil_tile_2loop_openmp airfoil_tile_3loop_openmp airfoil_tile_2loop_seq airfoil_tile_1loop_seq airfoil_tile_1loop_openmp airfoil_mpi airfoil_mpi_unstaged airfoil_openmp_unstaged *.o

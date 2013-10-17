@@ -10,9 +10,16 @@
 #include "inspector.h"
 #include "invert.h"
 
+/* C++ headers for constructing the k-distant mesh
+ * 
+ */
+#include <iostream>
+#include <algorithm>
+#include <set>
+#include <vector>
 
 static int kDistantMesh (int k, int nvertices, const int* p2v, const int* v2v, const int* v2v_offset,
-                         int nparts, const int* partSize, const int* v2p, int** new_v2e,
+                         int nparts, const int* partSize, /*const int* v2p*/ int* v2p, int** new_v2e,
                          int** new_v2e_size, int* new_size);
 static int checkColor (loop_t *loop, const int *color, const int *partition, const int *verticesColor,
                        const int *verticesPartition, const int *verticesAdjColor,
@@ -426,7 +433,6 @@ int runInspector (inspector_t* insp, int baseSetIndex)
     
 #if (DEBUG > 1)
     printColoring (insp, startLoop, workLoopColor, workLoopPartition, workVertices, workVerticesPartition, verticesAdjacentColor, verticesAdjacentPartition);
-#endif
     
     // 4) check coloring
     int coloring = checkColor (startLoop, workLoopColor, workLoopPartition, workVertices, workVerticesPartition, verticesAdjacentColor, verticesAdjacentPartition, inserted, insp->incidence, insp->p2v);
@@ -436,7 +442,6 @@ int runInspector (inspector_t* insp, int baseSetIndex)
       return INSPOP_WRONGCOLOR;
     }
 
-#if (DEBUG > 1)
     for (int i = 0; i < insp->size * insp->incidence; i++)
     {
       verticesAdjacentColor[i] = -1;
@@ -506,7 +511,6 @@ int runInspector (inspector_t* insp, int baseSetIndex)
     
 #if (DEBUG > 1)
     printColoring (insp, startLoop, workLoopColor, workLoopPartition, workVertices, workVerticesPartition, verticesAdjacentColor, verticesAdjacentPartition);
-#endif
     
     // 4) check coloring
     int coloring = checkColor (startLoop, workLoopColor, workLoopPartition, workVertices, workVerticesPartition, verticesAdjacentColor, verticesAdjacentPartition, inserted, insp->incidence, insp->p2v);
@@ -516,7 +520,6 @@ int runInspector (inspector_t* insp, int baseSetIndex)
       return INSPOP_WRONGCOLOR;
     }
     
-#if (DEBUG > 1)
     for (int i = 0; i < insp->size * insp->incidence; i++)
     {
       verticesAdjacentColor[i] = -1;
@@ -628,10 +631,10 @@ int partitionAndColor (inspector_t* insp, int vertices, int* e2v, int mapsize)
   
   // create a k-distant mesh
   int totSize;
-  int* new_v2e, *new_v2e_size;
-  kDistantMesh (insp->nloops + 2, vertices, p2v, adjncy, v2e_offset, insp->ntiles, insp->partSize,
+  int* new_v2e, *new_v2e_size; 
+  kDistantMesh (insp->nloops /*+ 2*/, vertices, p2v, adjncy, v2e_offset, insp->ntiles, insp->partSize,
                       v2p, &new_v2e, &new_v2e_size, &totSize);
-  
+ 
   int repeat = 1;
   int ncolor = 0;
   int ncolors = 0;
@@ -704,7 +707,7 @@ int partitionAndColor (inspector_t* insp, int vertices, int* e2v, int mapsize)
   //useful for executor
   insp->ncolors = ncolors;
   insp->p2c = colors; 
-
+  
   // create a mapping from the original base set to the new positions in the renumbered base set. This is useful to renumber all mapppings in game.
   int* mappingFunction = (int*) malloc (insp->size * sizeof(int));
   baseMapping (insp->p2v, insp->size, mappingFunction);
@@ -781,26 +784,301 @@ static void findAdjacentPartitions (int part, int vertex, int distance, int* new
   *new_v2e_size = offset;
 }
 
+
 static int kDistantMesh (int distance, int nvertices, const int* p2v, const int* v2v,
-                         const int* v2v_offset, int nparts, const int* partSize, const int* v2p,
+                         const int* v2v_offset, int nparts, const int* partSize, int* v2p, /*const int* v2p,*/
                          int** new_v2e, int** new_v2e_size, int* new_size)
 {
+//#define EXP_ALG
+#ifdef EXP_ALG
   // allocate array for the new mesh to be stored
   int max_incidence = nparts; // worst case
   int* _new_v2v_size = (int*) calloc (nparts, sizeof(int));
   int* _new_v2v_offsets = (int*) calloc (nparts + 1, sizeof(int));
   int* _new_v2v = (int*) malloc (sizeof(int)*nparts*max_incidence);
-  
+#endif
+
   int prev_offset = 0, next_offset = 0;
   int totSize = 0;
-  
+ 
+
   // set global const variables
   __k = distance;
   __v2v = v2v;
   __v2v_offset = v2v_offset;
   __v2p = v2p;
+/*
+  int ccc = 0;
+  for (int i = 0; i < nvertices; i++)
+    if (v2p[i] == NULL) {ccc++; printf(" %d ", i);}
+  printf("\n %d \n", ccc);
+  //getchar();
+*/
+#ifdef EXP_ALG
   
   // for each partition - TODO: parallelize openmp
+  
+  // compute the partition sizes
+  int* part_offset = (int*) calloc (nparts + 1, sizeof(int));
+  for (int b = 0; b < nparts; b++)
+    part_offset[b+1] = part_offset[b] + partSize[b];
+
+  #pragma omp parallel for private(prev_offset, next_offset) reduction(+:totSize)
+  for (int b = 0; b < nparts; b++)
+  {
+    /*
+    prev_offset = next_offset;
+    
+    //adjusts offsets of partitions
+    if (prev_offset + partSize[b] >= nvertices) // last partition can be smaller than partition size
+      next_offset = nvertices;
+    else
+      next_offset = prev_offset + partSize[b];
+    */
+    
+    prev_offset = part_offset[b];
+    next_offset = part_offset[b+1];
+    // for each vertex in a partition 
+    for (int i = prev_offset; i < next_offset; i++)
+    {
+      // We do this only on vertices which are on the border
+      int vertex = p2v[i];
+      int bound = v2v_offset[vertex + 1] - v2v_offset[vertex];
+      for (int j = 0; j < bound; j++)
+      {
+	int examined_neighbour = v2v[v2v_offset[vertex] + j];
+        if (v2p[examined_neighbour] != b) 
+	{
+          // Recursively, up to the desired distance
+          findAdjacentPartitions (b, p2v[i], 0, &_new_v2v[nparts*b], &_new_v2v_size[b]);
+          break;
+	}
+      }
+    }
+    
+    totSize += _new_v2v_size[b];
+    //_new_v2v_offsets[b + 1] = _new_v2v_offsets[b] + _new_v2v_size[b];
+  }
+
+  for (int b = 0; b < nparts; b++)
+    _new_v2v_offsets[b + 1] = _new_v2v_offsets[b] + _new_v2v_size[b];
+  
+  // create the actual new_v2e mapping from the current new_v2v mapping
+  int* new_mesh = (int*) malloc (sizeof(int)*totSize);
+
+  // the edge map is for establishing unique edge ids
+  int** edge_map = (int**) malloc (sizeof(int*)*nparts);
+  for (int i = 0; i < nparts; i++)
+    edge_map[i] = (int*) malloc (sizeof(int)*nparts);
+
+  for (int b = 0, i = 0; b < nparts; b++)
+  {	   
+    int nedges = _new_v2v_size[b];
+    for (int e = 0; e < nedges; e++, i++)
+    {
+      int target_b = _new_v2v[nparts*b + e];
+      if (b < target_b) //writes the id
+      {
+        edge_map[b][target_b] = i;
+        new_mesh[_new_v2v_offsets[b] + e] = i;
+      }
+      else
+      {
+        new_mesh[_new_v2v_offsets[b] + e] = edge_map[target_b][b];
+      }
+    } 
+  }
+  
+  // return values
+  *new_size = totSize;
+  *new_v2e = new_mesh;
+  *new_v2e_size = _new_v2v_size; //v2v.size == v2e.size
+#else
+
+  // each border vertex has a couple of sets:
+  // old - neighbours found in the previous sweep
+  // new - neighbours being found in the present sweep
+  typedef struct {
+    std::set<int> oldset;
+    std::set<int> newset;
+  } vertex_sets;
+  
+  vertex_sets *v_sets = new vertex_sets[nvertices];
+
+  // add local partition's ID
+  #pragma omp parallel for schedule(static)
+  for (int i = 0; i < nvertices; i++)
+    v_sets[i].oldset.insert (v2p[i]);
+
+  // compute the k-distant v2v array
+  for (int k = 0; k < distance; k++)
+  {
+    #pragma omp parallel for schedule(static)
+    for (int i = 0; i < nvertices; i++)
+    {
+      // examine the neighboroud of each vertex
+      //int vertex = v2v[i];
+      int bound = v2v_offset[i + 1] - v2v_offset[i];
+      //vertex_sets *c_sets = &v_sets[vertex];
+      for (int j = 0; j < bound; j++)
+      {
+	// get neighbour set and compute union
+        vertex_sets n_sets = v_sets[v2v[v2v_offset[i] + j]];
+        v_sets[i].newset.insert (n_sets.oldset.begin(), n_sets.oldset.end());
+      }
+    }
+  /*  
+    for (int i = 0; i < nvertices; i++) {
+      printf("vertex %d of partition %d has the newset: ",i, v2p[i]);    
+      for (std::set<int>::iterator it = v_sets[i].newset.begin(); it != v_sets[i].newset.end(); ++it)
+      {
+	    printf(" %d , ",*it);
+      }
+    printf("\n");
+    //printf ("v2p[0] = %d\n", v2p[i]);
+    getchar();
+    }
+    printf("I'm out\n"); 
+    getchar();
+*/
+    // exchange old and new sets
+    #pragma omp parallel for schedule(static)
+    for (int i = 0; i < nvertices; i++) 
+      v_sets[i].oldset.insert(v_sets[i].newset.begin(), v_sets[i].newset.end());
+  }
+
+  // each vertex eliminates itself from its v2v set
+  #pragma omp parallel for schedule(static)
+  for (int i = 0; i < nvertices; i++)
+    v_sets[i].oldset.erase (v2p[i]);
+  
+  // the edge map is for establishing unique edge ids
+  // it's gonna be a triangular matrix. Doing it for simplicity.
+  int** edge_map = (int**) malloc (sizeof(int*)*nparts);
+  for (int i = 0; i < nparts; i++)
+    edge_map[i] = (int*) malloc (sizeof(int)*nparts);
+  
+  // build the adjacency matrix
+  for (int k = 0, i = 0; i < nparts; i++) 
+  {
+    for (int j = 0; j < nparts; j++)
+    {
+      if (i < j)
+        edge_map[i][j] = k++;
+      else
+	edge_map[i][j] = edge_map[j][i];
+    }
+  }
+
+  prev_offset = 0, next_offset = 0;
+
+  // compute the union set of all the partitions
+  std::set<int> union_sets [nparts];
+  for (int b = 0; b < nparts; b++)
+  {
+    prev_offset = next_offset;
+
+    // adjust offsets of partitions
+    if (prev_offset + partSize[b] >= nvertices) // last partition can be smaller than partition size
+      next_offset = nvertices;
+    else
+      next_offset = prev_offset + partSize[b];
+
+    // compute the union inside a specific partition 
+    for (int i = prev_offset; i < next_offset; i++){
+      union_sets[b].insert (v_sets[p2v[i]].oldset.begin(), v_sets[p2v[i]].oldset.end());
+    }
+  }
+
+/*
+  for (int b = 0; b < nparts; b++)
+  {
+     
+      printf("partition %d: ", b);    
+      for (std::set<int>::iterator it = union_sets[b].begin(); it != union_sets[b].end(); ++it)
+      {
+	    printf(" %d, ",*it);
+      }
+      printf ("\n");
+  }
+*/
+
+  // compute the offsets inside union_sets
+  int* union_sets_offset = (int*) calloc (nparts + 1, sizeof(int));
+  union_sets_offset[0] = 0;
+  int* union_sets_sizes = (int*) calloc (nparts, sizeof(int));
+
+  for (int b = 0; b < nparts; b++)
+  {
+    union_sets_offset[b + 1] += (union_sets_offset[b] + union_sets[b].size());
+    union_sets_sizes[b] = union_sets[b].size();
+  }
+  totSize = union_sets_offset[nparts];
+
+  // create the actual new_v2e mapping from the current new_v2v mapping
+  int* new_mesh = (int*) malloc (sizeof(int)*totSize); 
+  //printf ("totsize = %d\n", totSize);
+  
+  #pragma omp parallel for schedule(static)
+  for (int b = 0; b < nparts; b++)
+  {
+    //std::set<int> union_set = union_sets[b];
+    int e = 0;
+    for (std::set<int>::iterator it = union_sets[b].begin(); it != union_sets[b].end(); ++it, e++)
+    {
+      int target_b = *it;
+      //printf ("(b, target_b) = (%d, %d)\n", b, target_b);
+      new_mesh[union_sets_offset[b] + e] = (b < target_b) ? edge_map[b][target_b] : edge_map[target_b][b];
+    } 
+  }
+
+  // return values
+  *new_size = totSize;
+  *new_v2e = new_mesh;
+  *new_v2e_size = union_sets_sizes;
+#endif
+
+#if (DEBUG > 0)
+  printf ("printing the new mesh\n");
+  printf ("offsets are: \n  ");
+  for (int b = 0; b < nparts; b++)
+    printf ("%d, ", union_sets_sizes[b]);
+  printf("\n");
+  for (int b = 0; b < nparts; b++)
+  {
+    printf ("Tile %d - NEdges: %d\n  ", b, union_sets_sizes[b]);
+    for (int e = 0; e < union_sets_sizes[b]; e++)
+    {
+      printf ("%d ", new_mesh[nparts*b + e]);
+    }
+    printf("\n");
+  }
+#endif
+
+  // free memory
+  for (int i = 0; i < nparts; i++)
+    free (edge_map[i]);
+  free (edge_map);
+
+#ifdef EXP_ALG
+  free (_new_v2v);
+  free (_new_v2v_offsets);
+  free (part_offset);
+#endif
+
+  return 0;
+}
+
+/*
+findBorderVertices()
+{
+  // find vertices on the border
+  // offset array
+  int* p2bv_offset = (int*) calloc (nparts + 1, sizeof(int));
+  p2bv_offset[0] = 0;
+  // indirection from parts to border vertices
+  int* p2bv = (int*) malloc (sizeof(int)*nvertices);
+  int tot_border_vertices = 0;
   for (int b = 0; b < nparts; b++)
   {
     prev_offset = next_offset;
@@ -815,82 +1093,32 @@ static int kDistantMesh (int distance, int nvertices, const int* p2v, const int*
     for (int i = prev_offset; i < next_offset; i++)
     {
       int vertex = p2v[i];
-      
-      // if it is not on the partition border, skip it
-      int border = 0;
-      for (int j = 0; j < v2v_offset[vertex+1] - v2v_offset[vertex]; j++)
+      int bound = v2v_offset[vertex + 1] - v2v_offset[vertex];
+      for (int j = 0; j < bound; j++)
       {
-        if (v2p[v2v[v2v_offset[vertex]+j]] != b)
-        {
-          border = 1;
-          break;
-        }
+	int examined_neighbour = v2v[v2v_offset[vertex] + j];
+        if (v2p[examined_neighbour] != b) 
+	{
+          p2bv[prev_offset + p2bv_offset[b + 1]] = vertex;
+	  p2bv_offset[b + 1]++;
+	  tot_border_vertices++;
+	  break;
+	}
       }
-      
-      // Recursively, up to the desired distance
-      if (border)
-        findAdjacentPartitions (b, vertex, 0, &_new_v2v[nparts*b], &_new_v2v_size[b]);
     }
-    
-    totSize += _new_v2v_size[b];
-    _new_v2v_offsets[b + 1] = _new_v2v_offsets[b] + _new_v2v_size[b];
   }
 
-#if (DEBUG > 0)
-  printf ("printing the partition-layered mesh\n");
-  printf ("offsets are: \n  ");
+  // compute the actual offsets
   for (int b = 0; b < nparts; b++)
-    printf ("%d, ", _new_v2v_size[b]);
-  printf("\n");
+    p2bv_offset[b + 1] += p2bv_offset[b];
+
+  border_sets bsets [tot_border_vertices];
+  // initialise border vertices
   for (int b = 0; b < nparts; b++)
   {
-    printf ("Tile %d - NEdges: %d\n  ", b, _new_v2v_size[b]);
-    for (int e = 0; e < _new_v2v_size[b]; e++)
-    {
-      printf ("%d ", _new_v2v[nparts*b + e]);
-    }
-    printf("\n");
+    int border_partSize = p2bv_offset[b + 1] - p2bv_offset[b];
+    for (int i = 0; i < border_partSize; i++) 
+      bsets[p2bv_offset[b] + i].oldset.push_back (b);
   }
-#endif
-  
-  // create the actual new_v2e mapping from the current new_v2v mapping
-  int* new_mesh = (int*) malloc (sizeof(int)*totSize);
-  // the edge map is for establishing unique edge ids
-  // it's gonna be a triangular matrix. Doing it for simplicity. TODO: improve it
-  int** edge_map = (int**) malloc (sizeof(int*)*nparts);
-  for (int i = 0; i < nparts; i++)
-    edge_map[i] = (int*) malloc (sizeof(int)*nparts);
-  
-  for (int i = 0, b = 0; b < nparts; b++)
-  {
-    int nedges = _new_v2v_size[b];
-    for (int e = 0; e < nedges; e++, i++)
-    {
-      int target_b = _new_v2v[nparts*b + e];
-      if (b < target_b) //writes the id
-      {
-        edge_map[b][target_b] = i;
-        new_mesh[_new_v2v_offsets[b] + e] = i;
-      }
-      else
-      {
-        new_mesh[_new_v2v_offsets[b] + e] = edge_map[target_b][b];
-      }
-    }
-  }
-  
-  // free memory
-  free (_new_v2v);
-  for (int i = 0; i < nparts; i++)
-    free (edge_map[i]);
-  free (edge_map);
-  free (_new_v2v_offsets);
-  
-  // return values
-  *new_size = totSize;
-  *new_v2e = new_mesh;
-  *new_v2e_size = _new_v2v_size; //v2v.size == v2e.size
-  return 0;
 }
-
-
+*/
