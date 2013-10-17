@@ -139,7 +139,7 @@ int main(int argc, char **argv)
   op_printf("reading in grid \n");
 
   FILE *fp;
-  if ( (fp = fopen("./new_grid.dat","r")) == NULL) {
+  if ( (fp = fopen("/home/e160/e160/gb308/work/OP2-Common/apps/c/airfoil/airfoil_tiling/dp/new_grid.dat","r")) == NULL) {
     op_printf("can't open file new_grid.dat\n"); exit(-1);
   }
 
