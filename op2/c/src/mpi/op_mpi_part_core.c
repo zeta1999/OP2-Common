@@ -3519,13 +3519,35 @@ void partition(const char* lib_name, const char* lib_routine,
   for (int m = 0; m<OP_map_index; m++) {
     op_map map = OP_map_list[m];
     int set_size = map->from->size+map->from->exec_size;
-    map->map_d = (int *)malloc(map->dim*set_size*sizeof(int));
+    int set_size2 = ((map->from->size+map->from->exec_size-1)/16+1)*16; //align to 512 bits
+    map->map_d = (int *)malloc(map->dim*set_size2*sizeof(int));
     for (int i = 0; i < map->dim; i++) {
       for (int j = 0; j < set_size; j++) {
-        map->map_d[i*set_size + j] = map->map[map->dim*j+i];
+        map->map_d[i*set_size2 + j] = map->map[map->dim*j+i];
       }
     }
   }
+  
+  /*int set_size = set->size + OP_import_exec_list[set->index]->size +
+  OP_import_nonexec_list[set->index]->size;
+
+  TAILQ_FOREACH(item, &OP_dat_list, entries) {
+    op_dat dat = item->dat;
+    op_set set = dat->set;
+    int size_pad = ((set->size+set->exec_size+set->nonexec_size)*(dat->size/dat->dim)-1)/64+1)*64; //pad to 512 bits
+    int set_size = set->size+set->exec_size+set->nonexec_size;
+    dat->data_d = (char *)malloc(dat->dim*size_pad*sizeof(char));
+    int element_size = dat->size/dat->dim;
+    for (int i = 0; i < dat->dim; i++) {
+      for (int j = 0; j < set_size; j++) {
+        for (int c = 0; c < element_size; c++) {
+          temp_data[i*size_pad + element_size*j + c] = dat->data[dat->size*j+element_size*i+c];
+        }
+      }
+    }
+  }*/
+
+    
 
 #ifdef DEBUG //sanity check to identify if the partitioning results in ophan elements
   int ctr = 0;

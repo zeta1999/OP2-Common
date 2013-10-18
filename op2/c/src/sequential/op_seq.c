@@ -52,10 +52,11 @@ op_map op_decl_map ( op_set from, op_set to, int dim, int * imap, char const * n
 {
   op_map map = op_decl_map_core ( from, to, dim, imap, name );
   int set_size = map->from->size+map->from->exec_size;
-  map->map_d = (int *)malloc(map->dim*set_size*sizeof(int));
+  int set_size2 = ((map->from->size+map->from->exec_size-1)/16+1)*16; //align to 512 bits
+  map->map_d = (int *)malloc(map->dim*set_size2*sizeof(int));
   for (int i = 0; i < map->dim; i++) {
     for (int j = 0; j < set_size; j++) {
-      map->map_d[i*set_size + j] = map->map[map->dim*j+i];
+      map->map_d[i*set_size2 + j] = map->map[map->dim*j+i];
     }
   }
   return map;

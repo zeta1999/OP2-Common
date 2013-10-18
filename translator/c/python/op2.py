@@ -45,6 +45,7 @@ from op2_gen_cuda_simple_hyb import op2_gen_cuda_simple_hyb
 =======
 from op2_gen_openmp import op2_gen_openmp
 from op2_gen_seq import op2_gen_seq
+from op2_gen_seq_vector import op2_gen_seq_vector
 from op2_gen_cuda import op2_gen_cuda
 
 >>>>>>> OPtimised seq and omp code generators, transposed maps
