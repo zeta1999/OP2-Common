@@ -264,11 +264,19 @@ def op2_gen_seq_vector(master, date, consts, kernels):
     fid.close()
     text = text.replace(name,name+'_vec')
     if has_doubles:
-      text = text.replace('double','doublev')
-      text = text.replace('int','intv_half')
+      for g_m in range(0,nargs):
+        if typs[g_m] == 'double':
+          text = re.sub('\\bdouble\\b','doublev',text);
+        elif typs[g_m] == 'float':
+          text = re.sub('\\bfloat\\b','floatv_half',text);
+        elif typs[g_m] == 'int':
+          text = re.sub('\\bint\\b','intv_half',text);
     else:
-      text = text.replace('float','floatv')
-      text = text.replace('int','intv')
+      for g_m in range(0,nargs):
+        if typs[g_m] == 'float':
+          text = re.sub('\\bfloat\\b','floatv_half',text);
+        elif typs[g_m] == 'int':
+          text = re.sub('\\bint\\b','intv_half',text);
     file_text = file_text + text
 ##########################################################################
 # then C++ stub function

@@ -121,6 +121,12 @@ int op_free_dat_temp_char ( op_dat dat );
 /* Implementation */
 
 template < class T >
+inline T select(bool condition, T if_true, T if_false)
+{
+  return condition ? if_true : if_false;
+}
+
+template < class T >
 op_dat op_decl_dat ( op_set set, int dim, char const *type,
                      T * data, char const * name )
 {

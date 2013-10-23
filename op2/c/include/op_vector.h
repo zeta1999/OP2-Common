@@ -35,6 +35,9 @@
 
 #include "dvec.h"
 
+#define set_m128r(lo,hi) _mm256_set_m128(hi,lo)
+  //_mm256_insertf128_ps(_mm256_castps128_ps256(lo),(hi),1)
+
 class Vec4i : public Is32vec4
 {
 public:
@@ -71,6 +74,11 @@ public:
 static inline Vec4i operator *(const Vec4i &a, const Vec4i &b) {return  _mm_mullo_epi32(a,b);}
 static inline Vec4i operator *(const int &a, const Vec4i &b) {return Vec4i(a)*b;}
 
+typedef Vec4i Vec4i_logical;
+static inline Vec4i_logical operator == (Vec4i const & a, Vec4i const & b) {
+    return _mm_cmpeq_epi32(a, b);
+}
+
 class Vec4d : public F64vec4
 {
 public:
@@ -103,6 +111,25 @@ public:
   }
 };
 
+class Vec4d_logical : public Vec4d
+{
+public:
+  Vec4d_logical() {};
+  Vec4d_logical(__m256d const & x) {vec = x;}
+  Vec4d_logical(Vec4i_logical const &x) {
+      __m128 blo = _mm_castsi128_ps(_mm_setr_epi32((int)x[0], (int)x[0], (int)x[1], (int)x[1]));
+      __m128 bhi = _mm_castsi128_ps(_mm_setr_epi32((int)x[2], (int)x[2], (int)x[3], (int)x[3]));
+      vec = _mm256_castps_pd(set_m128r(bhi,blo));
+  }
+  Vec4d_logical & operator = (__m256d const & x) {
+      vec = x;
+      return *this;
+  }
+  operator __m256d() const {
+      return vec;
+  }
+};
+
 static inline Vec4d operator +(const double &a, const Vec4d &b) { return Vec4d(a)+b; }
 static inline Vec4d operator -(const double &a, const Vec4d &b) { return Vec4d(a)-b; }
 static inline Vec4d operator *(const double &a, const Vec4d &b) { return Vec4d(a)*b; }
@@ -113,11 +140,9 @@ static inline void store_a(const Vec4d &d, double *p) {_mm256_store_pd(p,d);}
 static inline void store_stride(const Vec4d &d, double *p, const int &stride) {p[0] = d[0]; p[stride] = d[1]; p[2*stride] = d[2]; p[3*stride] = d[3];}
 static inline void store_scatter(const Vec4d &d, double *p, const Vec4i &idx, const int &offset) {p[idx[0]+offset] = d[0]; p[idx[1]+offset] = d[1]; p[idx[2]+offset] = d[2]; p[idx[3]+offset] = d[3];}
 static inline void store_scatter_add(const Vec4d &d, double *p, const Vec4i &idx, const int &offset) {p[idx[0]+offset] += d[0]; p[idx[1]+offset] += d[1]; p[idx[2]+offset] += d[2]; p[idx[3]+offset] += d[3];}
-static inline Vec4d select(const Vec4i &mask, const Vec4d &a, const Vec4d &b) {
-  __m128 blo = _mm_castsi128_ps(_mm_setr_epi32(-mask[3], -mask[3], -mask[2], -mask[2]));
-  __m128 bhi = _mm_castsi128_ps(_mm_setr_epi32(-mask[1], -mask[1], -mask[0], -mask[0]));
-  __m256d mask1 = _mm256_castps_pd(_mm256_insertf128_ps(_mm256_castps128_ps256(bhi),(blo),1));
-  return _mm256_blendv_pd(b,a,mask1);
+
+static inline Vec4d select(const Vec4d_logical &mask, const Vec4d &a, const Vec4d &b) {
+  return _mm256_blendv_pd(b, a, mask);
 }
 typedef Vec4i intv_half;
 typedef Vec4d doublev;
