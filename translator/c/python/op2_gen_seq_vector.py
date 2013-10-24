@@ -274,9 +274,9 @@ def op2_gen_seq_vector(master, date, consts, kernels):
     else:
       for g_m in range(0,nargs):
         if typs[g_m] == 'float':
-          text = re.sub('\\bfloat\\b','floatv_half',text);
+          text = re.sub('\\bfloat\\b','floatv',text);
         elif typs[g_m] == 'int':
-          text = re.sub('\\bint\\b','intv_half',text);
+          text = re.sub('\\bint\\b','intv',text);
     file_text = file_text + text
 ##########################################################################
 # then C++ stub function
@@ -378,7 +378,10 @@ def op2_gen_seq_vector(master, date, consts, kernels):
 
       for g_m in range(0,nargs):
         if maps[g_m] == OP_MAP and dims[g_m]>1:
-          code('intv_half mapidx;')
+          if has_doubles:
+            code('intv_half mapidx;')
+          else:
+            code('intv mapidx;')
           break
 
       for g_m in range(0,nargs):
