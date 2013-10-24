@@ -62,6 +62,7 @@ float gam, gm1, cfl, eps, mach, alpha, qinf[4];
 //
 
 #include "op_seq.h"
+
 #include "op_lib_mpi.h"
 
 //

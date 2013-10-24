@@ -144,9 +144,131 @@ static inline void store_scatter_add(const Vec4d &d, double *p, const Vec4i &idx
 static inline Vec4d select(const Vec4d_logical &mask, const Vec4d &a, const Vec4d &b) {
   return _mm256_blendv_pd(b, a, mask);
 }
+
+class Vec8i
+{
+protected:
+  Vec4i lo;
+  Vec4i hi;
+public:
+  Vec8i() {}
+  Vec8i(__m128i _lo, __m128i _hi) {lo = _lo; hi = _hi;}
+  Vec8i(int i) {lo = _mm_set1_epi32(i); hi = lo;}
+  Vec8i(int i7, int i6, int i5, int i4, int i3, int i2, int i1, int i0) {lo = Vec4i(i3,i2,i1,i0); hi = Vec4i(i7,i6,i5,i4);}
+  Vec8i(const int *p) {
+    lo = _mm_load_si128((__m128i*) p);
+    hi = _mm_load_si128((__m128i*) (p+4));
+  }
+/*  Vec4i(const int *p, const Vec4i &idx, const int &offset) {
+    vec = _mm_set_epi32(p[idx[3]+offset],p[idx[2]+offset],p[idx[1]+offset],p[idx[0]+offset]);
+  }
+  Vec4i(const int *p, const int &stride) {
+    vec = _mm_set_epi32(p[3*stride],p[2*stride],p[stride],p[0]);
+  }
+*/
+  Vec8i& operator *=(const int &a) { lo = a*lo; hi = a*hi; return *this; }
+
+  const int& operator[](int i) const
+  {
+    if (i < 4) {
+      return lo[i];
+    }
+    else {
+      return hi[i-4];
+    }
+  }
+
+  int& operator[](int i)
+  {
+    if (i < 4) {
+      return lo[i];
+    }
+    else {
+      return hi[i-4];
+    }
+  }
+  const Vec4i& low() const {return lo;}
+  const Vec4i& high() const {return hi;}
+};
+
+static inline Vec8i operator *(const Vec8i &a, const Vec8i &b) {return Vec8i(a.low()*b.low(),a.high()*b.high());}
+static inline Vec8i operator *(const int &a, const Vec8i &b) {return Vec8i(a)*b;}
+
+typedef Vec8i Vec8i_logical;
+static inline Vec8i_logical operator == (Vec8i const & a, Vec8i const & b) {
+    return Vec8i(_mm_cmpeq_epi32(a.low(), b.low()),_mm_cmpeq_epi32(a.high(), b.high()));
+}
+
+
+class Vec8f : public F32vec8
+{
+public:
+  Vec8f() {}
+  Vec8f(__m256 mm) : F32vec8(mm) {}
+  Vec8f(float d) : F32vec8(d) {}
+  Vec8f(const F32vec8 &mm) {vec = mm;}
+  Vec8f(float d7, float d6, float d5, float d4, float d3, float d2, float d1, float d0) : F32vec8(d7, d6, d5, d4, d3, d2, d1, d0) {}
+  Vec8f(const float *p) {
+    vec = _mm256_load_ps(p);
+  }
+  Vec8f(const float *p, const Vec8i &idx, const int &offset) {
+    vec = _mm256_set_ps(p[idx.high()[3]+offset],p[idx.high()[2]+offset],p[idx.high()[1]+offset],p[idx.high()[0]+offset],p[idx.low()[3]+offset],p[idx.low()[2]+offset],p[idx.low()[1]+offset],p[idx.low()[0]+offset]);
+  }
+  Vec8f(const float *p, const int &stride) {
+    vec = _mm256_set_ps(p[7*stride],p[6*stride],p[5*stride],p[4*stride],p[3*stride],p[2*stride],p[stride],p[0]);
+  }
+  Vec8f& operator=(const F32vec8 &a) {vec = a; return *this;}
+
+  const float& operator[](int i) const
+  {
+      float *dp = (float*)&vec;
+      return *(dp+i);
+  }
+
+  float& operator[](int i)
+  {
+      float *dp = (float*)&vec;
+      return *(dp+i);
+  }
+};
+
+class Vec8f_logical : public Vec8f
+{
+public:
+  Vec8f_logical() {};
+  Vec8f_logical(__m256 const & x) {vec = x;}
+  Vec8f_logical(Vec8i_logical const &x) {
+      __m128 blo = _mm_castsi128_ps(_mm_setr_epi32((int)x[0], (int)x[1], (int)x[2], (int)x[3]));
+      __m128 bhi = _mm_castsi128_ps(_mm_setr_epi32((int)x[4], (int)x[5], (int)x[6], (int)x[7]));
+      vec = set_m128r(bhi,blo);
+  }
+  Vec8f_logical & operator = (__m256 const & x) {
+      vec = x;
+      return *this;
+  }
+  operator __m256() const {
+      return vec;
+  }
+};
+
+static inline Vec8f operator +(const float &a, const Vec8f &b) { return Vec8f(a)+b; }
+static inline Vec8f operator -(const float &a, const Vec8f &b) { return Vec8f(a)-b; }
+static inline Vec8f operator *(const float &a, const Vec8f &b) { return Vec8f(a)*b; }
+static inline Vec8f operator /(const float &a, const Vec8f &b) { return Vec8f(a)/b; }
+static inline Vec8f fabs(const Vec8f &a) {return abs(a);}
+
+static inline void store_a(const Vec8f &d, float *p) {_mm256_store_ps(p,d);}
+static inline void store_stride(const Vec8f &d, float *p, const int &stride) {p[0] = d[0]; p[stride] = d[1]; p[2*stride] = d[2]; p[3*stride] = d[3]; p[4*stride] = d[4]; p[5*stride] = d[5]; p[6*stride] = d[6]; p[7*stride] = d[7];}
+static inline void store_scatter(const Vec8f &d, float *p, const Vec8i &idx, const int &offset) {p[idx.low()[0]+offset] = d[0]; p[idx.low()[1]+offset] = d[1]; p[idx.low()[2]+offset] = d[2]; p[idx.low()[3]+offset] = d[3]; p[idx.high()[0]+offset] = d[4]; p[idx.high()[1]+offset] = d[5]; p[idx.high()[2]+offset] = d[6]; p[idx.high()[3]+offset] = d[7];}
+static inline void store_scatter_add(const Vec8f &d, float *p, const Vec8i &idx, const int &offset) {p[idx.low()[0]+offset] += d[0]; p[idx.low()[1]+offset] += d[1]; p[idx.low()[2]+offset] += d[2]; p[idx.low()[3]+offset] += d[3]; p[idx.high()[0]+offset] += d[4]; p[idx.high()[1]+offset] += d[5]; p[idx.high()[2]+offset] += d[6]; p[idx.high()[3]+offset] += d[7];}
+
+static inline Vec8f select(const Vec8f_logical &mask, const Vec8f &a, const Vec8f &b) {
+  return _mm256_blendv_ps(b, a, mask);
+}
 typedef Vec4i intv_half;
 typedef Vec4d doublev;
-//typedef Vec8f floatv;
+typedef Vec8f floatv;
+typedef Vec8i intv;
 
 
 /*
