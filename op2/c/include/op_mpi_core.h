@@ -97,7 +97,7 @@ typedef part_core *part;
 /*******************************************************************************
 * Data structure to hold mpi communications of an op_dat
 *******************************************************************************/
-#define NAMESIZE 20
+#define NAMESIZE 30
 typedef struct{
   //name of this op_dat
   char  name[NAMESIZE];

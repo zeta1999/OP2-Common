@@ -218,7 +218,7 @@ public:
     vec = _mm256_set_ps(p[7*stride],p[6*stride],p[5*stride],p[4*stride],p[3*stride],p[2*stride],p[stride],p[0]);
   }
   Vec8f& operator=(const F32vec8 &a) {vec = a; return *this;}
-
+  
   const float& operator[](int i) const
   {
       float *dp = (float*)&vec;
@@ -238,9 +238,9 @@ public:
   Vec8f_logical() {};
   Vec8f_logical(__m256 const & x) {vec = x;}
   Vec8f_logical(Vec8i_logical const &x) {
-      __m128 blo = _mm_castsi128_ps(_mm_setr_epi32((int)x[0], (int)x[1], (int)x[2], (int)x[3]));
-      __m128 bhi = _mm_castsi128_ps(_mm_setr_epi32((int)x[4], (int)x[5], (int)x[6], (int)x[7]));
-      vec = set_m128r(bhi,blo);
+      __m128 blo = _mm_castsi128_ps(x.low());//_mm_setr_epi32((int)x[0], (int)x[1], (int)x[2], (int)x[3]));
+      __m128 bhi = _mm_castsi128_ps(x.high());//_mm_setr_epi32((int)x[4], (int)x[5], (int)x[6], (int)x[7]));
+      vec = set_m128r(blo,bhi);
   }
   Vec8f_logical & operator = (__m256 const & x) {
       vec = x;
@@ -256,6 +256,8 @@ static inline Vec8f operator -(const float &a, const Vec8f &b) { return Vec8f(a)
 static inline Vec8f operator *(const float &a, const Vec8f &b) { return Vec8f(a)*b; }
 static inline Vec8f operator /(const float &a, const Vec8f &b) { return Vec8f(a)/b; }
 static inline Vec8f fabs(const Vec8f &a) {return abs(a);}
+static inline Vec8f min(const Vec8f &a, const Vec8f &b) {return simd_min(a,b);}
+static inline Vec8f max(const Vec8f &a, const Vec8f &b) {return simd_max(a,b);}
 
 static inline void store_a(const Vec8f &d, float *p) {_mm256_store_ps(p,d);}
 static inline void store_stride(const Vec8f &d, float *p, const int &stride) {p[0] = d[0]; p[stride] = d[1]; p[2*stride] = d[2]; p[3*stride] = d[3]; p[4*stride] = d[4]; p[5*stride] = d[5]; p[6*stride] = d[6]; p[7*stride] = d[7];}
@@ -265,6 +267,17 @@ static inline void store_scatter_add(const Vec8f &d, float *p, const Vec8i &idx,
 static inline Vec8f select(const Vec8f_logical &mask, const Vec8f &a, const Vec8f &b) {
   return _mm256_blendv_ps(b, a, mask);
 }
+static inline Vec8f select_lt(const Vec8f &a, const Vec8f &b, const Vec8f &c, const Vec8f &d) {
+ return _mm256_blendv_ps(d, c, _mm256_cmp_ps(a, b, _CMP_LT_OS));
+}
+
+static inline float min_horizontal(const Vec8f &a)
+{
+    F32vec8 temp = _mm256_min_ps(a, _mm256_permute_ps(a, 0xee));
+    temp = _mm256_min_ps(temp, _mm256_movehdup_ps(temp));
+    return _mm_cvtss_f32(_mm_min_ss(_mm256_castps256_ps128(temp), _mm256_extractf128_ps(temp,1)));
+}
+
 typedef Vec4i intv_half;
 typedef Vec4d doublev;
 typedef Vec8f floatv;
