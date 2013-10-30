@@ -35,6 +35,11 @@
 
 #ifdef MIC
 #include "micvec.h"
+#define VECSIZE 16
+#define VECSIZEH 8
+#else
+#define VECSIZE 8
+#define VECSIZEH 4
 #endif
 
 #include "dvec.h"

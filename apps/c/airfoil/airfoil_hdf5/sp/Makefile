@@ -29,10 +29,10 @@ ifeq ($(OP2_COMPILER),gnu)
 else
 ifeq ($(OP2_COMPILER),intel)
   CPP		= icpc
-  CCFLAGS	= -O3 -vec-report -xAVX -fno-alias -DMPICH_IGNORE_CXX_SEEK -DMPICH_SKIP_MPICXX -inline-forceinline -parallel #-DCOMM_PERF #-DDEBUG
+  CCFLAGS	= -O3 -vec-report -xAVX -fno-alias -inline-forceinline -parallel -DMPICH_IGNORE_CXX_SEEK -DMPICH_SKIP_MPICXX#-DCOMM_PERF #-DDEBUG
   CPPFLAGS 	= $(CCFLAGS)
   OMPFLAGS	= -openmp -openmp-report2
-  MPICPP	= $(MPI_INSTALL_PATH)/bin/mpiCC
+  MPICPP	= mpic++
   MPIFLAGS	= $(CPPFLAGS)
 else
 ifeq ($(OP2_COMPILER),mic)
@@ -92,7 +92,7 @@ PTSCOTCH_LIB 	= -L$(PTSCOTCH_INSTALL_PATH)/lib/ -lptscotch \
                   -L$(PTSCOTCH_INSTALL_PATH)/lib/ -lptscotcherr
 
 HDF5_INC = -I$(HDF5_INSTALL_PATH)/include
-HDF5_LIB = -L$(HDF5_INSTALL_PATH)/lib -lhdf5 
+HDF5_LIB = -L$(HDF5_INSTALL_PATH)/lib -lhdf5 -lz 
 
 
 #

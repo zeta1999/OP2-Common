@@ -1501,7 +1501,7 @@ void op_partition_destroy()
     op_free(OP_part_list[set->index]);
   }
   op_free(OP_part_list);
-  for(int i = 0; i<OP_set_index; i++)op_free(orig_part_range[i]);
+  //for(int i = 0; i<OP_set_index; i++)op_free(orig_part_range[i]);
   op_free(orig_part_range);
 }
 
