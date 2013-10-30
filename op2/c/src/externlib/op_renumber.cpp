@@ -107,12 +107,12 @@ void reorder_set(op_set set,
   for (int mapidx = 0; mapidx < OP_map_index; mapidx++) {
     op_map map = OP_map_list[mapidx];
     if (map->from == set) {
-      int *tempmap = (int *)malloc(set->size*sizeof(int)*map->dim);
+      int *tempmap = (int *)op_malloc(set->size*sizeof(int)*map->dim);
 
       for (int i = 0; i < set->size; i++)
         std::copy(map->map + map->dim*i, map->map + map->dim*(i+1),
                   tempmap + map->dim*set_permutations[set->index][i]);
-      free(map->map);
+      op_free(map->map);
       map->map = tempmap;
 
     } else if (map->to == set) {
@@ -124,13 +124,13 @@ void reorder_set(op_set set,
   TAILQ_FOREACH(item, &OP_dat_list, entries) {
     op_dat dat = item->dat;
     if (dat->set == set && dat->data != NULL) {
-      char *tempdata = (char *)malloc((size_t)set->size*(size_t)dat->size);
+      char *tempdata = (char *)op_malloc((size_t)set->size*(size_t)dat->size);
       for (unsigned long int i = 0; i < (unsigned long int)set->size; i++)
         std::copy(dat->data + (unsigned long int)dat->size*i,
                   dat->data + (unsigned long int)dat->size*(i+1),
                   tempdata + (unsigned long int)dat->size*
                   (unsigned long int)set_permutations[set->index][i]);
-      free(dat->data);
+      op_free(dat->data);
       dat->data = tempdata;
     }
   }
@@ -156,8 +156,8 @@ void op_renumber(op_map base) {
       sprintf(buffer,"partvec0001_%04d",possible[i]);
       if (!(file = fopen(buffer,"r"))) continue;
       printf("Processing partitioning for %d partitions\n", possible[i]);
-      int *partvec = (int *)malloc(base->to->size * sizeof(int));
-      int *order = (int *)malloc(base->to->size * sizeof(int));
+      int *partvec = (int *)op_malloc(base->to->size * sizeof(int));
+      int *order = (int *)op_malloc(base->to->size * sizeof(int));
       int total_ctr = 0;
       for (int f = 0; f < possible[i]; f++) {
         if (f>0) {
@@ -243,7 +243,7 @@ void op_renumber(op_map base) {
 #ifdef PARMETIS_VER_4
     int possible[] = {2,4,6,8,12,16,22,24,32,64,128,192,256,512,1024,2048,4096};
     for (int i = 0; i < 17; i++) {
-      int *partvec = (int *)malloc(base->to->size * sizeof(int));
+      int *partvec = (int *)op_malloc(base->to->size * sizeof(int));
       int nconstr = 1;
       int edgecut;
       int nparts = possible[i];
@@ -283,11 +283,11 @@ void op_renumber(op_map base) {
   SCOTCH_Num *edgetab = &col_indices[0];
 
   SCOTCH_Num *edlotab = NULL; // Edge load = edge weight
-  SCOTCH_Num *permutation = (SCOTCH_Num*) malloc(base->to->size*sizeof(SCOTCH_Num));
-  SCOTCH_Num *ipermutation = (SCOTCH_Num*) malloc(base->to->size*sizeof(SCOTCH_Num));
-  SCOTCH_Num *cblkptr = (SCOTCH_Num*) malloc(base->to->size*sizeof(SCOTCH_Num));
-  SCOTCH_Num *rangtab = NULL;//(SCOTCH_Num*) malloc(1 + ncell*sizeof(SCOTCH_Num));
-  SCOTCH_Num *treetab = NULL;//(SCOTCH_Num*) malloc(ncell*sizeof(SCOTCH_Num));
+  SCOTCH_Num *permutation = (SCOTCH_Num*) op_malloc(base->to->size*sizeof(SCOTCH_Num));
+  SCOTCH_Num *ipermutation = (SCOTCH_Num*) op_malloc(base->to->size*sizeof(SCOTCH_Num));
+  SCOTCH_Num *cblkptr = (SCOTCH_Num*) op_malloc(base->to->size*sizeof(SCOTCH_Num));
+  SCOTCH_Num *rangtab = NULL;//(SCOTCH_Num*) op_malloc(1 + ncell*sizeof(SCOTCH_Num));
+  SCOTCH_Num *treetab = NULL;//(SCOTCH_Num*) op_malloc(ncell*sizeof(SCOTCH_Num));
 
   int mesg = 0;
   mesg = SCOTCH_graphBuild(graphptr, baseval, vertnbr, verttab, vendtab,

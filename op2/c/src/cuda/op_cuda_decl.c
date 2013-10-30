@@ -83,7 +83,7 @@ op_decl_dat_char ( op_set set, int dim, char const *type, int size,
 
   //transpose data
   if (strstr( type, ":soa")!= NULL) {
-    char *temp_data = (char *)malloc(dat->size*set->size*sizeof(char));
+    char *temp_data = (char *)op_malloc(dat->size*set->size*sizeof(char));
     int element_size = dat->size/dat->dim;
     for (int i = 0; i < dat->dim; i++) {
       for (int j = 0; j < set->size; j++) {
@@ -94,7 +94,7 @@ op_decl_dat_char ( op_set set, int dim, char const *type, int size,
     }
     op_cpHostToDevice ( ( void ** ) &( dat->data_d ),
                           ( void ** ) &( temp_data ), dat->size * set->size );
-    free(temp_data);
+    op_free(temp_data);
   } else {
     op_cpHostToDevice ( ( void ** ) &( dat->data_d ),
                         ( void ** ) &( dat->data ), dat->size * set->size );
@@ -110,12 +110,12 @@ op_decl_dat_temp_char ( op_set set, int dim, char const *type, int size, char co
   char* data = NULL;
   op_dat dat = op_decl_dat_temp_core ( set, dim, type, size, data, name );
 
-  dat->data = (char*) calloc(set->size*dim*size, 1); //initialize data bits to 0
+  dat->data = (char*) op_calloc(set->size*dim*size, 1); //initialize data bits to 0
   dat-> user_managed = 0;
 
   //transpose data
   if (strstr( type, ":soa")!= NULL) {
-    char *temp_data = (char *)malloc(dat->size*set->size*sizeof(char));
+    char *temp_data = (char *)op_malloc(dat->size*set->size*sizeof(char));
     int element_size = dat->size/dat->dim;
     for (int i = 0; i < dat->dim; i++) {
       for (int j = 0; j < set->size; j++) {
@@ -126,7 +126,7 @@ op_decl_dat_temp_char ( op_set set, int dim, char const *type, int size, char co
     }
     op_cpHostToDevice ( ( void ** ) &( dat->data_d ),
                           ( void ** ) &( temp_data ), dat->size * set->size );
-    free(temp_data);
+    op_free(temp_data);
   } else {
     op_cpHostToDevice ( ( void ** ) &( dat->data_d ),
                         ( void ** ) &( dat->data ), dat->size * set->size );
@@ -137,7 +137,7 @@ op_decl_dat_temp_char ( op_set set, int dim, char const *type, int size, char co
 
 int op_free_dat_temp_char ( op_dat dat )
 {
-  //free data on device
+  //op_free data on device
   cutilSafeCall (cudaFree(dat->data_d));
 
   return op_free_dat_temp_core (dat);
@@ -154,7 +154,7 @@ op_decl_map ( op_set from, op_set to, int dim, int * imap, char const * name )
 {
   op_map map = op_decl_map_core ( from, to, dim, imap, name );
   int set_size = map->from->size;
-  map->map_d = (int *)malloc(map->dim*set_size*sizeof(int));
+  map->map_d = (int *)op_malloc(map->dim*set_size*sizeof(int));
   for (int i = 0; i < map->dim; i++) {
     for (int j = 0; j < set_size; j++) {
       map->map_d[i*set_size + j] = map->map[map->dim*j+i];
@@ -239,9 +239,9 @@ int getHybridGPU() {
 
 void op_exit()
 {
-  op_cuda_exit();            // frees dat_d memory
-  op_rt_exit();              // frees plan memory
-  op_exit_core();            // frees lib core variables
+  op_cuda_exit();            // op_frees dat_d memory
+  op_rt_exit();              // op_frees plan memory
+  op_exit_core();            // op_frees lib core variables
 }
 
 void op_timing_output()
@@ -272,7 +272,7 @@ void op_upload_all ()
     int set_size = dat->set->size;
     if (dat->data_d) {
       if (strstr( dat->type, ":soa")!= NULL) {
-        char *temp_data = (char *)malloc(dat->size*set_size*sizeof(char));
+        char *temp_data = (char *)op_malloc(dat->size*set_size*sizeof(char));
         int element_size = dat->size/dat->dim;
         for (int i = 0; i < dat->dim; i++) {
           for (int j = 0; j < set_size; j++) {
@@ -283,7 +283,7 @@ void op_upload_all ()
         }
         cutilSafeCall( cudaMemcpy(dat->data_d, temp_data, dat->size * set_size, cudaMemcpyHostToDevice ));
         dat->dirty_hd = 0;
-        free(temp_data);
+        op_free(temp_data);
       } else {
         cutilSafeCall( cudaMemcpy(dat->data_d, dat->data, dat->size * set_size, cudaMemcpyHostToDevice ));
         dat->dirty_hd = 0;

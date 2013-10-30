@@ -103,7 +103,7 @@ void op_mvHostToDevice ( void ** map, int size )
   cutilSafeCall ( cudaMemcpy ( tmp, *map, size,
                                cudaMemcpyHostToDevice ) );
   cutilSafeCall ( cudaDeviceSynchronize (  ) );
-  free ( *map );
+  op_free ( *map );
   *map = tmp;
 }
 
@@ -138,7 +138,7 @@ op_plan * op_plan_get_stage ( char const * name, op_set set, int part_size,
   }
 
   if ( plan->count == 1 ) {
-    int *offsets = (int *)malloc((plan->ninds_staged+1)*sizeof(int));
+    int *offsets = (int *)op_malloc((plan->ninds_staged+1)*sizeof(int));
     offsets[0] = 0;
     for ( int m = 0; m < plan->ninds_staged; m++ ) {
       int count = 0;
@@ -151,7 +151,7 @@ op_plan * op_plan_get_stage ( char const * name, op_set set, int part_size,
     for ( int m = 0; m < plan->ninds_staged; m++ ) {
       plan->ind_maps[m] = &plan->ind_map[set_size*offsets[m]];
     }
-    free(offsets);
+    op_free(offsets);
 
     int counter = 0;
     for ( int m = 0; m < nargs; m++ ) if ( plan->loc_maps[m] != NULL ) counter++;
@@ -220,29 +220,29 @@ void op_cuda_exit ( )
 // routines to resize constant/reduct arrays, if necessary
 //
 
-void reallocConstArrays ( int consts_bytes )
+void op_reallocConstArrays ( int consts_bytes )
 {
   if ( consts_bytes > OP_consts_bytes ) {
     if ( OP_consts_bytes > 0 ) {
-      free ( OP_consts_h );
+      op_free ( OP_consts_h );
       cutilSafeCall ( cudaFree ( OP_consts_d ) );
     }
     OP_consts_bytes = 4 * consts_bytes;  // 4 is arbitrary, more than needed
-    OP_consts_h = ( char * ) malloc ( OP_consts_bytes );
+    OP_consts_h = ( char * ) op_malloc ( OP_consts_bytes );
     cutilSafeCall ( cudaMalloc ( ( void ** ) &OP_consts_d,
                                  OP_consts_bytes ) );
   }
 }
 
-void reallocReductArrays ( int reduct_bytes )
+void op_reallocReductArrays ( int reduct_bytes )
 {
   if ( reduct_bytes > OP_reduct_bytes ) {
     if ( OP_reduct_bytes > 0 ) {
-      free ( OP_reduct_h );
+      op_free ( OP_reduct_h );
       cutilSafeCall ( cudaFree ( OP_reduct_d ) );
     }
     OP_reduct_bytes = 4 * reduct_bytes;  // 4 is arbitrary, more than needed
-    OP_reduct_h = ( char * ) malloc ( OP_reduct_bytes );
+    OP_reduct_h = ( char * ) op_malloc ( OP_reduct_bytes );
     cutilSafeCall ( cudaMalloc ( ( void ** ) &OP_reduct_d,
                                  OP_reduct_bytes ) );
   }
@@ -284,7 +284,7 @@ void op_cuda_get_data ( op_dat dat )
   else return;
   //transpose data
   if (strstr( dat->type, ":soa")!= NULL) {
-    char *temp_data = (char *)malloc(dat->size*dat->set->size*sizeof(char));
+    char *temp_data = (char *)op_malloc(dat->size*dat->set->size*sizeof(char));
     cutilSafeCall ( cudaMemcpy ( temp_data, dat->data_d,
                                  dat->size * dat->set->size,
                                  cudaMemcpyDeviceToHost ) );
@@ -298,7 +298,7 @@ void op_cuda_get_data ( op_dat dat )
         }
       }
     }
-    free(temp_data);
+    op_free(temp_data);
   } else {
   cutilSafeCall ( cudaMemcpy ( dat->data, dat->data_d,
                                dat->size * dat->set->size,
@@ -347,7 +347,7 @@ void op_upload_dat(op_dat dat) {
   if (!OP_hybrid_gpu) return;
   int set_size = dat->set->size;
   if (strstr( dat->type, ":soa")!= NULL) {
-    char *temp_data = (char *)malloc(dat->size*set_size*sizeof(char));
+    char *temp_data = (char *)op_malloc(dat->size*set_size*sizeof(char));
     int element_size = dat->size/dat->dim;
     for (int i = 0; i < dat->dim; i++) {
       for (int j = 0; j < set_size; j++) {
@@ -357,7 +357,7 @@ void op_upload_dat(op_dat dat) {
       }
     }
     cutilSafeCall( cudaMemcpy(dat->data_d, temp_data, set_size*dat->size, cudaMemcpyHostToDevice));
-    free(temp_data);
+    op_free(temp_data);
   } else {
     cutilSafeCall( cudaMemcpy(dat->data_d, dat->data, set_size*dat->size, cudaMemcpyHostToDevice));
   }
@@ -367,7 +367,7 @@ void op_download_dat(op_dat dat) {
   if (!OP_hybrid_gpu) return;
   int set_size = dat->set->size;
   if (strstr( dat->type, ":soa")!= NULL) {
-    char *temp_data = (char *)malloc(dat->size*set_size*sizeof(char));
+    char *temp_data = (char *)op_malloc(dat->size*set_size*sizeof(char));
     cutilSafeCall( cudaMemcpy(temp_data, dat->data_d, set_size*dat->size, cudaMemcpyDeviceToHost));
     int element_size = dat->size/dat->dim;
     for (int i = 0; i < dat->dim; i++) {
@@ -377,7 +377,7 @@ void op_download_dat(op_dat dat) {
         }
       }
     }
-    free(temp_data);
+    op_free(temp_data);
   } else {
     cutilSafeCall( cudaMemcpy(dat->data, dat->data_d, set_size*dat->size, cudaMemcpyDeviceToHost));
   }

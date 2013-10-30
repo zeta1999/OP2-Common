@@ -35,10 +35,18 @@ ifeq ($(OP2_COMPILER),gnu)
 else
 ifeq ($(OP2_COMPILER),intel)
   CC       := icc
-  CCFLAGS  := -O3 -vec-report -xAVX #-DCOMM_PERF #-DDEBUG -g
+  CCFLAGS  := -O3 -vec-report -xAVX -DMPICH_IGNORE_CXX_SEEK -DMPICH_SKIP_MPICXX #-DCOMM_PERF #-DDEBUG -g
   CXX      := icpc
   CXXFLAGS := $(CCFLAGS)
   MPICXX   := $(MPI_INSTALL_PATH)/bin/mpiCC
+  MPIFLAGS := $(CXXFLAGS)
+else
+ifeq ($(OP2_COMPILER),mic)
+  CC       := icc
+  CCFLAGS  := -O2 -mmic -mcmodel=medium -vec-report -DMPICH_IGNORE_CXX_SEEK -DMPICH_SKIP_MPICXX #-DCOMM_PERF #-DDEBUG -g
+  CXX      := icpc
+  CXXFLAGS := $(CCFLAGS)
+  MPICXX   := mpicxx
   MPIFLAGS := $(CXXFLAGS)
 else
 ifeq ($(OP2_COMPILER),pgi)
@@ -60,6 +68,7 @@ ifeq ($(OP2_COMPILER),cray)
 else
 print:
 	@echo "unrecognised value for OP2_COMPILER"
+endif
 endif
 endif
 endif

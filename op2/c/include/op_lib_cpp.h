@@ -135,8 +135,10 @@ static inline T select_lt(const float &condition1, const float &condition2, cons
 
 static inline float min(const float &a, const float &b) {return a<b ? a : b;}
 static inline double min(const double &a, const double &b) {return a<b ? a : b;}
+static inline int min(const int &a, const int &b) {return a<b ? a : b;}
 static inline float max(const float &a, const float &b) {return a>b ? a : b;}
 static inline double max(const double &a, const double &b) {return a>b ? a : b;}
+static inline int max(const int &a, const int &b) {return a>b ? a : b;}
 
 static inline float fabs(const float &x) {return max(x,0.0f-x);}
 

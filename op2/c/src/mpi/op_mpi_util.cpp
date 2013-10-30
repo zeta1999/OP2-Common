@@ -124,7 +124,7 @@ void gather_data_hdf5(op_dat dat, char* usr_ptr, int low, int high)
   memcpy((void *)usr_ptr, (void *)&g_array[low*dat->size],
   (high+1)*dat->size);
 
-  free(l_array);free(recevcnts);free(displs);free(g_array);
+  op_free(l_array);op_free(recevcnts);op_free(displs);op_free(g_array);
   MPI_Comm_free(&OP_MPI_IO_WORLD);
 }
 
@@ -211,10 +211,10 @@ void write_file(op_dat dat, const char* file_name)
     F(fp, g_size, elem_size, g_array, file_name);
 
     fclose(fp);
-    free(g_array);
+    op_free(g_array);
   }
 
-  free(l_array);free(recevcnts);free(displs);
+  op_free(l_array);op_free(recevcnts);op_free(displs);
   MPI_Comm_free(&OP_MPI_IO_WORLD);
 }
 

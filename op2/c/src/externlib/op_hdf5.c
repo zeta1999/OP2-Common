@@ -680,7 +680,7 @@ void op_get_const_hdf5(char const *name, int dim, char const *type, char* const_
     exit(2);
   }
 
-  free(data);
+  op_free(data);
 
   H5Dclose(dset_id);
   H5Fclose(file_id);

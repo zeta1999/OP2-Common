@@ -67,32 +67,32 @@ int compute_local_size (int global_size, int mpi_comm_size, int mpi_rank )
 }
 
 /*******************************************************************************
-* Wrapper for malloc from www.gnu.org/
+* Wrapper for op_malloc from www.gnu.org/
 *******************************************************************************/
 
 void* xmalloc (size_t size)
 {
   if(size == 0) return (void *)NULL;
 
-  register void *value = malloc (size);
-  if (value == 0) printf("Virtual memory exhausted at malloc\n");
+  register void *value = op_malloc (size);
+  if (value == 0) printf("Virtual memory exhausted at op_malloc\n");
   return value;
 }
 
 /*******************************************************************************
-* Wrapper for realloc from www.gnu.org/
+* Wrapper for op_realloc from www.gnu.org/
 *******************************************************************************/
 
 void* xrealloc (void *ptr, size_t size)
 {
   if(size == 0)
   {
-    free(ptr);
+    op_free(ptr);
     return (void *)NULL;
   }
 
-  register void *value = realloc (ptr, size);
-  if (value == 0) printf ("Virtual memory exhausted at realloc\n");
+  register void *value = op_realloc (ptr, size);
+  if (value == 0) printf ("Virtual memory exhausted at op_realloc\n");
   return value;
 }
 
@@ -245,7 +245,7 @@ void quickSort_dat(int arr[], char dat[], int left, int right, int elem_size)
     quickSort_dat(arr, dat, left, j, elem_size);
   if (i < right)
     quickSort_dat(arr, dat, i, right, elem_size);
-  free(tmp_dat);
+  op_free(tmp_dat);
 }
 
 /*******************************************************************************
@@ -283,7 +283,7 @@ void quickSort_map(int arr[], int map[], int left, int right, int dim)
     quickSort_map(arr, map, left, j, dim);
   if (i < right)
     quickSort_map(arr, map, i, right, dim);
-  free(tmp_map);
+  op_free(tmp_map);
 }
 
 /*******************************************************************************

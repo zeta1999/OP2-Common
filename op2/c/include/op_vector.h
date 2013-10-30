@@ -33,6 +33,10 @@
 #ifndef __OP_VECTOR_H
 #define __OP_VECTOR_H
 
+#ifdef MIC
+#include "micvec.h"
+#endif
+
 #include "dvec.h"
 
 #define set_m128r(lo,hi) _mm256_set_m128(hi,lo)
@@ -49,8 +53,8 @@ public:
   Vec4i(const int *p) {
     vec = _mm_load_si128((__m128i*) p);
   }
-  Vec4i(const int *p, const Vec4i &idx, const int &offset) {
-    vec = _mm_set_epi32(p[idx[3]+offset],p[idx[2]+offset],p[idx[1]+offset],p[idx[0]+offset]);
+  Vec4i(const int *p, const Vec4i &idx) {
+    vec = _mm_set_epi32(p[idx[3]],p[idx[2]],p[idx[1]],p[idx[0]]);
   }
   Vec4i(const int *p, const int &stride) {
     vec = _mm_set_epi32(p[3*stride],p[2*stride],p[stride],p[0]);
@@ -90,8 +94,8 @@ public:
   Vec4d(const double *p) {
     vec = _mm256_load_pd(p);
   }
-  Vec4d(const double *p, const Vec4i &idx, const int &offset) {
-    vec = _mm256_set_pd(p[idx[3]+offset],p[idx[2]+offset],p[idx[1]+offset],p[idx[0]+offset]);
+  Vec4d(const double *p, const Vec4i &idx) {
+    vec = _mm256_set_pd(p[idx[3]],p[idx[2]],p[idx[1]],p[idx[0]]);
   }
   Vec4d(const double *p, const int &stride) {
     vec = _mm256_set_pd(p[3*stride],p[2*stride],p[stride],p[0]);
@@ -138,8 +142,8 @@ static inline Vec4d fabs(const Vec4d &a) {return abs(a);}
 
 static inline void store_a(const Vec4d &d, double *p) {_mm256_store_pd(p,d);}
 static inline void store_stride(const Vec4d &d, double *p, const int &stride) {p[0] = d[0]; p[stride] = d[1]; p[2*stride] = d[2]; p[3*stride] = d[3];}
-static inline void store_scatter(const Vec4d &d, double *p, const Vec4i &idx, const int &offset) {p[idx[0]+offset] = d[0]; p[idx[1]+offset] = d[1]; p[idx[2]+offset] = d[2]; p[idx[3]+offset] = d[3];}
-static inline void store_scatter_add(const Vec4d &d, double *p, const Vec4i &idx, const int &offset) {p[idx[0]+offset] += d[0]; p[idx[1]+offset] += d[1]; p[idx[2]+offset] += d[2]; p[idx[3]+offset] += d[3];}
+static inline void store_scatter(const Vec4d &d, double *p, const Vec4i &idx) {p[idx[0]] = d[0]; p[idx[1]] = d[1]; p[idx[2]] = d[2]; p[idx[3]] = d[3];}
+static inline void store_scatter_add(const Vec4d &d, double *p, const Vec4i &idx) {p[idx[0]] += d[0]; p[idx[1]] += d[1]; p[idx[2]] += d[2]; p[idx[3]] += d[3];}
 
 static inline Vec4d select(const Vec4d_logical &mask, const Vec4d &a, const Vec4d &b) {
   return _mm256_blendv_pd(b, a, mask);
@@ -159,13 +163,6 @@ public:
     lo = _mm_load_si128((__m128i*) p);
     hi = _mm_load_si128((__m128i*) (p+4));
   }
-/*  Vec4i(const int *p, const Vec4i &idx, const int &offset) {
-    vec = _mm_set_epi32(p[idx[3]+offset],p[idx[2]+offset],p[idx[1]+offset],p[idx[0]+offset]);
-  }
-  Vec4i(const int *p, const int &stride) {
-    vec = _mm_set_epi32(p[3*stride],p[2*stride],p[stride],p[0]);
-  }
-*/
   Vec8i& operator *=(const int &a) { lo = a*lo; hi = a*hi; return *this; }
 
   const int& operator[](int i) const
@@ -211,8 +208,8 @@ public:
   Vec8f(const float *p) {
     vec = _mm256_load_ps(p);
   }
-  Vec8f(const float *p, const Vec8i &idx, const int &offset) {
-    vec = _mm256_set_ps(p[idx.high()[3]+offset],p[idx.high()[2]+offset],p[idx.high()[1]+offset],p[idx.high()[0]+offset],p[idx.low()[3]+offset],p[idx.low()[2]+offset],p[idx.low()[1]+offset],p[idx.low()[0]+offset]);
+  Vec8f(const float *p, const Vec8i &idx) {
+    vec = _mm256_set_ps(p[idx.high()[3]],p[idx.high()[2]],p[idx.high()[1]],p[idx.high()[0]],p[idx.low()[3]],p[idx.low()[2]],p[idx.low()[1]],p[idx.low()[0]]);
   }
   Vec8f(const float *p, const int &stride) {
     vec = _mm256_set_ps(p[7*stride],p[6*stride],p[5*stride],p[4*stride],p[3*stride],p[2*stride],p[stride],p[0]);
@@ -261,8 +258,8 @@ static inline Vec8f max(const Vec8f &a, const Vec8f &b) {return simd_max(a,b);}
 
 static inline void store_a(const Vec8f &d, float *p) {_mm256_store_ps(p,d);}
 static inline void store_stride(const Vec8f &d, float *p, const int &stride) {p[0] = d[0]; p[stride] = d[1]; p[2*stride] = d[2]; p[3*stride] = d[3]; p[4*stride] = d[4]; p[5*stride] = d[5]; p[6*stride] = d[6]; p[7*stride] = d[7];}
-static inline void store_scatter(const Vec8f &d, float *p, const Vec8i &idx, const int &offset) {p[idx.low()[0]+offset] = d[0]; p[idx.low()[1]+offset] = d[1]; p[idx.low()[2]+offset] = d[2]; p[idx.low()[3]+offset] = d[3]; p[idx.high()[0]+offset] = d[4]; p[idx.high()[1]+offset] = d[5]; p[idx.high()[2]+offset] = d[6]; p[idx.high()[3]+offset] = d[7];}
-static inline void store_scatter_add(const Vec8f &d, float *p, const Vec8i &idx, const int &offset) {p[idx.low()[0]+offset] += d[0]; p[idx.low()[1]+offset] += d[1]; p[idx.low()[2]+offset] += d[2]; p[idx.low()[3]+offset] += d[3]; p[idx.high()[0]+offset] += d[4]; p[idx.high()[1]+offset] += d[5]; p[idx.high()[2]+offset] += d[6]; p[idx.high()[3]+offset] += d[7];}
+static inline void store_scatter(const Vec8f &d, float *p, const Vec8i &idx) {p[idx.low()[0]] = d[0]; p[idx.low()[1]] = d[1]; p[idx.low()[2]] = d[2]; p[idx.low()[3]] = d[3]; p[idx.high()[0]] = d[4]; p[idx.high()[1]] = d[5]; p[idx.high()[2]] = d[6]; p[idx.high()[3]] = d[7];}
+static inline void store_scatter_add(const Vec8f &d, float *p, const Vec8i &idx) {p[idx.low()[0]] += d[0]; p[idx.low()[1]] += d[1]; p[idx.low()[2]] += d[2]; p[idx.low()[3]] += d[3]; p[idx.high()[0]] += d[4]; p[idx.high()[1]] += d[5]; p[idx.high()[2]] += d[6]; p[idx.high()[3]] += d[7];}
 
 static inline Vec8f select(const Vec8f_logical &mask, const Vec8f &a, const Vec8f &b) {
   return _mm256_blendv_ps(b, a, mask);
@@ -278,140 +275,281 @@ static inline float min_horizontal(const Vec8f &a)
     return _mm_cvtss_f32(_mm_min_ss(_mm256_castps256_ps128(temp), _mm256_extractf128_ps(temp,1)));
 }
 
+//
+// MIC types
+//
+#ifdef MIC
+
+class Vec16_logical
+{
+protected:
+  __mmask16 vec;
+public:
+  Vec16_logical() {};
+  Vec16_logical(__mmask16 const & x) {vec = x;}
+
+  Vec16_logical & operator = (__mmask16 const & x) {
+      vec = x;
+      return *this;
+  }
+  operator __mmask16() const {
+      return vec;
+  }
+};
+
+class Vec16i : public Is32vec16
+{
+public:
+  Vec16i() {}
+  Vec16i(__m512i mm) : Is32vec16(mm) {}
+  Vec16i(int i) {vec = _mm512_set1_epi32(i);}
+  Vec16i(const Is32vec16 &mm) {vec = mm;}
+  Vec16i(int d15, int d14, int d13, int d12, int d11, int d10, int d9, int d8,
+         int d7, int d6, int d5, int d4, int d3, int d2, int d1, int d0) : Is32vec16(d15, d14, d13, d12, d11, d10, d9, d8,d7, d6, d5, d4, d3, d2, d1, d0) {}
+  Vec16i(const int *p) {
+    vec = _mm512_load_epi32((__m512i*) p);
+  }
+  Vec16i(const int *p, const Vec16i &idx) {
+    vec = _mm512_i32gather_epi32(idx,p,4);
+  }
+  Vec16i(const int *p, const int &stride) {
+    Vec16i idx = _mm512_set_epi32(15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0);
+    idx = _mm512_mullo_epi32(_mm512_set1_epi32(stride),idx);
+    vec = _mm512_i32gather_epi32(idx,p,4);
+  }
+  
+  Vec16i& operator *=(const int &a) { return *this = _mm512_mullo_epi32(vec,Vec16i(a)); }
+
+  const int& operator[](int i) const
+  {
+      int *dp = (int*)&vec;
+      return *(dp+i);
+  }
+  
+  int& operator[](int i)
+  {
+      int *dp = (int*)&vec;
+      return *(dp+i);
+  }
+};
+
+static inline Vec16i operator *(const Vec16i &a, const Vec16i &b) {return  _mm512_mullo_epi32(a,b);}
+static inline Vec16i operator *(const int &a, const Vec16i &b) {return Vec16i(a)*b;}
+
+static inline Vec16_logical operator == (Vec16i const & a, Vec16i const & b) {
+    return _mm512_cmpeq_epi32_mask(a, b);
+}
+
+
+class Vec16f : public F32vec16
+{
+public:
+  Vec16f() {}
+  Vec16f(__m512 mm) : F32vec16(mm) {}
+  Vec16f(float d) : F32vec16(d) {}
+  Vec16f(const F32vec16 &mm) {vec = mm;}
+  Vec16f(float d15, float d14, float d13, float d12, float d11, float d10, float d9, float d8,
+         float d7, float d6, float d5, float d4, float d3, float d2, float d1, float d0) : F32vec16(d15, d14, d13, d12, d11, d10, d9, d8,d7, d6, d5, d4, d3, d2, d1, d0) {}
+  Vec16f(const float *p) {
+    vec = _mm512_load_ps(p);
+  }
+  Vec16f(const float *p, const Vec16i &idx) {
+    vec = _mm512_i32gather_ps(idx,p, 4);
+//    vec = _mm512_set_ps(
+//p[idx[15]],p[idx[14]],p[idx[13]],p[idx[12]],
+//p[idx[11]],p[idx[10]],p[idx[9]],p[idx[8]],
+//p[idx[7]],p[idx[6]],p[idx[5]],p[idx[4]],
+//p[idx[3]],p[idx[2]],p[idx[1]],p[idx[0]]);
+  }
+  Vec16f(const float *p, const int &stride) {
+    Vec16i idx = _mm512_set_epi32(15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0);
+    idx = idx*stride;
+    vec = _mm512_i32gather_ps(idx, p, 4);
+  }
+  Vec16f& operator=(const F32vec16 &a) {vec = a; return *this;}
+  
+  const float& operator[](int i) const
+  {
+      float *dp = (float*)&vec;
+      return *(dp+i);
+  }
+
+  float& operator[](int i)
+  {
+      float *dp = (float*)&vec;
+      return *(dp+i);
+  }
+};
+
+static inline Vec16f operator +(const float &a, const Vec16f &b) { return Vec16f(a)+b; }
+static inline Vec16f operator -(const float &a, const Vec16f &b) { return Vec16f(a)-b; }
+static inline Vec16f operator *(const float &a, const Vec16f &b) { return Vec16f(a)*b; }
+static inline Vec16f operator /(const float &a, const Vec16f &b) { return Vec16f(a)/b; }
+static inline Vec16f fabs(const Vec16f &a) {return max(a,0.0f-a);}
+static inline Vec16f min(const Vec16f &a, const Vec16f &b) {return simd_min(a,b);}
+static inline Vec16f max(const Vec16f &a, const Vec16f &b) {return simd_max(a,b);}
+static inline Vec16_logical operator == (Vec16f const & a, Vec16f const & b) {
+    return _mm512_cmpeq_ps_mask(a, b);
+}
+
+static inline void store_a(const Vec16f &d, float *p) {_mm512_store_ps(p,d);}
+static inline void store_stride(const Vec16f &d, float *p, const int &stride) {Vec16i idx = _mm512_set_epi32(15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0);
+                                                                              idx = idx*stride;
+                                                                              _mm512_i32scatter_ps(p,idx,d,4);}
+static inline void store_scatter(const Vec16f &d, float *p, const Vec16i &idx) {_mm512_i32scatter_ps(p,idx,d,4);}
+static inline void store_scatter_add(const Vec16f &d, float *p, const Vec16i &idx) {
+                                                                               p[idx[0]] += d[0]; p[idx[1]] += d[1]; p[idx[2]] += d[2]; p[idx[3]] += d[3];
+                                                                               p[idx[4]] += d[4]; p[idx[5]] += d[5]; p[idx[6]] += d[6]; p[idx[7]] += d[7];
+                                                                               p[idx[8]] += d[8]; p[idx[9]] += d[9]; p[idx[10]] += d[10]; p[idx[11]] += d[11];
+                                                                               p[idx[12]] += d[12]; p[idx[13]] += d[13]; p[idx[14]] += d[14]; p[idx[15]] += d[15];}
+static inline void mask_store_scatter_add(const Vec16_logical &mask, const Vec16f &d, float *p, const Vec16i &idx) {
+                                                                              Vec16f a = _mm512_mask_add_ps(d,mask,_mm512_mask_i32gather_ps(d,mask,idx,p, 4),d);
+                                                                              _mm512_mask_i32scatter_ps(p,mask,idx,a,4);}
+                                                                              
+static inline Vec16f select(const Vec16_logical &mask, const Vec16f &a, const Vec16f &b) {
+  return _mm512_mask_blend_ps(mask,b, a);
+}
+static inline Vec16f select_lt(const Vec16f &a, const Vec16f &b, const Vec16f &c, const Vec16f &d) {
+ return _mm512_mask_blend_ps(_mm512_cmp_ps_mask(a, b, _CMP_LT_OS), d, c);
+}
+static inline float min_horizontal(const Vec16f &a) {return _mm512_reduce_min_ps(a);}
+
+
+class Vec8d_logical
+{
+protected:
+  __mmask8 vec;
+public:
+  Vec8d_logical() {};
+  Vec8d_logical(__mmask8 const & x) {vec = x;}
+
+  Vec8d_logical & operator = (__mmask8 const & x) {
+      vec = x;
+      return *this;
+  }
+  operator __mmask8() const {
+      return vec;
+  }
+};
+
+class Vec8im : public Vec16i
+{
+public:
+  Vec8im() {}
+  Vec8im(__m512i mm) : Vec16i(mm) {}
+  Vec8im(int i) {vec = _mm512_set1_epi32(i);}
+  Vec8im(const Is32vec16 &mm) {vec = mm;}
+  Vec8im(int d7, int d6, int d5, int d4, int d3, int d2, int d1, int d0) : Vec16i(0,0,0,0,0,0,0,0,d7, d6, d5, d4, d3, d2, d1, d0) {}
+  Vec8im(const int *p) {
+    //vec = _mm512_load_epi32((void*) p);
+    //vec = ((__m256i *)p)[0];
+    vec = _mm512_loadunpacklo_epi32(vec,p);
+  }
+  Vec8im(const int *p, const Vec8im &idx) {
+    vec = _mm512_i32gather_epi32(idx,p,4);
+  }
+  Vec8im(const int *p, const int &stride) {
+    Vec8im idx = _mm512_set_epi32(15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0);
+    idx = _mm512_mullo_epi32(_mm512_set1_epi32(stride),idx);
+    vec = _mm512_i32gather_epi32(idx,p,4);
+  }
+  // operator __m256i() const {
+  //     return _mm512_castsi512_si256(vec);
+  // }
+};
+
+static inline Vec8im operator *(const Vec8im &a, const Vec8im &b) {return  _mm512_mullo_epi32(a,b);}
+static inline Vec8im operator *(const int &a, const Vec8im &b) {return Vec8im(a)*b;}
+
+static inline Vec16_logical operator == (Vec8im const & a, Vec8im const & b) {
+    return _mm512_cmpeq_epi32_mask(a, b);
+}
+
+
+class Vec8d : public F64vec8
+{
+public:
+  Vec8d() {}
+  Vec8d(__m512d mm) : F64vec8(mm) {}
+  Vec8d(double d) : F64vec8(d) {}
+  Vec8d(const F64vec8 &mm) {vec = mm;}
+  Vec8d(double d7, double d6, double d5, double d4, double d3, double d2, double d1, double d0) : F64vec8(d7, d6, d5, d4, d3, d2, d1, d0) {}
+  Vec8d(const double *p) {
+    vec = _mm512_load_pd(p);
+  }
+  Vec8d(const double *p, const Vec8im &idx) {
+    //vec = _mm512_i32gather_pd((void*)p,idx, 8);
+    vec = _mm512_i32logather_pd(idx,p, 8);
+  }
+  Vec8d(const double *p, const int &stride) {
+    Vec8im idx = _mm512_set_epi32(15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0);
+    idx = idx*stride;
+    //vec = _mm512_i32gather_pd((void*)p,idx, 8);
+    vec = _mm512_i32logather_pd(idx,p, 8);
+  }
+  Vec8d& operator=(const F64vec8 &a) {vec = a; return *this;}
+  
+  operator __m512d() const {
+      return vec;
+  }
+  
+  const double& operator[](int i) const
+  {
+      double *dp = (double*)&vec;
+      return *(dp+i);
+  }
+
+  double& operator[](int i)
+  {
+      double *dp = (double*)&vec;
+      return *(dp+i);
+  }
+};
+
+static inline Vec8d operator +(const double &a, const Vec8d &b) { return Vec8d(a)+b; }
+static inline Vec8d operator -(const double &a, const Vec8d &b) { return Vec8d(a)-b; }
+static inline Vec8d operator *(const double &a, const Vec8d &b) { return Vec8d(a)*b; }
+static inline Vec8d operator /(const double &a, const Vec8d &b) { return Vec8d(a)/b; }
+static inline Vec8d fabs(const Vec8d &a) {return max(a,0.0-a);}
+static inline Vec8d min(const Vec8d &a, const Vec8d &b) {return simd_min(a,b);}
+static inline Vec8d max(const Vec8d &a, const Vec8d &b) {return simd_max(a,b);}
+static inline Vec16_logical operator == (Vec8d const & a, Vec8d const & b) {
+    return _mm512_cmpeq_pd_mask(a, b);
+}
+
+static inline void store_a(const Vec8d &d, double *p) {_mm512_store_pd(p,d);}
+static inline void store_stride(const Vec8d &d, double *p, const int &stride) {Vec8im idx = _mm512_set_epi32(15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0);
+                                                                              idx = idx*stride;
+                                                                              _mm512_i32loscatter_pd(p,idx,d,8);}
+static inline void store_scatter(const Vec8d &d, double *p, const Vec8im &idx) {_mm512_i32loscatter_pd(p,idx,d,8);}
+static inline void store_scatter_add(const Vec8d &d, double *p, const Vec8im &idx) {
+                                                                               p[idx[0]] += d[0]; p[idx[1]] += d[1]; p[idx[2]] += d[2]; p[idx[3]] += d[3];
+                                                                               p[idx[4]] += d[4]; p[idx[5]] += d[5]; p[idx[6]] += d[6]; p[idx[7]] += d[7];}
+
+static inline void mask_store_scatter_add(const Vec16_logical &mask, const Vec8d &d, double *p, const Vec8im &idx) {
+                                                                              Vec8d a = _mm512_mask_add_pd(d,mask,_mm512_mask_i32logather_pd(d,mask,idx,p, 8),d);
+                                                                              _mm512_mask_i32loscatter_pd(p,mask,idx,a,8);}
+
+static inline Vec8d select(const Vec16_logical &mask, const Vec8d &a, const Vec8d &b) {
+  return _mm512_mask_blend_pd(mask,b, a);
+}
+static inline Vec8d select_lt(const Vec8d &a, const Vec8d &b, const Vec8d &c, const Vec8d &d) {
+ return _mm512_mask_blend_pd(_mm512_cmp_pd_mask(a, b, _CMP_LT_OS), d, c);
+}
+static inline double min_horizontal(const Vec8d &a) {return _mm512_reduce_min_pd(a);}
+
+#endif
+
+#ifdef MIC
+typedef Vec8im intv_half;
+typedef Vec8d doublev;
+typedef Vec16f floatv;
+typedef Vec16i intv;
+#else
 typedef Vec4i intv_half;
 typedef Vec4d doublev;
 typedef Vec8f floatv;
 typedef Vec8i intv;
-
-
-/*
-#include "immintrin.h"
-//
-// Double precision
-//
-__forceinline   __m256d  operator+ (__m256d l, __m256d r)   { return _mm256_add_pd(l,r);}
-__forceinline   __m256d  operator+ (double  l, __m256d r)   { return _mm256_add_pd(_mm256_set1_pd(l),r);}
-__forceinline   __m256d  operator+ (__m256d l, double  r)   { return _mm256_add_pd(l,_mm256_set1_pd(r));}
-__forceinline   __m256d  operator+ (__m256d l)              { return l;}
-//__forceinline   __m256d& operator+=(__m256d l, __m256d r)   { return l = _mm256_add_pd(l,r);}
-__forceinline   __m256d  operator- (__m256d l, __m256d r)   { return _mm256_sub_pd(l,r);}
-__forceinline   __m256d  operator- (__m256d l, double  r)   { return _mm256_sub_pd(l,_mm256_set1_pd(r));}
-__forceinline   __m256d  operator- (double  l, __m256d r)   { return _mm256_sub_pd(_mm256_set1_pd(l),r);}
-__forceinline   __m256d  operator- (__m256d l)              { return _mm256_sub_pd(_mm256_setzero_pd(),l);}
-//__forceinline   void     operator-=(__m256d l, __m256d r)   { l = _mm256_sub_pd(l,r);}
-__forceinline   __m256d  operator* (__m256d l, __m256d r)   { return _mm256_mul_pd(l,r);}
-__forceinline   __m256d  operator* (double l , __m256d r)   { return _mm256_mul_pd(_mm256_set1_pd(l),r);}
-__forceinline   __m256d  operator* (__m256d l , double r)   { return _mm256_mul_pd(l,_mm256_set1_pd(r));}
-__forceinline   __m256d  operator/ (__m256d l, __m256d r)   { return _mm256_div_pd(l,r);}
-__forceinline   __m256d  operator/ (double l , __m256d r)   { return _mm256_div_pd(_mm256_set1_pd(l),r);}
-__forceinline   __m256d  operator/ (__m256d l , double r)   { return _mm256_div_pd(l,_mm256_set1_pd(r));}
-__forceinline   __m256d  sqrt(__m256d v)                    { return _mm256_sqrt_pd(v);}
-__forceinline   __m256d  fabs(__m256d v)                    { return _mm256_max_pd(v,_mm256_sub_pd(_mm256_setzero_pd(),v));}
-__forceinline   __m256d  max(__m256d v1,__m256d v2)         { return _mm256_min_pd(v1,v2);}
-__forceinline   __m256d  min(__m256d v1,__m256d v2)         { return _mm256_max_pd(v1,v2);}
-__forceinline   void     set(__m256d v1,double v2)          { v1 = _mm256_set1_pd(v2);}
-__forceinline   double   vecreduce(__m256d v1)              { return ((double*)&v1)[0] + ((double*)&v1)[1] + ((double*)&v1)[2] + ((double*)&v1)[3];}
-
-//
-// Integers
-//
-__forceinline   __m128i  operator+ (__m128i l, __m128i r)   { return _mm_add_epi32(l,r);}
-__forceinline   __m128i  operator+ (int  l, __m128i r)      { return _mm_add_epi32(_mm_set1_epi32(l),r);}
-__forceinline   __m128i  operator+ (__m128i l, int  r)      { return _mm_add_epi32(l,_mm_set1_epi32(r));}
-__forceinline   __m128i  operator+ (__m128i l)              { return l;}
-//__forceinline   void     operator+=(__m128i l, __m128i r)   { l = _mm_add_epi32(l,r);}
-__forceinline   __m128i  operator- (__m128i l, __m128i r)   { return _mm_sub_epi32(l,r);}
-__forceinline   __m128i  operator- (__m128i l, int  r)      { return _mm_sub_epi32(l,_mm_set1_epi32(r));}
-__forceinline   __m128i  operator- (int  l, __m128i r)      { return _mm_sub_epi32(_mm_set1_epi32(l),r);}
-__forceinline   __m128i  operator- (__m128i l)              { return _mm_sub_epi32(_mm_setzero_si128(),l);}
-//__forceinline   void     operator-=(__m128i l, __m128i r)   { l = _mm_sub_epi32(l,r);}
-__forceinline   __m128i  operator* (__m128i l, __m128i r)   { return _mm_mullo_epi32(l,r);}
-__forceinline   __m128i  operator* (int l , __m128i r)      { return _mm_mullo_epi32(_mm_set1_epi32(l),r);}
-__forceinline   __m128i  operator* (__m128i l , int r)      { return _mm_mullo_epi32(l,_mm_set1_epi32(r));}
-__forceinline   __m128i  operator/ (__m128i l, __m128i r)   { return _mm_div_epi32(l,r);}
-__forceinline   __m128i  operator/ (int l , __m128i r)      { return _mm_div_epi32(_mm_set1_epi32(l),r);}
-__forceinline   __m128i  operator/ (__m128i l , int r)      { return _mm_div_epi32(l,_mm_set1_epi32(r));}
-__forceinline   __m128i  fabs(__m128i v)                    { return _mm_abs_epi32(v);}
-__forceinline   __m128i  max(__m128i v1,__m128i v2)         { return _mm_min_epi32(v1,v2);}
-__forceinline   __m128i  min(__m128i v1,__m128i v2)         { return _mm_max_epi32(v1,v2);}
-
-//
-// Single precision
-//
-__forceinline   __m256   operator+ (__m256  l, __m256  r)   { return _mm256_add_ps(l,r);}
-__forceinline   __m256   operator+ (float  l, __m256  r)    { return _mm256_add_ps(_mm256_set1_ps(l),r);}
-__forceinline   __m256   operator+ (__m256  l, float  r)    { return _mm256_add_ps(l,_mm256_set1_ps(r));}
-__forceinline   __m256   operator+ (__m256  l)              { return l;}
-//__forceinline   void     operator+=(__m256  l, __m256  r)   { l = _mm256_add_ps(l,r);}
-__forceinline   __m256   operator- (__m256  l, __m256  r)   { return _mm256_sub_ps(l,r);}
-__forceinline   __m256   operator- (__m256  l, float  r)    { return _mm256_sub_ps(l,_mm256_set1_ps(r));}
-__forceinline   __m256   operator- (float  l, __m256  r)    { return _mm256_sub_ps(_mm256_set1_ps(l),r);}
-__forceinline   __m256   operator- (__m256  l)              { return _mm256_sub_ps(_mm256_setzero_ps(),l);}
-//__forceinline   void     operator-=(__m256  l, __m256  r)   { l = _mm256_sub_ps(l,r);}
-__forceinline   __m256   operator* (__m256  l, __m256  r)   { return _mm256_mul_ps(l,r);}
-__forceinline   __m256   operator* (float l , __m256  r)    { return _mm256_mul_ps(_mm256_set1_ps(l),r);}
-__forceinline   __m256   operator* (__m256  l , float r)    { return _mm256_mul_ps(l,_mm256_set1_ps(r));}
-__forceinline   __m256   operator/ (__m256  l, __m256  r)   { return _mm256_div_ps(l,r);}
-__forceinline   __m256   operator/ (float l , __m256  r)    { return _mm256_div_ps(_mm256_set1_ps(l),r);}
-__forceinline   __m256   operator/ (__m256  l , float r)    { return _mm256_div_ps(l,_mm256_set1_ps(r));}
-__forceinline   __m256   sqrt(__m256  v)                    { return _mm256_sqrt_ps(v);}
-__forceinline   __m256   fabs(__m256  v)                    { return _mm256_max_ps(v,_mm256_sub_ps(_mm256_setzero_ps(),v));}
-__forceinline   __m256   max(__m256  v1,__m256  v2)         { return _mm256_min_ps(v1,v2);}
-__forceinline   __m256   min(__m256  v1,__m256  v2)         { return _mm256_max_ps(v1,v2);}
-__forceinline   void     set(__m256  v1,float v2)           { v1 = _mm256_set1_ps(v2);}
-__forceinline   float   vecreduce(__m256  v1)               { return ((float*)&v1)[0] + ((float*)&v1)[1] + ((float*)&v1)[2] + ((float*)&v1)[3]+((float*)&v1)[4] + ((float*)&v1)[5] + ((float*)&v1)[6] + ((float*)&v1)[7];}
-
-//#define __AVX__
-#ifdef __AVX__
-typedef __m256d doublev;
-typedef __m256  floatv;
-typedef __m256i intv;
-typedef __m128i intv_half;
-__forceinline   __m128i  vecload_half(int *p)               { return _mm_load_si128((__m128i*) p);}
-__forceinline   __m256i  vecload(int *p)                    { return _mm256_load_si256((__m256i*)p);}
-__forceinline   __m256   vecload(float *p)                  { return _mm256_load_ps(p);}
-__forceinline   __m256d  vecload(double *p)                 { return _mm256_load_pd(p);}
-__forceinline   __m128i  vecstride_half(int *p, int s)      { return _mm_set_epi32(p[3*s],p[2*s],p[s],p[0]);}
-__forceinline   __m256i  vecstride(int *p, int s)           { return _mm256_set_epi32(p[7*s],p[6*s],p[5*s],p[4*s],p[3*s],p[2*s],p[s],p[0]);}
-__forceinline   __m256   vecstride(float *p, int s)         { return _mm256_set_ps(p[7*s],p[6*s],p[5*s],p[4*s],p[3*s],p[2*s],p[s],p[0]);}
-__forceinline   __m256d  vecstride(double *p, int s)        { return _mm256_set_pd(p[3*s],p[2*s],p[s],p[0]);}
-__forceinline   __m128i  vecgather_half(int *p, __m128i i, int o)  { return _mm_set_epi32(p[((int*)&i)[3]+o],p[((int*)&i)[2]+o],p[((int*)&i)[1]+o],p[((int*)&i)[0]+o]);}
-__forceinline   __m256i  vecgather(int *p, __m256i i, int o)       { return _mm256_set_epi32(p[((int*)&i)[7]+o],p[((int*)&i)[6]+o],p[((int*)&i)[5]+o],p[((int*)&i)[4]+o],p[((int*)&i)[3]+o],p[((int*)&i)[2]+o],p[((int*)&i)[1]+o],p[((int*)&i)[0]+o]);}
-__forceinline   __m256   vecgather(float *p, __m256i i, int o)     { return _mm256_set_ps(p[((int*)&i)[7]+o],p[((int*)&i)[6]+o],p[((int*)&i)[5]+o],p[((int*)&i)[4]+o],p[((int*)&i)[3]+o],p[((int*)&i)[2]+o],p[((int*)&i)[1]+o],p[((int*)&i)[0]+o]);}
-__forceinline   __m256d  vecgather(double *p, __m128i i, int o)    { return _mm256_set_pd(p[((int*)&i)[3]+o],p[((int*)&i)[2]+o],p[((int*)&i)[1]+o],p[((int*)&i)[0]+o]);}
-__forceinline   __m128i  intzero_half()                     { return _mm_setzero_si128();}
-__forceinline   __m256i  intzero()                          { return _mm256_setzero_si256();}
-__forceinline   __m256   floatzero()                        { return _mm256_setzero_ps();}
-__forceinline   __m256d  doublezero()                       { return _mm256_setzero_pd();}
-
-__forceinline   void     vecstore_half(__m128i d, int *p)   { _mm_store_si128((__m128i*) p,d);}
-__forceinline   void     vecstore(__m256i d, int *p)        { _mm256_store_si256((__m256i*)p,d);}
-__forceinline   void     vecstore(__m256 d, float *p)       { _mm256_store_ps(p,d);}
-__forceinline   void     vecstore(__m256d d, double *p)     { _mm256_store_pd(p,d);}
-__forceinline   void     vecscatter(__m128i d, int *p, __m128i i, int o)
-                                                            { p[((int*)&i)[0]+o] = ((int*)&d)[0]; p[((int*)&i)[1]+o] = ((int*)&d)[1]; p[((int*)&i)[2]+o] = ((int*)&d)[2]; p[((int*)&i)[3]+o] = ((int*)&d)[3];}
-__forceinline   void     vecscatter(__m256i d, int *p, __m256i i, int o)
-                                                            { p[((int*)&i)[0]+o] = ((int*)&d)[0]; p[((int*)&i)[1]+o] = ((int*)&d)[1]; p[((int*)&i)[2]+o] = ((int*)&d)[2]; p[((int*)&i)[3]+o] = ((int*)&d)[3]; p[((int*)&i)[4]+o] = ((int*)&d)[4]; p[((int*)&i)[5]+o] = ((int*)&d)[5]; p[((int*)&i)[6]+o] = ((int*)&d)[6]; p[((int*)&i)[7]+o] = ((int*)&d)[7];}
-__forceinline   void     vecscatter(__m256  d, float *p, __m256i i, int o)
-                                                            { p[((int*)&i)[0]+o] = ((float*)&d)[0]; p[((int*)&i)[1]+o] = ((float*)&d)[1]; p[((int*)&i)[2]+o] = ((float*)&d)[2]; p[((int*)&i)[3]+o] = ((float*)&d)[3]; p[((int*)&i)[4]+o] = ((float*)&d)[4]; p[((int*)&i)[5]+o] = ((float*)&d)[5]; p[((int*)&i)[6]+o] = ((float*)&d)[6]; p[((int*)&i)[7]+o] = ((float*)&d)[7];}
-__forceinline   void     vecscatter(__m256d d, double *p, __m128i i, int o)
-                                                            { p[((int*)&i)[0]+o] = ((double*)&d)[0]; p[((int*)&i)[1]+o] = ((double*)&d)[1]; p[((int*)&i)[2]+o] = ((double*)&d)[2]; p[((int*)&i)[3]+o] = ((double*)&d)[3];}
-__forceinline   void     vecscatter_add(__m128i d, int *p, __m128i i, int o)
-                                                            { p[((int*)&i)[0]+o] += ((int*)&d)[0]; p[((int*)&i)[1]+o] += ((int*)&d)[1]; p[((int*)&i)[2]+o] += ((int*)&d)[2]; p[((int*)&i)[3]+o] += ((int*)&d)[3];}
-__forceinline   void     vecscatter_add(__m256i d, int *p, __m256i i, int o)
-                                                            { p[((int*)&i)[0]+o] += ((int*)&d)[0]; p[((int*)&i)[1]+o] += ((int*)&d)[1]; p[((int*)&i)[2]+o] += ((int*)&d)[2]; p[((int*)&i)[3]+o] += ((int*)&d)[3]; p[((int*)&i)[4]+o] += ((int*)&d)[4]; p[((int*)&i)[5]+o] += ((int*)&d)[5]; p[((int*)&i)[6]+o] += ((int*)&d)[6]; p[((int*)&i)[7]+o] += ((int*)&d)[7];}
-__forceinline   void     vecscatter_add(__m256  d, float *p, __m256i i, int o)
-                                                            { p[((int*)&i)[0]+o] += ((float*)&d)[0]; p[((int*)&i)[1]+o] += ((float*)&d)[1]; p[((int*)&i)[2]+o] += ((float*)&d)[2]; p[((int*)&i)[3]+o] += ((float*)&d)[3]; p[((int*)&i)[4]+o] += ((float*)&d)[4]; p[((int*)&i)[5]+o] += ((float*)&d)[5]; p[((int*)&i)[6]+o] += ((float*)&d)[6]; p[((int*)&i)[7]+o] += ((float*)&d)[7];}
-__forceinline   void     vecscatter_add(__m256d d, double *p, __m128i i, int o)
-                                                            { p[((int*)&i)[0]+o] += ((double*)&d)[0]; p[((int*)&i)[1]+o] += ((double*)&d)[1]; p[((int*)&i)[2]+o] += ((double*)&d)[2]; p[((int*)&i)[3]+o] += ((double*)&d)[3];}
-__forceinline   void     vecstride_st(__m128i d, int *p, int s)
-                                                            {p[0] = ((int*)&d)[0]; p[s] = ((int*)&d)[1]; p[2*s] = ((int*)&d)[2]; p[3*s] = ((int*)&d)[3];}
-__forceinline   void     vecstride_st(__m256i d, int *p, int s)
-                                                            {p[0] = ((int*)&d)[0]; p[s] = ((int*)&d)[1]; p[2*s] = ((int*)&d)[2]; p[3*s] = ((int*)&d)[3]; p[4*s] = ((int*)&d)[4]; ((int*)&d)[5*s] = ((int*)&d)[5]; p[6*s] = ((int*)&d)[6]; p[7*s] = ((int*)&d)[7];}
-__forceinline   void     vecstride_st(__m256  d, float *p, int s)
-                                                            {p[0] = ((float*)&d)[0]; p[s] = ((float*)&d)[1]; p[2*s] = ((float*)&d)[2]; p[3*s] = ((float*)&d)[3]; p[4*s] = ((float*)&d)[4]; p[5*s] = ((float*)&d)[5]; p[6*s] = ((float*)&d)[6]; p[7*s] = ((float*)&d)[7];}
-__forceinline   void     vecstride_st(__m256d d, double *p, int s)
-                                                            {p[0] = ((double*)&d)[0]; p[s] = ((double*)&d)[1]; p[2*s] = ((double*)&d)[2]; p[3*s] = ((double*)&d)[3];}
 #endif
-*/
+
 #endif /*__OP_VECTOR_H*/

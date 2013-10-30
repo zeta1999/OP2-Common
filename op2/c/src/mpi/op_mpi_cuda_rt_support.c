@@ -117,7 +117,7 @@ void op_upload_dat(op_dat dat) {
   int set_size = dat->set->size + OP_import_exec_list[dat->set->index]->size +
     OP_import_nonexec_list[dat->set->index]->size;
   if (strstr( dat->type, ":soa")!= NULL) {
-    char *temp_data = (char *)malloc(dat->size*set_size*sizeof(char));
+    char *temp_data = (char *)op_malloc(dat->size*set_size*sizeof(char));
     int element_size = dat->size/dat->dim;
     for (int i = 0; i < dat->dim; i++) {
       for (int j = 0; j < set_size; j++) {
@@ -127,7 +127,7 @@ void op_upload_dat(op_dat dat) {
       }
     }
     cutilSafeCall( cudaMemcpy(dat->data_d, temp_data, set_size*dat->size, cudaMemcpyHostToDevice));
-    free(temp_data);
+    op_free(temp_data);
   } else {
     cutilSafeCall( cudaMemcpy(dat->data_d, dat->data, set_size*dat->size, cudaMemcpyHostToDevice));
   }
@@ -138,7 +138,7 @@ void op_download_dat(op_dat dat) {
   int set_size = dat->set->size + OP_import_exec_list[dat->set->index]->size +
     OP_import_nonexec_list[dat->set->index]->size;
   if (strstr( dat->type, ":soa")!= NULL) {
-    char *temp_data = (char *)malloc(dat->size*set_size*sizeof(char));
+    char *temp_data = (char *)op_malloc(dat->size*set_size*sizeof(char));
     cutilSafeCall( cudaMemcpy(temp_data, dat->data_d, set_size*dat->size, cudaMemcpyDeviceToHost));
     int element_size = dat->size/dat->dim;
     for (int i = 0; i < dat->dim; i++) {
@@ -148,7 +148,7 @@ void op_download_dat(op_dat dat) {
         }
       }
     }
-    free(temp_data);
+    op_free(temp_data);
   } else {
     cutilSafeCall( cudaMemcpy(dat->data, dat->data_d, set_size*dat->size, cudaMemcpyDeviceToHost));
   }

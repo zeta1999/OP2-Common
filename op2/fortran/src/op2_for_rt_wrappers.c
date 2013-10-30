@@ -48,8 +48,8 @@ void op_partition_wrapper (const char* lib_name, const char* lib_routine,
 }
 
 void FortranToCMapping (op_arg * arg) {
-  op_map newMapStruct = (op_map) calloc (1, sizeof(op_map_core));
-  int * newMap = (int *) calloc (arg->map->from->size * arg->map->dim, sizeof (int));
+  op_map newMapStruct = (op_map) op_calloc (1, sizeof(op_map_core));
+  int * newMap = (int *) op_calloc (arg->map->from->size * arg->map->dim, sizeof (int));
 
   for ( int i = 0; i < arg->map->from->size * arg->map->dim; i++ )
     newMap[i] = arg->map->map[i] -1;
@@ -135,7 +135,7 @@ op_plan * FortranPlanCaller (char name[], op_set set,
   /* copy the name because FORTRAN doesn't allow allocating
      strings */
   int nameLen = strlen (name);
-  char * heapName = (char *) calloc (nameLen, sizeof(char));
+  char * heapName = (char *) op_calloc (nameLen, sizeof(char));
   strncpy (heapName, name, nameLen);
 
   /* call the C OP2 function */

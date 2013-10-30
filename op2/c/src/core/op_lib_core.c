@@ -37,7 +37,7 @@
 
 #include <sys/time.h>
 #include "op_lib_core.h"
-
+#include <malloc.h>
 /*
  * OP2 global state variables
  */
@@ -72,7 +72,7 @@ op_kernel * OP_kernels;
 static char * copy_str( char const * src )
 {
   const size_t len = strlen( src ) + 1;
-  char * dest = (char *) calloc ( len, sizeof ( char ) );
+  char * dest = (char *) op_calloc ( len, sizeof ( char ) );
   return strncpy ( dest, src, len );
 }
 
@@ -176,17 +176,17 @@ op_decl_set_core ( int size, char const * name )
   if ( OP_set_index == OP_set_max )
   {
     OP_set_max += 10;
-    OP_set_list = ( op_set * ) realloc ( OP_set_list, OP_set_max * sizeof ( op_set ) );
+    OP_set_list = ( op_set * ) op_realloc ( OP_set_list, OP_set_max * sizeof ( op_set ) );
 
     if ( OP_set_list == NULL )
     {
-      printf ( " op_decl_set error -- error reallocating memory\n" );
+      printf ( " op_decl_set error -- error op_reallocating memory\n" );
       exit ( -1 );
     }
 
   }
 
-  op_set set = ( op_set ) malloc ( sizeof ( op_set_core ) );
+  op_set set = ( op_set ) op_malloc ( sizeof ( op_set_core ) );
   set->index = OP_set_index;
   set->size = size;
   set->core_size = size;
@@ -236,16 +236,16 @@ op_decl_map_core ( op_set from, op_set to, int dim, int * imap, char const * nam
   if ( OP_map_index == OP_map_max )
   {
     OP_map_max += 10;
-    OP_map_list = ( op_map * ) realloc ( OP_map_list, OP_map_max * sizeof ( op_map ) );
+    OP_map_list = ( op_map * ) op_realloc ( OP_map_list, OP_map_max * sizeof ( op_map ) );
 
     if ( OP_map_list == NULL )
     {
-      printf ( " op_decl_map error -- error reallocating memory\n" );
+      printf ( " op_decl_map error -- error op_reallocating memory\n" );
       exit ( -1 );
     }
   }
 
-  op_map map = ( op_map ) malloc ( sizeof ( op_map_core ) );
+  op_map map = ( op_map ) op_malloc ( sizeof ( op_map_core ) );
   map->index = OP_map_index;
   map->from = from;
   map->to = to;
@@ -274,7 +274,7 @@ op_decl_dat_core ( op_set set, int dim, char const * type, int size, char * data
     exit ( -1 );
   }
 
-  op_dat dat = ( op_dat ) malloc ( sizeof ( op_dat_core ) );
+  op_dat dat = ( op_dat ) op_malloc ( sizeof ( op_dat_core ) );
   dat->index = OP_dat_index;
   dat->set = set;
   dat->dim = dim;
@@ -291,7 +291,7 @@ op_decl_dat_core ( op_set set, int dim, char const * type, int size, char * data
   op_dat_entry* item;
 
   //add the newly created op_dat to list
-  item = (op_dat_entry *)malloc(sizeof(op_dat_entry));
+  item = (op_dat_entry *)op_malloc(sizeof(op_dat_entry));
   if (item == NULL) {
     printf ( " op_decl_dat error -- error allocating memory to double linked list entry\n" );
     exit ( -1 );
@@ -340,11 +340,11 @@ op_free_dat_temp_core (op_dat dat)
          strcmp(item_dat->type,dat->type) == 0 )
      {
        if (!(item->dat)->user_managed)
-         free((item->dat)->data);
-       free((char*)(item->dat)->name);
-       free((char*)(item->dat)->type);
+         op_free((item->dat)->data);
+       op_free((char*)(item->dat)->name);
+       op_free((char*)(item->dat)->type);
        TAILQ_REMOVE(&OP_dat_list, item, entries);
-       free(item);
+       op_free(item);
        success = 1;
        break;
      }
@@ -365,41 +365,41 @@ op_decl_const_core ( int dim, char const * type, int typeSize, char * data, char
 void
 op_exit_core (  )
 {
-  // free storage and pointers for sets, maps and data
+  // op_free storage and pointers for sets, maps and data
 
   for ( int i = 0; i < OP_set_index; i++ )
   {
-    free ( (char*)OP_set_list[i]->name );
-    free ( OP_set_list[i] );
+    op_free ( (char*)OP_set_list[i]->name );
+    op_free ( OP_set_list[i] );
   }
-  free ( OP_set_list );
+  op_free ( OP_set_list );
   OP_set_list = NULL;
 
   for ( int i = 0; i < OP_map_index; i++ )
   {
     if (!OP_map_list[i]->user_managed)
-      free ( OP_map_list[i]->map );
-    free ( (char*)OP_map_list[i]->name );
-    free ( OP_map_list[i] );
+      op_free ( OP_map_list[i]->map );
+    op_free ( (char*)OP_map_list[i]->name );
+    op_free ( OP_map_list[i] );
   }
-  free ( OP_map_list );
+  op_free ( OP_map_list );
   OP_map_list = NULL;
 
 
-  /*free doubl linked list holding the op_dats */
+  /*op_free doubl linked list holding the op_dats */
   op_dat_entry *item;
   while ((item = TAILQ_FIRST(&OP_dat_list))) {
     if (!(item->dat)->user_managed)
-      free((item->dat)->data);
-    free((char*)(item->dat)->name);
-    free((char*)(item->dat)->type);
+      op_free((item->dat)->data);
+    op_free((char*)(item->dat)->name);
+    op_free((char*)(item->dat)->type);
     TAILQ_REMOVE(&OP_dat_list, item, entries);
-    free(item);
+    op_free(item);
   }
 
-  // free storage for timing info
+  // op_free storage for timing info
 
-  free ( OP_kernels );
+  op_free ( OP_kernels );
   OP_kernels = NULL;
 
   // reset initial values
@@ -730,7 +730,7 @@ op_timing_realloc ( int kernel )
   if ( kernel >= OP_kern_max )
   {
     OP_kern_max_new = kernel + 10;
-    OP_kernels = ( op_kernel * ) realloc ( OP_kernels, OP_kern_max_new * sizeof ( op_kernel ) );
+    OP_kernels = ( op_kernel * ) op_realloc ( OP_kernels, OP_kern_max_new * sizeof ( op_kernel ) );
     if ( OP_kernels == NULL )
     {
       printf ( " op_timing_realloc error \n" );
@@ -874,4 +874,49 @@ int op_size_of_set(const char * name) {
   printf("Error: set %s not found\n", name);
   exit(-1);
   return -1;
+}
+
+void* op_malloc (size_t size) {
+  #ifdef __INTEL_COMPILER
+    //return _mm_malloc(size, OP2_ALIGNMENT);
+    return memalign(OP2_ALIGNMENT,size);
+  #else
+    return malloc(size);
+  #endif
+}
+
+void* op_calloc (size_t num, size_t size) {
+  #ifdef __INTEL_COMPILER
+    //void * ptr = _mm_malloc(num*size, OP2_ALIGNMENT);
+    void * ptr = memalign(OP2_ALIGNMENT,num*size);
+    memset(ptr, 0, num*size);
+    return ptr;
+  #else
+    return calloc(num,size);
+  #endif
+}
+
+void* op_realloc (void *ptr, size_t size) {
+  #ifdef __INTEL_COMPILER
+    void *newptr = realloc(ptr,size);
+    if (((unsigned long)newptr & (OP2_ALIGNMENT - 1)) != 0) {
+      void *newptr2 = memalign(OP2_ALIGNMENT,size);
+      memcpy(newptr2, newptr, size);
+      free(newptr);
+      return newptr2;
+    } else {
+      return newptr;
+    }
+  #else
+    return realloc(ptr,size);
+  #endif
+}
+
+void op_free (void *ptr) {
+  #ifdef __INTEL_COMPILER
+    //_mm_free(ptr);
+    free(ptr);
+  #else
+    free(ptr);
+  #endif
 }

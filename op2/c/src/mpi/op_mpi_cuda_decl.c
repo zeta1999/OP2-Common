@@ -89,7 +89,7 @@ op_init ( int argc, char ** argv, int diags)
 op_dat op_decl_dat_char ( op_set set, int dim, char const *type, int size,
               char * data, char const * name )
 {
-  char* d = (char*) malloc(set->size*dim*size);
+  char* d = (char*) op_malloc(set->size*dim*size);
   if (d == NULL) {
     printf ( " op_decl_dat_char error -- error allocating memory to dat\n" );
     exit ( -1 );
@@ -111,7 +111,7 @@ op_dat op_decl_dat_temp_char(op_set set, int dim, char const * type, int size, c
   int set_size = set->size + OP_import_exec_list[set->index]->size +
   OP_import_nonexec_list[set->index]->size;
 
-  dat->data = (char*) calloc(set_size*dim*size, 1); //initialize data bits to 0
+  dat->data = (char*) op_calloc(set_size*dim*size, 1); //initialize data bits to 0
   dat-> user_managed = 0;
 
   //transpose
@@ -158,21 +158,21 @@ op_dat op_decl_dat_temp_char(op_set set, int dim, char const * type, int size, c
 
 int op_free_dat_temp_char ( op_dat dat )
 {
-  //need to free mpi_buffers use in this op_dat
-  free(((op_mpi_buffer)(dat->mpi_buffer))->buf_exec);
-  free(((op_mpi_buffer)(dat->mpi_buffer))->buf_nonexec);
-  free(((op_mpi_buffer)(dat->mpi_buffer))->s_req);
-  free(((op_mpi_buffer)(dat->mpi_buffer))->r_req);
-  free(dat->mpi_buffer);
+  //need to op_free mpi_buffers use in this op_dat
+  op_free(((op_mpi_buffer)(dat->mpi_buffer))->buf_exec);
+  op_free(((op_mpi_buffer)(dat->mpi_buffer))->buf_nonexec);
+  op_free(((op_mpi_buffer)(dat->mpi_buffer))->s_req);
+  op_free(((op_mpi_buffer)(dat->mpi_buffer))->r_req);
+  op_free(dat->mpi_buffer);
 
-  //need to free device buffers used in mpi comms
+  //need to op_free device buffers used in mpi comms
   cutilSafeCall (cudaFree(dat->buffer_d));
 
   if (strstr( dat->type, ":soa")!= NULL) {
     cutilSafeCall (cudaFree(dat->buffer_d_r));
   }
 
-  //free data on device
+  //op_free data on device
   cutilSafeCall (cudaFree(dat->data_d));
   return op_free_dat_temp_core (dat);
 }
@@ -183,7 +183,7 @@ void op_mv_halo_device(op_set set, op_dat dat)
   OP_import_nonexec_list[set->index]->size;
 
   if (strstr( dat->type, ":soa")!= NULL) {
-    char *temp_data = (char *)malloc(dat->size*set_size*sizeof(char));
+    char *temp_data = (char *)op_malloc(dat->size*set_size*sizeof(char));
     int element_size = dat->size/dat->dim;
     for (int i = 0; i < dat->dim; i++) {
       for (int j = 0; j < set_size; j++) {
@@ -194,7 +194,7 @@ void op_mv_halo_device(op_set set, op_dat dat)
     }
     op_cpHostToDevice ( ( void ** ) &( dat->data_d ),
                         ( void ** ) &( dat->data ), dat->size * set_size );
-    free(temp_data);
+    op_free(temp_data);
 
     cutilSafeCall ( cudaMalloc ( ( void ** ) &( dat->buffer_d_r ),
       dat->size * (OP_import_exec_list[set->index]->size +
@@ -262,7 +262,7 @@ op_set op_decl_set(int size, char const * name )
 
 op_map op_decl_map(op_set from, op_set to, int dim, int * imap, char const * name )
 {
-  int* m = (int*) malloc(from->size*dim*sizeof(int));
+  int* m = (int*) op_malloc(from->size*dim*sizeof(int));
   memcpy(m, imap, from->size*dim*sizeof(int));
   return op_decl_map_core ( from, to, dim, m, name );
   //return op_decl_map_core ( from, to, dim, imap, name );
@@ -337,6 +337,7 @@ op_decl_const_char ( int dim, char const * type, int size, char * dat,
 void
 op_exit (  )
 {
+
   //need to free buffer_d used for mpi comms in each op_dat
   if (OP_hybrid_gpu) {
     op_dat_entry *item;
@@ -360,9 +361,9 @@ op_exit (  )
   }
 
   op_mpi_exit();
-  op_cuda_exit();            // frees dat_d memory
-  op_rt_exit();              // frees plan memory
-  op_exit_core();            // frees lib core variables
+  op_cuda_exit();            // op_frees dat_d memory
+  op_rt_exit();              // op_frees plan memory
+  op_exit_core();            // op_frees lib core variables
 
   int flag = 0;
   MPI_Finalized(&flag);
@@ -385,9 +386,9 @@ void op_print_dat_to_binfile(op_dat dat, const char *file_name)
   op_dat temp = op_mpi_get_data(dat);
   print_dat_to_binfile_mpi(temp, file_name);
 
-  free(temp->data);
-  free(temp->set);
-  free(temp);
+  op_free(temp->data);
+  op_free(temp->set);
+  op_free(temp);
 }
 
 void op_print_dat_to_txtfile(op_dat dat, const char *file_name)
@@ -399,9 +400,9 @@ void op_print_dat_to_txtfile(op_dat dat, const char *file_name)
   op_dat temp = op_mpi_get_data(dat);
   print_dat_to_txtfile_mpi(temp, file_name);
 
-  free(temp->data);
-  free(temp->set);
-  free(temp);
+  op_free(temp->data);
+  op_free(temp->set);
+  op_free(temp);
 }
 
 void op_upload_all ()
@@ -413,7 +414,7 @@ void op_upload_all ()
                    OP_import_nonexec_list[dat->set->index]->size;
     if (dat->data_d) {
       if (strstr( dat->type, ":soa")!= NULL) {
-        char *temp_data = (char *)malloc(dat->size*set_size*sizeof(char));
+        char *temp_data = (char *)op_malloc(dat->size*set_size*sizeof(char));
         int element_size = dat->size/dat->dim;
         for (int i = 0; i < dat->dim; i++) {
           for (int j = 0; j < set_size; j++) {
@@ -424,7 +425,7 @@ void op_upload_all ()
         }
         cutilSafeCall( cudaMemcpy(dat->data_d, temp_data, dat->size * set_size, cudaMemcpyHostToDevice ));
         dat->dirty_hd = 0;
-        free(temp_data);
+        op_free(temp_data);
       } else {
         cutilSafeCall( cudaMemcpy(dat->data_d, dat->data, dat->size * set_size, cudaMemcpyHostToDevice ));
         dat->dirty_hd = 0;
@@ -443,9 +444,9 @@ void op_fetch_data_char ( op_dat dat, char * usr_ptr )
 
   //copy data into usr_ptr
   memcpy((void *)usr_ptr, (void *)temp->data, temp->set->size*temp->size);
-  free(temp->data);
-  free(temp->set);
-  free(temp);
+  op_free(temp->data);
+  op_free(temp->set);
+  op_free(temp);
 }
 
 op_dat op_fetch_data_file_char(op_dat dat)
@@ -467,7 +468,7 @@ void op_fetch_data_hdf5_char(op_dat dat, char * usr_ptr, int low, int high)
   //do allgather on temp->data and copy it to memory block pointed to by use_ptr
   fetch_data_hdf5(temp, usr_ptr, low, high);
 
-  free(temp->data);
-  free(temp->set);
-  free(temp);
+  op_free(temp->data);
+  op_free(temp->set);
+  op_free(temp);
 }

@@ -113,8 +113,8 @@ op_map_core * op_decl_null_map ( )
   op_set nullSet = NULL;
   op_map map = NULL;
 
-  nullSet = (op_set) calloc ( 1, sizeof ( op_set_core ) );
-  map = (op_map) malloc(sizeof(op_map_core));
+  nullSet = (op_set) op_calloc ( 1, sizeof ( op_set_core ) );
+  map = (op_map) op_malloc(sizeof(op_map_core));
 
   nullSet->size = 0;
   nullSet->name = NULL;
@@ -130,9 +130,9 @@ op_map_core * op_decl_null_map ( )
 
 op_dat op_decl_gbl_f ( char ** dataIn, int dim, int size, const char * type )
 {
-  op_dat_core * dataOut = calloc ( 1, sizeof ( op_dat_core ) );
+  op_dat_core * dataOut = op_calloc ( 1, sizeof ( op_dat_core ) );
 
-  char * typeName = (char *) calloc ( strlen ( type ), sizeof ( char ) );
+  char * typeName = (char *) op_calloc ( strlen ( type ), sizeof ( char ) );
 
   strncpy ( typeName, type, strlen ( type ) );
 
@@ -227,7 +227,7 @@ void dumpOpDatSequential(char * kernelName, op_dat_core * dat, op_access access,
   // OP_GBL or read only
   if (access == OP_READ || map->dim == -1) return;
 
-  char * fileName = calloc (strlen(kernelName) + strlen(dat->name), sizeof (char));
+  char * fileName = op_calloc (strlen(kernelName) + strlen(dat->name), sizeof (char));
   sprintf (fileName, "%s_%s", kernelName, dat->name);
 
   dumpOpDat (dat, fileName);
@@ -237,7 +237,7 @@ void dumpOpDatFromDevice (op_dat_core * data, const char * label, int * sequence
 {
   op_get_dat (data);
 
-  char * fileName = calloc (strlen(label) + log10(*sequenceNumber) + 1, sizeof (char));
+  char * fileName = op_calloc (strlen(label) + log10(*sequenceNumber) + 1, sizeof (char));
 
   sprintf (fileName, "%s_%d", label, *sequenceNumber);
 
@@ -290,7 +290,7 @@ op_arg
 op_arg_gbl_copy ( char * data, int dim, const char * typ, int size, op_access acc ) {
 
   int len = strlen (typ);
-  char * heapType = (char *) calloc (len, sizeof (char));
+  char * heapType = (char *) op_calloc (len, sizeof (char));
 
   strncpy (heapType, typ, len);
 
@@ -309,7 +309,7 @@ op_arg_dat_null (op_dat dat, int idx, op_map map, int dim, const char * typ, op_
 
   // forces impossible dimension
   arg.dim = -1;
-  arg.idx = -1; //this avoids getting a free in the MPI implementation (see op2_C_reference.c)
+  arg.idx = -1; //this avoids getting a op_free in the MPI implementation (see op2_C_reference.c)
 
   arg.map = NULL;
   arg.acc = OP_ACC_NULL;
@@ -425,7 +425,7 @@ int setKernelTime (int id, char name[], double kernelTime, float transfer, float
   /* need to copy the name the first time */
   if ( OP_kernels[id].count == 0 ) {
     nameLen = strlen (name);
-    heapName = (char *) calloc (nameLen, sizeof(char));
+    heapName = (char *) op_calloc (nameLen, sizeof(char));
     strncpy (heapName, name, nameLen);
     OP_kernels[id].name = heapName;
   }

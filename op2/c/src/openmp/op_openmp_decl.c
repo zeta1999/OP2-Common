@@ -62,7 +62,7 @@ op_decl_dat_temp_char (op_set set, int dim, char const * type, int size, char co
   char* data = NULL;
   op_dat dat = op_decl_dat_temp_core ( set, dim, type, size, data, name );
 
-  dat->data = (char*) calloc(set->size*dim*size, 1); //initialize data bits to 0
+  dat->data = (char*) op_calloc(set->size*dim*size, 1); //initialize data bits to 0
   dat-> user_managed = 0;
   return dat;
 }
@@ -161,7 +161,7 @@ op_decl_set ( int size, char const *name )
   for (int m = 0; m<OP_map_index; m++) {
     //Convert maps to transposed form
     op_map map = OP_map_list[m];
-    free(map->map_d);
+    op_free(map->map_d);
   }
   return op_decl_set_core ( size, name );
 }

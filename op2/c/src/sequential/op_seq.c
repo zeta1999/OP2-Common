@@ -53,7 +53,7 @@ op_map op_decl_map ( op_set from, op_set to, int dim, int * imap, char const * n
   op_map map = op_decl_map_core ( from, to, dim, imap, name );
   int set_size = map->from->size+map->from->exec_size;
   int set_size2 = ((map->from->size+map->from->exec_size-1)/16+1)*16; //align to 512 bits
-  map->map_d = (int *)malloc(map->dim*set_size2*sizeof(int));
+  map->map_d = (int *)op_malloc(map->dim*set_size2*sizeof(int));
   for (int i = 0; i < map->dim; i++) {
     for (int j = 0; j < set_size; j++) {
       map->map_d[i*set_size2 + j] = map->map[map->dim*j+i];
@@ -78,7 +78,7 @@ op_decl_dat_temp_char (op_set set, int dim, char const * type, int size, char co
   char* data = NULL;
   op_dat dat = op_decl_dat_temp_core ( set, dim, type, size, data, name );
 
-  dat->data = (char*) calloc(set->size*dim*size, 1); //initialize data bits to 0
+  dat->data = (char*) op_calloc(set->size*dim*size, 1); //initialize data bits to 0
   dat-> user_managed = 0;
   return dat;
 }
@@ -166,7 +166,7 @@ void op_exit ()
 {
   for (int m = 0; m<OP_map_index; m++) {
     op_map map = OP_map_list[m];
-    free(map->map_d);
+    op_free(map->map_d);
   }
   op_exit_core ();
 }
