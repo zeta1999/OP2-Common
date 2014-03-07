@@ -325,7 +325,7 @@ void op_plan_check( op_plan OP_plan, int ninds, int * inds)
  */
 
 op_plan *op_plan_core(char const *name, op_set set, int part_size,
-                      int nargs, op_arg *args, int ninds, int *inds, int staging )
+                      int nargs, op_arg *args, int ninds, int *inds, int options )
 {
   //set exec length
   int exec_length = set->size;
@@ -334,6 +334,16 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size,
     if(args[i].opt && args[i].idx != -1 && args[i].acc != OP_READ )
     {
       exec_length += set->exec_size;
+      break;
+    }
+  }
+
+  int halo_exchange = 0;
+  for(int i = 0; i< nargs; i++)
+  {
+    if(args[i].opt && args[i].idx != -1 && args[i].acc != OP_WRITE && args[i].acc != OP_INC  )
+    {
+      halo_exchange = 1;
       break;
     }
   }
@@ -348,7 +358,8 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size,
         && ( set == OP_plans[ip].set )
         && ( nargs == OP_plans[ip].nargs )
         && ( ninds == OP_plans[ip].ninds )
-        && ( part_size == OP_plans[ip].part_size ) )
+        && ( part_size == OP_plans[ip].part_size )
+        && (options == OP_plans[ip].options ) )
     {
       match = 1;
       for ( int m = 0; m < nargs; m++ )
@@ -392,8 +403,8 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size,
   for ( int m = 0; m < nargs; m++ )
   {
     if ( args[m].opt && inds[m] >= 0 ) {
-      if ((staging == OP_STAGE_INC && args[m].acc == OP_INC) ||
-          (staging == OP_STAGE_ALL || staging == OP_STAGE_PERMUTE))
+      if ((options == OP_STAGE_INC && args[m].acc == OP_INC) ||
+          (options == OP_STAGE_ALL || options == OP_STAGE_PERMUTE))
           maxbytes += args[m].dat->size;
     }
   }
@@ -405,6 +416,9 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size,
     bsize = MAX(( 48 * 1024 / ( 64 * maxbytes ) ) * 64, 256);
   else if (bsize == 0 && maxbytes == 0)
     bsize = 256;
+
+  //If we do 1 level of coloring, do it in one go
+  if (options == OP_COLOR2) bsize = exec_length;
 
   int nblocks = 0;
 
@@ -422,8 +436,8 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size,
   for (int i = 0; i < nargs; i++) inds_staged[i] = -1;
   for (int i = 0; i < ninds; i++) inds_to_inds_staged[i] = -1;
   for (int i = 0; i < nargs; i++) {
-    if (inds[i]>=0 && ((staging == OP_STAGE_INC && args[i].acc == OP_INC) ||
-        (staging == OP_STAGE_ALL || staging == OP_STAGE_PERMUTE))) {
+    if (inds[i]>=0 && ((options == OP_STAGE_INC && args[i].acc == OP_INC) ||
+        (options == OP_STAGE_ALL || options == OP_STAGE_PERMUTE))) {
       if (inds_to_inds_staged[inds[i]] == -1) {
         inds_to_inds_staged[inds[i]] = ninds_staged;
         inds_staged[i] = ninds_staged;
@@ -437,8 +451,8 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size,
   int *invinds_staged = (int *)malloc(ninds_staged*sizeof(int));
   for (int i = 0; i < ninds_staged; i++) invinds_staged[i] = -1;
   for (int i = 0; i < nargs; i++)
-    if (inds[i]>=0 && ((staging == OP_STAGE_INC && args[i].acc == OP_INC) ||
-        (staging == OP_STAGE_ALL || staging == OP_STAGE_PERMUTE)) && invinds_staged[inds_staged[i]] == -1)
+    if (inds[i]>=0 && ((options == OP_STAGE_INC && args[i].acc == OP_INC) ||
+        (options == OP_STAGE_ALL || options == OP_STAGE_PERMUTE)) && invinds_staged[inds_staged[i]] == -1)
       invinds_staged[inds_staged[i]] = i;
 
   int prev_offset = 0;
@@ -458,6 +472,9 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size,
     }
     nblocks++;
   }
+
+  //If we do 1 level of coloring, we have a single "block"
+  if (options == OP_COLOR2) {nblocks = 1; prev_offset = 0; next_offset = exec_length;};
 
   /* enlarge OP_plans array if needed */
 
@@ -544,6 +561,7 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size,
   OP_plans[ip].ncolors_core = 0;
   OP_plans[ip].ncolors_owned = 0;
   OP_plans[ip].count = 1;
+  OP_plans[ip].options = options;
   OP_plans[ip].inds_staged = inds_staged;
 
   OP_plan_index++;
@@ -601,6 +619,7 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size,
     } else {
       next_offset = prev_offset + bsize;
     }
+    if (options == OP_COLOR2) {prev_offset = 0; next_offset = exec_length;};
     int bs = next_offset-prev_offset;
 
     offset[b] = prev_offset;  /* offset for block */
@@ -711,6 +730,7 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size,
         if ( OP_plans[ip].thrcol[e] == -1 )
         {
           int mask = 0;
+          if (options==OP_COLOR2 && halo_exchange && e >= set->core_size && ncolor==0) mask = 1;
           for ( int m = 0; m < nargs; m++ )
             if ( inds[m] >= 0 && (accs[m] == OP_INC || accs[m] == OP_RW) && args[m].opt )
               mask |= work[inds[m]][maps[m]->map[idxs[m] + e * maps[m]->dim]]; /* set bits of mask */
@@ -743,9 +763,11 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size,
   }
 
   /* create element permutation by color */
-  if (staging == OP_STAGE_PERMUTE) {
+  if (options == OP_STAGE_PERMUTE || options == OP_COLOR2) {
+    if (options == OP_COLOR2) OP_plans[ip].thrcol[0] = 0;
     printf("Creating permuation for %s\n", name);
     op_keyvalue *kv = (op_keyvalue *)malloc(bsize * sizeof(op_keyvalue));
+    int ncolor = 0;
     for (int b = 0; b < nblocks; b++) {
       for (int e = 0; e < nelems[b]; e++) {
         kv[e].key = OP_plans[ip].thrcol[offset[b]+e];
@@ -753,9 +775,13 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size,
       }
       qsort ( kv, nelems[b], sizeof ( op_keyvalue ), comp2 );
       for (int e = 0; e < nelems[b]; e++) {
-        OP_plans[ip].thrcol[offset[b]+e] = kv[e].key;
+        if (options == OP_STAGE_PERMUTE) OP_plans[ip].thrcol[offset[b]+e] = kv[e].key;
+        else if (e > 0){
+          if (kv[e].key > kv[e-1].key) {ncolor++; OP_plans[ip].thrcol[ncolor]=e;}
+        }
         OP_plans[ip].col_reord[offset[b]+e] = kv[e].value;
       }
+      if (options == OP_COLOR2) {ncolor++; OP_plans[ip].thrcol[ncolor] = nelems[b];}
     }
   }
 
@@ -846,6 +872,7 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size,
 
   if (indirect_reduce && OP_plans[ip].ncolors_owned == 0) OP_plans[ip].ncolors_owned = ncolors; //no MPI, so get the reduction arrays after everyting is done
   OP_plans[ip].ncolors = ncolors;
+  if (options==OP_COLOR2) OP_plans[ip].ncolors = OP_plans[ip].nthrcol[0];
 
   /*for(int col = 0; col = OP_plans[ip].ncolors;col++) //should initialize to zero because calloc returns garbage!!
     {
@@ -926,6 +953,7 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size,
   OP_plans[ip].transfer2 = 0;
   float transfer3 = 0;
 
+  if (options != OP_COLOR2) {
   for ( int b = 0; b < nblocks; b++ )
   {
     for ( int m = 0; m < nargs; m++ ) //for each argument
@@ -1005,6 +1033,7 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size,
       OP_plans[ip].transfer2 += fac * ind_sizes[m + b * ninds] * sizeof ( int );
       transfer3 += fac * ind_sizes[m + b * ninds] * sizeof ( int );
     }
+  }
   }
 
   /* print out useful information */

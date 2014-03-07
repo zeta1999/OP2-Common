@@ -59,7 +59,7 @@ op_plan *op_plan_get ( char const *name, op_set set, int part_size,
                        int nargs, op_arg *args, int ninds, int *inds );
 
 op_plan *op_plan_get_stage ( char const * name, op_set set, int part_size,
-                       int nargs, op_arg * args, int ninds, int * inds, int staging );
+                       int nargs, op_arg * args, int ninds, int * inds, int options );
 #ifdef __cplusplus
 }
 #endif

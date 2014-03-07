@@ -123,10 +123,10 @@ op_plan * op_plan_get ( char const * name, op_set set, int part_size,
 }
 
 op_plan * op_plan_get_stage ( char const * name, op_set set, int part_size,
-                        int nargs, op_arg * args, int ninds, int *inds, int staging )
+                        int nargs, op_arg * args, int ninds, int *inds, int options )
 {
   op_plan *plan = op_plan_core ( name, set, part_size,
-                                 nargs, args, ninds, inds, staging );
+                                 nargs, args, ninds, inds, options );
   if (!OP_hybrid_gpu) return plan;
 
   int set_size = set->size;
@@ -167,7 +167,7 @@ op_plan * op_plan_get_stage ( char const * name, op_set set, int part_size,
                           sizeof ( int ) * plan->nblocks * plan->ninds_staged );
     op_mvHostToDevice ( ( void ** ) &( plan->nthrcol ),
                           sizeof ( int ) * plan->nblocks );
-    op_mvHostToDevice ( ( void ** ) &( plan->thrcol ),
+    if (options != OP_COLOR2) op_mvHostToDevice ( ( void ** ) &( plan->thrcol ),
                           sizeof ( int ) * set_size );
     op_mvHostToDevice ( ( void ** ) &( plan->col_reord ),
                           sizeof ( int ) * set_size );

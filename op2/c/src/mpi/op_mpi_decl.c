@@ -184,9 +184,9 @@ op_plan_get ( char const * name, op_set set, int part_size,
 
 op_plan *
 op_plan_get_stage ( char const * name, op_set set, int part_size,
-              int nargs, op_arg * args, int ninds, int *inds, int staging )
+              int nargs, op_arg * args, int ninds, int *inds, int options )
 {
-  return op_plan_core ( name, set, part_size, nargs, args, ninds, inds, staging );
+  return op_plan_core ( name, set, part_size, nargs, args, ninds, inds, options );
 }
 
 void op_printf(const char* format, ...)

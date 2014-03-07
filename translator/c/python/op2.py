@@ -41,6 +41,7 @@ from op2_gen_seq import op2_gen_seq
 #from op2_gen_cuda import op2_gen_cuda
 from op2_gen_cuda_simple import op2_gen_cuda_simple
 from op2_gen_cuda_simple_hyb import op2_gen_cuda_simple_hyb
+from op2_gen_cuda_simple_color2 import op2_gen_cuda_simple_color2
 
 # from http://stackoverflow.com/a/241506/396967
 def comment_remover(text):
@@ -702,9 +703,10 @@ def main():
         print'---------------------------------------------------'
 
     #  finally, generate target-specific kernel files
-    op2_gen_seq(str(sys.argv[1]), date, consts, kernels)
-    op2_gen_openmp_simple(str(sys.argv[1]), date, consts, kernels)
-    op2_gen_cuda_simple_hyb(str(sys.argv[1]), date, consts, kernels,sets)
+    #op2_gen_seq(str(sys.argv[1]), date, consts, kernels)
+    #op2_gen_openmp_simple(str(sys.argv[1]), date, consts, kernels)
+    #op2_gen_cuda_simple_hyb(str(sys.argv[1]), date, consts, kernels,sets)
+    op2_gen_cuda_simple_color2(str(sys.argv[1]), date, consts, kernels,sets)
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:
