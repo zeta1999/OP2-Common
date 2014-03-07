@@ -126,8 +126,8 @@ public:
   Vec4d_logical() {};
   Vec4d_logical(__m256d const & x) {vec = x;}
   Vec4d_logical(Vec4i_logical const &x) {
-      __m128 blo = _mm_castsi128_ps(_mm_setr_epi32((int)x[0], (int)x[0], (int)x[1], (int)x[1]));
-      __m128 bhi = _mm_castsi128_ps(_mm_setr_epi32((int)x[2], (int)x[2], (int)x[3], (int)x[3]));
+      __m128 bhi = _mm_castsi128_ps(_mm_setr_epi32((int)x[0], (int)x[0], (int)x[1], (int)x[1]));
+      __m128 blo = _mm_castsi128_ps(_mm_setr_epi32((int)x[2], (int)x[2], (int)x[3], (int)x[3]));
       vec = _mm256_castps_pd(set_m128r(bhi,blo));
   }
   Vec4d_logical & operator = (__m256d const & x) {
