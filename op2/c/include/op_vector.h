@@ -402,6 +402,9 @@ static inline void store_stride(const Vec16f &d, float *p, const int &stride) {V
                                                                               idx = idx*stride;
                                                                               _mm512_i32scatter_ps(p,idx,d,4);}
 static inline void store_scatter(const Vec16f &d, float *p, const Vec16i &idx) {_mm512_i32scatter_ps(p,idx,d,4);}
+static inline void store_scatter_add_safe(const Vec16f &d, float *p, const Vec16i &idx) {
+                                                                                Vec16f tmp(p,idx);
+                                                                                _mm512_i32scatter_ps(p,idx,tmp+d,4);}
 static inline void store_scatter_add(const Vec16f &d, float *p, const Vec16i &idx) {
                                                                                p[idx[0]] += d[0]; p[idx[1]] += d[1]; p[idx[2]] += d[2]; p[idx[3]] += d[3];
                                                                                p[idx[4]] += d[4]; p[idx[5]] += d[5]; p[idx[6]] += d[6]; p[idx[7]] += d[7];
@@ -527,6 +530,9 @@ static inline void store_stride(const Vec8d &d, double *p, const int &stride) {V
                                                                               idx = idx*stride;
                                                                               _mm512_i32loscatter_pd(p,idx,d,8);}
 static inline void store_scatter(const Vec8d &d, double *p, const Vec8im &idx) {_mm512_i32loscatter_pd(p,idx,d,8);}
+static inline void store_scatter_add_safe(const Vec8d &d, double *p, const Vec8im &idx) {
+                                                                               Vec8d tmp(p,idx);
+                                                                               _mm512_i32loscatter_pd(p,idx,tmp+d,8);}
 static inline void store_scatter_add(const Vec8d &d, double *p, const Vec8im &idx) {
                                                                                p[idx[0]] += d[0]; p[idx[1]] += d[1]; p[idx[2]] += d[2]; p[idx[3]] += d[3];
                                                                                p[idx[4]] += d[4]; p[idx[5]] += d[5]; p[idx[6]] += d[6]; p[idx[7]] += d[7];}
