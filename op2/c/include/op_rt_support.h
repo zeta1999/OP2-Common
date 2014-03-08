@@ -80,6 +80,7 @@ typedef struct {
   float       transfer;   /* bytes of data transfer per kernel call */
   float       transfer2;  /* bytes of cache line per kernel call */
   int         count;      /* number of times called */
+  int         options;    /* plan options */
 } op_plan;
 
 extern op_plan * OP_plans;
@@ -94,7 +95,7 @@ op_plan * op_plan_old_core ( char const *, op_set, int, int, op_dat *,
 op_plan * op_plan_core ( char const *, op_set, int, int, op_arg *, int, int *, int );
 
 op_plan * op_plan_get_stage ( char const * name, op_set set, int part_size,
-                        int nargs, op_arg * args, int ninds, int * inds, int staging );
+                        int nargs, op_arg * args, int ninds, int * inds, int options );
 
 op_plan * op_plan_get ( char const * name, op_set set, int part_size,
                         int nargs, op_arg * args, int ninds, int * inds );

@@ -118,6 +118,7 @@ module OP2_Fortran_RT_Support
     real(kind=c_float) ::  transfer ! bytes of data transfer per kernel call
     real(kind=c_float) ::  transfer2 ! bytes of cache line per kernel call
     integer(kind=c_int) :: count ! number fo times called (should not work for fortran?)
+    integer(kind=c_int) :: options ! plan options
 
   end type op_plan
 
