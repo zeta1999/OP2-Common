@@ -410,7 +410,6 @@ def op2_gen_openmp_vector_color2(master, date, consts, kernels):
 #
     if ninds>0:
       comm(' execute plan')
-      code('int block_offset = 0;')
       FOR('col','0','Plan->ncolors')
       IF('col==1')
       code('op_mpi_wait_all(nargs, args);')
@@ -423,8 +422,9 @@ def op2_gen_openmp_vector_color2(master, date, consts, kernels):
 
       #first bit, getting to divisible by vector_size
       code('int presweep = min(((start-1)/'+str(vector_size)+'+1)*'+str(vector_size)+',end);')
+      code('#pragma omp parallel for')
       FOR('e','start','presweep')
-      code('int n = plan->col_reord[e];')
+      code('int n = Plan->col_reord[e];')
       if nmaps > 0:
         k = []
         for g_m in range(0,nargs):
@@ -451,12 +451,12 @@ def op2_gen_openmp_vector_color2(master, date, consts, kernels):
       ENDFOR()
 
 
-
+      code('#pragma omp parallel for')
       FOR('e','presweep/'+str(vector_size),'end/'+str(vector_size))
       if has_doubles:
-        code('intv_half n(&Plan->col_reord['+str(vector_size)+'*n ]);')
+        code('intv_half n(&Plan->col_reord['+str(vector_size)+'*e ]);')
       else:
-        code('intv n(&Plan->col_reord['+str(vector_size)+'*n ]);')
+        code('intv n(&Plan->col_reord['+str(vector_size)+'*e ]);')
 
       if nmaps > 0:
         k = []
@@ -574,7 +574,7 @@ def op2_gen_openmp_vector_color2(master, date, consts, kernels):
           if accs[g_m] == OP_INC:
             kind = '_add'
           for d in range(0,int(dims[g_m])):
-            code('store_scatter_safe'+kind+'(ARG_p['+str(d)+'], ('+typs[g_m]+'*)arg'+str(g_m)+'.data+'+str(d)+', '+mapidx+');')
+            code('store_scatter'+kind+'_safe(ARG_p['+str(d)+'], ('+typs[g_m]+'*)arg'+str(g_m)+'.data+'+str(d)+', '+mapidx+');')
         if maps[g_m] == OP_GBL:
           if accs[g_m]==OP_INC:
             code('arg'+str(g_m)+'_red[64*thr] += add_horizontal(ARG_l);')
@@ -585,9 +585,11 @@ def op2_gen_openmp_vector_color2(master, date, consts, kernels):
 
       #last bit, not divisible by vector_size
       code('int postsweep = max((end/'+str(vector_size)+')*'+str(vector_size)+', presweep);')
+      code('#pragma omp parallel for')
       FOR('e','postsweep','end')
       depth -=2
       macro('#else')
+      code('#pragma omp parallel for')
       FOR('e','start','end')
       macro('#endif')
       code('int n = Plan->col_reord[e];')
@@ -615,12 +617,11 @@ def op2_gen_openmp_vector_color2(master, date, consts, kernels):
            line = line +');'
       code(line)
       ENDFOR()
-      ENDFOR()
-      code('block_offset += nblocks;');
       #
       # combine reduction data from multiple OpenMP threads
       #
-      comm(' combine reduction data')
+      if reduct:
+        comm(' combine reduction data')
       for g_m in range(0,nargs):
         if maps[g_m]==OP_GBL and accs[g_m]<>OP_READ:
           FOR('thr','0','nthreads')

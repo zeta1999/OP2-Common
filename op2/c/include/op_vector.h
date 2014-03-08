@@ -149,6 +149,7 @@ static inline void store_a(const Vec4d &d, double *p) {_mm256_store_pd(p,d);}
 static inline void store_stride(const Vec4d &d, double *p, const int &stride) {p[0] = d[0]; p[stride] = d[1]; p[2*stride] = d[2]; p[3*stride] = d[3];}
 static inline void store_scatter(const Vec4d &d, double *p, const Vec4i &idx) {p[idx[0]] = d[0]; p[idx[1]] = d[1]; p[idx[2]] = d[2]; p[idx[3]] = d[3];}
 static inline void store_scatter_add(const Vec4d &d, double *p, const Vec4i &idx) {p[idx[0]] += d[0]; p[idx[1]] += d[1]; p[idx[2]] += d[2]; p[idx[3]] += d[3];}
+static inline void store_scatter_add_safe(const Vec4d &d, double *p, const Vec4i &idx) {p[idx[0]] += d[0]; p[idx[1]] += d[1]; p[idx[2]] += d[2]; p[idx[3]] += d[3];}
 
 static inline Vec4d select(const Vec4d_logical &mask, const Vec4d &a, const Vec4d &b) {
   return _mm256_blendv_pd(b, a, mask);
@@ -265,6 +266,7 @@ static inline void store_a(const Vec8f &d, float *p) {_mm256_store_ps(p,d);}
 static inline void store_stride(const Vec8f &d, float *p, const int &stride) {p[0] = d[0]; p[stride] = d[1]; p[2*stride] = d[2]; p[3*stride] = d[3]; p[4*stride] = d[4]; p[5*stride] = d[5]; p[6*stride] = d[6]; p[7*stride] = d[7];}
 static inline void store_scatter(const Vec8f &d, float *p, const Vec8i &idx) {p[idx.low()[0]] = d[0]; p[idx.low()[1]] = d[1]; p[idx.low()[2]] = d[2]; p[idx.low()[3]] = d[3]; p[idx.high()[0]] = d[4]; p[idx.high()[1]] = d[5]; p[idx.high()[2]] = d[6]; p[idx.high()[3]] = d[7];}
 static inline void store_scatter_add(const Vec8f &d, float *p, const Vec8i &idx) {p[idx.low()[0]] += d[0]; p[idx.low()[1]] += d[1]; p[idx.low()[2]] += d[2]; p[idx.low()[3]] += d[3]; p[idx.high()[0]] += d[4]; p[idx.high()[1]] += d[5]; p[idx.high()[2]] += d[6]; p[idx.high()[3]] += d[7];}
+static inline void store_scatter_add_safe(const Vec8f &d, float *p, const Vec8i &idx) {p[idx.low()[0]] += d[0]; p[idx.low()[1]] += d[1]; p[idx.low()[2]] += d[2]; p[idx.low()[3]] += d[3]; p[idx.high()[0]] += d[4]; p[idx.high()[1]] += d[5]; p[idx.high()[2]] += d[6]; p[idx.high()[3]] += d[7];}
 
 static inline Vec8f select(const Vec8f_logical &mask, const Vec8f &a, const Vec8f &b) {
   return _mm256_blendv_ps(b, a, mask);
