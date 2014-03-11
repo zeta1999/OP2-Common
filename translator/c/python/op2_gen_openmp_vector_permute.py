@@ -87,7 +87,7 @@ def ENDIF():
     code('}')
 
 
-def op2_gen_openmp_vector_color2(master, date, consts, kernels):
+def op2_gen_openmp_vector_permute(master, date, consts, kernels):
 
   global dims, idxs, typs, indtyps, inddims
   global FORTRAN, CPP, g_m, file_text, depth
@@ -388,7 +388,7 @@ def op2_gen_openmp_vector_color2(master, date, consts, kernels):
 #   indirect bits
 #
     if ninds>0:
-      code('op_plan *Plan = op_plan_get_stage(name,set,part_size,nargs,args,ninds,inds, OP_COLOR2);')
+      code('op_plan *Plan = op_plan_get_stage(name,set,part_size,nargs,args,ninds,inds, OP_STAGE_PERMUTE);')
       IF('OP_diags>2')
       code('printf(" kernel routine with indirection: '+name+'\\n");')
       ENDIF()
@@ -409,22 +409,30 @@ def op2_gen_openmp_vector_color2(master, date, consts, kernels):
 # kernel call for indirect version
 #
     if ninds>0:
-      comm(' execute plan')
+      code('int block_offset = 0;')
       FOR('col','0','Plan->ncolors')
-      IF('col==1')
+      IF('col==Plan->ncolors_core')
       code('op_mpi_wait_all(nargs, args);')
       ENDIF()
-      code('int start = Plan->col_offsets[0][col];')
-      code('int end = Plan->col_offsets[0][col+1];')
+      code('int nblocks = Plan->ncolblk[col];')
       code('')
+      code('#pragma omp parallel for')
+      FOR('blockIdx','0','nblocks')
+      code('int blockId  = Plan->blkmap[blockIdx + block_offset];')
+      code('int nelem    = Plan->nelems[blockId];')
+      code('int offset_b = Plan->offset[blockId];')
+      FOR('col2','0','Plan->nthrcol[blockId]')
+      code('int start = offset_b + Plan->col_offsets[blockId][col2];')
+      code('int end = offset_b + Plan->col_offsets[blockId][col2+1];')
+      if reduct:
+        code('int thr = omp_get_thread_num();')
       macro('#ifdef VECTORIZE')
       comm('assumes blocksize is multiple of vector size')
 
       #first bit, getting to divisible by vector_size
       code('int presweep = min(((start-1)/'+str(vector_size)+'+1)*'+str(vector_size)+',end);')
-      code('#pragma omp parallel for')
       FOR('e','start','presweep')
-      code('int n = Plan->col_reord[e];')
+      code('int n = offset_b + Plan->col_reord[e];')
       if nmaps > 0:
         k = []
         for g_m in range(0,nargs):
@@ -451,13 +459,13 @@ def op2_gen_openmp_vector_color2(master, date, consts, kernels):
       ENDFOR()
 
 
-      code('#pragma omp parallel for')
       FOR('e','presweep/'+str(vector_size),'end/'+str(vector_size))
       if has_doubles:
         code('intv_half n(&Plan->col_reord['+str(vector_size)+'*e ]);')
       else:
         code('intv n(&Plan->col_reord['+str(vector_size)+'*e ]);')
-
+      code('n += offset_b;')
+      
       if nmaps > 0:
         k = []
         for g_m in range(0,nargs):
@@ -585,15 +593,14 @@ def op2_gen_openmp_vector_color2(master, date, consts, kernels):
 
       #last bit, not divisible by vector_size
       code('int postsweep = max((end/'+str(vector_size)+')*'+str(vector_size)+', presweep);')
-      code('#pragma omp parallel for')
       FOR('e','postsweep','end')
       depth -=2
       macro('#else')
-      code('#pragma omp parallel for')
+
       code('#pragma ivdep')
       FOR('e','start','end')
       macro('#endif')
-      code('int n = Plan->col_reord[e];')
+      code('int n = offset_b + Plan->col_reord[e];')
       if nmaps > 0:
         k = []
         for g_m in range(0,nargs):
@@ -617,6 +624,7 @@ def op2_gen_openmp_vector_color2(master, date, consts, kernels):
         else:
            line = line +');'
       code(line)
+      ENDFOR()
       ENDFOR()
       #
       # combine reduction data from multiple OpenMP threads
@@ -643,6 +651,8 @@ def op2_gen_openmp_vector_color2(master, date, consts, kernels):
           ENDFOR()
           code('op_mpi_reduce(&ARG,ARGh);')
 
+      ENDFOR()
+      code('block_offset += nblocks;');
       ENDFOR()
 
 #
@@ -742,6 +752,10 @@ def op2_gen_openmp_vector_color2(master, date, consts, kernels):
       code(line)
       ENDFOR()
       ENDFOR()
+      
+    if ninds>0:
+      code('OP_kernels['+str(nk)+'].transfer  += Plan->transfer;')
+      code('OP_kernels['+str(nk)+'].transfer2 += Plan->transfer2;')
     ENDIF()
     code('')
 

@@ -35,7 +35,7 @@ ifeq ($(OP2_COMPILER),gnu)
 else
 ifeq ($(OP2_COMPILER),intel)
   CC       := icc
-  CCFLAGS  := -O3 -vec-report -xAVX -DMPICH_IGNORE_CXX_SEEK -DMPICH_SKIP_MPICXX #-DCOMM_PERF #-DDEBUG -g
+  CCFLAGS  := -O0 -g -vec-report -xAVX -DMPICH_IGNORE_CXX_SEEK -DMPICH_SKIP_MPICXX #-DCOMM_PERF #-DDEBUG -g
   CXX      := icpc
   CXXFLAGS := $(CCFLAGS)
   MPICXX   := $(MPI_INSTALL_PATH)/bin/mpiCC

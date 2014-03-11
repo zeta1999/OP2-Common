@@ -623,7 +623,7 @@ def op2_gen_cuda_simple_color2(master, date, consts, kernels,sets):
         if ind_inc==0:
           code('maxblocks = MAX(maxblocks,Plan->ncolblk[col]);')
         else:
-          code('maxblocks = MAX(maxblocks,((Plan->thrcol[col+1]-Plan->thrcol[col])-1)/nthread+1);')
+          code('maxblocks = MAX(maxblocks,((Plan->col_offsets[0][col+1]-Plan->col_offsets[0][col])-1)/nthread+1);')
         ENDFOR()
       else:
         code('int maxblocks = nblocks;')
@@ -676,7 +676,7 @@ def op2_gen_cuda_simple_color2(master, date, consts, kernels,sets):
         code('Plan->ncolblk[col] >= (1<<16) ? (Plan->ncolblk[col]-1)/65535+1: 1, 1);')
         IF('Plan->ncolblk[col] > 0')
       else:
-        code('int num_blocks = ((Plan->thrcol[col+1]-Plan->thrcol[col])-1)/nthread+1;')
+        code('int num_blocks = ((Plan->col_offsets[0][col+1]-Plan->col_offsets[0][col])-1)/nthread+1;')
         code('dim3 nblocks = dim3(num_blocks >= (1<<16) ? 65535 : num_blocks,')
         code('num_blocks >= (1<<16) ? (num_blocks-1)/65535+1: 1, 1);')
         IF('num_blocks > 0')
@@ -710,8 +710,8 @@ def op2_gen_cuda_simple_color2(master, date, consts, kernels,sets):
         code('Plan->thrcol,')
         code('Plan->ncolblk[col],')
       else:
-        code('Plan->col_reord+Plan->thrcol[col],')
-        code('Plan->thrcol[col+1]-Plan->thrcol[col],')
+        code('Plan->col_reord+Plan->col_offsets[0][col],')
+        code('Plan->col_offsets[0][col+1]-Plan->col_offsets[0][col],')
         code('num_blocks,')
         code('')
       code('set->size+set->exec_size);')
