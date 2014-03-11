@@ -75,6 +75,13 @@ op_rt_exit (  )
     op_free ( OP_plans[ip].loc_maps );
     op_free ( OP_plans[ip].ncolblk );
     op_free ( OP_plans[ip].nsharedCol);
+    if (OP_plans[ip].options == OP_STAGE_PERMUTE) {
+      op_free(OP_plans[ip].col_reord);
+      op_free(OP_plans[ip].col_offsets[0]);
+      op_free(OP_plans[ip].col_offsets);
+    }
+    if (OP_plans[ip].options == OP_COLOR2)
+      op_free(OP_plans[ip].col_reord);
   }
 
   OP_plan_index = 0;
@@ -763,28 +770,42 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size,
   }
 
   /* create element permutation by color */
+  
   if (options == OP_STAGE_PERMUTE || options == OP_COLOR2) {
-    if (options == OP_COLOR2) OP_plans[ip].thrcol[0] = 0;
-    printf("Creating permuation for %s\n", name);
-    op_keyvalue *kv = (op_keyvalue *)op_malloc(bsize * sizeof(op_keyvalue));
-    int ncolor = 0;
+    //count total size of color offsets array
+    int size_of_col_offsets = 0;
     for (int b = 0; b < nblocks; b++) {
+      size_of_col_offsets += OP_plans[ip].nthrcol[b]+1;
+    }
+    //allocate
+    OP_plans[ip].col_offsets = (int **)malloc(nblocks*sizeof(int*));
+    int *col_offsets = (int *)malloc(size_of_col_offsets*sizeof(int*));
+    
+    size_of_col_offsets = 0;
+    op_keyvalue *kv = (op_keyvalue *)op_malloc(bsize * sizeof(op_keyvalue));
+    for (int b = 0; b < nblocks; b++) {
+      //sort by color
+      int ncolor = OP_plans[ip].nthrcol[b];
       for (int e = 0; e < nelems[b]; e++) {
         kv[e].key = OP_plans[ip].thrcol[offset[b]+e];
         kv[e].value = e;
       }
       qsort ( kv, nelems[b], sizeof ( op_keyvalue ), comp2 );
+      OP_plans[ip].col_offsets[b] = col_offsets+size_of_col_offsets;
+      OP_plans[ip].col_offsets[b][0] = 0;
+      size_of_col_offsets+=(ncolor+1);
+      
+      //Set up permutation and pointers to beginning of each color
+      ncolor = 0;
       for (int e = 0; e < nelems[b]; e++) {
-        if (options == OP_STAGE_PERMUTE) OP_plans[ip].thrcol[offset[b]+e] = kv[e].key;
-        else if (e > 0){
-          if (kv[e].key > kv[e-1].key) {ncolor++; OP_plans[ip].thrcol[ncolor]=e;}
-        }
-        OP_plans[ip].col_reord[offset[b]+e] = kv[e].value;
+        OP_plans[ip].thrcol[offset[b]+e] = kv[e].key; //reorder colors
+        OP_plans[ip].col_reord[offset[b]+e] = kv[e].value; //give permutation
+        if (e > 0)
+          if (kv[e].key > kv[e-1].key) {ncolor++; OP_plans[ip].col_offsets[b][ncolor]=e;}
       }
-      if (options == OP_COLOR2) {ncolor++; OP_plans[ip].thrcol[ncolor] = nelems[b];}
+      OP_plans[ip].col_offsets[b][ncolor+1] = nelems[b];
     }
   }
-
   /* color the blocks, after initialising colors to 0 */
 
   int * blk_col;

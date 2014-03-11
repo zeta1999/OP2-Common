@@ -158,6 +158,7 @@ void op_par_loop_bres_calc(char const *name, op_set set,
         int postsweep = max(((offset_b+nelem)/VECSIZEH)*VECSIZEH, presweep);
         for ( int n=postsweep; n<offset_b+nelem; n++ ){
 #else
+      #pragma ivdep
         for ( int n=offset_b; n<offset_b+nelem; n++ ){
 #endif
           int map0idx = arg0.map_data[n * arg0.map->dim + 0];

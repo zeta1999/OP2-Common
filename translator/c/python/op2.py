@@ -42,6 +42,7 @@ from op2_gen_openmp import op2_gen_openmp
 from op2_gen_openmp_simple import op2_gen_openmp_simple
 from op2_gen_openmp_vector import op2_gen_openmp_vector
 from op2_gen_openmp_vector_color2 import op2_gen_openmp_vector_color2
+from op2_gen_openmp_vector_permute import op2_gen_openmp_vector_permute
 from op2_gen_cuda import op2_gen_cuda
 from op2_gen_cuda_simple import op2_gen_cuda_simple
 from op2_gen_cuda_simple_hyb import op2_gen_cuda_simple_hyb
@@ -711,7 +712,7 @@ def main():
     #op2_gen_openmp_simple(str(sys.argv[1]), date, consts, kernels)
     #op2_gen_cuda_simple_hyb(str(sys.argv[1]), date, consts, kernels,sets)
     #op2_gen_seq_vector(str(sys.argv[1]), date, consts, kernels)
-    op2_gen_openmp_vector_color2(str(sys.argv[1]), date, consts, kernels)
+    op2_gen_openmp_vector_permute(str(sys.argv[1]), date, consts, kernels)
     #op2_gen_cuda_simple(str(sys.argv[1]), date, consts, kernels,sets)
     #op2_gen_cuda_simple_color2(str(sys.argv[1]), date, consts, kernels,sets)
 

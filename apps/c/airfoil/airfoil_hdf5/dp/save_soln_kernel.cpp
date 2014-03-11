@@ -67,6 +67,7 @@ void op_par_loop_save_soln(char const *name, op_set set,
       }
       for ( int n=(finish/VECSIZEH)*VECSIZEH; n<finish; n++ ){
 #else
+      #pragma ivdep
       for ( int n=start; n<finish; n++ ){
 #endif
         save_soln(
