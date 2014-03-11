@@ -453,7 +453,11 @@ public:
   Vec8im(const int *p) {
     //vec = _mm512_load_epi32((void*) p);
     //vec = ((__m256i *)p)[0];
+    //Vec8im vec1 = Vec8im(0);//_mm512_set1_epi32(0);
+    vec = _mm512_setzero_epi32();
+    //printf("%d %d %d %d %d %d %d %d\n",vec[8],vec[9],vec[10],vec[11],vec[12],vec[13],vec[14],vec[15]);
     vec = _mm512_loadunpacklo_epi32(vec,p);
+    //printf("%d %d %d %d %d %d %d %d\n",vec[8],vec[9],vec[10],vec[11],vec[12],vec[13],vec[14],vec[15]);
   }
   Vec8im(const int *p, const Vec8im &idx) {
     vec = _mm512_i32gather_epi32(idx,p,4);
