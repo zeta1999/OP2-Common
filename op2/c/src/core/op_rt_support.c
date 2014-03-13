@@ -508,7 +508,7 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size,
 
   OP_plans[ip].nthrcol = ( int * ) op_malloc ( nblocks * sizeof ( int ) );
   OP_plans[ip].thrcol = ( int * ) op_malloc ( exec_length * sizeof ( int ) );
-  OP_plans[ip].col_reord = ( int * ) op_malloc ( exec_length * sizeof ( int ) );
+  OP_plans[ip].col_reord = ( int * ) op_malloc ( (exec_length+16) * sizeof ( int ) );
   OP_plans[ip].offset = ( int * ) op_malloc ( nblocks * sizeof ( int ) );
   OP_plans[ip].ind_maps = ( int ** ) op_malloc ( ninds_staged * sizeof ( int * ) );
   OP_plans[ip].ind_offs = ( int * ) op_malloc ( nblocks * ninds_staged * sizeof ( int ) );
@@ -778,8 +778,8 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size,
       size_of_col_offsets += OP_plans[ip].nthrcol[b]+1;
     }
     //allocate
-    OP_plans[ip].col_offsets = (int **)malloc(nblocks*sizeof(int*));
-    int *col_offsets = (int *)malloc(size_of_col_offsets*sizeof(int*));
+    OP_plans[ip].col_offsets = (int **)op_malloc(nblocks*sizeof(int*));
+    int *col_offsets = (int *)op_malloc(size_of_col_offsets*sizeof(int*));
     
     size_of_col_offsets = 0;
     op_keyvalue *kv = (op_keyvalue *)op_malloc(bsize * sizeof(op_keyvalue));
@@ -805,6 +805,7 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size,
       }
       OP_plans[ip].col_offsets[b][ncolor+1] = nelems[b];
     }
+    for (int i = exec_length; i < exec_length+16; i++) OP_plans[ip].col_reord[i] = 0;
   }
   /* color the blocks, after initialising colors to 0 */
 

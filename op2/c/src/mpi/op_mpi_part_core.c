@@ -3540,7 +3540,7 @@ void partition(const char* lib_name, const char* lib_routine,
     int set_size = map->from->size+map->from->exec_size;
     int set_size2 = ((map->from->size+map->from->exec_size-1)/16+1)*16; //align to 512 bits
     if (OP_hybrid_gpu == 1) set_size2=set_size;
-    map->map_d = (int *)op_malloc(map->dim*set_size2*sizeof(int));
+    map->map_d = (int *)op_malloc(map->dim*(set_size2+16)*sizeof(int));
     for (int i = 0; i < map->dim; i++) {
       for (int j = 0; j < set_size; j++) {
         map->map_d[i*set_size2 + j] = map->map[map->dim*j+i];
