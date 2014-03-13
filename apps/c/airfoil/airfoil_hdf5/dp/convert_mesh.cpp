@@ -31,6 +31,12 @@
  */
 
 //
+// mpi header file - included by user for user level mpi
+//
+
+#include <mpi.h>
+
+//
 // standard headers
 //
 
@@ -38,12 +44,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-
-//
-// mpi header file - included by user for user level mpi
-//
-
-#include <mpi.h>
 
 // global constants
 

@@ -35,7 +35,7 @@ ifeq ($(OP2_COMPILER),gnu)
 else
 ifeq ($(OP2_COMPILER),intel)
   CC       := icc
-  CCFLAGS  := -O0 -g -vec-report -xAVX -DMPICH_IGNORE_CXX_SEEK -DMPICH_SKIP_MPICXX #-DCOMM_PERF #-DDEBUG -g
+  CCFLAGS  := -O0 -g -vec-report -xAVX 
   CXX      := icpc
   CXXFLAGS := $(CCFLAGS)
   MPICXX   := $(MPI_INSTALL_PATH)/bin/mpiCC
@@ -74,7 +74,7 @@ endif
 endif
 endif
 
-NVCCFLAGS	= -O3 -arch=sm_35 -m64 -Xptxas -dlcm=ca -Xptxas=-v -use_fast_math #-g -G -O0
+NVCCFLAGS	= -O0 -g -arch=sm_35 -m64 -Xptxas -dlcm=ca -Xptxas=-v -use_fast_math #-g -G -O0
 
 PARMETIS_INCLUDE_PATH ?= $(PARMETIS_INSTALL_PATH)
 PARMETIS_LIB_PATH ?= $(PARMETIS_INSTALL_PATH)
