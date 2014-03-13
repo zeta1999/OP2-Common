@@ -121,18 +121,24 @@ int op_free_dat_temp_char ( op_dat dat );
 /* Implementation */
 
 template < class T >
+#ifdef __CUDACC__
+__device__ __host__
+#endif
 static inline T select(const bool &condition, const T &if_true, const T &if_false)
 {
   return condition ? if_true : if_false;
 }
 
 template < class T >
+#ifdef __CUDACC__
+__device__ __host__
+#endif
 static inline T select_lt(const float &condition1, const float &condition2, const T &if_true, const T &if_false)
 {
   return condition1<condition2 ? if_true : if_false;
 }
 
-
+#ifndef __CUDACC__
 static inline float min(const float &a, const float &b) {return a<b ? a : b;}
 static inline double min(const double &a, const double &b) {return a<b ? a : b;}
 static inline int min(const int &a, const int &b) {return a<b ? a : b;}
@@ -141,7 +147,7 @@ static inline double max(const double &a, const double &b) {return a>b ? a : b;}
 static inline int max(const int &a, const int &b) {return a>b ? a : b;}
 
 static inline float fabs(const float &x) {return max(x,0.0f-x);}
-
+#endif
 
 template < class T >
 op_dat op_decl_dat ( op_set set, int dim, char const *type,

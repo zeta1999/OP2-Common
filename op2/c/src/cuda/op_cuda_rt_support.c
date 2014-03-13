@@ -167,7 +167,7 @@ op_plan * op_plan_get_stage ( char const * name, op_set set, int part_size,
                           sizeof ( int ) * plan->nblocks * plan->ninds_staged );
     op_mvHostToDevice ( ( void ** ) &( plan->nthrcol ),
                           sizeof ( int ) * plan->nblocks );
-    if (options != OP_COLOR2) op_mvHostToDevice ( ( void ** ) &( plan->thrcol ),
+    op_mvHostToDevice ( ( void ** ) &( plan->thrcol ),
                           sizeof ( int ) * set_size );
     op_mvHostToDevice ( ( void ** ) &( plan->col_reord ),
                           sizeof ( int ) * set_size );
@@ -220,7 +220,7 @@ void op_cuda_exit ( )
 // routines to resize constant/reduct arrays, if necessary
 //
 
-void op_reallocConstArrays ( int consts_bytes )
+void reallocConstArrays ( int consts_bytes )
 {
   if ( consts_bytes > OP_consts_bytes ) {
     if ( OP_consts_bytes > 0 ) {
@@ -234,7 +234,7 @@ void op_reallocConstArrays ( int consts_bytes )
   }
 }
 
-void op_reallocReductArrays ( int reduct_bytes )
+void reallocReductArrays ( int reduct_bytes )
 {
   if ( reduct_bytes > OP_reduct_bytes ) {
     if ( OP_reduct_bytes > 0 ) {
