@@ -82,6 +82,9 @@ public:
 
 static inline Vec4i operator *(const Vec4i &a, const Vec4i &b) {return  _mm_mullo_epi32(a,b);}
 static inline Vec4i operator *(const int &a, const Vec4i &b) {return Vec4i(a)*b;}
+static inline Vec4i operator +(const int &a, const Vec4i &b) {return Vec4i(a)+b;}
+static inline Vec4i operator +(const Vec4i &a, const int &b) {return Vec4i(b)+a;}
+
 
 typedef Vec4i Vec4i_logical;
 static inline Vec4i_logical operator == (Vec4i const & a, Vec4i const & b) {
@@ -454,10 +457,15 @@ public:
     //vec = _mm512_load_epi32((void*) p);
     //vec = ((__m256i *)p)[0];
     //Vec8im vec1 = Vec8im(0);//_mm512_set1_epi32(0);
-    vec = _mm512_setzero_epi32();
     //printf("%d %d %d %d %d %d %d %d\n",vec[8],vec[9],vec[10],vec[11],vec[12],vec[13],vec[14],vec[15]);
+    vec = _mm512_setzero_epi32();
+    //for (int i =8; i < 16; i++) ((int*)&vec)[i]=0;
     vec = _mm512_loadunpacklo_epi32(vec,p);
     //printf("%d %d %d %d %d %d %d %d\n",vec[8],vec[9],vec[10],vec[11],vec[12],vec[13],vec[14],vec[15]);
+    //Vec8im temp;
+    //for (int i =0; i < 8; i++) temp[i]=p[i];
+    //for (int i =8; i < 16; i++) ((int*)&vec)[i]=0;
+    //vec = temp;
   }
   Vec8im(const int *p, const Vec8im &idx) {
     vec = _mm512_i32gather_epi32(idx,p,4);
@@ -474,6 +482,8 @@ public:
 
 static inline Vec8im operator *(const Vec8im &a, const Vec8im &b) {return  _mm512_mullo_epi32(a,b);}
 static inline Vec8im operator *(const int &a, const Vec8im &b) {return Vec8im(a)*b;}
+static inline Vec8im operator +(const int &a, const Vec8im &b) {return Vec8im(a)+b;}
+static inline Vec8im operator +(const Vec8im &a, const int &b) {return Vec8im(b)+a;}
 
 static inline Vec16_logical operator == (Vec8im const & a, Vec8im const & b) {
     return _mm512_cmpeq_epi32_mask(a, b);

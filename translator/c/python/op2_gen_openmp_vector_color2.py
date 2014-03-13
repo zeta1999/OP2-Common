@@ -466,7 +466,7 @@ def op2_gen_openmp_vector_color2(master, date, consts, kernels):
             if has_doubles:
               code('intv_half map'+str(mapinds[g_m])+'idx(&arg'+str(invmapinds[inds[g_m]-1])+'.map_data_d[set_size * '+idxs[g_m]+'], n);')
             else:
-              code('intv map'+str(mapinds[g_m])+'idx(&arg'+str(invmapinds[inds[g_m]-1])+'.map_data[set_size * '+idxs[g_m]+'], n);')
+              code('intv map'+str(mapinds[g_m])+'idx(&arg'+str(invmapinds[inds[g_m]-1])+'.map_data_d[set_size * '+idxs[g_m]+'], n);')
       code('')
       #
       # Gather
