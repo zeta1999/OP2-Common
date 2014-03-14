@@ -53,7 +53,6 @@ double gam, gm1, cfl, eps, mach, alpha, qinf[4];
 //
 // OP header file
 //
-
 #include "op_seq.h"
 
 //
@@ -98,11 +97,11 @@ int main(int argc, char **argv)
   op_map pcell   = op_decl_map_hdf5(cells, nodes,4, file, "pcell");
 
   op_dat p_bound = op_decl_dat_hdf5(bedges,1,"int"  ,file,"p_bound");
-  op_dat p_x     = op_decl_dat_hdf5(nodes ,2,"double",file,"p_x");
-  op_dat p_q     = op_decl_dat_hdf5(cells ,4,"double",file,"p_q");
-  op_dat p_qold  = op_decl_dat_hdf5(cells ,4,"double",file,"p_qold");
+  op_dat p_x     = op_decl_dat_hdf5(nodes ,2,"double:soa",file,"p_x");
+  op_dat p_q     = op_decl_dat_hdf5(cells ,4,"double:soa",file,"p_q");
+  op_dat p_qold  = op_decl_dat_hdf5(cells ,4,"double:soa",file,"p_qold");
   op_dat p_adt   = op_decl_dat_hdf5(cells ,1,"double",file,"p_adt");
-  op_dat p_res   = op_decl_dat_hdf5(cells ,4,"double",file,"p_res");
+  op_dat p_res   = op_decl_dat_hdf5(cells ,4,"double:soa",file,"p_res");
 
   op_get_const_hdf5("gam", 1, "double", (char *)&gam, "new_grid.h5");
   op_get_const_hdf5("gm1", 1, "double", (char *)&gm1, "new_grid.h5");
@@ -154,8 +153,8 @@ int main(int argc, char **argv)
     //  save old flow solution
 
     op_par_loop(save_soln,"save_soln", cells,
-        op_arg_dat(p_q,   -1,OP_ID, 4,"double",OP_READ ),
-        op_arg_dat(p_qold,-1,OP_ID, 4,"double",OP_WRITE));
+        op_arg_dat(p_q,   -1,OP_ID, 4,"double:soa",OP_READ ),
+        op_arg_dat(p_qold,-1,OP_ID, 4,"double:soa",OP_WRITE));
 
     //  predictor/corrector update loop
 
@@ -164,31 +163,31 @@ int main(int argc, char **argv)
       //    calculate area/timstep
 
       op_par_loop(adt_calc,"adt_calc",cells,
-          op_arg_dat(p_x,   0,pcell, 2,"double",OP_READ ),
-          op_arg_dat(p_x,   1,pcell, 2,"double",OP_READ ),
-          op_arg_dat(p_x,   2,pcell, 2,"double",OP_READ ),
-          op_arg_dat(p_x,   3,pcell, 2,"double",OP_READ ),
-          op_arg_dat(p_q,  -1,OP_ID, 4,"double",OP_READ ),
+          op_arg_dat(p_x,   0,pcell, 2,"double:soa",OP_READ ),
+          op_arg_dat(p_x,   1,pcell, 2,"double:soa",OP_READ ),
+          op_arg_dat(p_x,   2,pcell, 2,"double:soa",OP_READ ),
+          op_arg_dat(p_x,   3,pcell, 2,"double:soa",OP_READ ),
+          op_arg_dat(p_q,  -1,OP_ID, 4,"double:soa",OP_READ ),
           op_arg_dat(p_adt,-1,OP_ID, 1,"double",OP_WRITE));
 
       //    calculate flux residual
 
       op_par_loop(res_calc,"res_calc",edges,
-          op_arg_dat(p_x,    0,pedge, 2,"double",OP_READ),
-          op_arg_dat(p_x,    1,pedge, 2,"double",OP_READ),
-          op_arg_dat(p_q,    0,pecell,4,"double",OP_READ),
-          op_arg_dat(p_q,    1,pecell,4,"double",OP_READ),
+          op_arg_dat(p_x,    0,pedge, 2,"double:soa",OP_READ),
+          op_arg_dat(p_x,    1,pedge, 2,"double:soa",OP_READ),
+          op_arg_dat(p_q,    0,pecell,4,"double:soa",OP_READ),
+          op_arg_dat(p_q,    1,pecell,4,"double:soa",OP_READ),
           op_arg_dat(p_adt,  0,pecell,1,"double",OP_READ),
           op_arg_dat(p_adt,  1,pecell,1,"double",OP_READ),
-          op_arg_dat(p_res,  0,pecell,4,"double",OP_INC ),
-          op_arg_dat(p_res,  1,pecell,4,"double",OP_INC ));
+          op_arg_dat(p_res,  0,pecell,4,"double:soa",OP_INC ),
+          op_arg_dat(p_res,  1,pecell,4,"double:soa",OP_INC ));
 
       op_par_loop(bres_calc,"bres_calc",bedges,
-          op_arg_dat(p_x,     0,pbedge, 2,"double",OP_READ),
-          op_arg_dat(p_x,     1,pbedge, 2,"double",OP_READ),
-          op_arg_dat(p_q,     0,pbecell,4,"double",OP_READ),
+          op_arg_dat(p_x,     0,pbedge, 2,"double:soa",OP_READ),
+          op_arg_dat(p_x,     1,pbedge, 2,"double:soa",OP_READ),
+          op_arg_dat(p_q,     0,pbecell,4,"double:soa",OP_READ),
           op_arg_dat(p_adt,   0,pbecell,1,"double",OP_READ),
-          op_arg_dat(p_res,   0,pbecell,4,"double",OP_INC ),
+          op_arg_dat(p_res,   0,pbecell,4,"double:soa",OP_INC ),
           op_arg_dat(p_bound,-1,OP_ID  ,1,"int",  OP_READ));
 
       //    update flow field
@@ -196,9 +195,9 @@ int main(int argc, char **argv)
       rms = 0.0;
 
       op_par_loop(update,"update",cells,
-          op_arg_dat(p_qold,-1,OP_ID, 4,"double",OP_READ ),
-          op_arg_dat(p_q,   -1,OP_ID, 4,"double",OP_WRITE),
-          op_arg_dat(p_res, -1,OP_ID, 4,"double",OP_RW   ),
+          op_arg_dat(p_qold,-1,OP_ID, 4,"double:soa",OP_READ ),
+          op_arg_dat(p_q,   -1,OP_ID, 4,"double:soa",OP_WRITE),
+          op_arg_dat(p_res, -1,OP_ID, 4,"double:soa",OP_RW   ),
           op_arg_dat(p_adt, -1,OP_ID, 1,"double",OP_READ ),
           op_arg_gbl(&rms,1,"double",OP_INC));
     }

@@ -50,6 +50,10 @@
 #include <omp.h>
 #endif
 
+#ifndef STRIDE
+#define STRIDE(x,y) x
+#endif
+
 /*
  * run-time type-checking routines
  */

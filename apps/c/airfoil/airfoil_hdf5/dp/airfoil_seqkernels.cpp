@@ -8,6 +8,7 @@
 #include "op_vector.h"
 #endif
 
+#define STRIDE(x,y) x
 // global constants
 extern double gam;
 extern double gm1;

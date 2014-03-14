@@ -712,8 +712,8 @@ def main():
     #op2_gen_openmp_simple(str(sys.argv[1]), date, consts, kernels)
     #op2_gen_cuda_simple_hyb(str(sys.argv[1]), date, consts, kernels,sets)
     #op2_gen_seq_vector(str(sys.argv[1]), date, consts, kernels)
-    op2_gen_openmp_vector_permute(str(sys.argv[1]), date, consts, kernels)
-    #op2_gen_cuda_simple(str(sys.argv[1]), date, consts, kernels,sets)
+    #op2_gen_openmp_vector_permute(str(sys.argv[1]), date, consts, kernels)
+    op2_gen_cuda_simple(str(sys.argv[1]), date, consts, kernels,sets)
     #op2_gen_cuda_simple_color2(str(sys.argv[1]), date, consts, kernels,sets)
 
 if __name__ == '__main__':

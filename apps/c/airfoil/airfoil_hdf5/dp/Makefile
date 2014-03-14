@@ -29,7 +29,7 @@ ifeq ($(OP2_COMPILER),gnu)
 else
 ifeq ($(OP2_COMPILER),intel)
   CPP		= icpc
-  CCFLAGS	= -O0 -g -vec-report -xAVX -fno-alias -inline-forceinline -parallel #-DVECTORIZE#-DCOMM_PERF #-DDEBUG
+  CCFLAGS	= -O3 -vec-report -xAVX -fno-alias -inline-forceinline -parallel #-DVECTORIZE#-DCOMM_PERF #-DDEBUG
   CPPFLAGS 	= $(CCFLAGS)
   OMPFLAGS	= -openmp -openmp-report2
   MPICPP	= mpic++
@@ -72,7 +72,7 @@ endif
 #
 # set flags for NVCC compilation and linking
 #
-NVCCFLAGS	= -O0 -g -G -arch=sm_35 -Xptxas=-v -Dlcm=ca -use_fast_math #-g -G -O0
+NVCCFLAGS	= -O3 -arch=sm_35 -Xptxas=-v -Dlcm=cg -use_fast_math --maxrregcount 48 #-g -G -O0
 VAR		= #-DOP_PART_SIZE_1=160 -DOP_PART_SIZE_2=320 -DOP_PART_SIZE_3=64 #-DOP_BLOCK_SIZE_0=64 -DOP_BLOCK_SIZE_1=64 -DOP_BLOCK_SIZE_2=64 -DOP_BLOCK_SIZE_3=64 -DOP_BLOCK_SIZE_4=64
 
 #

@@ -137,6 +137,18 @@ def op2_gen_cuda_simple(master, date, consts, kernels,sets):
     if ninds > 0:
       nmaps = max(mapinds)+1
 
+    ind_inc_maps = [-1]*nargs
+    num_ind_inc_maps = 0
+    for g_m in range(0,nargs):
+      if accs[g_m]==OP_INC and maps[g_m]==OP_MAP and soaflags[g_m]:
+        found = 0
+        for m in range(0,g_m):
+          if mapnames[m]==mapnames[g_m] and ind_inc_maps[m]<>-1:
+            ind_inc_maps[g_m] = ind_inc_maps[m]
+            found = 1
+        if found==0:
+          ind_inc_maps[g_m] = num_ind_inc_maps
+          num_ind_inc_maps = num_ind_inc_maps + 1
     vec =  [m for m in range(0,nargs) if int(idxs[m])<0 and maps[m] == OP_MAP]
 
     if len(vec) > 0:
@@ -265,6 +277,8 @@ def op2_gen_cuda_simple(master, date, consts, kernels,sets):
         if maps[g_m] == OP_MAP and (not mapnames[g_m] in k):
           k = k + [mapnames[g_m]]
           code('const int *__restrict opDat'+str(invinds[inds[g_m]-1])+'Map, ')
+      for m in range(0,num_ind_inc_maps):
+        code('const int ind'+str(m)+'_stride,')
     for g_m in range(0,nargs):
       if maps[g_m] == OP_ID:
         if accs[g_m] == OP_READ:
@@ -454,15 +468,17 @@ def op2_gen_cuda_simple(master, date, consts, kernels,sets):
         code('')
         FOR('col','0','ncolor')
         IF('col2==col')
-
         for g_m in range(0,nargs):
           if maps[g_m] == OP_MAP and accs[g_m] == OP_INC:
             for d in range(0,int(dims[g_m])):
-              code('ARG_l['+str(d)+'] += ind_arg'+str(inds[g_m]-1)+'['+str(d)+'+map'+str(mapinds[g_m])+'idx*DIM];')
+              if soaflags[g_m]:
+                code('ARG_l['+str(d)+'] += ind_arg'+str(inds[g_m]-1)+'['+str(d)+' * ind'+str(ind_inc_maps[g_m])+'_stride + map'+str(mapinds[g_m])+'idx];')
+              else:
+                code('ind_arg'+str(inds[g_m]-1)+'['+str(d)+' + map'+str(mapinds[g_m])+'idx * DIM] += ARG_l['+str(d)+'];')
         for g_m in range(0,nargs):
-          if maps[g_m] == OP_MAP and accs[g_m] == OP_INC:
+          if maps[g_m] == OP_MAP and accs[g_m] == OP_INC and soaflags[g_m]:
             for d in range(0,int(dims[g_m])):
-              code('ind_arg'+str(inds[g_m]-1)+'['+str(d)+'+map'+str(mapinds[g_m])+'idx*DIM] = ARG_l['+str(d)+'];')
+              code('ind_arg'+str(inds[g_m]-1)+'['+str(d)+' * ind'+str(ind_inc_maps[g_m])+'_stride + map'+str(mapinds[g_m])+'idx] = ARG_l['+str(d)+'];')
 
         ENDFOR()
         code('__syncthreads();')
@@ -649,7 +665,7 @@ def op2_gen_cuda_simple(master, date, consts, kernels,sets):
       comm('  int nthread = 128;')
       code('#endif')
       code('')
-      code('int nblocks = 200;')
+      code('int nblocks = 600;')
       code('')
 
     if reduct:
@@ -725,6 +741,11 @@ def op2_gen_cuda_simple(master, date, consts, kernels,sets):
           if maps[g_m] == OP_MAP and (not mapnames[g_m] in k):
             k = k + [mapnames[g_m]]
             code('arg'+str(invinds[inds[g_m]-1])+'.map_data_d, ')
+        ctr=0
+        for g_m in range(0,nargs):
+          if ind_inc_maps[g_m] == ctr:
+            code('arg'+str(g_m)+'.dat->set->size+arg'+str(g_m)+'.dat->set->exec_size+arg'+str(g_m)+'.dat->set->nonexec_size,')
+            ctr = ctr+1
       for g_m in range(0,nargs):
         if inds[g_m]==0:
           code('(TYP*)ARG.data_d,')
@@ -851,6 +872,7 @@ def op2_gen_cuda_simple(master, date, consts, kernels,sets):
   code('#endif')
   code('')
 
+  code('#undef STRIDE')
   code('#define STRIDE(x,y) x*y')
   for ns in range (0,len(sets)):
     code('__constant__ int '+sets[ns]['name']+'_stride;')
@@ -865,11 +887,6 @@ def op2_gen_cuda_simple(master, date, consts, kernels,sets):
         num = 'MAX_CONST_SIZE'
 
       code('__constant__ '+consts[nc]['type'][1:-1]+' '+consts[nc]['name']+'['+num+'];')
-
-  if any_soa:
-    code('__constant__ int op2_stride;')
-    code('')
-    code('#define OP2_STRIDE(arr, idx) arr[op2_stride*(idx)]')
 
   code('')
   code('void op_register_strides() {')

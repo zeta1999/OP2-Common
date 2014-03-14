@@ -194,7 +194,7 @@ void op_mv_halo_device(op_set set, op_dat dat)
       }
     }
     op_cpHostToDevice ( ( void ** ) &( dat->data_d ),
-                        ( void ** ) &( dat->data ), dat->size * set_size );
+                        ( void ** ) &( temp_data ), dat->size * set_size );
     op_free(temp_data);
 
     cutilSafeCall ( cudaMalloc ( ( void ** ) &( dat->buffer_d_r ),
