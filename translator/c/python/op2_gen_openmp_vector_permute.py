@@ -808,7 +808,7 @@ def op2_gen_openmp_vector_permute(master, date, consts, kernels):
 
       for g_m in range (0,nargs):
         if maps[g_m]<>OP_GBL:
-          if accs[g_m]==OP_READ:
+          if accs[g_m]==OP_READ or accs[g_m]==OP_WRITE:
             code(line+' ARG.size;')
           else:
             code(line+' ARG.size * 2.0f;')

@@ -740,6 +740,9 @@ def op2_gen_openmp_vector(master, date, consts, kernels):
       code(line)
       ENDFOR()
       ENDFOR()
+    if ninds>0:
+      code('OP_kernels['+str(nk)+'].transfer  += Plan->transfer;')
+      code('OP_kernels['+str(nk)+'].transfer2 += Plan->transfer2;')
     ENDIF()
     code('')
 
@@ -792,7 +795,7 @@ def op2_gen_openmp_vector(master, date, consts, kernels):
 
       for g_m in range (0,nargs):
         if maps[g_m]<>OP_GBL:
-          if accs[g_m]==OP_READ:
+          if accs[g_m]==OP_READ or accs[g_m]==OP_WRITE:
             code(line+' ARG.size;')
           else:
             code(line+' ARG.size * 2.0f;')

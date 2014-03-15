@@ -49,6 +49,7 @@ double OP_plan_time = 0;
 
 extern op_kernel * OP_kernels;
 extern int OP_kern_max;
+extern int OP_kern_curr;
 
 void
 op_rt_exit (  )
@@ -1092,12 +1093,8 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size,
   op_free(invinds_staged);
 
   op_timers_core(&cpu_t2, &wall_t2);
-  for (int i = 0; i < OP_kern_max; i++) {
-    if (strcmp(name, OP_kernels[i].name)==0) {
-      OP_kernels[i].plan_time += wall_t2-wall_t1;
-      break;
-    }
-  }
+  OP_kernels[OP_kern_curr].plan_time += wall_t2-wall_t1;
+  printf("Plan time of %s (%d): %g\n",name, OP_kern_curr, wall_t2-wall_t1);
   /* return pointer to plan */
   OP_plan_time += wall_t2-wall_t1;
   return &( OP_plans[ip] );

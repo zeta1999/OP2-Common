@@ -643,7 +643,7 @@ void op_timing_output_core()
         double moments_time[2];
         op_compute_moment(OP_kernels[n].time, &moments_time[0], &moments_time[1]);
         op_compute_moment(OP_kernels[n].mpi_time, &moments_mpi_time[0], &moments_mpi_time[1]);
-        if ( OP_kernels[n].transfer2 < 1e-8f ) {
+        if ( OP_kernels[n].plan_time < 1e-8f ) {
           float transfer = MAX(0.0f,OP_kernels[n].transfer / ( 1e9f * OP_kernels[n].time - OP_kernels[n].mpi_time));
 
           if (op_is_root()) printf ( " %6d;           ; %8.4f(%8.4f);  %8.4f(%8.4f);  %8.4f;         ;   %s \n",
