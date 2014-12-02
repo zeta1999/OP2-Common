@@ -2769,6 +2769,14 @@ void op_mpi_exit()
   }
   free(set_import_buffer_size);
   free(OP_map_partial_exchange);
+
+  for (int i = 0; i < OP_import_index; i++)
+    free (OP_import_list[i]);
+  if (OP_import_list) free(OP_import_list);
+  for (int i = 0; i < OP_export_index; i++)
+    free (OP_export_list[i]);
+  if (OP_export_list) free(OP_export_list);
+  if (OP_sliding_buffer_size) free(OP_sliding_buffer);
 }
 
 int getSetSizeFromOpArg (op_arg * arg)
