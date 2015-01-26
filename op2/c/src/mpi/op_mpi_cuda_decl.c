@@ -116,7 +116,7 @@ op_dat op_decl_dat_temp_char(op_set set, int dim, char const * type, int size, c
   dat-> user_managed = 0;
 
   //transpose
-  if (strstr( dat->type, ":soa")!= NULL) {
+  if (strstr( dat->type, ":soa")!= NULL || (OP_auto_soa && dat->dim > 1)) {
     cutilSafeCall ( cudaMalloc ( ( void ** ) &( dat->buffer_d_r ),
       dat->size * (OP_import_exec_list[set->index]->size +
       OP_import_nonexec_list[set->index]->size) ));
@@ -169,7 +169,7 @@ int op_free_dat_temp_char ( op_dat dat )
   //need to free device buffers used in mpi comms
   cutilSafeCall (cudaFree(dat->buffer_d));
 
-  if (strstr( dat->type, ":soa")!= NULL) {
+  if (strstr( dat->type, ":soa")!= NULL || (OP_auto_soa && dat->dim > 1)) {
     cutilSafeCall (cudaFree(dat->buffer_d_r));
   }
 
@@ -183,7 +183,7 @@ void op_mv_halo_device(op_set set, op_dat dat)
   int set_size = set->size + OP_import_exec_list[set->index]->size +
   OP_import_nonexec_list[set->index]->size;
 
-  if (strstr( dat->type, ":soa")!= NULL) {
+  if (strstr( dat->type, ":soa")!= NULL || (OP_auto_soa && dat->dim > 1)) {
     char *temp_data = (char *)malloc(dat->size*set_size*sizeof(char));
     int element_size = dat->size/dat->dim;
     for (int i = 0; i < dat->dim; i++) {
@@ -343,7 +343,7 @@ op_exit (  )
     op_dat_entry *item;
     TAILQ_FOREACH(item, &OP_dat_list, entries)
     {
-      if (strstr( item->dat->type, ":soa")!= NULL) {
+      if (strstr( item->dat->type, ":soa")!= NULL || (OP_auto_soa && item->dat->dim > 1)) {
         cutilSafeCall (cudaFree((item->dat)->buffer_d_r));
       }
       cutilSafeCall (cudaFree((item->dat)->buffer_d));
@@ -413,7 +413,7 @@ void op_upload_all ()
     int set_size = dat->set->size + OP_import_exec_list[dat->set->index]->size +
                    OP_import_nonexec_list[dat->set->index]->size;
     if (dat->data_d) {
-      if (strstr( dat->type, ":soa")!= NULL) {
+      if (strstr( dat->type, ":soa")!= NULL || (OP_auto_soa && dat->dim > 1)) {
         char *temp_data = (char *)malloc(dat->size*set_size*sizeof(char));
         int element_size = dat->size/dat->dim;
         for (int i = 0; i < dat->dim; i++) {

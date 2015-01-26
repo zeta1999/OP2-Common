@@ -166,7 +166,7 @@ def arg_parse(text,j):
           return loc2
       loc2 = loc2 + 1
 
-def op2_gen_cuda_permute(master, date, consts, kernels, hydra):
+def op2_gen_cuda_permute(master, date, consts, kernels, hydra, bookleaf):
 
   global dims, idxs, typs, indtyps, inddims
   global file_format, cont, comment
@@ -292,6 +292,9 @@ def op2_gen_cuda_permute(master, date, consts, kernels, hydra):
     else:
       code('MODULE '+name.upper()+'_MODULE')
       code('USE OP2_CONSTANTS')
+    if bookleaf:
+      code('USE kinds_mod,    ONLY: ink,rlk')
+      code('USE parameters_mod,ONLY: LI')
     code('USE OP2_FORTRAN_DECLARATIONS')
     code('USE OP2_FORTRAN_RT_SUPPORT')
     code('USE ISO_C_BINDING')
@@ -324,7 +327,7 @@ def op2_gen_cuda_permute(master, date, consts, kernels, hydra):
       code('TYPE ( c_ptr )  :: planRet_'+name)
     code('')
     if is_soa > -1:
-      code('#include "op2_macros.h"')
+      code('#define OP2_SOA(var,dim,stride) var((dim-1)*stride+1)')
     code('')
     code('CONTAINS')
     code('')
@@ -600,6 +603,91 @@ def op2_gen_cuda_permute(master, date, consts, kernels, hydra):
         text = text[1:j] + re.sub('\\bnpdes\\b','DNPDE',text[j:])
 
       file_text += text
+    elif bookleaf:
+      file_text += '!DEC$ ATTRIBUTES FORCEINLINE :: ' + name + '\n'
+      modfile = kernels[nk]['mod_file']
+      fid = open(modfile, 'r')
+      text = fid.read()
+      i = text.find('SUBROUTINE '+name)
+      j = i + 10 + text[i+10:].find('SUBROUTINE '+name) + 11 + len(name)
+      file_text += 'attributes (host) subroutine ' + name + '' + text[i+ 11 + len(name):j]+'\n\n'
+      kern_text = 'attributes (device) subroutine ' + name + '_gpu' + text[i+ 11 + len(name):j]+'_gpu\n\n'
+      for const in range(0,len(consts)):
+        i = re.search('\\b'+consts[const]['name']+'\\b',kern_text)
+        if i <> None:
+          print 'Found ' + consts[const]['name']
+          j = i.start()
+          kern_text = kern_text[0:j+1] + re.sub('\\b'+consts[const]['name']+'\\b',consts[const]['name']+'_OP2',kern_text[j+1:])
+
+      #
+      # Apply SoA to variable accesses
+      #
+      j = kern_text.find(name+'_gpu')
+      endj = arg_parse(kern_text,j)
+      while kern_text[j] <> '(':
+          j = j + 1
+      arg_list = kern_text[j+1:endj]
+      arg_list = arg_list.replace('&','')
+      varlist = ['']*nargs
+      leading_dim = [-1]*nargs
+      for g_m in range(0,nargs):
+        varlist[g_m] = arg_list.split(',')[g_m].strip()
+      for g_m in range(0,nargs):
+        if soaflags[g_m] and not (maps[g_m]==OP_MAP and accs[g_m]==OP_INC):
+          #Start looking for the variable in the code, after the function signature
+          loc1 = endj
+          p = re.compile('\\b'+varlist[g_m]+'\\b')
+          nmatches = len(p.findall(kern_text[loc1:]))
+          for id in range(0,nmatches):
+            #Search for the next occurence
+            i = p.search(kern_text[loc1:])
+            #Skip commented out ones
+            j = kern_text[:loc1+i.start()].rfind('\n')
+            if j > -1 and kern_text[j:loc1+i.start()].find('!')>-1:
+              loc1 = loc1+i.end()
+              continue
+
+            #Find closing bracket
+            if leading_dim[g_m] == -1:
+              endarg = loc1+i.start() + len(varlist[g_m])
+            else:
+              endarg = arg_parse(kern_text,loc1+i.start())
+            #Find opening bracket
+            beginarg = loc1+i.start()
+            while kern_text[beginarg] <> '(':
+              beginarg = beginarg+1
+            beginarg = beginarg+1
+
+            #If this is the first time we see the argument (i.e. its declaration)
+            if leading_dim[g_m] == -1:
+              if (len(kern_text[beginarg:endarg].split(',')) > 1):
+                #if it's 2D, remember leading dimension, and make it 1D
+                leading_dim[g_m] = kern_text[beginarg:endarg].split(',')[0]
+                kern_text = kern_text[:beginarg] + '*'+' '*(endarg-beginarg-1) + kern_text[endarg:]
+              else:
+                leading_dim[g_m] = 1
+              #Continue search after this instance of the variable
+              loc1 = endarg+1
+            else:
+              #If we have seen this variable already, then it's in the actual code, replace it with macro
+              macro = 'OP2_SOA('+kern_text[loc1+i.start():loc1+i.end()]+','
+              if leading_dim[g_m] == 1:
+                macro = macro + kern_text[beginarg:endarg]
+              else:
+                macro = macro + kern_text[beginarg:endarg].split(',')[0] + '+('+kern_text[beginarg:endarg].split(',')[1]+'-1)*'+leading_dim[g_m]
+              if maps[g_m] == OP_MAP:
+                if 'el2node' in mapnames[g_m]:
+                  macro = macro + ', nodes_stride_OP2)'
+                elif 'el2el' in mapnames[g_m]:
+                  macro = macro + ', elements_stride_OP2)'
+                elif 'el2reg' in mapnames[g_m]:
+                  macro = macro + ', reg_stride_OP2)'
+              else:
+                macro = macro + ', ' + set_name.strip()[2:]+'_stride_OP2)'
+              kern_text = kern_text[:loc1+i.start()] + macro + kern_text[endarg+1:]
+              #Continue search after this instance of the variable
+              loc1 = loc1+i.start() + len(macro)
+      file_text += kern_text
 
     else:
       depth -= 2
@@ -758,8 +846,15 @@ def op2_gen_cuda_permute(master, date, consts, kernels, hydra):
 
     code('')
     for g_m in range(0,nargs):
-      if maps[g_m] == OP_GBL and accs[g_m] == OP_INC:
-        code('opGblDat'+str(g_m+1)+'Device'+name+' = 0')
+      if maps[g_m] == OP_GBL:
+        if accs[g_m] == OP_INC:
+          code('opGblDat'+str(g_m+1)+'Device'+name+' = 0')
+        elif accs[g_m] == OP_MIN or accs[g_m] == OP_MAX:
+          if dims[g_m].isdigit() and int(dims[g_m])==1:
+            code('opGblDat'+str(g_m+1)+'Device'+name+' = reductionArrayDevice'+str(g_m+1)+'(blockIdx%x - 1 + 1)')
+          else:
+            code('opGblDat'+str(g_m+1)+'Device'+name+' = reductionArrayDevice'+str(g_m+1)+'((blockIdx%x - 1)*('+dims[g_m]+') + 1:(blockIdx%x - 1)*('+dims[g_m]+') + 1 + ('+dims[g_m]+'))')
+
 
     code('')
     if ninds > 0:
@@ -999,16 +1094,22 @@ def op2_gen_cuda_permute(master, date, consts, kernels, hydra):
     code('')
     for g_m in range(0,nargs):
       if maps[g_m] == OP_GBL and (accs[g_m] == OP_INC or accs[g_m] == OP_MIN or accs[g_m] == OP_MAX):
+        if accs[g_m] == OP_INC:
+          op = '0'
+        elif accs[g_m] == OP_MIN:
+          op = '1'
+        elif accs[g_m] == OP_MAX:
+          op = '2'
         if 'real' in typs[g_m].lower():
           if dims[g_m].isdigit() and int(dims[g_m])==1:
-            code('CALL ReductionFloat8(reductionArrayDevice'+str(g_m+1)+'(blockIdx%x - 1 + 1:),opGblDat'+str(g_m+1)+'Device'+name+',0)')
+            code('CALL ReductionFloat8(reductionArrayDevice'+str(g_m+1)+'(blockIdx%x - 1 + 1:),opGblDat'+str(g_m+1)+'Device'+name+','+op+')')
           else:
-            code('CALL ReductionFloat8Mdim(reductionArrayDevice'+str(g_m+1)+'((blockIdx%x - 1)*('+dims[g_m]+') + 1:),opGblDat'+str(g_m+1)+'Device'+name+',0,'+dims[g_m]+')')
+            code('CALL ReductionFloat8Mdim(reductionArrayDevice'+str(g_m+1)+'((blockIdx%x - 1)*('+dims[g_m]+') + 1:),opGblDat'+str(g_m+1)+'Device'+name+','+op+','+dims[g_m]+')')
         elif 'integer' in typs[g_m].lower():
           if dims[g_m].isdigit() and int(dims[g_m])==1:
-            code('CALL ReductionInt4(reductionArrayDevice'+str(g_m+1)+'(blockIdx%x - 1 + 1:),opGblDat'+str(g_m+1)+'Device'+name+',0)')
+            code('CALL ReductionInt4(reductionArrayDevice'+str(g_m+1)+'(blockIdx%x - 1 + 1:),opGblDat'+str(g_m+1)+'Device'+name+','+op+')')
           else:
-            code('CALL ReductionInt4Mdim(reductionArrayDevice'+str(g_m+1)+'((blockIdx%x - 1)*('+dims[g_m]+') + 1:),opGblDat'+str(g_m+1)+'Device'+name+',0,'+dims[g_m]+')')
+            code('CALL ReductionInt4Mdim(reductionArrayDevice'+str(g_m+1)+'((blockIdx%x - 1)*('+dims[g_m]+') + 1:),opGblDat'+str(g_m+1)+'Device'+name+','+op+','+dims[g_m]+')')
     code('')
 
     depth = depth - 2
@@ -1213,7 +1314,7 @@ def op2_gen_cuda_permute(master, date, consts, kernels, hydra):
       code('')
     else:
       code('')
-      code('blocksPerGrid = 200')
+      code('blocksPerGrid = 600')
       code('threadsPerBlock = getBlockSize(userSubroutine//C_NULL_CHAR,set%setPtr%size)')
       code('dynamicSharedMemorySize = reductionSize(opArgArray,numberOfOpDats) * threadsPerBlock')
       code('')
@@ -1277,10 +1378,16 @@ def op2_gen_cuda_permute(master, date, consts, kernels, hydra):
         ENDIF()
         code('')
         DO('i10','0','reductionCardinality'+str(g_m+1)+'')
-        if dims[g_m].isdigit() and int(dims[g_m]) == 1:
-          code('reductionArrayHost'+str(g_m+1)+'(i10+1) = 0.0')
+        if accs[g_m] == OP_INC:
+          if dims[g_m].isdigit() and int(dims[g_m]) == 1:
+            code('reductionArrayHost'+str(g_m+1)+'(i10+1) = 0.0')
+          else:
+            code('reductionArrayHost'+str(g_m+1)+'(i10 * ('+dims[g_m]+') + 1 : i10 * ('+dims[g_m]+') + ('+dims[g_m]+')) = 0.0')
         else:
-          code('reductionArrayHost'+str(g_m+1)+'(i10 * ('+dims[g_m]+') + 1 : i10 * ('+dims[g_m]+') + ('+dims[g_m]+')) = 0.0')
+          if dims[g_m].isdigit() and int(dims[g_m]) == 1:
+            code('reductionArrayHost'+str(g_m+1)+'(i10+1) = opDat'+str(g_m+1)+'Host')
+          else:
+            code('reductionArrayHost'+str(g_m+1)+'(i10 * ('+dims[g_m]+') + 1 : i10 * ('+dims[g_m]+') + ('+dims[g_m]+')) = opDat'+str(g_m+1)+'Host')
         ENDDO()
         code('')
         code('reductionArrayDevice'+str(g_m+1)+name+' = reductionArrayHost'+str(g_m+1)+'')
@@ -1372,14 +1479,25 @@ def op2_gen_cuda_permute(master, date, consts, kernels, hydra):
     if reduct:
       #reductions
       for g_m in range(0,nargs):
-        if maps[g_m] == OP_GBL and accs[g_m] == OP_INC:
+        if maps[g_m] == OP_GBL and (accs[g_m] == OP_INC or accs[g_m] == OP_MIN or accs[g_m] == OP_MAX):
           code('reductionArrayHost'+str(g_m+1)+' = reductionArrayDevice'+str(g_m+1)+name+'')
           code('')
           DO('i10','0','reductionCardinality'+str(g_m+1)+'')
-          if dims[g_m].isdigit() and int(dims[g_m]) == 1:
-            code('opDat'+str(g_m+1)+'Host = opDat'+str(g_m+1)+'Host + reductionArrayHost'+str(g_m+1)+'(i10+1)')
-          else:
-            code('opDat'+str(g_m+1)+'Host(1:'+dims[g_m]+') = opDat'+str(g_m+1)+'Host(1:'+dims[g_m]+') + reductionArrayHost'+str(g_m+1)+'(i10 * ('+dims[g_m]+') + 1 : i10 * ('+dims[g_m]+') + ('+dims[g_m]+'))')
+          if accs[g_m] == OP_INC:
+            if dims[g_m].isdigit() and int(dims[g_m]) == 1:
+              code('opDat'+str(g_m+1)+'Host = opDat'+str(g_m+1)+'Host + reductionArrayHost'+str(g_m+1)+'(i10+1)')
+            else:
+              code('opDat'+str(g_m+1)+'Host(1:'+dims[g_m]+') = opDat'+str(g_m+1)+'Host(1:'+dims[g_m]+') + reductionArrayHost'+str(g_m+1)+'(i10 * ('+dims[g_m]+') + 1 : i10 * ('+dims[g_m]+') + ('+dims[g_m]+'))')
+          elif accs[g_m] == OP_MIN:
+            if dims[g_m].isdigit() and int(dims[g_m]) == 1:
+              code('opDat'+str(g_m+1)+'Host = MIN(opDat'+str(g_m+1)+'Host , reductionArrayHost'+str(g_m+1)+'(i10+1))')
+            else:
+              code('opDat'+str(g_m+1)+'Host(1:'+dims[g_m]+') = MIN(opDat'+str(g_m+1)+'Host(1:'+dims[g_m]+') , reductionArrayHost'+str(g_m+1)+'(i10 * ('+dims[g_m]+') + 1 : i10 * ('+dims[g_m]+') + ('+dims[g_m]+')))')
+          elif accs[g_m] == OP_MAX:
+            if dims[g_m].isdigit() and int(dims[g_m]) == 1:
+              code('opDat'+str(g_m+1)+'Host = MAX(opDat'+str(g_m+1)+'Host , reductionArrayHost'+str(g_m+1)+'(i10+1))')
+            else:
+              code('opDat'+str(g_m+1)+'Host(1:'+dims[g_m]+') = MAX(opDat'+str(g_m+1)+'Host(1:'+dims[g_m]+') , reductionArrayHost'+str(g_m+1)+'(i10 * ('+dims[g_m]+') + 1 : i10 * ('+dims[g_m]+') + ('+dims[g_m]+')))')
           ENDDO()
           code('')
           code('deallocate( reductionArrayHost'+str(g_m+1)+' )')
@@ -1401,7 +1519,7 @@ def op2_gen_cuda_permute(master, date, consts, kernels, hydra):
     if ninds == 0:
       code('dataTransfer = 0.0')
       for g_m in range(0,nargs):
-        if accs[g_m] == OP_READ:
+        if accs[g_m] == OP_READ or accs[g_m] == OP_WRITE:
           if maps[g_m] == OP_GBL:
             code('dataTransfer = dataTransfer + opArg'+str(g_m+1)+'%size')
           else:
@@ -1579,7 +1697,7 @@ def op2_gen_cuda_permute(master, date, consts, kernels, hydra):
 
     code('')
     for g_m in range(0,nargs):
-      if maps[g_m] == OP_GBL and accs[g_m] == OP_INC:
+      if maps[g_m] == OP_GBL and accs[g_m] <> OP_READ:
         code(typs[g_m]+', DIMENSION(:), ALLOCATABLE :: reductionArrayHost'+str(g_m+1))
 
     code('')
@@ -1662,11 +1780,14 @@ def op2_gen_cuda_permute(master, date, consts, kernels, hydra):
 
     #reductions
     for g_m in range(0,nargs):
-      if maps[g_m] == OP_GBL and accs[g_m] == OP_INC:
+      if maps[g_m] == OP_GBL and accs[g_m] <> OP_READ:
         code('allocate( reductionArrayHost'+str(g_m+1)+'(numberOfThreads * (('+dims[g_m]+'-1)/64+1)*64) )')
         DO('i1','1','numberOfThreads+1')
         DO('i2','1',dims[g_m]+'+1')
-        code('reductionArrayHost'+str(g_m+1)+'((i1 - 1) * (('+dims[g_m]+'-1)/64+1)*64 + i2) = 0')
+        if accs[g_m] == OP_INC:
+          code('reductionArrayHost'+str(g_m+1)+'((i1 - 1) * (('+dims[g_m]+'-1)/64+1)*64 + i2) = 0')
+        else:
+          code('reductionArrayHost'+str(g_m+1)+'((i1 - 1) * (('+dims[g_m]+'-1)/64+1)*64 + i2) = opDat'+str(g_m+1)+'Local(i2)')
         ENDDO()
         ENDDO()
 
@@ -1701,7 +1822,7 @@ def op2_gen_cuda_permute(master, date, consts, kernels, hydra):
         if maps[g_m] == OP_ID:
           code('& opDat'+str(g_m+1)+'Local, &')
         elif maps[g_m] == OP_GBL:
-          if accs[g_m] == OP_INC:
+          if accs[g_m] <> OP_READ:
             code('& reductionArrayHost'+str(g_m+1)+'(threadID * (('+dims[g_m]+'-1)/64+1)*64 + 1), &')
           else:
             code('& opDat'+str(g_m+1)+'Local, &')
@@ -1729,7 +1850,7 @@ def op2_gen_cuda_permute(master, date, consts, kernels, hydra):
         if maps[g_m] == OP_ID:
           code('& opDat'+str(g_m+1)+'Local, &')
         elif maps[g_m] == OP_GBL:
-          if accs[g_m] == OP_INC:
+          if accs[g_m] <> OP_READ:
             code('& reductionArrayHost'+str(g_m+1)+'(threadID * (('+dims[g_m]+'-1)/64+1)*64 + 1), &')
           else:
             code('& opDat'+str(g_m+1)+'Local, &')
@@ -1751,10 +1872,20 @@ def op2_gen_cuda_permute(master, date, consts, kernels, hydra):
         DO('i1','1','numberOfThreads+1')
         if (not dims[g_m].isdigit()) or int(dims[g_m]) > 1:
           DO('i2','1',dims[g_m]+'+1')
-          code('opDat'+str(g_m+1)+'Local(i2) = opDat'+str(g_m+1)+'Local(i2) + reductionArrayHost'+str(g_m+1)+'((i1 - 1) * (('+dims[g_m]+'-1)/64+1)*64 + i2)')
+          if accs[g_m] == OP_INC:
+            code('opDat'+str(g_m+1)+'Local(i2) = opDat'+str(g_m+1)+'Local(i2) + reductionArrayHost'+str(g_m+1)+'((i1 - 1) * (('+dims[g_m]+'-1)/64+1)*64 + i2)')
+          elif accs[g_m] == OP_MIN:
+            code('opDat'+str(g_m+1)+'Local(i2) = MIN(opDat'+str(g_m+1)+'Local(i2) , reductionArrayHost'+str(g_m+1)+'((i1 - 1) * (('+dims[g_m]+'-1)/64+1)*64 + i2))')
+          elif accs[g_m] == OP_MAX:
+            code('opDat'+str(g_m+1)+'Local(i2) = MAX(opDat'+str(g_m+1)+'Local(i2) , reductionArrayHost'+str(g_m+1)+'((i1 - 1) * (('+dims[g_m]+'-1)/64+1)*64 + i2))')
           ENDDO()
         else:
-          code('opDat'+str(g_m+1)+'Local = opDat'+str(g_m+1)+'Local + reductionArrayHost'+str(g_m+1)+'((i1 - 1) * (('+dims[g_m]+'-1)/64+1)*64 + 1)')
+          if accs[g_m] == OP_INC:
+            code('opDat'+str(g_m+1)+'Local = opDat'+str(g_m+1)+'Local + reductionArrayHost'+str(g_m+1)+'((i1 - 1) * (('+dims[g_m]+'-1)/64+1)*64 + 1)')
+          if accs[g_m] == OP_MIN:
+            code('opDat'+str(g_m+1)+'Local = MIN(opDat'+str(g_m+1)+'Local , reductionArrayHost'+str(g_m+1)+'((i1 - 1) * (('+dims[g_m]+'-1)/64+1)*64 + 1))')
+          if accs[g_m] == OP_MAX:
+            code('opDat'+str(g_m+1)+'Local = MAX(opDat'+str(g_m+1)+'Local , reductionArrayHost'+str(g_m+1)+'((i1 - 1) * (('+dims[g_m]+'-1)/64+1)*64 + 1))')
         ENDDO()
         code('')
         code('deallocate( reductionArrayHost'+str(g_m+1)+' )')
@@ -1775,7 +1906,7 @@ def op2_gen_cuda_permute(master, date, consts, kernels, hydra):
     if ninds == 0:
       code('dataTransfer = 0.0')
       for g_m in range(0,nargs):
-        if accs[g_m] == OP_READ:
+        if accs[g_m] == OP_READ or accs[g_m] == OP_WRITE:
           if maps[g_m] == OP_GBL:
             code('dataTransfer = dataTransfer + opArg'+str(g_m+1)+'%size')
           else:
