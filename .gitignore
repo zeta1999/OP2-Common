@@ -20,6 +20,9 @@
 *.bin
 #fortran
 *.mod
+*.oo
+*.lst
+*.ipa
 
 #python
 *.pyc

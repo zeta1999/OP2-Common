@@ -1,0 +1,72 @@
+# Compiler
+FC = mpif90
+CC = pgcc
+
+# General flags
+REALSIZE     = #-r8
+INTSIZE      = #-i8
+FORM         = -Mfree
+BIG_ENDIAN   = -Mbyteswapio
+AUTO_ARRAYS  = 
+SHARED_INTEL = 
+IEEE         = -Kieee
+# Open MP
+ifeq ($(NO_OMP),)
+  OPENMP = -mp=nonuma
+else
+  OPENMP =
+endif
+# Debug flags
+ifeq ($(LEV),MEMDEBUG)
+  DBG     = -g -O0
+  CDBG    = -g -O0
+  CHECK   = -C
+  FLTTRAP = -Mchkstk -Ktrap=fp -Mchkfpstk -Mchkptr
+  IEEE   += 
+endif
+ifeq ($(LEV),DEBUG)
+  DBG     = -g -O0
+  CDBG    = -g -O0
+  CHECK   = -C
+  FLTTRAP = -Mchkstk -Ktrap=fp -Mchkfpstk -Mchkptr
+  IEEE   +=
+endif
+ifeq ($(LEV),TV)
+  DBG     = -g -O0
+  CDBG    = -g -O0
+  IEEE   += 
+endif
+ifeq ($(LEV),MEMTV)
+  DBG     = -g -O0
+  CDBG    = -g -O0
+  IEEE   += 
+  CHECK   = -C
+endif
+ifeq ($(LEV),OPTDEBUG)
+  DBG     = -gopt
+  CDBG    = -gopt
+endif
+# Optimisation flags
+ifeq ($(LEV),OPTDEBUG)
+  OPT     = -O2
+  COPT    = -O2
+  IEEE   += 
+endif
+ifeq ($(LEV),RELEASE)
+  OPT     = -fastsse -Mlist -O3 -fast
+  COPT    =
+  IEEE   += 
+endif
+ifeq ($(OPTARGET),cuda)
+  CUDAF     = -Mcuda=cuda6.0,cc35,fastmath,ptxinfo -Minform=inform -fast -Mx,189,0x40 
+  PREPRO  += -DOP2_ENABLE_CUDA
+endif
+
+
+FFLAGS = -c $(REALSIZE) $(INTSIZE) $(FORM) $(BIG_ENDIAN) $(AUTO_ARRAYS) \
+	$(SHARED_INTEL) $(IEEE) $(DBG) $(CHECK) $(OPT) $(FLTTRAP)       \
+	$(OPENMP)
+
+CFLAGS = -c $(CDBG) $(COPT)
+
+LFLAGS = $(DBG) $(OPT) $(OPENMP) -o
