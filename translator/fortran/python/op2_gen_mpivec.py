@@ -264,10 +264,10 @@ def op2_gen_mpivec(master, date, consts, kernels, hydra):
 ##########################################################################
     if hydra :
       if indirect_kernel:
-        if name <> 'ACCUMEDGES':
+        if name <> 'xxxx':
           print "skipping indirect kernel :", name
           continue
-      elif name <> 'XXX': #UPDATEK - problems with op_wirtes
+      elif name <> 'UPDATEK': #UPDATEK - problems with op_wirtes
         print "skipping unspecified kernel :", name
         continue
 

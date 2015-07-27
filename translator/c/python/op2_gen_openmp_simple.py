@@ -476,26 +476,27 @@ def op2_gen_openmp_simple(master, date, consts, kernels):
 #
 # combine reduction data from multiple OpenMP threads
 #
-    comm(' combine reduction data')
-    for g_m in range(0,nargs):
-      if maps[g_m]==OP_GBL and accs[g_m]<>OP_READ:
-        FOR('thr','0','nthreads')
-        if accs[g_m]==OP_INC:
-          FOR('d','0','DIM')
-          code('ARGh[d] += ARG_l[d+thr*64];')
+    if ninds == 0:
+      comm(' combine reduction data')
+      for g_m in range(0,nargs):
+        if maps[g_m]==OP_GBL and accs[g_m]<>OP_READ:
+          FOR('thr','0','nthreads')
+          if accs[g_m]==OP_INC:
+            FOR('d','0','DIM')
+            code('ARGh[d] += ARG_l[d+thr*64];')
+            ENDFOR()
+          elif accs[g_m]==OP_MIN:
+            FOR('d','0','DIM')
+            code('ARGh[d]  = MIN(ARGh[d],ARG_l[d+thr*64]);')
+            ENDFOR()
+          elif accs[g_m]==OP_MAX:
+            FOR('d','0','DIM')
+            code('ARGh[d]  = MAX(ARGh[d],ARG_l[d+thr*64]);')
+            ENDFOR()
+          else:
+            print 'internal error: invalid reduction option'
           ENDFOR()
-        elif accs[g_m]==OP_MIN:
-          FOR('d','0','DIM')
-          code('ARGh[d]  = MIN(ARGh[d],ARG_l[d+thr*64]);')
-          ENDFOR()
-        elif accs[g_m]==OP_MAX:
-          FOR('d','0','DIM')
-          code('ARGh[d]  = MAX(ARGh[d],ARG_l[d+thr*64]);')
-          ENDFOR()
-        else:
-          print 'internal error: invalid reduction option'
-        ENDFOR()
-        code('op_mpi_reduce(&ARG,ARGh);')
+          code('op_mpi_reduce(&ARG,ARGh);')
 
     code('op_mpi_set_dirtybit(nargs, args);')
     code('')

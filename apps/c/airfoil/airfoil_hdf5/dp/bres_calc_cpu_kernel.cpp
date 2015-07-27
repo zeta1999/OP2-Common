@@ -86,7 +86,6 @@ void op_par_loop_bres_calc_cpu(char const *name, op_set set,
   if (set_size == 0 || set_size == set->core_size) {
     op_mpi_wait_all(nargs, args);
   }
-  // combine reduction data
   op_mpi_set_dirtybit(nargs, args);
 
   // update kernel record
