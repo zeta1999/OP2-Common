@@ -107,7 +107,7 @@ else
 endif
 
 PTSCOTCH_INC 	= -I$(PTSCOTCH_INSTALL_PATH)/include -DHAVE_PTSCOTCH
-PTSCOTCH_LIB 	= -L$(PTSCOTCH_INSTALL_PATH)/lib/ -lptscotch \
+PTSCOTCH_LIB 	= -L$(PTSCOTCH_INSTALL_PATH)/lib/ -lptscotch -lscotch \
                   -L$(PTSCOTCH_INSTALL_PATH)/lib/ -lptscotcherr
 
 HDF5_INC = -I$(HDF5_INSTALL_PATH)/include
@@ -285,7 +285,7 @@ airfoil_kernels_mpi_cu.o: airfoil_kernels.cu \
 
 airfoil_mpi_cuda_hyb: airfoil_op.cpp airfoil_hybkernels.o Makefile
 		  $(MPICPP) $(MPIFLAGS) -DOP_HYBRID_GPU airfoil_op.cpp -lm airfoil_hybkernels.o airfoil_hybkernels2.o \
-		  $(OP2_INC) $(PARMETIS_INC) $(PTSCOTCH_INC) $(HDF5_INC) \
+		  $(OMPFLAGS) $(OP2_INC) $(PARMETIS_INC) $(PTSCOTCH_INC) $(HDF5_INC) \
 		  $(OP2_LIB) -lop2_mpi_cuda $(PARMETIS_LIB) $(PTSCOTCH_LIB) \
 		  $(HDF5_LIB) $(CUDA_LIB) -lcudart -o airfoil_mpi_cuda_hyb
 
@@ -296,8 +296,9 @@ airfoil_hybkernels.o: airfoil_hybkernels.cu \
                 Makefile
 		nvcc -DOP_HYBRID_GPU -DGPUPASS $(INC) $(NVCCFLAGS) $(OP2_INC) -I $(MPI_INSTALL_PATH)/include \
                 -c -o airfoil_hybkernels.o airfoil_hybkernels.cu
-		nvcc -DOP_HYBRID_GPU -Xcompiler="$(OMPFLAGS)" $(INC) $(NVCCFLAGS) $(OP2_INC) -I $(MPI_INSTALL_PATH)/include \
-                -c -o airfoil_hybkernels2.o airfoil_hybkernels.cu
+		cp airfoil_hybkernels.cu airfoil_hybkernels.cpp
+		$(MPICPP) -DOP_HYBRID_GPU $(MPIFLAGS) $(OMPFLAGS) $(INC) $(OP2_INC) -I $(MPI_INSTALL_PATH)/include \
+                -c -o airfoil_hybkernels2.o airfoil_hybkernels.cpp
 #
 # convert ASCI new_gird.dat to HDF5 new_grid.h5
 #

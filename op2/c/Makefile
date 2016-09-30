@@ -50,7 +50,7 @@ ifeq ($(OP2_COMPILER),xl)
 ifdef DEBUG
   CCFLAGS  := -O0 -g
 else
-  CCFLAGS  := -qarch=pwr8 -qtune=pwr8 -O5 -qhot 
+  CCFLAGS  := -qarch=pwr8 -qtune=pwr8 -O3 -qhot 
 endif
   CXX      := xlc++
   CXXFLAGS := $(CCFLAGS)
@@ -117,7 +117,7 @@ endif
 PTSCOTCH_INCLUDE_PATH ?= $(PTSCOTCH_INSTALL_PATH)/include
 PTSCOTCH_LIB_PATH ?= $(PTSCOTCH_INSTALL_PATH)/lib
 PTSCOTCH_INC = -I$(PTSCOTCH_INCLUDE_PATH) -DHAVE_PTSCOTCH
-PTSCOTCH_LIB = -L$(PTSCOTCH_LIB_PATH) -lptscotch -lptscotcherr
+PTSCOTCH_LIB = -L$(PTSCOTCH_LIB_PATH) -lptscotch -lscotch -lptscotcherr
 
 HDF5_INC = -I$(HDF5_INSTALL_PATH)/include
 HDF5_LIB = -L$(HDF5_INSTALL_PATH)/lib -lhdf5 -lz

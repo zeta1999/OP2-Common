@@ -84,7 +84,7 @@ else
 endif
 
 PTSCOTCH_INC 	= -I$(PTSCOTCH_INSTALL_PATH)/include -DHAVE_PTSCOTCH
-PTSCOTCH_LIB 	= -L$(PTSCOTCH_INSTALL_PATH)/lib/ -lptscotch \
+PTSCOTCH_LIB 	= -L$(PTSCOTCH_INSTALL_PATH)/lib/ -lptscotch -lscotch \
                 -L$(PTSCOTCH_INSTALL_PATH)/lib/ -lptscotcherr
 
 #

@@ -64,7 +64,7 @@ ifeq ($(OP2_COMPILER),xl)
   OPT = -WF,-DOP_PART_SIZE_1=$(PART_SIZE_ENV) -O5 -qarch=pwr8 -qtune=pwr8 -qhot 
   OPT_CUDA = -WF,-DOP_PART_SIZE_1=$(PART_SIZE_ENV) -O3 -qcuda -qarch=pwr8 -qtune=pwr8 -qhot -qxflag=nrcptpo -WF,-DOP2_WITH_CUDAFOR
   OPENMP = -qsmp=omp -qthreaded
-  CPPLINK = -lstdc++ -lmpi_cxx -libmc++
+  CPPLINK = -lstdc++ -lmpi_cxx -L/opt/ibm/lib -libmc++
   ALL_TARGETS = airfoil_hdf5_seq airfoil_hdf5_openmp \
                 airfoil_hdf5_mpi airfoil_hdf5_mpi_genseq \
                 airfoil_hdf5_mpi_openmp airfoil_hdf5_cuda \

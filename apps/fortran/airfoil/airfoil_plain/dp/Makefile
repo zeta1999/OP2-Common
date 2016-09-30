@@ -13,7 +13,7 @@ PARMETIS_LIB 	= -L$(PARMETIS_INSTALL_PATH) -lparmetis \
             -L$(PARMETIS_INSTALL_PATH) -lmetis
 
 PTSCOTCH_INC 	= -I$(PTSCOTCH_INSTALL_PATH)/include -DHAVE_PTSCOTCH
-PTSCOTCH_LIB 	= -L$(PTSCOTCH_INSTALL_PATH)/lib/ -lptscotch \
+PTSCOTCH_LIB 	= -L$(PTSCOTCH_INSTALL_PATH)/lib/ -lptscotch -lscotch \
                   -L$(PTSCOTCH_INSTALL_PATH)/lib/ -lptscotcherr
 
 PART_SIZE_ENV ?= 128
