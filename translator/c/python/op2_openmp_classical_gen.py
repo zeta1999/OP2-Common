@@ -24,32 +24,14 @@ top =  """
 //
 
 #include "op_lib_cpp.h"
+#include <type_traits>
+#include <typeinfo>
 
 static int op2_stride = 1;
 #define OP2_STRIDE(arr, idx) arr[idx]
-
-// scratch space to use for double counting in indirect reduction
-static int blank_args_size = 512;
-static char* blank_args = (char *)op_malloc(blank_args_size);
-
-inline void op_arg_set(int n, op_arg arg, char **p_arg, int halo){
-  *p_arg = arg.data;
-
-  if (arg.argtype==OP_ARG_GBL) {
-    if (halo && (arg.acc != OP_READ)) *p_arg = blank_args;
-  }
-  else {
-    if (arg.map==NULL || arg.opt==0)         // identity mapping
-      *p_arg += arg.size*n;
-    else                       // standard pointers
-      *p_arg += arg.size*arg.map->map[arg.idx+n*arg.map->dim];
-  }
-}
-
-inline void op_arg_copy_in(int n, op_arg arg, char **p_arg) {
-  for (int i = 0; i < -1*arg.idx; ++i)
-    p_arg[i] = arg.data + arg.map->map[i+n*arg.map->dim]*arg.size;
-}
+#define COMMA ,
+#define TEM(N) T##N
+#define TYPE(N) typename std::conditional<std::is_same<TEM(N) COMMA double>::value || std::is_same< TEM(N)  COMMA const double>::value COMMA  double COMMA  typename std::conditional<std::is_same< TEM(N)  COMMA  float>::value || std::is_same< TEM(N)  COMMA const float>::value  COMMA  float COMMA  int>::type>::type
 
 inline void op_args_check(op_set set, int nargs, op_arg *args,
                                       int *ninds, const char *name) {
@@ -132,14 +114,6 @@ for nargs in range (1,maxargs+1):
         if n%n_per_line == 3 and n <> nargs-1:
             f.write('\n    ')
 
-    f.write('\n  char *p_a['+str(nargs)+'] = {')
-    for n in range (0, nargs):
-        f.write('0')
-        if nargs <> 1 and n != nargs-1:
-            f.write(',')
-        else:
-            f.write('};\n')
-
     f.write('  op_arg args['+str(nargs)+'] = {')
     for n in range (0, nargs):
         f.write('arg'+str(n))
@@ -150,20 +124,16 @@ for nargs in range (1,maxargs+1):
         if n%n_per_line == 3 and n <> nargs-1:
             f.write('\n                    ')
 
-    for n in range (0, nargs):
-        f.write('  if(arg'+str(n)+'.idx < -1) {\n')
-        f.write('    p_a['+str(n)+'] = (char *)op_malloc(-1*args['+str(n)+'].idx*sizeof(T'+str(n)+'));\n  }\n')
-
 
 
     for n in range (0, nargs):
-        f.write('double * arg'+str(n)+'h;\n')
+        f.write('char * arg'+str(n)+'h;\n')
         f.write('if(args['+str(n)+'].argtype == OP_ARG_GBL && args['+str(n)+'].acc != OP_READ)\n')
-        f.write('arg'+str(n)+'h = (double *)args['+str(n)+'].data;\n')
+        f.write('arg'+str(n)+'h = (char *)args['+str(n)+'].data;\n')
 
-    f.write('int nargs = '+str(nargs)+';')
-    f.write('int ninds = 0; ')
-    f.write('\n  int inds['+str(nargs)+'] = {')
+    f.write('int nargs = '+str(nargs)+';\n')
+    f.write('int ninds = 0; \n')
+    f.write('int inds['+str(nargs)+'] = {')
     for n in range (0, nargs):
         f.write('0')
         if nargs <> 1 and n != nargs-1:
@@ -174,8 +144,8 @@ for nargs in range (1,maxargs+1):
 
     f.write('int count = 0;\n')
     f.write('int n = -1;\n')
-    f.write('op_arg_dat_inderect_mapping indmap[nargs] = {0,0};\n')
-
+    f.write('op_arg_dat_inderect_mapping indmap[nargs];\n')
+    f.write('int indmapSize=0;\n')
     f.write('for (int i = 0; i < '+str(nargs)+'; ++i) {\n')
     f.write(' if(args[i].map == OP_ID){\n')
     f.write('  	inds[count] = -1;\n')
@@ -183,12 +153,13 @@ for nargs in range (1,maxargs+1):
     f.write(' }else\n')
     f.write('  	if(args[i].map != NULL && args[i].idx != -1)\n')
     f.write('   {\n')
-    f.write('  		if(!presentInsideInds(indmap, args[i],'+str(nargs)+')){\n')
+    f.write('  		if(!presentInsideInds(indmap, args[i],indmapSize)){\n')
     f.write('    	n++;\n')
     f.write('   	inds[count] = n;\n')
-    f.write('   	indmap[count].dat = args[i].dat;\n')
-    f.write('   	indmap[count].index = args[i].idx;\n')
-    f.write('   	indmap[count].map = args[i].map;\n')
+    f.write('   	indmap[indmapSize].dat = args[i].dat;\n')
+    f.write('   	indmap[indmapSize].index = args[i].idx;\n')
+    f.write('   	indmap[indmapSize].map = args[i].map; \n')
+    f.write('           indmapSize++; \n')
     f.write('   	count++;\n')
     f.write(' 	}else\n')
     f.write(' 		{\n')
@@ -238,12 +209,12 @@ for nargs in range (1,maxargs+1):
     f.write('}\n')
 
     for n in range (0, nargs):
-        f.write('double * arg'+str(n)+'_l;\n')
+        f.write('TYPE('+str(n)+')* arg'+str(n)+'_l;\n')
     f.write('if(reduct){\n')
     for n in range (0, nargs):
         f.write('if(args['+str(n)+'].argtype == OP_ARG_GBL && args['+str(n)+'].acc != OP_READ)\n')
         f.write('{\n')
-        f.write('arg'+str(n)+'_l= new double[nthreads * 64];\n')
+        f.write('arg'+str(n)+'_l= new TYPE('+str(n)+')[nthreads * 64];\n')
         f.write('for (int thr = 0; thr < nthreads; thr++)\n')
         f.write('   for (int d = 0; d < args['+str(n)+'].dim; d++){\n')
         f.write('       if(args['+str(n)+'].acc != OP_INC){\n')
@@ -278,7 +249,7 @@ for nargs in range (1,maxargs+1):
         f.write('      					 if(args['+str(n)+'].acc != OP_READ){\n')
 #        f.write('          if(omp_get_thread_num() == 0) \n')
 #        f.write('          std::cout << " OP_GBL && !OP_READ " << 64*omp_get_thread_num() << std::endl;\n')
-        f.write('            					argIndexMap'+str(n)+'= &((T'+str(n)+' *)arg'+str(n)+'_l)[64*omp_get_thread_num()];\n')
+        f.write('            					argIndexMap'+str(n)+'= &arg'+str(n)+'_l[64*omp_get_thread_num()];\n')
         f.write('       			}else{\n')
 #        f.write('          if(omp_get_thread_num() == 0) \n')
 #        f.write('std::cout << " OP_GBL && OP_READ " << '+str(n)+' << std::endl;\n')
@@ -320,16 +291,28 @@ for nargs in range (1,maxargs+1):
         f.write('		{\n')
         f.write('   			for (int thr = 0; thr < nthreads; thr++)\n')
         f.write('           			if(args['+str(n)+'].acc == OP_INC)\n')
-        f.write('               			for (int d = 0; d < args['+str(n)+'].dim; d++)\n')
-        f.write('                   				arg'+str(n)+'h[d] += arg'+str(n)+'_l[d+thr*64];\n')
+        f.write('               			for (int d = 0; d < args['+str(n)+'].dim; d++) {\n')
+	f.write(' 						TYPE('+str(n)+')* tmp1 =&((TYPE('+str(n)+')*)arg'+str(n)+'h)[d];\n')
+        f.write(' 						TYPE('+str(n)+')* tmp2 =&arg'+str(n)+'_l[d+thr*64];\n')
+	f.write(' 						*tmp1 += *tmp2;\n')
+	f.write(' 					}\n')
+#        f.write('                   				arg'+str(n)+'h[d] += arg'+str(n)+'_l[d+thr*64];\n')
         f.write('           		else\n')
         f.write('               		if(args['+str(n)+'].acc == OP_MIN)\n')
-        f.write('                  			for (int d = 0; d < args['+str(n)+'].dim; d++)\n')
-        f.write('                       			arg'+str(n)+'h[d]=MIN(arg'+str(n)+'h[d],arg'+str(n)+'_l[d+thr*64]);\n')
+        f.write('                  			for (int d = 0; d < args['+str(n)+'].dim; d++){\n')
+#        f.write('                       			arg'+str(n)+'h[d]=MIN(arg'+str(n)+'h[d],arg'+str(n)+'_l[d+thr*64]);\n')
+	f.write(' 						TYPE('+str(n)+')* tmp1 =&((TYPE('+str(n)+')*)arg'+str(n)+'h)[d];\n')
+        f.write(' 						TYPE('+str(n)+')* tmp2 =&arg'+str(n)+'_l[d+thr*64];\n')
+	f.write('  						arg'+str(n)+'h[d]= (char) MIN(*tmp1,*tmp2);\n')
+	f.write(' 					}\n')
         f.write('               	else\n')
         f.write('                   		if(args['+str(n)+'].acc == OP_MAX)\n')
-        f.write('                       		for (int d = 0; d < args['+str(n)+'].dim; d++)\n')
-        f.write('                           			arg'+str(n)+'h[d]=MAX(arg'+str(n)+'h[d],arg'+str(n)+'_l[d+thr*64]);\n')
+        f.write('                       		for (int d = 0; d < args['+str(n)+'].dim; d++){\n')
+#        f.write('                           			arg'+str(n)+'h[d]=MAX(arg'+str(n)+'h[d],arg'+str(n)+'_l[d+thr*64]);\n')
+	f.write(' 						TYPE('+str(n)+')* tmp1 =&((TYPE('+str(n)+')*)arg'+str(n)+'h)[d];\n')
+        f.write(' 						TYPE('+str(n)+')* tmp2 =&arg'+str(n)+'_l[d+thr*64];\n')
+	f.write(' 						arg'+str(n)+'h[d]= (char) MAX(*tmp1,*tmp2);\n')
+	f.write(' 					}\n')
         f.write('                   	else\n')
         f.write('                       	perror("internal error: invalid reduction option");\n')
         f.write('}\n')
@@ -343,6 +326,7 @@ for nargs in range (1,maxargs+1):
     f.write('	if(set_size==0 || set_size == set->core_size){\n')
     f.write('		op_mpi_wait_all(nargs, args);\n')
     f.write('   }\n')
+
     f.write('} // ninds > 0\n')
     f.write('else\n')
     f.write('{\n')
@@ -381,23 +365,34 @@ for nargs in range (1,maxargs+1):
     f.write('   }\n')
 
     for n in range (0, nargs):
-        f.write('if(args['+str(n)+'].argtype == OP_ARG_GBL && args['+str(n)+'].acc != OP_READ)\n')
-        f.write('{\n')
-        f.write('	for (int thr = 0; thr < nthreads; thr++)\n')
-        f.write('           if(args['+str(n)+'].acc == OP_INC)\n')
-        f.write('               for (int d = 0; d < args['+str(n)+'].dim; d++)\n')
-        f.write('                   arg'+str(n)+'h[d] += arg'+str(n)+'_l[d+thr*64];\n')
-        f.write('           else\n')
-        f.write('               if(args['+str(n)+'].acc == OP_MIN)\n')
-        f.write('                   for (int d = 0; d < args['+str(n)+'].dim; d++)\n')
-        f.write('                        arg'+str(n)+'h[d]=MIN(arg'+str(n)+'h[d],arg'+str(n)+'_l[d+thr*64]);\n')
-        f.write('               else\n')
-        f.write('                   if(args['+str(n)+'].acc == OP_MAX)\n')
-        f.write('                       for (int d = 0; d < args['+str(n)+'].dim; d++)\n')
-        f.write('                           arg'+str(n)+'h[d]=MAX(arg'+str(n)+'h[d],arg'+str(n)+'_l[d+thr*64]);\n')
-        f.write('                   else\n')
-        f.write('                       perror("internal error: invalid reduction option");\n')
-        f.write('	op_mpi_reduce(&arg'+str(n)+', arg'+str(n)+'h);\n')
+        f.write('		if(args['+str(n)+'].argtype == OP_ARG_GBL && args['+str(n)+'].acc != OP_READ)\n')
+        f.write('		{\n')
+        f.write('   			for (int thr = 0; thr < nthreads; thr++)\n')
+        f.write('           			if(args['+str(n)+'].acc == OP_INC)\n')
+        f.write('               			for (int d = 0; d < args['+str(n)+'].dim; d++) {\n')
+	f.write(' 						TYPE('+str(n)+')* tmp1 =&((TYPE('+str(n)+')*)arg'+str(n)+'h)[d];\n')
+	f.write(' 						TYPE('+str(n)+')* tmp2 =&((TYPE('+str(n)+')*)arg'+str(n)+'_l)[d+thr*64];\n')
+	f.write(' 						*tmp1 += *tmp2;\n')
+	f.write(' 					}\n')
+#        f.write('                   				arg'+str(n)+'h[d] += arg'+str(n)+'_l[d+thr*64];\n')
+        f.write('           		else\n')
+        f.write('               		if(args['+str(n)+'].acc == OP_MIN)\n')
+        f.write('                  			for (int d = 0; d < args['+str(n)+'].dim; d++){\n')
+#        f.write('                       			arg'+str(n)+'h[d]=MIN(arg'+str(n)+'h[d],arg'+str(n)+'_l[d+thr*64]);\n')
+	f.write(' 						TYPE('+str(n)+')* tmp1 =&((TYPE('+str(n)+')*)arg'+str(n)+'h)[d];\n')
+	f.write(' 						TYPE('+str(n)+')* tmp2 =&((TYPE('+str(n)+')*)arg'+str(n)+'_l)[d+thr*64];\n')
+	f.write('  						arg'+str(n)+'h[d]= (char) MIN(*tmp1,*tmp2);\n')
+	f.write(' 					}\n')
+        f.write('               	else\n')
+        f.write('                   		if(args['+str(n)+'].acc == OP_MAX)\n')
+        f.write('                       		for (int d = 0; d < args['+str(n)+'].dim; d++){\n')
+#        f.write('                           			arg'+str(n)+'h[d]=MAX(arg'+str(n)+'h[d],arg'+str(n)+'_l[d+thr*64]);\n')
+	f.write(' 						TYPE('+str(n)+')* tmp1 =&((TYPE('+str(n)+')*)arg'+str(n)+'h)[d];\n')
+	f.write(' 						TYPE('+str(n)+')* tmp2 =&((TYPE('+str(n)+')*)arg'+str(n)+'_l)[d+thr*64];\n')	
+	f.write(' 						arg'+str(n)+'h[d]= (char) MAX(*tmp1,*tmp2);\n')
+	f.write(' 					}\n')
+        f.write('                   	else\n')
+        f.write('                       	perror("internal error: invalid reduction option");\n')
         f.write('}\n')
 
 
@@ -405,6 +400,10 @@ for nargs in range (1,maxargs+1):
 
     f.write('op_mpi_set_dirtybit(nargs, args);\n')
     f.write('}// set->size > 0\n')
+    for n in range (0, nargs):
+        f.write('if(args['+str(n)+'].argtype == OP_ARG_GBL && args['+str(n)+'].acc != OP_READ){\n')
+        f.write('	free(arg'+str(n)+'_l);\n');
+        f.write('	}\n');
     f.write('}\n')
 
 
