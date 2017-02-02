@@ -12,7 +12,7 @@
 maxargs = 10
 
 #open/create file
-f = open('./op_seq_classical.h','w')
+f = open('./op_openmp_classical.h','w')
 
 #
 #first the top bit
