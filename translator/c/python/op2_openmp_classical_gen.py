@@ -94,7 +94,7 @@ for nargs in range (1,maxargs+1):
         if n%n_per_line == 3 and n <> nargs-1:
             f.write('\n          ')
 
-    f.write('void op_par_loop_omp(void (*kernel)(')
+    f.write('void op_par_loop(void (*kernel)(')
     for n in range (0, nargs):
         f.write('T'+str(n)+'*')
         if nargs <> 1 and n != nargs-1:

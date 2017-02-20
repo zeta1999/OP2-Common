@@ -211,7 +211,7 @@ int main(int argc, char **argv) {
 
     // save old flow solution
 
-    op_par_loop_omp(save_soln, "save_soln", cells,
+     op_par_loop(save_soln, "save_soln", cells,
                 op_arg_dat(p_q, -1, OP_ID, 4, "double", OP_READ),
                 op_arg_dat(p_qold, -1, OP_ID, 4, "double", OP_WRITE));
 
@@ -221,7 +221,7 @@ int main(int argc, char **argv) {
 
       // calculate area/timstep
 
-      op_par_loop_omp(adt_calc, "adt_calc", cells,
+       op_par_loop(adt_calc, "adt_calc", cells,
                   op_arg_dat(p_x, 0, pcell, 2, "double", OP_READ),
                   op_arg_dat(p_x, 1, pcell, 2, "double", OP_READ),
                   op_arg_dat(p_x, 2, pcell, 2, "double", OP_READ),
@@ -231,7 +231,7 @@ int main(int argc, char **argv) {
 
       // calculate flux residual
 
-      op_par_loop_omp(res_calc, "res_calc", edges,
+       op_par_loop(res_calc, "res_calc", edges,
                   op_arg_dat(p_x, 0, pedge, 2, "double", OP_READ),
                   op_arg_dat(p_x, 1, pedge, 2, "double", OP_READ),
                   op_arg_dat(p_q, 0, pecell, 4, "double", OP_READ),
@@ -241,7 +241,7 @@ int main(int argc, char **argv) {
                   op_arg_dat(p_res, 0, pecell, 4, "double", OP_INC),
                   op_arg_dat(p_res, 1, pecell, 4, "double", OP_INC));
 
-      op_par_loop_omp(bres_calc, "bres_calc", bedges,
+       op_par_loop(bres_calc, "bres_calc", bedges,
                   op_arg_dat(p_x, 0, pbedge, 2, "double", OP_READ),
                   op_arg_dat(p_x, 1, pbedge, 2, "double", OP_READ),
                   op_arg_dat(p_q, 0, pbecell, 4, "double", OP_READ),
@@ -253,7 +253,7 @@ int main(int argc, char **argv) {
 
       rms = 0.0;
 
-      op_par_loop_omp(update, "update", cells,
+       op_par_loop(update, "update", cells,
                   op_arg_dat(p_qold, -1, OP_ID, 4, "double", OP_READ),
                   op_arg_dat(p_q, -1, OP_ID, 4, "double", OP_WRITE),
                   op_arg_dat(p_res, -1, OP_ID, 4, "double", OP_RW),
