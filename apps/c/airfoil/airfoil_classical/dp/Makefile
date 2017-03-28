@@ -100,7 +100,7 @@ PTSCOTCH_LIB 	= -L$(PTSCOTCH_INSTALL_PATH)/lib/ -lptscotch \
 #
 # master to make all versions
 #
-ALL_TARGETS = clean airfoil_seq airfoil_genseq airfoil_openmp airfoil_mpi airfoil_mpi_genseq airfoil_mpi_openmp airfoil_cuda airfoil_mpi_cuda
+ALL_TARGETS = clean airfoil_seq airfoil_openmp_classical airfoil_genseq airfoil_openmp airfoil_mpi airfoil_mpi_genseq airfoil_mpi_openmp airfoil_cuda airfoil_mpi_cuda
 ifeq ($(OP2_COMPILER),pgi)
         ALL_TARGETS += #airfoil_openacc airfoil_mpi_openacc
 endif
@@ -123,6 +123,9 @@ all: $(ALL_TARGETS)
 airfoil_seq: airfoil.cpp save_soln.h adt_calc.h res_calc.h bres_calc.h Makefile
 	     $(CPP) $(CPPFLAGS) airfoil.cpp $(OP2_INC) $(OP2_LIB) -lop2_seq -o airfoil_seq
 
+#
+# simple header file openmp version
+#
 
 airfoil_openmp_classical: airfoil_openmp_classical.cpp save_soln.h adt_calc.h res_calc.h bres_calc.h Makefile
 	     $(CPP) $(CPPFLAGS) -std=c++11 $(OMPFLAGS) airfoil_openmp_classical.cpp $(OP2_INC) $(OP2_LIB) -lop2_seq -o airfoil_openmp_classical
@@ -275,5 +278,5 @@ airfoil_kernels_mpi_cu.o:	airfoil_mpi_kernels.cu      \
 #
 
 clean:
-		rm -f airfoil_seq airfoil_openmp_classical airfoil_vec airfoil_openmp airfoil_cuda airfoil_mpi airfoil_mpi_vec \
+		rm -f airfoil_seq airfoil_openmp_classical airfoil_openmp_classical airfoil_vec airfoil_openmp airfoil_cuda airfoil_mpi airfoil_mpi_vec \
 		airfoil_mpi_cuda airfoil_mpi_openmp airfoil_genseq airfoil_mpi_genseq airfoil_mpi_cuda_hyb *.o
