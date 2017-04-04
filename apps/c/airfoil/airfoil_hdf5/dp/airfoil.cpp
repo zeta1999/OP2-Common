@@ -54,8 +54,11 @@ double gam, gm1, cfl, eps, mach, alpha, qinf[4];
 // OP header file
 //
 
+#ifdef OPENMP_CLASSICAL
+#include "op_openmp_classical.h"
+#else
 #include "op_seq.h"
-
+#endif
 //
 // kernel routines for parallel loops
 //
@@ -69,6 +72,7 @@ double gam, gm1, cfl, eps, mach, alpha, qinf[4];
 // main program
 
 int main(int argc, char **argv) {
+
   // OP initialisation
   op_init(argc, argv, 2);
 
@@ -143,8 +147,8 @@ int main(int argc, char **argv) {
   op_write_const_hdf5("qinf", 4, "double", (char *)qinf, "new_grid_out.h5");
 
   // trigger partitioning and halo creation routines
-  op_partition("PTSCOTCH", "KWAY", edges, pecell, p_x);
-  // op_partition("PARMETIS", "KWAY", edges, pecell, p_x);
+  //op_partition("PTSCOTCH", "KWAY", edges, pecell, p_x);
+   op_partition("PARMETIS", "KWAY", edges, pecell, p_x);
 
   int g_ncell = op_get_size(cells);
 
@@ -152,7 +156,6 @@ int main(int argc, char **argv) {
   op_timers(&cpu_t1, &wall_t1);
 
   // main time-marching loop
-
   niter = 1000;
 
   for (int iter = 1; iter <= niter; iter++) {

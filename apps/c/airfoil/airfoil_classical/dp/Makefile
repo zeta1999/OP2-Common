@@ -92,8 +92,8 @@ else
   PARMETIS_LIB = -L$(PARMETIS_INSTALL_PATH)/ -lparmetis -lmetis
 endif
 
-PTSCOTCH_INC 	= -I$(PTSCOTCH_INSTALL_PATH)/include -DHAVE_PTSCOTCH
-PTSCOTCH_LIB 	= -L$(PTSCOTCH_INSTALL_PATH)/lib/ -lptscotch \
+PTSCOTCH_INC   = -I$(PTSCOTCH_INSTALL_PATH)/include -DHAVE_PTSCOTCH
+PTSCOTCH_LIB   = -L$(PTSCOTCH_INSTALL_PATH)/lib/ -lptscotch \
                 -L$(PTSCOTCH_INSTALL_PATH)/lib/ -lptscotcherr
 
 
@@ -124,8 +124,8 @@ airfoil_seq: airfoil.cpp save_soln.h adt_calc.h res_calc.h bres_calc.h Makefile
 	     $(CPP) $(CPPFLAGS) airfoil.cpp $(OP2_INC) $(OP2_LIB) -lop2_seq -o airfoil_seq
 
 
-airfoil_openmp_classical: airfoil_openmp_classical.cpp save_soln.h adt_calc.h res_calc.h bres_calc.h Makefile
-	     $(CPP) $(CPPFLAGS) -std=c++11 $(OMPFLAGS) airfoil_openmp_classical.cpp $(OP2_INC) $(OP2_LIB) -lop2_seq -o airfoil_openmp_classical
+airfoil_openmp_classical: airfoil.cpp save_soln.h adt_calc.h res_calc.h bres_calc.h Makefile
+	     $(CPP) $(CPPFLAGS) -DOPENMP_CLASSICAL -std=c++11 $(OMPFLAGS) airfoil.cpp $(OP2_INC) $(OP2_LIB) -lop2_seq -o airfoil_openmp_classical
 #
 # codegenerated sequential version
 #
@@ -187,7 +187,7 @@ airfoil_kernels_cu.o:	airfoil_kernels.cu      \
 		update_kernel.cu    update.h    \
 		Makefile
 		nvcc $(VAR) $(INC) $(NVCCFLAGS) $(OP2_INC) \
-		-c -o airfoil_kernels_cu.o \
+2		-c -o airfoil_kernels_cu.o \
 		airfoil_kernels.cu
 
 #
@@ -196,7 +196,11 @@ airfoil_kernels_cu.o:	airfoil_kernels.cu      \
 
 airfoil_mpi: airfoil_mpi.cpp save_soln.h adt_calc.h res_calc.h bres_calc.h Makefile
 	$(MPICPP) $(MPIFLAGS) $(OP2_INC) $(PARMETIS_INC) $(PTSCOTCH_INC) \
-	$(OP2_LIB) airfoil_mpi.cpp -lop2_mpi $(PARMETIS_LIB) $(PTSCOTCH_LIB) -o airfoil_mpi
+	$(OP2_LIB) airfoil_mpi.cpp -lop2_mpi  $(PARMETIS_LIB) $(PTSCOTCH_LIB) -o airfoil_mpi
+
+airfoil_mpi_openmp_classical: airfoil_mpi.cpp save_soln.h adt_calc.h res_calc.h bres_calc.h Makefile
+	$(MPICPP) -DOPENMP_CLASSICAL -std=c++11 $(OMPFLAGS) $(MPIFLAGS) $(OP2_INC) $(PARMETIS_INC) $(PTSCOTCH_INC) \
+	$(OP2_LIB) airfoil_mpi.cpp -lop2_mpi $(PARMETIS_LIB) $(PTSCOTCH_LIB) -o airfoil_mpi_openmp_classical
 
 
 #

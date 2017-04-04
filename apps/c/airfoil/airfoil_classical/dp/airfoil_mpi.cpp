@@ -62,7 +62,11 @@ double gam, gm1, cfl, eps, mach, alpha, qinf[4];
 //
 
 #include "op_lib_mpi.h"
-#include "op_seq.h"
+#ifdef OPENMP_CLASSICAL
+    #include "op_openmp_classical.h"
+#else
+    #include "op_seq.h"
+#endif
 
 //
 // kernel routines for parallel loops
@@ -346,8 +350,8 @@ int main(int argc, char **argv) {
   op_diagnostic_output();
 
   // trigger partitioning and halo creation routines
-  op_partition("PTSCOTCH", "KWAY", cells, pecell, p_x);
-  // op_partition("PARMETIS", "KWAY", cells, pecell, p_x);
+  //op_partition("PTSCOTCH", "KWAY", cells, pecell, p_x);
+  op_partition("PARMETIS", "KWAY", cells, pecell, p_x);
 
   // initialise timers for total execution wall time
   op_timers(&cpu_t1, &wall_t1);

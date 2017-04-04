@@ -53,9 +53,11 @@ double gam, gm1, cfl, eps, mach, alpha, qinf[4];
 //
 // OP header file
 //
-
-#include "op_seq.h"
-
+#ifdef OPENMP_CLASSICAL
+    #include "op_openmp_classical.h"
+#else
+    #include "op_seq.h"
+#endif
 //
 // kernel routines for parallel loops
 //
@@ -253,7 +255,7 @@ int main(int argc, char **argv) {
 
       rms = 0.0;
 
-      op_par_loop(update, "update", cells,
+     op_par_loop(update, "update", cells,
                   op_arg_dat(p_qold, -1, OP_ID, 4, "double", OP_READ),
                   op_arg_dat(p_q, -1, OP_ID, 4, "double", OP_WRITE),
                   op_arg_dat(p_res, -1, OP_ID, 4, "double", OP_RW),
