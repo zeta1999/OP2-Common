@@ -36,15 +36,6 @@ bool presentInsideInds(op_arg_dat_inderect_mapping *inds,op_arg args, int nargs)
 
 }
 
-bool insideConteiner(int *conteiner,int currentsize,int inds){
-    for (int i = 0; i < currentsize; ++i) {
-        if(conteiner[i] == inds)
-            return true;
-    }
-    return false;
-
-}
-
 //
 //op_par_loop routine for 1 arguments
 //
@@ -78,6 +69,7 @@ void op_par_loop(void (*kernel)(T0*),
                     indmap[indmapSize].map = args[i].map;
                     indmapSize++;
                     count++;
+                    ninds++;
                 }else
                 {
                     inds[count] = n;
@@ -85,16 +77,6 @@ void op_par_loop(void (*kernel)(T0*),
                 }
             }
     }
-    int conteiner[1];
-    int currentsize=0;
-    for (int i = 0; i < 1; ++i)
-        if(inds[i] != -1)
-            if(!insideConteiner(conteiner, currentsize, inds[i]))
-            {
-                conteiner[currentsize]=inds[i];
-                currentsize++;
-                ninds++;
-            }
     // check if there is some reduction to do
     bool reduct = false;
     for (int i = 0; i < 1; ++i)
@@ -176,7 +158,7 @@ void op_par_loop(void (*kernel)(T0*),
                     }
                 }
                 block_offset += nblocks;
-                if(reduct)
+                if(reduct  )
                 {
                     if (col == Plan->ncolors_owned-1) {
                         if(args[0].argtype == OP_ARG_GBL && args[0].acc != OP_READ)
@@ -184,23 +166,17 @@ void op_par_loop(void (*kernel)(T0*),
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[0].acc == OP_INC)
                                     for (int d = 0; d < args[0].dim; d++) {
-                                        TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                        TYPE(0)* tmp2 =&arg0_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg0h[d] +=arg0_l[d+thr*64];
                                     }
                                 else
                                     if(args[0].acc == OP_MIN)
                                         for (int d = 0; d < args[0].dim; d++){
-                                            TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                            TYPE(0)* tmp2 =&arg0_l[d+thr*64];
-                                            arg0h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg0h[d]= MIN(arg0h[d],arg0_l[d+thr*64]);
                                         }
                                     else
                                         if(args[0].acc == OP_MAX)
                                             for (int d = 0; d < args[0].dim; d++){
-                                                TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                                TYPE(0)* tmp2 =&arg0_l[d+thr*64];
-                                                arg0h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg0h[d]= MAX(arg0h[d],arg0_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -245,23 +221,17 @@ void op_par_loop(void (*kernel)(T0*),
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[0].acc == OP_INC)
                         for (int d = 0; d < args[0].dim; d++) {
-                            TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                            TYPE(0)* tmp2 =&((TYPE(0)*)arg0_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg0h[d] +=arg0_l[d+thr*64];
                         }
                     else
                         if(args[0].acc == OP_MIN)
                             for (int d = 0; d < args[0].dim; d++){
-                                TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                TYPE(0)* tmp2 =&((TYPE(0)*)arg0_l)[d+thr*64];
-                                arg0h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg0h[d]= MIN(arg0h[d],arg0_l[d+thr*64]);
                             }
                         else
                             if(args[0].acc == OP_MAX)
                                 for (int d = 0; d < args[0].dim; d++){
-                                    TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                    TYPE(0)* tmp2 =&((TYPE(0)*)arg0_l)[d+thr*64];
-                                    arg0h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg0h[d]= MAX(arg0h[d],arg0_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -310,6 +280,7 @@ void op_par_loop(void (*kernel)(T0*, T1*),
                     indmap[indmapSize].map = args[i].map;
                     indmapSize++;
                     count++;
+                    ninds++;
                 }else
                 {
                     inds[count] = n;
@@ -317,16 +288,6 @@ void op_par_loop(void (*kernel)(T0*, T1*),
                 }
             }
     }
-    int conteiner[2];
-    int currentsize=0;
-    for (int i = 0; i < 2; ++i)
-        if(inds[i] != -1)
-            if(!insideConteiner(conteiner, currentsize, inds[i]))
-            {
-                conteiner[currentsize]=inds[i];
-                currentsize++;
-                ninds++;
-            }
     // check if there is some reduction to do
     bool reduct = false;
     for (int i = 0; i < 2; ++i)
@@ -438,7 +399,7 @@ void op_par_loop(void (*kernel)(T0*, T1*),
                     }
                 }
                 block_offset += nblocks;
-                if(reduct)
+                if(reduct  )
                 {
                     if (col == Plan->ncolors_owned-1) {
                         if(args[0].argtype == OP_ARG_GBL && args[0].acc != OP_READ)
@@ -446,23 +407,17 @@ void op_par_loop(void (*kernel)(T0*, T1*),
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[0].acc == OP_INC)
                                     for (int d = 0; d < args[0].dim; d++) {
-                                        TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                        TYPE(0)* tmp2 =&arg0_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg0h[d] +=arg0_l[d+thr*64];
                                     }
                                 else
                                     if(args[0].acc == OP_MIN)
                                         for (int d = 0; d < args[0].dim; d++){
-                                            TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                            TYPE(0)* tmp2 =&arg0_l[d+thr*64];
-                                            arg0h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg0h[d]= MIN(arg0h[d],arg0_l[d+thr*64]);
                                         }
                                     else
                                         if(args[0].acc == OP_MAX)
                                             for (int d = 0; d < args[0].dim; d++){
-                                                TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                                TYPE(0)* tmp2 =&arg0_l[d+thr*64];
-                                                arg0h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg0h[d]= MAX(arg0h[d],arg0_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -473,23 +428,17 @@ void op_par_loop(void (*kernel)(T0*, T1*),
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[1].acc == OP_INC)
                                     for (int d = 0; d < args[1].dim; d++) {
-                                        TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                        TYPE(1)* tmp2 =&arg1_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg1h[d] +=arg1_l[d+thr*64];
                                     }
                                 else
                                     if(args[1].acc == OP_MIN)
                                         for (int d = 0; d < args[1].dim; d++){
-                                            TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                            TYPE(1)* tmp2 =&arg1_l[d+thr*64];
-                                            arg1h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg1h[d]= MIN(arg1h[d],arg1_l[d+thr*64]);
                                         }
                                     else
                                         if(args[1].acc == OP_MAX)
                                             for (int d = 0; d < args[1].dim; d++){
-                                                TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                                TYPE(1)* tmp2 =&arg1_l[d+thr*64];
-                                                arg1h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg1h[d]= MAX(arg1h[d],arg1_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -550,23 +499,17 @@ void op_par_loop(void (*kernel)(T0*, T1*),
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[0].acc == OP_INC)
                         for (int d = 0; d < args[0].dim; d++) {
-                            TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                            TYPE(0)* tmp2 =&((TYPE(0)*)arg0_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg0h[d] +=arg0_l[d+thr*64];
                         }
                     else
                         if(args[0].acc == OP_MIN)
                             for (int d = 0; d < args[0].dim; d++){
-                                TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                TYPE(0)* tmp2 =&((TYPE(0)*)arg0_l)[d+thr*64];
-                                arg0h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg0h[d]= MIN(arg0h[d],arg0_l[d+thr*64]);
                             }
                         else
                             if(args[0].acc == OP_MAX)
                                 for (int d = 0; d < args[0].dim; d++){
-                                    TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                    TYPE(0)* tmp2 =&((TYPE(0)*)arg0_l)[d+thr*64];
-                                    arg0h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg0h[d]= MAX(arg0h[d],arg0_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -577,23 +520,17 @@ void op_par_loop(void (*kernel)(T0*, T1*),
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[1].acc == OP_INC)
                         for (int d = 0; d < args[1].dim; d++) {
-                            TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                            TYPE(1)* tmp2 =&((TYPE(1)*)arg1_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg1h[d] +=arg1_l[d+thr*64];
                         }
                     else
                         if(args[1].acc == OP_MIN)
                             for (int d = 0; d < args[1].dim; d++){
-                                TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                TYPE(1)* tmp2 =&((TYPE(1)*)arg1_l)[d+thr*64];
-                                arg1h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg1h[d]= MIN(arg1h[d],arg1_l[d+thr*64]);
                             }
                         else
                             if(args[1].acc == OP_MAX)
                                 for (int d = 0; d < args[1].dim; d++){
-                                    TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                    TYPE(1)* tmp2 =&((TYPE(1)*)arg1_l)[d+thr*64];
-                                    arg1h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg1h[d]= MAX(arg1h[d],arg1_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -648,6 +585,7 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*),
                     indmap[indmapSize].map = args[i].map;
                     indmapSize++;
                     count++;
+                    ninds++;
                 }else
                 {
                     inds[count] = n;
@@ -655,16 +593,6 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*),
                 }
             }
     }
-    int conteiner[3];
-    int currentsize=0;
-    for (int i = 0; i < 3; ++i)
-        if(inds[i] != -1)
-            if(!insideConteiner(conteiner, currentsize, inds[i]))
-            {
-                conteiner[currentsize]=inds[i];
-                currentsize++;
-                ninds++;
-            }
     // check if there is some reduction to do
     bool reduct = false;
     for (int i = 0; i < 3; ++i)
@@ -806,7 +734,7 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*),
                     }
                 }
                 block_offset += nblocks;
-                if(reduct)
+                if(reduct  )
                 {
                     if (col == Plan->ncolors_owned-1) {
                         if(args[0].argtype == OP_ARG_GBL && args[0].acc != OP_READ)
@@ -814,23 +742,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*),
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[0].acc == OP_INC)
                                     for (int d = 0; d < args[0].dim; d++) {
-                                        TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                        TYPE(0)* tmp2 =&arg0_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg0h[d] +=arg0_l[d+thr*64];
                                     }
                                 else
                                     if(args[0].acc == OP_MIN)
                                         for (int d = 0; d < args[0].dim; d++){
-                                            TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                            TYPE(0)* tmp2 =&arg0_l[d+thr*64];
-                                            arg0h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg0h[d]= MIN(arg0h[d],arg0_l[d+thr*64]);
                                         }
                                     else
                                         if(args[0].acc == OP_MAX)
                                             for (int d = 0; d < args[0].dim; d++){
-                                                TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                                TYPE(0)* tmp2 =&arg0_l[d+thr*64];
-                                                arg0h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg0h[d]= MAX(arg0h[d],arg0_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -841,23 +763,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*),
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[1].acc == OP_INC)
                                     for (int d = 0; d < args[1].dim; d++) {
-                                        TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                        TYPE(1)* tmp2 =&arg1_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg1h[d] +=arg1_l[d+thr*64];
                                     }
                                 else
                                     if(args[1].acc == OP_MIN)
                                         for (int d = 0; d < args[1].dim; d++){
-                                            TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                            TYPE(1)* tmp2 =&arg1_l[d+thr*64];
-                                            arg1h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg1h[d]= MIN(arg1h[d],arg1_l[d+thr*64]);
                                         }
                                     else
                                         if(args[1].acc == OP_MAX)
                                             for (int d = 0; d < args[1].dim; d++){
-                                                TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                                TYPE(1)* tmp2 =&arg1_l[d+thr*64];
-                                                arg1h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg1h[d]= MAX(arg1h[d],arg1_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -868,23 +784,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*),
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[2].acc == OP_INC)
                                     for (int d = 0; d < args[2].dim; d++) {
-                                        TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                        TYPE(2)* tmp2 =&arg2_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg2h[d] +=arg2_l[d+thr*64];
                                     }
                                 else
                                     if(args[2].acc == OP_MIN)
                                         for (int d = 0; d < args[2].dim; d++){
-                                            TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                            TYPE(2)* tmp2 =&arg2_l[d+thr*64];
-                                            arg2h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg2h[d]= MIN(arg2h[d],arg2_l[d+thr*64]);
                                         }
                                     else
                                         if(args[2].acc == OP_MAX)
                                             for (int d = 0; d < args[2].dim; d++){
-                                                TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                                TYPE(2)* tmp2 =&arg2_l[d+thr*64];
-                                                arg2h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg2h[d]= MAX(arg2h[d],arg2_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -961,23 +871,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*),
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[0].acc == OP_INC)
                         for (int d = 0; d < args[0].dim; d++) {
-                            TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                            TYPE(0)* tmp2 =&((TYPE(0)*)arg0_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg0h[d] +=arg0_l[d+thr*64];
                         }
                     else
                         if(args[0].acc == OP_MIN)
                             for (int d = 0; d < args[0].dim; d++){
-                                TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                TYPE(0)* tmp2 =&((TYPE(0)*)arg0_l)[d+thr*64];
-                                arg0h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg0h[d]= MIN(arg0h[d],arg0_l[d+thr*64]);
                             }
                         else
                             if(args[0].acc == OP_MAX)
                                 for (int d = 0; d < args[0].dim; d++){
-                                    TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                    TYPE(0)* tmp2 =&((TYPE(0)*)arg0_l)[d+thr*64];
-                                    arg0h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg0h[d]= MAX(arg0h[d],arg0_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -988,23 +892,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*),
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[1].acc == OP_INC)
                         for (int d = 0; d < args[1].dim; d++) {
-                            TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                            TYPE(1)* tmp2 =&((TYPE(1)*)arg1_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg1h[d] +=arg1_l[d+thr*64];
                         }
                     else
                         if(args[1].acc == OP_MIN)
                             for (int d = 0; d < args[1].dim; d++){
-                                TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                TYPE(1)* tmp2 =&((TYPE(1)*)arg1_l)[d+thr*64];
-                                arg1h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg1h[d]= MIN(arg1h[d],arg1_l[d+thr*64]);
                             }
                         else
                             if(args[1].acc == OP_MAX)
                                 for (int d = 0; d < args[1].dim; d++){
-                                    TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                    TYPE(1)* tmp2 =&((TYPE(1)*)arg1_l)[d+thr*64];
-                                    arg1h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg1h[d]= MAX(arg1h[d],arg1_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -1015,23 +913,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*),
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[2].acc == OP_INC)
                         for (int d = 0; d < args[2].dim; d++) {
-                            TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                            TYPE(2)* tmp2 =&((TYPE(2)*)arg2_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg2h[d] +=arg2_l[d+thr*64];
                         }
                     else
                         if(args[2].acc == OP_MIN)
                             for (int d = 0; d < args[2].dim; d++){
-                                TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                TYPE(2)* tmp2 =&((TYPE(2)*)arg2_l)[d+thr*64];
-                                arg2h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg2h[d]= MIN(arg2h[d],arg2_l[d+thr*64]);
                             }
                         else
                             if(args[2].acc == OP_MAX)
                                 for (int d = 0; d < args[2].dim; d++){
-                                    TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                    TYPE(2)* tmp2 =&((TYPE(2)*)arg2_l)[d+thr*64];
-                                    arg2h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg2h[d]= MAX(arg2h[d],arg2_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -1092,6 +984,7 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*),
                     indmap[indmapSize].map = args[i].map;
                     indmapSize++;
                     count++;
+                    ninds++;
                 }else
                 {
                     inds[count] = n;
@@ -1099,16 +992,6 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*),
                 }
             }
     }
-    int conteiner[4];
-    int currentsize=0;
-    for (int i = 0; i < 4; ++i)
-        if(inds[i] != -1)
-            if(!insideConteiner(conteiner, currentsize, inds[i]))
-            {
-                conteiner[currentsize]=inds[i];
-                currentsize++;
-                ninds++;
-            }
     // check if there is some reduction to do
     bool reduct = false;
     for (int i = 0; i < 4; ++i)
@@ -1280,7 +1163,7 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*),
                     }
                 }
                 block_offset += nblocks;
-                if(reduct)
+                if(reduct  )
                 {
                     if (col == Plan->ncolors_owned-1) {
                         if(args[0].argtype == OP_ARG_GBL && args[0].acc != OP_READ)
@@ -1288,23 +1171,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*),
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[0].acc == OP_INC)
                                     for (int d = 0; d < args[0].dim; d++) {
-                                        TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                        TYPE(0)* tmp2 =&arg0_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg0h[d] +=arg0_l[d+thr*64];
                                     }
                                 else
                                     if(args[0].acc == OP_MIN)
                                         for (int d = 0; d < args[0].dim; d++){
-                                            TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                            TYPE(0)* tmp2 =&arg0_l[d+thr*64];
-                                            arg0h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg0h[d]= MIN(arg0h[d],arg0_l[d+thr*64]);
                                         }
                                     else
                                         if(args[0].acc == OP_MAX)
                                             for (int d = 0; d < args[0].dim; d++){
-                                                TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                                TYPE(0)* tmp2 =&arg0_l[d+thr*64];
-                                                arg0h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg0h[d]= MAX(arg0h[d],arg0_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -1315,23 +1192,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*),
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[1].acc == OP_INC)
                                     for (int d = 0; d < args[1].dim; d++) {
-                                        TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                        TYPE(1)* tmp2 =&arg1_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg1h[d] +=arg1_l[d+thr*64];
                                     }
                                 else
                                     if(args[1].acc == OP_MIN)
                                         for (int d = 0; d < args[1].dim; d++){
-                                            TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                            TYPE(1)* tmp2 =&arg1_l[d+thr*64];
-                                            arg1h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg1h[d]= MIN(arg1h[d],arg1_l[d+thr*64]);
                                         }
                                     else
                                         if(args[1].acc == OP_MAX)
                                             for (int d = 0; d < args[1].dim; d++){
-                                                TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                                TYPE(1)* tmp2 =&arg1_l[d+thr*64];
-                                                arg1h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg1h[d]= MAX(arg1h[d],arg1_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -1342,23 +1213,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*),
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[2].acc == OP_INC)
                                     for (int d = 0; d < args[2].dim; d++) {
-                                        TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                        TYPE(2)* tmp2 =&arg2_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg2h[d] +=arg2_l[d+thr*64];
                                     }
                                 else
                                     if(args[2].acc == OP_MIN)
                                         for (int d = 0; d < args[2].dim; d++){
-                                            TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                            TYPE(2)* tmp2 =&arg2_l[d+thr*64];
-                                            arg2h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg2h[d]= MIN(arg2h[d],arg2_l[d+thr*64]);
                                         }
                                     else
                                         if(args[2].acc == OP_MAX)
                                             for (int d = 0; d < args[2].dim; d++){
-                                                TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                                TYPE(2)* tmp2 =&arg2_l[d+thr*64];
-                                                arg2h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg2h[d]= MAX(arg2h[d],arg2_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -1369,23 +1234,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*),
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[3].acc == OP_INC)
                                     for (int d = 0; d < args[3].dim; d++) {
-                                        TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                                        TYPE(3)* tmp2 =&arg3_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg3h[d] +=arg3_l[d+thr*64];
                                     }
                                 else
                                     if(args[3].acc == OP_MIN)
                                         for (int d = 0; d < args[3].dim; d++){
-                                            TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                                            TYPE(3)* tmp2 =&arg3_l[d+thr*64];
-                                            arg3h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg3h[d]= MIN(arg3h[d],arg3_l[d+thr*64]);
                                         }
                                     else
                                         if(args[3].acc == OP_MAX)
                                             for (int d = 0; d < args[3].dim; d++){
-                                                TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                                                TYPE(3)* tmp2 =&arg3_l[d+thr*64];
-                                                arg3h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg3h[d]= MAX(arg3h[d],arg3_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -1478,23 +1337,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*),
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[0].acc == OP_INC)
                         for (int d = 0; d < args[0].dim; d++) {
-                            TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                            TYPE(0)* tmp2 =&((TYPE(0)*)arg0_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg0h[d] +=arg0_l[d+thr*64];
                         }
                     else
                         if(args[0].acc == OP_MIN)
                             for (int d = 0; d < args[0].dim; d++){
-                                TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                TYPE(0)* tmp2 =&((TYPE(0)*)arg0_l)[d+thr*64];
-                                arg0h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg0h[d]= MIN(arg0h[d],arg0_l[d+thr*64]);
                             }
                         else
                             if(args[0].acc == OP_MAX)
                                 for (int d = 0; d < args[0].dim; d++){
-                                    TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                    TYPE(0)* tmp2 =&((TYPE(0)*)arg0_l)[d+thr*64];
-                                    arg0h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg0h[d]= MAX(arg0h[d],arg0_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -1505,23 +1358,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*),
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[1].acc == OP_INC)
                         for (int d = 0; d < args[1].dim; d++) {
-                            TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                            TYPE(1)* tmp2 =&((TYPE(1)*)arg1_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg1h[d] +=arg1_l[d+thr*64];
                         }
                     else
                         if(args[1].acc == OP_MIN)
                             for (int d = 0; d < args[1].dim; d++){
-                                TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                TYPE(1)* tmp2 =&((TYPE(1)*)arg1_l)[d+thr*64];
-                                arg1h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg1h[d]= MIN(arg1h[d],arg1_l[d+thr*64]);
                             }
                         else
                             if(args[1].acc == OP_MAX)
                                 for (int d = 0; d < args[1].dim; d++){
-                                    TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                    TYPE(1)* tmp2 =&((TYPE(1)*)arg1_l)[d+thr*64];
-                                    arg1h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg1h[d]= MAX(arg1h[d],arg1_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -1532,23 +1379,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*),
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[2].acc == OP_INC)
                         for (int d = 0; d < args[2].dim; d++) {
-                            TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                            TYPE(2)* tmp2 =&((TYPE(2)*)arg2_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg2h[d] +=arg2_l[d+thr*64];
                         }
                     else
                         if(args[2].acc == OP_MIN)
                             for (int d = 0; d < args[2].dim; d++){
-                                TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                TYPE(2)* tmp2 =&((TYPE(2)*)arg2_l)[d+thr*64];
-                                arg2h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg2h[d]= MIN(arg2h[d],arg2_l[d+thr*64]);
                             }
                         else
                             if(args[2].acc == OP_MAX)
                                 for (int d = 0; d < args[2].dim; d++){
-                                    TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                    TYPE(2)* tmp2 =&((TYPE(2)*)arg2_l)[d+thr*64];
-                                    arg2h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg2h[d]= MAX(arg2h[d],arg2_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -1559,23 +1400,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*),
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[3].acc == OP_INC)
                         for (int d = 0; d < args[3].dim; d++) {
-                            TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                            TYPE(3)* tmp2 =&((TYPE(3)*)arg3_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg3h[d] +=arg3_l[d+thr*64];
                         }
                     else
                         if(args[3].acc == OP_MIN)
                             for (int d = 0; d < args[3].dim; d++){
-                                TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                                TYPE(3)* tmp2 =&((TYPE(3)*)arg3_l)[d+thr*64];
-                                arg3h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg3h[d]= MIN(arg3h[d],arg3_l[d+thr*64]);
                             }
                         else
                             if(args[3].acc == OP_MAX)
                                 for (int d = 0; d < args[3].dim; d++){
-                                    TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                                    TYPE(3)* tmp2 =&((TYPE(3)*)arg3_l)[d+thr*64];
-                                    arg3h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg3h[d]= MAX(arg3h[d],arg3_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -1646,6 +1481,7 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                     indmap[indmapSize].map = args[i].map;
                     indmapSize++;
                     count++;
+                    ninds++;
                 }else
                 {
                     inds[count] = n;
@@ -1653,16 +1489,6 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 }
             }
     }
-    int conteiner[5];
-    int currentsize=0;
-    for (int i = 0; i < 5; ++i)
-        if(inds[i] != -1)
-            if(!insideConteiner(conteiner, currentsize, inds[i]))
-            {
-                conteiner[currentsize]=inds[i];
-                currentsize++;
-                ninds++;
-            }
     // check if there is some reduction to do
     bool reduct = false;
     for (int i = 0; i < 5; ++i)
@@ -1864,7 +1690,7 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                     }
                 }
                 block_offset += nblocks;
-                if(reduct)
+                if(reduct  )
                 {
                     if (col == Plan->ncolors_owned-1) {
                         if(args[0].argtype == OP_ARG_GBL && args[0].acc != OP_READ)
@@ -1872,23 +1698,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[0].acc == OP_INC)
                                     for (int d = 0; d < args[0].dim; d++) {
-                                        TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                        TYPE(0)* tmp2 =&arg0_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg0h[d] +=arg0_l[d+thr*64];
                                     }
                                 else
                                     if(args[0].acc == OP_MIN)
                                         for (int d = 0; d < args[0].dim; d++){
-                                            TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                            TYPE(0)* tmp2 =&arg0_l[d+thr*64];
-                                            arg0h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg0h[d]= MIN(arg0h[d],arg0_l[d+thr*64]);
                                         }
                                     else
                                         if(args[0].acc == OP_MAX)
                                             for (int d = 0; d < args[0].dim; d++){
-                                                TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                                TYPE(0)* tmp2 =&arg0_l[d+thr*64];
-                                                arg0h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg0h[d]= MAX(arg0h[d],arg0_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -1899,23 +1719,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[1].acc == OP_INC)
                                     for (int d = 0; d < args[1].dim; d++) {
-                                        TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                        TYPE(1)* tmp2 =&arg1_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg1h[d] +=arg1_l[d+thr*64];
                                     }
                                 else
                                     if(args[1].acc == OP_MIN)
                                         for (int d = 0; d < args[1].dim; d++){
-                                            TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                            TYPE(1)* tmp2 =&arg1_l[d+thr*64];
-                                            arg1h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg1h[d]= MIN(arg1h[d],arg1_l[d+thr*64]);
                                         }
                                     else
                                         if(args[1].acc == OP_MAX)
                                             for (int d = 0; d < args[1].dim; d++){
-                                                TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                                TYPE(1)* tmp2 =&arg1_l[d+thr*64];
-                                                arg1h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg1h[d]= MAX(arg1h[d],arg1_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -1926,23 +1740,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[2].acc == OP_INC)
                                     for (int d = 0; d < args[2].dim; d++) {
-                                        TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                        TYPE(2)* tmp2 =&arg2_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg2h[d] +=arg2_l[d+thr*64];
                                     }
                                 else
                                     if(args[2].acc == OP_MIN)
                                         for (int d = 0; d < args[2].dim; d++){
-                                            TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                            TYPE(2)* tmp2 =&arg2_l[d+thr*64];
-                                            arg2h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg2h[d]= MIN(arg2h[d],arg2_l[d+thr*64]);
                                         }
                                     else
                                         if(args[2].acc == OP_MAX)
                                             for (int d = 0; d < args[2].dim; d++){
-                                                TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                                TYPE(2)* tmp2 =&arg2_l[d+thr*64];
-                                                arg2h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg2h[d]= MAX(arg2h[d],arg2_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -1953,23 +1761,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[3].acc == OP_INC)
                                     for (int d = 0; d < args[3].dim; d++) {
-                                        TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                                        TYPE(3)* tmp2 =&arg3_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg3h[d] +=arg3_l[d+thr*64];
                                     }
                                 else
                                     if(args[3].acc == OP_MIN)
                                         for (int d = 0; d < args[3].dim; d++){
-                                            TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                                            TYPE(3)* tmp2 =&arg3_l[d+thr*64];
-                                            arg3h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg3h[d]= MIN(arg3h[d],arg3_l[d+thr*64]);
                                         }
                                     else
                                         if(args[3].acc == OP_MAX)
                                             for (int d = 0; d < args[3].dim; d++){
-                                                TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                                                TYPE(3)* tmp2 =&arg3_l[d+thr*64];
-                                                arg3h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg3h[d]= MAX(arg3h[d],arg3_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -1980,23 +1782,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[4].acc == OP_INC)
                                     for (int d = 0; d < args[4].dim; d++) {
-                                        TYPE(4)* tmp1 =&((TYPE(4)*)arg4h)[d];
-                                        TYPE(4)* tmp2 =&arg4_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg4h[d] +=arg4_l[d+thr*64];
                                     }
                                 else
                                     if(args[4].acc == OP_MIN)
                                         for (int d = 0; d < args[4].dim; d++){
-                                            TYPE(4)* tmp1 =&((TYPE(4)*)arg4h)[d];
-                                            TYPE(4)* tmp2 =&arg4_l[d+thr*64];
-                                            arg4h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg4h[d]= MIN(arg4h[d],arg4_l[d+thr*64]);
                                         }
                                     else
                                         if(args[4].acc == OP_MAX)
                                             for (int d = 0; d < args[4].dim; d++){
-                                                TYPE(4)* tmp1 =&((TYPE(4)*)arg4h)[d];
-                                                TYPE(4)* tmp2 =&arg4_l[d+thr*64];
-                                                arg4h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg4h[d]= MAX(arg4h[d],arg4_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -2105,23 +1901,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[0].acc == OP_INC)
                         for (int d = 0; d < args[0].dim; d++) {
-                            TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                            TYPE(0)* tmp2 =&((TYPE(0)*)arg0_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg0h[d] +=arg0_l[d+thr*64];
                         }
                     else
                         if(args[0].acc == OP_MIN)
                             for (int d = 0; d < args[0].dim; d++){
-                                TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                TYPE(0)* tmp2 =&((TYPE(0)*)arg0_l)[d+thr*64];
-                                arg0h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg0h[d]= MIN(arg0h[d],arg0_l[d+thr*64]);
                             }
                         else
                             if(args[0].acc == OP_MAX)
                                 for (int d = 0; d < args[0].dim; d++){
-                                    TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                    TYPE(0)* tmp2 =&((TYPE(0)*)arg0_l)[d+thr*64];
-                                    arg0h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg0h[d]= MAX(arg0h[d],arg0_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -2132,23 +1922,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[1].acc == OP_INC)
                         for (int d = 0; d < args[1].dim; d++) {
-                            TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                            TYPE(1)* tmp2 =&((TYPE(1)*)arg1_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg1h[d] +=arg1_l[d+thr*64];
                         }
                     else
                         if(args[1].acc == OP_MIN)
                             for (int d = 0; d < args[1].dim; d++){
-                                TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                TYPE(1)* tmp2 =&((TYPE(1)*)arg1_l)[d+thr*64];
-                                arg1h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg1h[d]= MIN(arg1h[d],arg1_l[d+thr*64]);
                             }
                         else
                             if(args[1].acc == OP_MAX)
                                 for (int d = 0; d < args[1].dim; d++){
-                                    TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                    TYPE(1)* tmp2 =&((TYPE(1)*)arg1_l)[d+thr*64];
-                                    arg1h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg1h[d]= MAX(arg1h[d],arg1_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -2159,23 +1943,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[2].acc == OP_INC)
                         for (int d = 0; d < args[2].dim; d++) {
-                            TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                            TYPE(2)* tmp2 =&((TYPE(2)*)arg2_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg2h[d] +=arg2_l[d+thr*64];
                         }
                     else
                         if(args[2].acc == OP_MIN)
                             for (int d = 0; d < args[2].dim; d++){
-                                TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                TYPE(2)* tmp2 =&((TYPE(2)*)arg2_l)[d+thr*64];
-                                arg2h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg2h[d]= MIN(arg2h[d],arg2_l[d+thr*64]);
                             }
                         else
                             if(args[2].acc == OP_MAX)
                                 for (int d = 0; d < args[2].dim; d++){
-                                    TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                    TYPE(2)* tmp2 =&((TYPE(2)*)arg2_l)[d+thr*64];
-                                    arg2h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg2h[d]= MAX(arg2h[d],arg2_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -2186,23 +1964,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[3].acc == OP_INC)
                         for (int d = 0; d < args[3].dim; d++) {
-                            TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                            TYPE(3)* tmp2 =&((TYPE(3)*)arg3_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg3h[d] +=arg3_l[d+thr*64];
                         }
                     else
                         if(args[3].acc == OP_MIN)
                             for (int d = 0; d < args[3].dim; d++){
-                                TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                                TYPE(3)* tmp2 =&((TYPE(3)*)arg3_l)[d+thr*64];
-                                arg3h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg3h[d]= MIN(arg3h[d],arg3_l[d+thr*64]);
                             }
                         else
                             if(args[3].acc == OP_MAX)
                                 for (int d = 0; d < args[3].dim; d++){
-                                    TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                                    TYPE(3)* tmp2 =&((TYPE(3)*)arg3_l)[d+thr*64];
-                                    arg3h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg3h[d]= MAX(arg3h[d],arg3_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -2213,31 +1985,23 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[4].acc == OP_INC)
                         for (int d = 0; d < args[4].dim; d++) {
-                            TYPE(4)* tmp1 =&((TYPE(4)*)arg4h)[d];
-                            TYPE(4)* tmp2 =&((TYPE(4)*)arg4_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg4h[d] +=arg4_l[d+thr*64];
                         }
                     else
                         if(args[4].acc == OP_MIN)
                             for (int d = 0; d < args[4].dim; d++){
-                                TYPE(4)* tmp1 =&((TYPE(4)*)arg4h)[d];
-                                TYPE(4)* tmp2 =&((TYPE(4)*)arg4_l)[d+thr*64];
-                                arg4h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg4h[d]= MIN(arg4h[d],arg4_l[d+thr*64]);
                             }
                         else
                             if(args[4].acc == OP_MAX)
                                 for (int d = 0; d < args[4].dim; d++){
-                                    TYPE(4)* tmp1 =&((TYPE(4)*)arg4h)[d];
-                                    TYPE(4)* tmp2 =&((TYPE(4)*)arg4_l)[d+thr*64];
-                                    arg4h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg4h[d]= MAX(arg4h[d],arg4_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
                 op_mpi_reduce(&arg4, arg4h);
             }
         }// else of ninds > 0
-
-
         op_mpi_set_dirtybit(nargs, args);
         if(args[0].argtype == OP_ARG_GBL && args[0].acc != OP_READ){
             free(arg0_l);
@@ -2308,6 +2072,7 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                     indmap[indmapSize].map = args[i].map;
                     indmapSize++;
                     count++;
+                    ninds++;
                 }else
                 {
                     inds[count] = n;
@@ -2315,16 +2080,6 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 }
             }
     }
-    int conteiner[6];
-    int currentsize=0;
-    for (int i = 0; i < 6; ++i)
-        if(inds[i] != -1)
-            if(!insideConteiner(conteiner, currentsize, inds[i]))
-            {
-                conteiner[currentsize]=inds[i];
-                currentsize++;
-                ninds++;
-            }
     // check if there is some reduction to do
     bool reduct = false;
     for (int i = 0; i < 6; ++i)
@@ -2556,7 +2311,7 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                     }
                 }
                 block_offset += nblocks;
-                if(reduct)
+                if(reduct  )
                 {
                     if (col == Plan->ncolors_owned-1) {
                         if(args[0].argtype == OP_ARG_GBL && args[0].acc != OP_READ)
@@ -2564,23 +2319,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[0].acc == OP_INC)
                                     for (int d = 0; d < args[0].dim; d++) {
-                                        TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                        TYPE(0)* tmp2 =&arg0_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg0h[d] +=arg0_l[d+thr*64];
                                     }
                                 else
                                     if(args[0].acc == OP_MIN)
                                         for (int d = 0; d < args[0].dim; d++){
-                                            TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                            TYPE(0)* tmp2 =&arg0_l[d+thr*64];
-                                            arg0h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg0h[d]= MIN(arg0h[d],arg0_l[d+thr*64]);
                                         }
                                     else
                                         if(args[0].acc == OP_MAX)
                                             for (int d = 0; d < args[0].dim; d++){
-                                                TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                                TYPE(0)* tmp2 =&arg0_l[d+thr*64];
-                                                arg0h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg0h[d]= MAX(arg0h[d],arg0_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -2591,23 +2340,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[1].acc == OP_INC)
                                     for (int d = 0; d < args[1].dim; d++) {
-                                        TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                        TYPE(1)* tmp2 =&arg1_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg1h[d] +=arg1_l[d+thr*64];
                                     }
                                 else
                                     if(args[1].acc == OP_MIN)
                                         for (int d = 0; d < args[1].dim; d++){
-                                            TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                            TYPE(1)* tmp2 =&arg1_l[d+thr*64];
-                                            arg1h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg1h[d]= MIN(arg1h[d],arg1_l[d+thr*64]);
                                         }
                                     else
                                         if(args[1].acc == OP_MAX)
                                             for (int d = 0; d < args[1].dim; d++){
-                                                TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                                TYPE(1)* tmp2 =&arg1_l[d+thr*64];
-                                                arg1h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg1h[d]= MAX(arg1h[d],arg1_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -2618,23 +2361,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[2].acc == OP_INC)
                                     for (int d = 0; d < args[2].dim; d++) {
-                                        TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                        TYPE(2)* tmp2 =&arg2_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg2h[d] +=arg2_l[d+thr*64];
                                     }
                                 else
                                     if(args[2].acc == OP_MIN)
                                         for (int d = 0; d < args[2].dim; d++){
-                                            TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                            TYPE(2)* tmp2 =&arg2_l[d+thr*64];
-                                            arg2h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg2h[d]= MIN(arg2h[d],arg2_l[d+thr*64]);
                                         }
                                     else
                                         if(args[2].acc == OP_MAX)
                                             for (int d = 0; d < args[2].dim; d++){
-                                                TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                                TYPE(2)* tmp2 =&arg2_l[d+thr*64];
-                                                arg2h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg2h[d]= MAX(arg2h[d],arg2_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -2645,23 +2382,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[3].acc == OP_INC)
                                     for (int d = 0; d < args[3].dim; d++) {
-                                        TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                                        TYPE(3)* tmp2 =&arg3_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg3h[d] +=arg3_l[d+thr*64];
                                     }
                                 else
                                     if(args[3].acc == OP_MIN)
                                         for (int d = 0; d < args[3].dim; d++){
-                                            TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                                            TYPE(3)* tmp2 =&arg3_l[d+thr*64];
-                                            arg3h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg3h[d]= MIN(arg3h[d],arg3_l[d+thr*64]);
                                         }
                                     else
                                         if(args[3].acc == OP_MAX)
                                             for (int d = 0; d < args[3].dim; d++){
-                                                TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                                                TYPE(3)* tmp2 =&arg3_l[d+thr*64];
-                                                arg3h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg3h[d]= MAX(arg3h[d],arg3_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -2672,23 +2403,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[4].acc == OP_INC)
                                     for (int d = 0; d < args[4].dim; d++) {
-                                        TYPE(4)* tmp1 =&((TYPE(4)*)arg4h)[d];
-                                        TYPE(4)* tmp2 =&arg4_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg4h[d] +=arg4_l[d+thr*64];
                                     }
                                 else
                                     if(args[4].acc == OP_MIN)
                                         for (int d = 0; d < args[4].dim; d++){
-                                            TYPE(4)* tmp1 =&((TYPE(4)*)arg4h)[d];
-                                            TYPE(4)* tmp2 =&arg4_l[d+thr*64];
-                                            arg4h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg4h[d]= MIN(arg4h[d],arg4_l[d+thr*64]);
                                         }
                                     else
                                         if(args[4].acc == OP_MAX)
                                             for (int d = 0; d < args[4].dim; d++){
-                                                TYPE(4)* tmp1 =&((TYPE(4)*)arg4h)[d];
-                                                TYPE(4)* tmp2 =&arg4_l[d+thr*64];
-                                                arg4h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg4h[d]= MAX(arg4h[d],arg4_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -2699,23 +2424,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[5].acc == OP_INC)
                                     for (int d = 0; d < args[5].dim; d++) {
-                                        TYPE(5)* tmp1 =&((TYPE(5)*)arg5h)[d];
-                                        TYPE(5)* tmp2 =&arg5_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg5h[d] +=arg5_l[d+thr*64];
                                     }
                                 else
                                     if(args[5].acc == OP_MIN)
                                         for (int d = 0; d < args[5].dim; d++){
-                                            TYPE(5)* tmp1 =&((TYPE(5)*)arg5h)[d];
-                                            TYPE(5)* tmp2 =&arg5_l[d+thr*64];
-                                            arg5h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg5h[d]= MIN(arg5h[d],arg5_l[d+thr*64]);
                                         }
                                     else
                                         if(args[5].acc == OP_MAX)
                                             for (int d = 0; d < args[5].dim; d++){
-                                                TYPE(5)* tmp1 =&((TYPE(5)*)arg5h)[d];
-                                                TYPE(5)* tmp2 =&arg5_l[d+thr*64];
-                                                arg5h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg5h[d]= MAX(arg5h[d],arg5_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -2840,23 +2559,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[0].acc == OP_INC)
                         for (int d = 0; d < args[0].dim; d++) {
-                            TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                            TYPE(0)* tmp2 =&((TYPE(0)*)arg0_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg0h[d] +=arg0_l[d+thr*64];
                         }
                     else
                         if(args[0].acc == OP_MIN)
                             for (int d = 0; d < args[0].dim; d++){
-                                TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                TYPE(0)* tmp2 =&((TYPE(0)*)arg0_l)[d+thr*64];
-                                arg0h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg0h[d]= MIN(arg0h[d],arg0_l[d+thr*64]);
                             }
                         else
                             if(args[0].acc == OP_MAX)
                                 for (int d = 0; d < args[0].dim; d++){
-                                    TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                    TYPE(0)* tmp2 =&((TYPE(0)*)arg0_l)[d+thr*64];
-                                    arg0h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg0h[d]= MAX(arg0h[d],arg0_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -2867,23 +2580,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[1].acc == OP_INC)
                         for (int d = 0; d < args[1].dim; d++) {
-                            TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                            TYPE(1)* tmp2 =&((TYPE(1)*)arg1_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg1h[d] +=arg1_l[d+thr*64];
                         }
                     else
                         if(args[1].acc == OP_MIN)
                             for (int d = 0; d < args[1].dim; d++){
-                                TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                TYPE(1)* tmp2 =&((TYPE(1)*)arg1_l)[d+thr*64];
-                                arg1h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg1h[d]= MIN(arg1h[d],arg1_l[d+thr*64]);
                             }
                         else
                             if(args[1].acc == OP_MAX)
                                 for (int d = 0; d < args[1].dim; d++){
-                                    TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                    TYPE(1)* tmp2 =&((TYPE(1)*)arg1_l)[d+thr*64];
-                                    arg1h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg1h[d]= MAX(arg1h[d],arg1_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -2894,23 +2601,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[2].acc == OP_INC)
                         for (int d = 0; d < args[2].dim; d++) {
-                            TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                            TYPE(2)* tmp2 =&((TYPE(2)*)arg2_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg2h[d] +=arg2_l[d+thr*64];
                         }
                     else
                         if(args[2].acc == OP_MIN)
                             for (int d = 0; d < args[2].dim; d++){
-                                TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                TYPE(2)* tmp2 =&((TYPE(2)*)arg2_l)[d+thr*64];
-                                arg2h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg2h[d]= MIN(arg2h[d],arg2_l[d+thr*64]);
                             }
                         else
                             if(args[2].acc == OP_MAX)
                                 for (int d = 0; d < args[2].dim; d++){
-                                    TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                    TYPE(2)* tmp2 =&((TYPE(2)*)arg2_l)[d+thr*64];
-                                    arg2h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg2h[d]= MAX(arg2h[d],arg2_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -2921,23 +2622,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[3].acc == OP_INC)
                         for (int d = 0; d < args[3].dim; d++) {
-                            TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                            TYPE(3)* tmp2 =&((TYPE(3)*)arg3_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg3h[d] +=arg3_l[d+thr*64];
                         }
                     else
                         if(args[3].acc == OP_MIN)
                             for (int d = 0; d < args[3].dim; d++){
-                                TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                                TYPE(3)* tmp2 =&((TYPE(3)*)arg3_l)[d+thr*64];
-                                arg3h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg3h[d]= MIN(arg3h[d],arg3_l[d+thr*64]);
                             }
                         else
                             if(args[3].acc == OP_MAX)
                                 for (int d = 0; d < args[3].dim; d++){
-                                    TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                                    TYPE(3)* tmp2 =&((TYPE(3)*)arg3_l)[d+thr*64];
-                                    arg3h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg3h[d]= MAX(arg3h[d],arg3_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -2948,23 +2643,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[4].acc == OP_INC)
                         for (int d = 0; d < args[4].dim; d++) {
-                            TYPE(4)* tmp1 =&((TYPE(4)*)arg4h)[d];
-                            TYPE(4)* tmp2 =&((TYPE(4)*)arg4_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg4h[d] +=arg4_l[d+thr*64];
                         }
                     else
                         if(args[4].acc == OP_MIN)
                             for (int d = 0; d < args[4].dim; d++){
-                                TYPE(4)* tmp1 =&((TYPE(4)*)arg4h)[d];
-                                TYPE(4)* tmp2 =&((TYPE(4)*)arg4_l)[d+thr*64];
-                                arg4h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg4h[d]= MIN(arg4h[d],arg4_l[d+thr*64]);
                             }
                         else
                             if(args[4].acc == OP_MAX)
                                 for (int d = 0; d < args[4].dim; d++){
-                                    TYPE(4)* tmp1 =&((TYPE(4)*)arg4h)[d];
-                                    TYPE(4)* tmp2 =&((TYPE(4)*)arg4_l)[d+thr*64];
-                                    arg4h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg4h[d]= MAX(arg4h[d],arg4_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -2975,23 +2664,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[5].acc == OP_INC)
                         for (int d = 0; d < args[5].dim; d++) {
-                            TYPE(5)* tmp1 =&((TYPE(5)*)arg5h)[d];
-                            TYPE(5)* tmp2 =&((TYPE(5)*)arg5_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg5h[d] +=arg5_l[d+thr*64];
                         }
                     else
                         if(args[5].acc == OP_MIN)
                             for (int d = 0; d < args[5].dim; d++){
-                                TYPE(5)* tmp1 =&((TYPE(5)*)arg5h)[d];
-                                TYPE(5)* tmp2 =&((TYPE(5)*)arg5_l)[d+thr*64];
-                                arg5h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg5h[d]= MIN(arg5h[d],arg5_l[d+thr*64]);
                             }
                         else
                             if(args[5].acc == OP_MAX)
                                 for (int d = 0; d < args[5].dim; d++){
-                                    TYPE(5)* tmp1 =&((TYPE(5)*)arg5h)[d];
-                                    TYPE(5)* tmp2 =&((TYPE(5)*)arg5_l)[d+thr*64];
-                                    arg5h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg5h[d]= MAX(arg5h[d],arg5_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -3074,6 +2757,7 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                     indmap[indmapSize].map = args[i].map;
                     indmapSize++;
                     count++;
+                    ninds++;
                 }else
                 {
                     inds[count] = n;
@@ -3081,16 +2765,6 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 }
             }
     }
-    int conteiner[7];
-    int currentsize=0;
-    for (int i = 0; i < 7; ++i)
-        if(inds[i] != -1)
-            if(!insideConteiner(conteiner, currentsize, inds[i]))
-            {
-                conteiner[currentsize]=inds[i];
-                currentsize++;
-                ninds++;
-            }
     // check if there is some reduction to do
     bool reduct = false;
     for (int i = 0; i < 7; ++i)
@@ -3352,7 +3026,7 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                     }
                 }
                 block_offset += nblocks;
-                if(reduct)
+                if(reduct  )
                 {
                     if (col == Plan->ncolors_owned-1) {
                         if(args[0].argtype == OP_ARG_GBL && args[0].acc != OP_READ)
@@ -3360,23 +3034,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[0].acc == OP_INC)
                                     for (int d = 0; d < args[0].dim; d++) {
-                                        TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                        TYPE(0)* tmp2 =&arg0_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg0h[d] +=arg0_l[d+thr*64];
                                     }
                                 else
                                     if(args[0].acc == OP_MIN)
                                         for (int d = 0; d < args[0].dim; d++){
-                                            TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                            TYPE(0)* tmp2 =&arg0_l[d+thr*64];
-                                            arg0h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg0h[d]= MIN(arg0h[d],arg0_l[d+thr*64]);
                                         }
                                     else
                                         if(args[0].acc == OP_MAX)
                                             for (int d = 0; d < args[0].dim; d++){
-                                                TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                                TYPE(0)* tmp2 =&arg0_l[d+thr*64];
-                                                arg0h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg0h[d]= MAX(arg0h[d],arg0_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -3387,23 +3055,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[1].acc == OP_INC)
                                     for (int d = 0; d < args[1].dim; d++) {
-                                        TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                        TYPE(1)* tmp2 =&arg1_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg1h[d] +=arg1_l[d+thr*64];
                                     }
                                 else
                                     if(args[1].acc == OP_MIN)
                                         for (int d = 0; d < args[1].dim; d++){
-                                            TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                            TYPE(1)* tmp2 =&arg1_l[d+thr*64];
-                                            arg1h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg1h[d]= MIN(arg1h[d],arg1_l[d+thr*64]);
                                         }
                                     else
                                         if(args[1].acc == OP_MAX)
                                             for (int d = 0; d < args[1].dim; d++){
-                                                TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                                TYPE(1)* tmp2 =&arg1_l[d+thr*64];
-                                                arg1h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg1h[d]= MAX(arg1h[d],arg1_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -3414,23 +3076,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[2].acc == OP_INC)
                                     for (int d = 0; d < args[2].dim; d++) {
-                                        TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                        TYPE(2)* tmp2 =&arg2_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg2h[d] +=arg2_l[d+thr*64];
                                     }
                                 else
                                     if(args[2].acc == OP_MIN)
                                         for (int d = 0; d < args[2].dim; d++){
-                                            TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                            TYPE(2)* tmp2 =&arg2_l[d+thr*64];
-                                            arg2h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg2h[d]= MIN(arg2h[d],arg2_l[d+thr*64]);
                                         }
                                     else
                                         if(args[2].acc == OP_MAX)
                                             for (int d = 0; d < args[2].dim; d++){
-                                                TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                                TYPE(2)* tmp2 =&arg2_l[d+thr*64];
-                                                arg2h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg2h[d]= MAX(arg2h[d],arg2_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -3441,23 +3097,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[3].acc == OP_INC)
                                     for (int d = 0; d < args[3].dim; d++) {
-                                        TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                                        TYPE(3)* tmp2 =&arg3_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg3h[d] +=arg3_l[d+thr*64];
                                     }
                                 else
                                     if(args[3].acc == OP_MIN)
                                         for (int d = 0; d < args[3].dim; d++){
-                                            TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                                            TYPE(3)* tmp2 =&arg3_l[d+thr*64];
-                                            arg3h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg3h[d]= MIN(arg3h[d],arg3_l[d+thr*64]);
                                         }
                                     else
                                         if(args[3].acc == OP_MAX)
                                             for (int d = 0; d < args[3].dim; d++){
-                                                TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                                                TYPE(3)* tmp2 =&arg3_l[d+thr*64];
-                                                arg3h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg3h[d]= MAX(arg3h[d],arg3_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -3468,23 +3118,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[4].acc == OP_INC)
                                     for (int d = 0; d < args[4].dim; d++) {
-                                        TYPE(4)* tmp1 =&((TYPE(4)*)arg4h)[d];
-                                        TYPE(4)* tmp2 =&arg4_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg4h[d] +=arg4_l[d+thr*64];
                                     }
                                 else
                                     if(args[4].acc == OP_MIN)
                                         for (int d = 0; d < args[4].dim; d++){
-                                            TYPE(4)* tmp1 =&((TYPE(4)*)arg4h)[d];
-                                            TYPE(4)* tmp2 =&arg4_l[d+thr*64];
-                                            arg4h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg4h[d]= MIN(arg4h[d],arg4_l[d+thr*64]);
                                         }
                                     else
                                         if(args[4].acc == OP_MAX)
                                             for (int d = 0; d < args[4].dim; d++){
-                                                TYPE(4)* tmp1 =&((TYPE(4)*)arg4h)[d];
-                                                TYPE(4)* tmp2 =&arg4_l[d+thr*64];
-                                                arg4h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg4h[d]= MAX(arg4h[d],arg4_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -3495,23 +3139,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[5].acc == OP_INC)
                                     for (int d = 0; d < args[5].dim; d++) {
-                                        TYPE(5)* tmp1 =&((TYPE(5)*)arg5h)[d];
-                                        TYPE(5)* tmp2 =&arg5_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg5h[d] +=arg5_l[d+thr*64];
                                     }
                                 else
                                     if(args[5].acc == OP_MIN)
                                         for (int d = 0; d < args[5].dim; d++){
-                                            TYPE(5)* tmp1 =&((TYPE(5)*)arg5h)[d];
-                                            TYPE(5)* tmp2 =&arg5_l[d+thr*64];
-                                            arg5h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg5h[d]= MIN(arg5h[d],arg5_l[d+thr*64]);
                                         }
                                     else
                                         if(args[5].acc == OP_MAX)
                                             for (int d = 0; d < args[5].dim; d++){
-                                                TYPE(5)* tmp1 =&((TYPE(5)*)arg5h)[d];
-                                                TYPE(5)* tmp2 =&arg5_l[d+thr*64];
-                                                arg5h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg5h[d]= MAX(arg5h[d],arg5_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -3522,23 +3160,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[6].acc == OP_INC)
                                     for (int d = 0; d < args[6].dim; d++) {
-                                        TYPE(6)* tmp1 =&((TYPE(6)*)arg6h)[d];
-                                        TYPE(6)* tmp2 =&arg6_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg6h[d] +=arg6_l[d+thr*64];
                                     }
                                 else
                                     if(args[6].acc == OP_MIN)
                                         for (int d = 0; d < args[6].dim; d++){
-                                            TYPE(6)* tmp1 =&((TYPE(6)*)arg6h)[d];
-                                            TYPE(6)* tmp2 =&arg6_l[d+thr*64];
-                                            arg6h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg6h[d]= MIN(arg6h[d],arg6_l[d+thr*64]);
                                         }
                                     else
                                         if(args[6].acc == OP_MAX)
                                             for (int d = 0; d < args[6].dim; d++){
-                                                TYPE(6)* tmp1 =&((TYPE(6)*)arg6h)[d];
-                                                TYPE(6)* tmp2 =&arg6_l[d+thr*64];
-                                                arg6h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg6h[d]= MAX(arg6h[d],arg6_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -3679,23 +3311,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[0].acc == OP_INC)
                         for (int d = 0; d < args[0].dim; d++) {
-                            TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                            TYPE(0)* tmp2 =&((TYPE(0)*)arg0_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg0h[d] +=arg0_l[d+thr*64];
                         }
                     else
                         if(args[0].acc == OP_MIN)
                             for (int d = 0; d < args[0].dim; d++){
-                                TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                TYPE(0)* tmp2 =&((TYPE(0)*)arg0_l)[d+thr*64];
-                                arg0h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg0h[d]= MIN(arg0h[d],arg0_l[d+thr*64]);
                             }
                         else
                             if(args[0].acc == OP_MAX)
                                 for (int d = 0; d < args[0].dim; d++){
-                                    TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                    TYPE(0)* tmp2 =&((TYPE(0)*)arg0_l)[d+thr*64];
-                                    arg0h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg0h[d]= MAX(arg0h[d],arg0_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -3706,23 +3332,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[1].acc == OP_INC)
                         for (int d = 0; d < args[1].dim; d++) {
-                            TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                            TYPE(1)* tmp2 =&((TYPE(1)*)arg1_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg1h[d] +=arg1_l[d+thr*64];
                         }
                     else
                         if(args[1].acc == OP_MIN)
                             for (int d = 0; d < args[1].dim; d++){
-                                TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                TYPE(1)* tmp2 =&((TYPE(1)*)arg1_l)[d+thr*64];
-                                arg1h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg1h[d]= MIN(arg1h[d],arg1_l[d+thr*64]);
                             }
                         else
                             if(args[1].acc == OP_MAX)
                                 for (int d = 0; d < args[1].dim; d++){
-                                    TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                    TYPE(1)* tmp2 =&((TYPE(1)*)arg1_l)[d+thr*64];
-                                    arg1h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg1h[d]= MAX(arg1h[d],arg1_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -3733,23 +3353,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[2].acc == OP_INC)
                         for (int d = 0; d < args[2].dim; d++) {
-                            TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                            TYPE(2)* tmp2 =&((TYPE(2)*)arg2_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg2h[d] +=arg2_l[d+thr*64];
                         }
                     else
                         if(args[2].acc == OP_MIN)
                             for (int d = 0; d < args[2].dim; d++){
-                                TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                TYPE(2)* tmp2 =&((TYPE(2)*)arg2_l)[d+thr*64];
-                                arg2h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg2h[d]= MIN(arg2h[d],arg2_l[d+thr*64]);
                             }
                         else
                             if(args[2].acc == OP_MAX)
                                 for (int d = 0; d < args[2].dim; d++){
-                                    TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                    TYPE(2)* tmp2 =&((TYPE(2)*)arg2_l)[d+thr*64];
-                                    arg2h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg2h[d]= MAX(arg2h[d],arg2_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -3760,23 +3374,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[3].acc == OP_INC)
                         for (int d = 0; d < args[3].dim; d++) {
-                            TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                            TYPE(3)* tmp2 =&((TYPE(3)*)arg3_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg3h[d] +=arg3_l[d+thr*64];
                         }
                     else
                         if(args[3].acc == OP_MIN)
                             for (int d = 0; d < args[3].dim; d++){
-                                TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                                TYPE(3)* tmp2 =&((TYPE(3)*)arg3_l)[d+thr*64];
-                                arg3h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg3h[d]= MIN(arg3h[d],arg3_l[d+thr*64]);
                             }
                         else
                             if(args[3].acc == OP_MAX)
                                 for (int d = 0; d < args[3].dim; d++){
-                                    TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                                    TYPE(3)* tmp2 =&((TYPE(3)*)arg3_l)[d+thr*64];
-                                    arg3h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg3h[d]= MAX(arg3h[d],arg3_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -3787,23 +3395,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[4].acc == OP_INC)
                         for (int d = 0; d < args[4].dim; d++) {
-                            TYPE(4)* tmp1 =&((TYPE(4)*)arg4h)[d];
-                            TYPE(4)* tmp2 =&((TYPE(4)*)arg4_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg4h[d] +=arg4_l[d+thr*64];
                         }
                     else
                         if(args[4].acc == OP_MIN)
                             for (int d = 0; d < args[4].dim; d++){
-                                TYPE(4)* tmp1 =&((TYPE(4)*)arg4h)[d];
-                                TYPE(4)* tmp2 =&((TYPE(4)*)arg4_l)[d+thr*64];
-                                arg4h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg4h[d]= MIN(arg4h[d],arg4_l[d+thr*64]);
                             }
                         else
                             if(args[4].acc == OP_MAX)
                                 for (int d = 0; d < args[4].dim; d++){
-                                    TYPE(4)* tmp1 =&((TYPE(4)*)arg4h)[d];
-                                    TYPE(4)* tmp2 =&((TYPE(4)*)arg4_l)[d+thr*64];
-                                    arg4h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg4h[d]= MAX(arg4h[d],arg4_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -3814,23 +3416,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[5].acc == OP_INC)
                         for (int d = 0; d < args[5].dim; d++) {
-                            TYPE(5)* tmp1 =&((TYPE(5)*)arg5h)[d];
-                            TYPE(5)* tmp2 =&((TYPE(5)*)arg5_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg5h[d] +=arg5_l[d+thr*64];
                         }
                     else
                         if(args[5].acc == OP_MIN)
                             for (int d = 0; d < args[5].dim; d++){
-                                TYPE(5)* tmp1 =&((TYPE(5)*)arg5h)[d];
-                                TYPE(5)* tmp2 =&((TYPE(5)*)arg5_l)[d+thr*64];
-                                arg5h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg5h[d]= MIN(arg5h[d],arg5_l[d+thr*64]);
                             }
                         else
                             if(args[5].acc == OP_MAX)
                                 for (int d = 0; d < args[5].dim; d++){
-                                    TYPE(5)* tmp1 =&((TYPE(5)*)arg5h)[d];
-                                    TYPE(5)* tmp2 =&((TYPE(5)*)arg5_l)[d+thr*64];
-                                    arg5h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg5h[d]= MAX(arg5h[d],arg5_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -3841,23 +3437,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[6].acc == OP_INC)
                         for (int d = 0; d < args[6].dim; d++) {
-                            TYPE(6)* tmp1 =&((TYPE(6)*)arg6h)[d];
-                            TYPE(6)* tmp2 =&((TYPE(6)*)arg6_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg6h[d] +=arg6_l[d+thr*64];
                         }
                     else
                         if(args[6].acc == OP_MIN)
                             for (int d = 0; d < args[6].dim; d++){
-                                TYPE(6)* tmp1 =&((TYPE(6)*)arg6h)[d];
-                                TYPE(6)* tmp2 =&((TYPE(6)*)arg6_l)[d+thr*64];
-                                arg6h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg6h[d]= MIN(arg6h[d],arg6_l[d+thr*64]);
                             }
                         else
                             if(args[6].acc == OP_MAX)
                                 for (int d = 0; d < args[6].dim; d++){
-                                    TYPE(6)* tmp1 =&((TYPE(6)*)arg6h)[d];
-                                    TYPE(6)* tmp2 =&((TYPE(6)*)arg6_l)[d+thr*64];
-                                    arg6h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg6h[d]= MAX(arg6h[d],arg6_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -3946,6 +3536,7 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                     indmap[indmapSize].map = args[i].map;
                     indmapSize++;
                     count++;
+                    ninds++;
                 }else
                 {
                     inds[count] = n;
@@ -3953,16 +3544,6 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 }
             }
     }
-    int conteiner[8];
-    int currentsize=0;
-    for (int i = 0; i < 8; ++i)
-        if(inds[i] != -1)
-            if(!insideConteiner(conteiner, currentsize, inds[i]))
-            {
-                conteiner[currentsize]=inds[i];
-                currentsize++;
-                ninds++;
-            }
     // check if there is some reduction to do
     bool reduct = false;
     for (int i = 0; i < 8; ++i)
@@ -4254,7 +3835,7 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                     }
                 }
                 block_offset += nblocks;
-                if(reduct)
+                if(reduct  )
                 {
                     if (col == Plan->ncolors_owned-1) {
                         if(args[0].argtype == OP_ARG_GBL && args[0].acc != OP_READ)
@@ -4262,23 +3843,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[0].acc == OP_INC)
                                     for (int d = 0; d < args[0].dim; d++) {
-                                        TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                        TYPE(0)* tmp2 =&arg0_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg0h[d] +=arg0_l[d+thr*64];
                                     }
                                 else
                                     if(args[0].acc == OP_MIN)
                                         for (int d = 0; d < args[0].dim; d++){
-                                            TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                            TYPE(0)* tmp2 =&arg0_l[d+thr*64];
-                                            arg0h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg0h[d]= MIN(arg0h[d],arg0_l[d+thr*64]);
                                         }
                                     else
                                         if(args[0].acc == OP_MAX)
                                             for (int d = 0; d < args[0].dim; d++){
-                                                TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                                TYPE(0)* tmp2 =&arg0_l[d+thr*64];
-                                                arg0h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg0h[d]= MAX(arg0h[d],arg0_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -4289,23 +3864,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[1].acc == OP_INC)
                                     for (int d = 0; d < args[1].dim; d++) {
-                                        TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                        TYPE(1)* tmp2 =&arg1_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg1h[d] +=arg1_l[d+thr*64];
                                     }
                                 else
                                     if(args[1].acc == OP_MIN)
                                         for (int d = 0; d < args[1].dim; d++){
-                                            TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                            TYPE(1)* tmp2 =&arg1_l[d+thr*64];
-                                            arg1h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg1h[d]= MIN(arg1h[d],arg1_l[d+thr*64]);
                                         }
                                     else
                                         if(args[1].acc == OP_MAX)
                                             for (int d = 0; d < args[1].dim; d++){
-                                                TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                                TYPE(1)* tmp2 =&arg1_l[d+thr*64];
-                                                arg1h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg1h[d]= MAX(arg1h[d],arg1_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -4316,23 +3885,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[2].acc == OP_INC)
                                     for (int d = 0; d < args[2].dim; d++) {
-                                        TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                        TYPE(2)* tmp2 =&arg2_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg2h[d] +=arg2_l[d+thr*64];
                                     }
                                 else
                                     if(args[2].acc == OP_MIN)
                                         for (int d = 0; d < args[2].dim; d++){
-                                            TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                            TYPE(2)* tmp2 =&arg2_l[d+thr*64];
-                                            arg2h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg2h[d]= MIN(arg2h[d],arg2_l[d+thr*64]);
                                         }
                                     else
                                         if(args[2].acc == OP_MAX)
                                             for (int d = 0; d < args[2].dim; d++){
-                                                TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                                TYPE(2)* tmp2 =&arg2_l[d+thr*64];
-                                                arg2h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg2h[d]= MAX(arg2h[d],arg2_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -4343,23 +3906,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[3].acc == OP_INC)
                                     for (int d = 0; d < args[3].dim; d++) {
-                                        TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                                        TYPE(3)* tmp2 =&arg3_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg3h[d] +=arg3_l[d+thr*64];
                                     }
                                 else
                                     if(args[3].acc == OP_MIN)
                                         for (int d = 0; d < args[3].dim; d++){
-                                            TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                                            TYPE(3)* tmp2 =&arg3_l[d+thr*64];
-                                            arg3h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg3h[d]= MIN(arg3h[d],arg3_l[d+thr*64]);
                                         }
                                     else
                                         if(args[3].acc == OP_MAX)
                                             for (int d = 0; d < args[3].dim; d++){
-                                                TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                                                TYPE(3)* tmp2 =&arg3_l[d+thr*64];
-                                                arg3h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg3h[d]= MAX(arg3h[d],arg3_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -4370,23 +3927,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[4].acc == OP_INC)
                                     for (int d = 0; d < args[4].dim; d++) {
-                                        TYPE(4)* tmp1 =&((TYPE(4)*)arg4h)[d];
-                                        TYPE(4)* tmp2 =&arg4_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg4h[d] +=arg4_l[d+thr*64];
                                     }
                                 else
                                     if(args[4].acc == OP_MIN)
                                         for (int d = 0; d < args[4].dim; d++){
-                                            TYPE(4)* tmp1 =&((TYPE(4)*)arg4h)[d];
-                                            TYPE(4)* tmp2 =&arg4_l[d+thr*64];
-                                            arg4h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg4h[d]= MIN(arg4h[d],arg4_l[d+thr*64]);
                                         }
                                     else
                                         if(args[4].acc == OP_MAX)
                                             for (int d = 0; d < args[4].dim; d++){
-                                                TYPE(4)* tmp1 =&((TYPE(4)*)arg4h)[d];
-                                                TYPE(4)* tmp2 =&arg4_l[d+thr*64];
-                                                arg4h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg4h[d]= MAX(arg4h[d],arg4_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -4397,23 +3948,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[5].acc == OP_INC)
                                     for (int d = 0; d < args[5].dim; d++) {
-                                        TYPE(5)* tmp1 =&((TYPE(5)*)arg5h)[d];
-                                        TYPE(5)* tmp2 =&arg5_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg5h[d] +=arg5_l[d+thr*64];
                                     }
                                 else
                                     if(args[5].acc == OP_MIN)
                                         for (int d = 0; d < args[5].dim; d++){
-                                            TYPE(5)* tmp1 =&((TYPE(5)*)arg5h)[d];
-                                            TYPE(5)* tmp2 =&arg5_l[d+thr*64];
-                                            arg5h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg5h[d]= MIN(arg5h[d],arg5_l[d+thr*64]);
                                         }
                                     else
                                         if(args[5].acc == OP_MAX)
                                             for (int d = 0; d < args[5].dim; d++){
-                                                TYPE(5)* tmp1 =&((TYPE(5)*)arg5h)[d];
-                                                TYPE(5)* tmp2 =&arg5_l[d+thr*64];
-                                                arg5h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg5h[d]= MAX(arg5h[d],arg5_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -4424,23 +3969,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[6].acc == OP_INC)
                                     for (int d = 0; d < args[6].dim; d++) {
-                                        TYPE(6)* tmp1 =&((TYPE(6)*)arg6h)[d];
-                                        TYPE(6)* tmp2 =&arg6_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg6h[d] +=arg6_l[d+thr*64];
                                     }
                                 else
                                     if(args[6].acc == OP_MIN)
                                         for (int d = 0; d < args[6].dim; d++){
-                                            TYPE(6)* tmp1 =&((TYPE(6)*)arg6h)[d];
-                                            TYPE(6)* tmp2 =&arg6_l[d+thr*64];
-                                            arg6h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg6h[d]= MIN(arg6h[d],arg6_l[d+thr*64]);
                                         }
                                     else
                                         if(args[6].acc == OP_MAX)
                                             for (int d = 0; d < args[6].dim; d++){
-                                                TYPE(6)* tmp1 =&((TYPE(6)*)arg6h)[d];
-                                                TYPE(6)* tmp2 =&arg6_l[d+thr*64];
-                                                arg6h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg6h[d]= MAX(arg6h[d],arg6_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -4451,23 +3990,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[7].acc == OP_INC)
                                     for (int d = 0; d < args[7].dim; d++) {
-                                        TYPE(7)* tmp1 =&((TYPE(7)*)arg7h)[d];
-                                        TYPE(7)* tmp2 =&arg7_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg7h[d] +=arg7_l[d+thr*64];
                                     }
                                 else
                                     if(args[7].acc == OP_MIN)
                                         for (int d = 0; d < args[7].dim; d++){
-                                            TYPE(7)* tmp1 =&((TYPE(7)*)arg7h)[d];
-                                            TYPE(7)* tmp2 =&arg7_l[d+thr*64];
-                                            arg7h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg7h[d]= MIN(arg7h[d],arg7_l[d+thr*64]);
                                         }
                                     else
                                         if(args[7].acc == OP_MAX)
                                             for (int d = 0; d < args[7].dim; d++){
-                                                TYPE(7)* tmp1 =&((TYPE(7)*)arg7h)[d];
-                                                TYPE(7)* tmp2 =&arg7_l[d+thr*64];
-                                                arg7h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg7h[d]= MAX(arg7h[d],arg7_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -4624,23 +4157,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[0].acc == OP_INC)
                         for (int d = 0; d < args[0].dim; d++) {
-                            TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                            TYPE(0)* tmp2 =&((TYPE(0)*)arg0_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg0h[d] +=arg0_l[d+thr*64];
                         }
                     else
                         if(args[0].acc == OP_MIN)
                             for (int d = 0; d < args[0].dim; d++){
-                                TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                TYPE(0)* tmp2 =&((TYPE(0)*)arg0_l)[d+thr*64];
-                                arg0h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg0h[d]= MIN(arg0h[d],arg0_l[d+thr*64]);
                             }
                         else
                             if(args[0].acc == OP_MAX)
                                 for (int d = 0; d < args[0].dim; d++){
-                                    TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                    TYPE(0)* tmp2 =&((TYPE(0)*)arg0_l)[d+thr*64];
-                                    arg0h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg0h[d]= MAX(arg0h[d],arg0_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -4651,23 +4178,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[1].acc == OP_INC)
                         for (int d = 0; d < args[1].dim; d++) {
-                            TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                            TYPE(1)* tmp2 =&((TYPE(1)*)arg1_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg1h[d] +=arg1_l[d+thr*64];
                         }
                     else
                         if(args[1].acc == OP_MIN)
                             for (int d = 0; d < args[1].dim; d++){
-                                TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                TYPE(1)* tmp2 =&((TYPE(1)*)arg1_l)[d+thr*64];
-                                arg1h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg1h[d]= MIN(arg1h[d],arg1_l[d+thr*64]);
                             }
                         else
                             if(args[1].acc == OP_MAX)
                                 for (int d = 0; d < args[1].dim; d++){
-                                    TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                    TYPE(1)* tmp2 =&((TYPE(1)*)arg1_l)[d+thr*64];
-                                    arg1h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg1h[d]= MAX(arg1h[d],arg1_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -4678,23 +4199,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[2].acc == OP_INC)
                         for (int d = 0; d < args[2].dim; d++) {
-                            TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                            TYPE(2)* tmp2 =&((TYPE(2)*)arg2_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg2h[d] +=arg2_l[d+thr*64];
                         }
                     else
                         if(args[2].acc == OP_MIN)
                             for (int d = 0; d < args[2].dim; d++){
-                                TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                TYPE(2)* tmp2 =&((TYPE(2)*)arg2_l)[d+thr*64];
-                                arg2h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg2h[d]= MIN(arg2h[d],arg2_l[d+thr*64]);
                             }
                         else
                             if(args[2].acc == OP_MAX)
                                 for (int d = 0; d < args[2].dim; d++){
-                                    TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                    TYPE(2)* tmp2 =&((TYPE(2)*)arg2_l)[d+thr*64];
-                                    arg2h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg2h[d]= MAX(arg2h[d],arg2_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -4705,23 +4220,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[3].acc == OP_INC)
                         for (int d = 0; d < args[3].dim; d++) {
-                            TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                            TYPE(3)* tmp2 =&((TYPE(3)*)arg3_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg3h[d] +=arg3_l[d+thr*64];
                         }
                     else
                         if(args[3].acc == OP_MIN)
                             for (int d = 0; d < args[3].dim; d++){
-                                TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                                TYPE(3)* tmp2 =&((TYPE(3)*)arg3_l)[d+thr*64];
-                                arg3h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg3h[d]= MIN(arg3h[d],arg3_l[d+thr*64]);
                             }
                         else
                             if(args[3].acc == OP_MAX)
                                 for (int d = 0; d < args[3].dim; d++){
-                                    TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                                    TYPE(3)* tmp2 =&((TYPE(3)*)arg3_l)[d+thr*64];
-                                    arg3h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg3h[d]= MAX(arg3h[d],arg3_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -4732,23 +4241,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[4].acc == OP_INC)
                         for (int d = 0; d < args[4].dim; d++) {
-                            TYPE(4)* tmp1 =&((TYPE(4)*)arg4h)[d];
-                            TYPE(4)* tmp2 =&((TYPE(4)*)arg4_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg4h[d] +=arg4_l[d+thr*64];
                         }
                     else
                         if(args[4].acc == OP_MIN)
                             for (int d = 0; d < args[4].dim; d++){
-                                TYPE(4)* tmp1 =&((TYPE(4)*)arg4h)[d];
-                                TYPE(4)* tmp2 =&((TYPE(4)*)arg4_l)[d+thr*64];
-                                arg4h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg4h[d]= MIN(arg4h[d],arg4_l[d+thr*64]);
                             }
                         else
                             if(args[4].acc == OP_MAX)
                                 for (int d = 0; d < args[4].dim; d++){
-                                    TYPE(4)* tmp1 =&((TYPE(4)*)arg4h)[d];
-                                    TYPE(4)* tmp2 =&((TYPE(4)*)arg4_l)[d+thr*64];
-                                    arg4h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg4h[d]= MAX(arg4h[d],arg4_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -4759,23 +4262,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[5].acc == OP_INC)
                         for (int d = 0; d < args[5].dim; d++) {
-                            TYPE(5)* tmp1 =&((TYPE(5)*)arg5h)[d];
-                            TYPE(5)* tmp2 =&((TYPE(5)*)arg5_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg5h[d] +=arg5_l[d+thr*64];
                         }
                     else
                         if(args[5].acc == OP_MIN)
                             for (int d = 0; d < args[5].dim; d++){
-                                TYPE(5)* tmp1 =&((TYPE(5)*)arg5h)[d];
-                                TYPE(5)* tmp2 =&((TYPE(5)*)arg5_l)[d+thr*64];
-                                arg5h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg5h[d]= MIN(arg5h[d],arg5_l[d+thr*64]);
                             }
                         else
                             if(args[5].acc == OP_MAX)
                                 for (int d = 0; d < args[5].dim; d++){
-                                    TYPE(5)* tmp1 =&((TYPE(5)*)arg5h)[d];
-                                    TYPE(5)* tmp2 =&((TYPE(5)*)arg5_l)[d+thr*64];
-                                    arg5h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg5h[d]= MAX(arg5h[d],arg5_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -4786,23 +4283,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[6].acc == OP_INC)
                         for (int d = 0; d < args[6].dim; d++) {
-                            TYPE(6)* tmp1 =&((TYPE(6)*)arg6h)[d];
-                            TYPE(6)* tmp2 =&((TYPE(6)*)arg6_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg6h[d] +=arg6_l[d+thr*64];
                         }
                     else
                         if(args[6].acc == OP_MIN)
                             for (int d = 0; d < args[6].dim; d++){
-                                TYPE(6)* tmp1 =&((TYPE(6)*)arg6h)[d];
-                                TYPE(6)* tmp2 =&((TYPE(6)*)arg6_l)[d+thr*64];
-                                arg6h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg6h[d]= MIN(arg6h[d],arg6_l[d+thr*64]);
                             }
                         else
                             if(args[6].acc == OP_MAX)
                                 for (int d = 0; d < args[6].dim; d++){
-                                    TYPE(6)* tmp1 =&((TYPE(6)*)arg6h)[d];
-                                    TYPE(6)* tmp2 =&((TYPE(6)*)arg6_l)[d+thr*64];
-                                    arg6h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg6h[d]= MAX(arg6h[d],arg6_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -4813,23 +4304,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[7].acc == OP_INC)
                         for (int d = 0; d < args[7].dim; d++) {
-                            TYPE(7)* tmp1 =&((TYPE(7)*)arg7h)[d];
-                            TYPE(7)* tmp2 =&((TYPE(7)*)arg7_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg7h[d] +=arg7_l[d+thr*64];
                         }
                     else
                         if(args[7].acc == OP_MIN)
                             for (int d = 0; d < args[7].dim; d++){
-                                TYPE(7)* tmp1 =&((TYPE(7)*)arg7h)[d];
-                                TYPE(7)* tmp2 =&((TYPE(7)*)arg7_l)[d+thr*64];
-                                arg7h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg7h[d]= MIN(arg7h[d],arg7_l[d+thr*64]);
                             }
                         else
                             if(args[7].acc == OP_MAX)
                                 for (int d = 0; d < args[7].dim; d++){
-                                    TYPE(7)* tmp1 =&((TYPE(7)*)arg7h)[d];
-                                    TYPE(7)* tmp2 =&((TYPE(7)*)arg7_l)[d+thr*64];
-                                    arg7h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg7h[d]= MAX(arg7h[d],arg7_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -4928,6 +4413,7 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                     indmap[indmapSize].map = args[i].map;
                     indmapSize++;
                     count++;
+                    ninds++;
                 }else
                 {
                     inds[count] = n;
@@ -4935,16 +4421,6 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 }
             }
     }
-    int conteiner[9];
-    int currentsize=0;
-    for (int i = 0; i < 9; ++i)
-        if(inds[i] != -1)
-            if(!insideConteiner(conteiner, currentsize, inds[i]))
-            {
-                conteiner[currentsize]=inds[i];
-                currentsize++;
-                ninds++;
-            }
     // check if there is some reduction to do
     bool reduct = false;
     for (int i = 0; i < 9; ++i)
@@ -5266,7 +4742,7 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                     }
                 }
                 block_offset += nblocks;
-                if(reduct)
+                if(reduct  )
                 {
                     if (col == Plan->ncolors_owned-1) {
                         if(args[0].argtype == OP_ARG_GBL && args[0].acc != OP_READ)
@@ -5274,23 +4750,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[0].acc == OP_INC)
                                     for (int d = 0; d < args[0].dim; d++) {
-                                        TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                        TYPE(0)* tmp2 =&arg0_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg0h[d] +=arg0_l[d+thr*64];
                                     }
                                 else
                                     if(args[0].acc == OP_MIN)
                                         for (int d = 0; d < args[0].dim; d++){
-                                            TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                            TYPE(0)* tmp2 =&arg0_l[d+thr*64];
-                                            arg0h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg0h[d]= MIN(arg0h[d],arg0_l[d+thr*64]);
                                         }
                                     else
                                         if(args[0].acc == OP_MAX)
                                             for (int d = 0; d < args[0].dim; d++){
-                                                TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                                TYPE(0)* tmp2 =&arg0_l[d+thr*64];
-                                                arg0h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg0h[d]= MAX(arg0h[d],arg0_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -5301,23 +4771,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[1].acc == OP_INC)
                                     for (int d = 0; d < args[1].dim; d++) {
-                                        TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                        TYPE(1)* tmp2 =&arg1_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg1h[d] +=arg1_l[d+thr*64];
                                     }
                                 else
                                     if(args[1].acc == OP_MIN)
                                         for (int d = 0; d < args[1].dim; d++){
-                                            TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                            TYPE(1)* tmp2 =&arg1_l[d+thr*64];
-                                            arg1h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg1h[d]= MIN(arg1h[d],arg1_l[d+thr*64]);
                                         }
                                     else
                                         if(args[1].acc == OP_MAX)
                                             for (int d = 0; d < args[1].dim; d++){
-                                                TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                                TYPE(1)* tmp2 =&arg1_l[d+thr*64];
-                                                arg1h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg1h[d]= MAX(arg1h[d],arg1_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -5328,23 +4792,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[2].acc == OP_INC)
                                     for (int d = 0; d < args[2].dim; d++) {
-                                        TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                        TYPE(2)* tmp2 =&arg2_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg2h[d] +=arg2_l[d+thr*64];
                                     }
                                 else
                                     if(args[2].acc == OP_MIN)
                                         for (int d = 0; d < args[2].dim; d++){
-                                            TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                            TYPE(2)* tmp2 =&arg2_l[d+thr*64];
-                                            arg2h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg2h[d]= MIN(arg2h[d],arg2_l[d+thr*64]);
                                         }
                                     else
                                         if(args[2].acc == OP_MAX)
                                             for (int d = 0; d < args[2].dim; d++){
-                                                TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                                TYPE(2)* tmp2 =&arg2_l[d+thr*64];
-                                                arg2h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg2h[d]= MAX(arg2h[d],arg2_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -5355,23 +4813,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[3].acc == OP_INC)
                                     for (int d = 0; d < args[3].dim; d++) {
-                                        TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                                        TYPE(3)* tmp2 =&arg3_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg3h[d] +=arg3_l[d+thr*64];
                                     }
                                 else
                                     if(args[3].acc == OP_MIN)
                                         for (int d = 0; d < args[3].dim; d++){
-                                            TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                                            TYPE(3)* tmp2 =&arg3_l[d+thr*64];
-                                            arg3h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg3h[d]= MIN(arg3h[d],arg3_l[d+thr*64]);
                                         }
                                     else
                                         if(args[3].acc == OP_MAX)
                                             for (int d = 0; d < args[3].dim; d++){
-                                                TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                                                TYPE(3)* tmp2 =&arg3_l[d+thr*64];
-                                                arg3h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg3h[d]= MAX(arg3h[d],arg3_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -5382,23 +4834,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[4].acc == OP_INC)
                                     for (int d = 0; d < args[4].dim; d++) {
-                                        TYPE(4)* tmp1 =&((TYPE(4)*)arg4h)[d];
-                                        TYPE(4)* tmp2 =&arg4_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg4h[d] +=arg4_l[d+thr*64];
                                     }
                                 else
                                     if(args[4].acc == OP_MIN)
                                         for (int d = 0; d < args[4].dim; d++){
-                                            TYPE(4)* tmp1 =&((TYPE(4)*)arg4h)[d];
-                                            TYPE(4)* tmp2 =&arg4_l[d+thr*64];
-                                            arg4h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg4h[d]= MIN(arg4h[d],arg4_l[d+thr*64]);
                                         }
                                     else
                                         if(args[4].acc == OP_MAX)
                                             for (int d = 0; d < args[4].dim; d++){
-                                                TYPE(4)* tmp1 =&((TYPE(4)*)arg4h)[d];
-                                                TYPE(4)* tmp2 =&arg4_l[d+thr*64];
-                                                arg4h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg4h[d]= MAX(arg4h[d],arg4_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -5409,23 +4855,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[5].acc == OP_INC)
                                     for (int d = 0; d < args[5].dim; d++) {
-                                        TYPE(5)* tmp1 =&((TYPE(5)*)arg5h)[d];
-                                        TYPE(5)* tmp2 =&arg5_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg5h[d] +=arg5_l[d+thr*64];
                                     }
                                 else
                                     if(args[5].acc == OP_MIN)
                                         for (int d = 0; d < args[5].dim; d++){
-                                            TYPE(5)* tmp1 =&((TYPE(5)*)arg5h)[d];
-                                            TYPE(5)* tmp2 =&arg5_l[d+thr*64];
-                                            arg5h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg5h[d]= MIN(arg5h[d],arg5_l[d+thr*64]);
                                         }
                                     else
                                         if(args[5].acc == OP_MAX)
                                             for (int d = 0; d < args[5].dim; d++){
-                                                TYPE(5)* tmp1 =&((TYPE(5)*)arg5h)[d];
-                                                TYPE(5)* tmp2 =&arg5_l[d+thr*64];
-                                                arg5h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg5h[d]= MAX(arg5h[d],arg5_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -5436,23 +4876,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[6].acc == OP_INC)
                                     for (int d = 0; d < args[6].dim; d++) {
-                                        TYPE(6)* tmp1 =&((TYPE(6)*)arg6h)[d];
-                                        TYPE(6)* tmp2 =&arg6_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg6h[d] +=arg6_l[d+thr*64];
                                     }
                                 else
                                     if(args[6].acc == OP_MIN)
                                         for (int d = 0; d < args[6].dim; d++){
-                                            TYPE(6)* tmp1 =&((TYPE(6)*)arg6h)[d];
-                                            TYPE(6)* tmp2 =&arg6_l[d+thr*64];
-                                            arg6h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg6h[d]= MIN(arg6h[d],arg6_l[d+thr*64]);
                                         }
                                     else
                                         if(args[6].acc == OP_MAX)
                                             for (int d = 0; d < args[6].dim; d++){
-                                                TYPE(6)* tmp1 =&((TYPE(6)*)arg6h)[d];
-                                                TYPE(6)* tmp2 =&arg6_l[d+thr*64];
-                                                arg6h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg6h[d]= MAX(arg6h[d],arg6_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -5463,23 +4897,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[7].acc == OP_INC)
                                     for (int d = 0; d < args[7].dim; d++) {
-                                        TYPE(7)* tmp1 =&((TYPE(7)*)arg7h)[d];
-                                        TYPE(7)* tmp2 =&arg7_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg7h[d] +=arg7_l[d+thr*64];
                                     }
                                 else
                                     if(args[7].acc == OP_MIN)
                                         for (int d = 0; d < args[7].dim; d++){
-                                            TYPE(7)* tmp1 =&((TYPE(7)*)arg7h)[d];
-                                            TYPE(7)* tmp2 =&arg7_l[d+thr*64];
-                                            arg7h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg7h[d]= MIN(arg7h[d],arg7_l[d+thr*64]);
                                         }
                                     else
                                         if(args[7].acc == OP_MAX)
                                             for (int d = 0; d < args[7].dim; d++){
-                                                TYPE(7)* tmp1 =&((TYPE(7)*)arg7h)[d];
-                                                TYPE(7)* tmp2 =&arg7_l[d+thr*64];
-                                                arg7h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg7h[d]= MAX(arg7h[d],arg7_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -5490,23 +4918,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[8].acc == OP_INC)
                                     for (int d = 0; d < args[8].dim; d++) {
-                                        TYPE(8)* tmp1 =&((TYPE(8)*)arg8h)[d];
-                                        TYPE(8)* tmp2 =&arg8_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg8h[d] +=arg8_l[d+thr*64];
                                     }
                                 else
                                     if(args[8].acc == OP_MIN)
                                         for (int d = 0; d < args[8].dim; d++){
-                                            TYPE(8)* tmp1 =&((TYPE(8)*)arg8h)[d];
-                                            TYPE(8)* tmp2 =&arg8_l[d+thr*64];
-                                            arg8h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg8h[d]= MIN(arg8h[d],arg8_l[d+thr*64]);
                                         }
                                     else
                                         if(args[8].acc == OP_MAX)
                                             for (int d = 0; d < args[8].dim; d++){
-                                                TYPE(8)* tmp1 =&((TYPE(8)*)arg8h)[d];
-                                                TYPE(8)* tmp2 =&arg8_l[d+thr*64];
-                                                arg8h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg8h[d]= MAX(arg8h[d],arg8_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -5679,23 +5101,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[0].acc == OP_INC)
                         for (int d = 0; d < args[0].dim; d++) {
-                            TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                            TYPE(0)* tmp2 =&((TYPE(0)*)arg0_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg0h[d] +=arg0_l[d+thr*64];
                         }
                     else
                         if(args[0].acc == OP_MIN)
                             for (int d = 0; d < args[0].dim; d++){
-                                TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                TYPE(0)* tmp2 =&((TYPE(0)*)arg0_l)[d+thr*64];
-                                arg0h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg0h[d]= MIN(arg0h[d],arg0_l[d+thr*64]);
                             }
                         else
                             if(args[0].acc == OP_MAX)
                                 for (int d = 0; d < args[0].dim; d++){
-                                    TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                    TYPE(0)* tmp2 =&((TYPE(0)*)arg0_l)[d+thr*64];
-                                    arg0h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg0h[d]= MAX(arg0h[d],arg0_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -5706,23 +5122,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[1].acc == OP_INC)
                         for (int d = 0; d < args[1].dim; d++) {
-                            TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                            TYPE(1)* tmp2 =&((TYPE(1)*)arg1_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg1h[d] +=arg1_l[d+thr*64];
                         }
                     else
                         if(args[1].acc == OP_MIN)
                             for (int d = 0; d < args[1].dim; d++){
-                                TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                TYPE(1)* tmp2 =&((TYPE(1)*)arg1_l)[d+thr*64];
-                                arg1h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg1h[d]= MIN(arg1h[d],arg1_l[d+thr*64]);
                             }
                         else
                             if(args[1].acc == OP_MAX)
                                 for (int d = 0; d < args[1].dim; d++){
-                                    TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                    TYPE(1)* tmp2 =&((TYPE(1)*)arg1_l)[d+thr*64];
-                                    arg1h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg1h[d]= MAX(arg1h[d],arg1_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -5733,23 +5143,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[2].acc == OP_INC)
                         for (int d = 0; d < args[2].dim; d++) {
-                            TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                            TYPE(2)* tmp2 =&((TYPE(2)*)arg2_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg2h[d] +=arg2_l[d+thr*64];
                         }
                     else
                         if(args[2].acc == OP_MIN)
                             for (int d = 0; d < args[2].dim; d++){
-                                TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                TYPE(2)* tmp2 =&((TYPE(2)*)arg2_l)[d+thr*64];
-                                arg2h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg2h[d]= MIN(arg2h[d],arg2_l[d+thr*64]);
                             }
                         else
                             if(args[2].acc == OP_MAX)
                                 for (int d = 0; d < args[2].dim; d++){
-                                    TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                    TYPE(2)* tmp2 =&((TYPE(2)*)arg2_l)[d+thr*64];
-                                    arg2h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg2h[d]= MAX(arg2h[d],arg2_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -5760,23 +5164,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[3].acc == OP_INC)
                         for (int d = 0; d < args[3].dim; d++) {
-                            TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                            TYPE(3)* tmp2 =&((TYPE(3)*)arg3_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg3h[d] +=arg3_l[d+thr*64];
                         }
                     else
                         if(args[3].acc == OP_MIN)
                             for (int d = 0; d < args[3].dim; d++){
-                                TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                                TYPE(3)* tmp2 =&((TYPE(3)*)arg3_l)[d+thr*64];
-                                arg3h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg3h[d]= MIN(arg3h[d],arg3_l[d+thr*64]);
                             }
                         else
                             if(args[3].acc == OP_MAX)
                                 for (int d = 0; d < args[3].dim; d++){
-                                    TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                                    TYPE(3)* tmp2 =&((TYPE(3)*)arg3_l)[d+thr*64];
-                                    arg3h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg3h[d]= MAX(arg3h[d],arg3_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -5787,23 +5185,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[4].acc == OP_INC)
                         for (int d = 0; d < args[4].dim; d++) {
-                            TYPE(4)* tmp1 =&((TYPE(4)*)arg4h)[d];
-                            TYPE(4)* tmp2 =&((TYPE(4)*)arg4_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg4h[d] +=arg4_l[d+thr*64];
                         }
                     else
                         if(args[4].acc == OP_MIN)
                             for (int d = 0; d < args[4].dim; d++){
-                                TYPE(4)* tmp1 =&((TYPE(4)*)arg4h)[d];
-                                TYPE(4)* tmp2 =&((TYPE(4)*)arg4_l)[d+thr*64];
-                                arg4h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg4h[d]= MIN(arg4h[d],arg4_l[d+thr*64]);
                             }
                         else
                             if(args[4].acc == OP_MAX)
                                 for (int d = 0; d < args[4].dim; d++){
-                                    TYPE(4)* tmp1 =&((TYPE(4)*)arg4h)[d];
-                                    TYPE(4)* tmp2 =&((TYPE(4)*)arg4_l)[d+thr*64];
-                                    arg4h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg4h[d]= MAX(arg4h[d],arg4_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -5814,23 +5206,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[5].acc == OP_INC)
                         for (int d = 0; d < args[5].dim; d++) {
-                            TYPE(5)* tmp1 =&((TYPE(5)*)arg5h)[d];
-                            TYPE(5)* tmp2 =&((TYPE(5)*)arg5_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg5h[d] +=arg5_l[d+thr*64];
                         }
                     else
                         if(args[5].acc == OP_MIN)
                             for (int d = 0; d < args[5].dim; d++){
-                                TYPE(5)* tmp1 =&((TYPE(5)*)arg5h)[d];
-                                TYPE(5)* tmp2 =&((TYPE(5)*)arg5_l)[d+thr*64];
-                                arg5h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg5h[d]= MIN(arg5h[d],arg5_l[d+thr*64]);
                             }
                         else
                             if(args[5].acc == OP_MAX)
                                 for (int d = 0; d < args[5].dim; d++){
-                                    TYPE(5)* tmp1 =&((TYPE(5)*)arg5h)[d];
-                                    TYPE(5)* tmp2 =&((TYPE(5)*)arg5_l)[d+thr*64];
-                                    arg5h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg5h[d]= MAX(arg5h[d],arg5_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -5841,23 +5227,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[6].acc == OP_INC)
                         for (int d = 0; d < args[6].dim; d++) {
-                            TYPE(6)* tmp1 =&((TYPE(6)*)arg6h)[d];
-                            TYPE(6)* tmp2 =&((TYPE(6)*)arg6_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg6h[d] +=arg6_l[d+thr*64];
                         }
                     else
                         if(args[6].acc == OP_MIN)
                             for (int d = 0; d < args[6].dim; d++){
-                                TYPE(6)* tmp1 =&((TYPE(6)*)arg6h)[d];
-                                TYPE(6)* tmp2 =&((TYPE(6)*)arg6_l)[d+thr*64];
-                                arg6h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg6h[d]= MIN(arg6h[d],arg6_l[d+thr*64]);
                             }
                         else
                             if(args[6].acc == OP_MAX)
                                 for (int d = 0; d < args[6].dim; d++){
-                                    TYPE(6)* tmp1 =&((TYPE(6)*)arg6h)[d];
-                                    TYPE(6)* tmp2 =&((TYPE(6)*)arg6_l)[d+thr*64];
-                                    arg6h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg6h[d]= MAX(arg6h[d],arg6_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -5868,23 +5248,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[7].acc == OP_INC)
                         for (int d = 0; d < args[7].dim; d++) {
-                            TYPE(7)* tmp1 =&((TYPE(7)*)arg7h)[d];
-                            TYPE(7)* tmp2 =&((TYPE(7)*)arg7_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg7h[d] +=arg7_l[d+thr*64];
                         }
                     else
                         if(args[7].acc == OP_MIN)
                             for (int d = 0; d < args[7].dim; d++){
-                                TYPE(7)* tmp1 =&((TYPE(7)*)arg7h)[d];
-                                TYPE(7)* tmp2 =&((TYPE(7)*)arg7_l)[d+thr*64];
-                                arg7h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg7h[d]= MIN(arg7h[d],arg7_l[d+thr*64]);
                             }
                         else
                             if(args[7].acc == OP_MAX)
                                 for (int d = 0; d < args[7].dim; d++){
-                                    TYPE(7)* tmp1 =&((TYPE(7)*)arg7h)[d];
-                                    TYPE(7)* tmp2 =&((TYPE(7)*)arg7_l)[d+thr*64];
-                                    arg7h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg7h[d]= MAX(arg7h[d],arg7_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -5895,23 +5269,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[8].acc == OP_INC)
                         for (int d = 0; d < args[8].dim; d++) {
-                            TYPE(8)* tmp1 =&((TYPE(8)*)arg8h)[d];
-                            TYPE(8)* tmp2 =&((TYPE(8)*)arg8_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg8h[d] +=arg8_l[d+thr*64];
                         }
                     else
                         if(args[8].acc == OP_MIN)
                             for (int d = 0; d < args[8].dim; d++){
-                                TYPE(8)* tmp1 =&((TYPE(8)*)arg8h)[d];
-                                TYPE(8)* tmp2 =&((TYPE(8)*)arg8_l)[d+thr*64];
-                                arg8h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg8h[d]= MIN(arg8h[d],arg8_l[d+thr*64]);
                             }
                         else
                             if(args[8].acc == OP_MAX)
                                 for (int d = 0; d < args[8].dim; d++){
-                                    TYPE(8)* tmp1 =&((TYPE(8)*)arg8h)[d];
-                                    TYPE(8)* tmp2 =&((TYPE(8)*)arg8_l)[d+thr*64];
-                                    arg8h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg8h[d]= MAX(arg8h[d],arg8_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -6016,6 +5384,7 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                     indmap[indmapSize].map = args[i].map;
                     indmapSize++;
                     count++;
+                    ninds++;
                 }else
                 {
                     inds[count] = n;
@@ -6023,16 +5392,6 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 }
             }
     }
-    int conteiner[10];
-    int currentsize=0;
-    for (int i = 0; i < 10; ++i)
-        if(inds[i] != -1)
-            if(!insideConteiner(conteiner, currentsize, inds[i]))
-            {
-                conteiner[currentsize]=inds[i];
-                currentsize++;
-                ninds++;
-            }
     // check if there is some reduction to do
     bool reduct = false;
     for (int i = 0; i < 10; ++i)
@@ -6384,7 +5743,7 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                     }
                 }
                 block_offset += nblocks;
-                if(reduct)
+                if(reduct  )
                 {
                     if (col == Plan->ncolors_owned-1) {
                         if(args[0].argtype == OP_ARG_GBL && args[0].acc != OP_READ)
@@ -6392,23 +5751,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[0].acc == OP_INC)
                                     for (int d = 0; d < args[0].dim; d++) {
-                                        TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                        TYPE(0)* tmp2 =&arg0_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg0h[d] +=arg0_l[d+thr*64];
                                     }
                                 else
                                     if(args[0].acc == OP_MIN)
                                         for (int d = 0; d < args[0].dim; d++){
-                                            TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                            TYPE(0)* tmp2 =&arg0_l[d+thr*64];
-                                            arg0h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg0h[d]= MIN(arg0h[d],arg0_l[d+thr*64]);
                                         }
                                     else
                                         if(args[0].acc == OP_MAX)
                                             for (int d = 0; d < args[0].dim; d++){
-                                                TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                                TYPE(0)* tmp2 =&arg0_l[d+thr*64];
-                                                arg0h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg0h[d]= MAX(arg0h[d],arg0_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -6419,23 +5772,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[1].acc == OP_INC)
                                     for (int d = 0; d < args[1].dim; d++) {
-                                        TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                        TYPE(1)* tmp2 =&arg1_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg1h[d] +=arg1_l[d+thr*64];
                                     }
                                 else
                                     if(args[1].acc == OP_MIN)
                                         for (int d = 0; d < args[1].dim; d++){
-                                            TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                            TYPE(1)* tmp2 =&arg1_l[d+thr*64];
-                                            arg1h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg1h[d]= MIN(arg1h[d],arg1_l[d+thr*64]);
                                         }
                                     else
                                         if(args[1].acc == OP_MAX)
                                             for (int d = 0; d < args[1].dim; d++){
-                                                TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                                TYPE(1)* tmp2 =&arg1_l[d+thr*64];
-                                                arg1h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg1h[d]= MAX(arg1h[d],arg1_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -6446,23 +5793,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[2].acc == OP_INC)
                                     for (int d = 0; d < args[2].dim; d++) {
-                                        TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                        TYPE(2)* tmp2 =&arg2_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg2h[d] +=arg2_l[d+thr*64];
                                     }
                                 else
                                     if(args[2].acc == OP_MIN)
                                         for (int d = 0; d < args[2].dim; d++){
-                                            TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                            TYPE(2)* tmp2 =&arg2_l[d+thr*64];
-                                            arg2h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg2h[d]= MIN(arg2h[d],arg2_l[d+thr*64]);
                                         }
                                     else
                                         if(args[2].acc == OP_MAX)
                                             for (int d = 0; d < args[2].dim; d++){
-                                                TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                                TYPE(2)* tmp2 =&arg2_l[d+thr*64];
-                                                arg2h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg2h[d]= MAX(arg2h[d],arg2_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -6473,23 +5814,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[3].acc == OP_INC)
                                     for (int d = 0; d < args[3].dim; d++) {
-                                        TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                                        TYPE(3)* tmp2 =&arg3_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg3h[d] +=arg3_l[d+thr*64];
                                     }
                                 else
                                     if(args[3].acc == OP_MIN)
                                         for (int d = 0; d < args[3].dim; d++){
-                                            TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                                            TYPE(3)* tmp2 =&arg3_l[d+thr*64];
-                                            arg3h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg3h[d]= MIN(arg3h[d],arg3_l[d+thr*64]);
                                         }
                                     else
                                         if(args[3].acc == OP_MAX)
                                             for (int d = 0; d < args[3].dim; d++){
-                                                TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                                                TYPE(3)* tmp2 =&arg3_l[d+thr*64];
-                                                arg3h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg3h[d]= MAX(arg3h[d],arg3_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -6500,23 +5835,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[4].acc == OP_INC)
                                     for (int d = 0; d < args[4].dim; d++) {
-                                        TYPE(4)* tmp1 =&((TYPE(4)*)arg4h)[d];
-                                        TYPE(4)* tmp2 =&arg4_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg4h[d] +=arg4_l[d+thr*64];
                                     }
                                 else
                                     if(args[4].acc == OP_MIN)
                                         for (int d = 0; d < args[4].dim; d++){
-                                            TYPE(4)* tmp1 =&((TYPE(4)*)arg4h)[d];
-                                            TYPE(4)* tmp2 =&arg4_l[d+thr*64];
-                                            arg4h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg4h[d]= MIN(arg4h[d],arg4_l[d+thr*64]);
                                         }
                                     else
                                         if(args[4].acc == OP_MAX)
                                             for (int d = 0; d < args[4].dim; d++){
-                                                TYPE(4)* tmp1 =&((TYPE(4)*)arg4h)[d];
-                                                TYPE(4)* tmp2 =&arg4_l[d+thr*64];
-                                                arg4h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg4h[d]= MAX(arg4h[d],arg4_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -6527,23 +5856,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[5].acc == OP_INC)
                                     for (int d = 0; d < args[5].dim; d++) {
-                                        TYPE(5)* tmp1 =&((TYPE(5)*)arg5h)[d];
-                                        TYPE(5)* tmp2 =&arg5_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg5h[d] +=arg5_l[d+thr*64];
                                     }
                                 else
                                     if(args[5].acc == OP_MIN)
                                         for (int d = 0; d < args[5].dim; d++){
-                                            TYPE(5)* tmp1 =&((TYPE(5)*)arg5h)[d];
-                                            TYPE(5)* tmp2 =&arg5_l[d+thr*64];
-                                            arg5h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg5h[d]= MIN(arg5h[d],arg5_l[d+thr*64]);
                                         }
                                     else
                                         if(args[5].acc == OP_MAX)
                                             for (int d = 0; d < args[5].dim; d++){
-                                                TYPE(5)* tmp1 =&((TYPE(5)*)arg5h)[d];
-                                                TYPE(5)* tmp2 =&arg5_l[d+thr*64];
-                                                arg5h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg5h[d]= MAX(arg5h[d],arg5_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -6554,23 +5877,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[6].acc == OP_INC)
                                     for (int d = 0; d < args[6].dim; d++) {
-                                        TYPE(6)* tmp1 =&((TYPE(6)*)arg6h)[d];
-                                        TYPE(6)* tmp2 =&arg6_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg6h[d] +=arg6_l[d+thr*64];
                                     }
                                 else
                                     if(args[6].acc == OP_MIN)
                                         for (int d = 0; d < args[6].dim; d++){
-                                            TYPE(6)* tmp1 =&((TYPE(6)*)arg6h)[d];
-                                            TYPE(6)* tmp2 =&arg6_l[d+thr*64];
-                                            arg6h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg6h[d]= MIN(arg6h[d],arg6_l[d+thr*64]);
                                         }
                                     else
                                         if(args[6].acc == OP_MAX)
                                             for (int d = 0; d < args[6].dim; d++){
-                                                TYPE(6)* tmp1 =&((TYPE(6)*)arg6h)[d];
-                                                TYPE(6)* tmp2 =&arg6_l[d+thr*64];
-                                                arg6h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg6h[d]= MAX(arg6h[d],arg6_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -6581,23 +5898,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[7].acc == OP_INC)
                                     for (int d = 0; d < args[7].dim; d++) {
-                                        TYPE(7)* tmp1 =&((TYPE(7)*)arg7h)[d];
-                                        TYPE(7)* tmp2 =&arg7_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg7h[d] +=arg7_l[d+thr*64];
                                     }
                                 else
                                     if(args[7].acc == OP_MIN)
                                         for (int d = 0; d < args[7].dim; d++){
-                                            TYPE(7)* tmp1 =&((TYPE(7)*)arg7h)[d];
-                                            TYPE(7)* tmp2 =&arg7_l[d+thr*64];
-                                            arg7h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg7h[d]= MIN(arg7h[d],arg7_l[d+thr*64]);
                                         }
                                     else
                                         if(args[7].acc == OP_MAX)
                                             for (int d = 0; d < args[7].dim; d++){
-                                                TYPE(7)* tmp1 =&((TYPE(7)*)arg7h)[d];
-                                                TYPE(7)* tmp2 =&arg7_l[d+thr*64];
-                                                arg7h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg7h[d]= MAX(arg7h[d],arg7_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -6608,23 +5919,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[8].acc == OP_INC)
                                     for (int d = 0; d < args[8].dim; d++) {
-                                        TYPE(8)* tmp1 =&((TYPE(8)*)arg8h)[d];
-                                        TYPE(8)* tmp2 =&arg8_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg8h[d] +=arg8_l[d+thr*64];
                                     }
                                 else
                                     if(args[8].acc == OP_MIN)
                                         for (int d = 0; d < args[8].dim; d++){
-                                            TYPE(8)* tmp1 =&((TYPE(8)*)arg8h)[d];
-                                            TYPE(8)* tmp2 =&arg8_l[d+thr*64];
-                                            arg8h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg8h[d]= MIN(arg8h[d],arg8_l[d+thr*64]);
                                         }
                                     else
                                         if(args[8].acc == OP_MAX)
                                             for (int d = 0; d < args[8].dim; d++){
-                                                TYPE(8)* tmp1 =&((TYPE(8)*)arg8h)[d];
-                                                TYPE(8)* tmp2 =&arg8_l[d+thr*64];
-                                                arg8h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg8h[d]= MAX(arg8h[d],arg8_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -6635,23 +5940,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                             for (int thr = 0; thr < nthreads; thr++)
                                 if(args[9].acc == OP_INC)
                                     for (int d = 0; d < args[9].dim; d++) {
-                                        TYPE(9)* tmp1 =&((TYPE(9)*)arg9h)[d];
-                                        TYPE(9)* tmp2 =&arg9_l[d+thr*64];
-                                        *tmp1 += *tmp2;
+                                        arg9h[d] +=arg9_l[d+thr*64];
                                     }
                                 else
                                     if(args[9].acc == OP_MIN)
                                         for (int d = 0; d < args[9].dim; d++){
-                                            TYPE(9)* tmp1 =&((TYPE(9)*)arg9h)[d];
-                                            TYPE(9)* tmp2 =&arg9_l[d+thr*64];
-                                            arg9h[d]= (char) MIN(*tmp1,*tmp2);
+                                            arg9h[d]= MIN(arg9h[d],arg9_l[d+thr*64]);
                                         }
                                     else
                                         if(args[9].acc == OP_MAX)
                                             for (int d = 0; d < args[9].dim; d++){
-                                                TYPE(9)* tmp1 =&((TYPE(9)*)arg9h)[d];
-                                                TYPE(9)* tmp2 =&arg9_l[d+thr*64];
-                                                arg9h[d]= (char) MAX(*tmp1,*tmp2);
+                                                arg9h[d]= MAX(arg9h[d],arg9_l[d+thr*64]);
                                             }
                                         else
                                             perror("internal error: invalid reduction option");
@@ -6840,23 +6139,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[0].acc == OP_INC)
                         for (int d = 0; d < args[0].dim; d++) {
-                            TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                            TYPE(0)* tmp2 =&((TYPE(0)*)arg0_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg0h[d] +=arg0_l[d+thr*64];
                         }
                     else
                         if(args[0].acc == OP_MIN)
                             for (int d = 0; d < args[0].dim; d++){
-                                TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                TYPE(0)* tmp2 =&((TYPE(0)*)arg0_l)[d+thr*64];
-                                arg0h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg0h[d]= MIN(arg0h[d],arg0_l[d+thr*64]);
                             }
                         else
                             if(args[0].acc == OP_MAX)
                                 for (int d = 0; d < args[0].dim; d++){
-                                    TYPE(0)* tmp1 =&((TYPE(0)*)arg0h)[d];
-                                    TYPE(0)* tmp2 =&((TYPE(0)*)arg0_l)[d+thr*64];
-                                    arg0h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg0h[d]= MAX(arg0h[d],arg0_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -6867,23 +6160,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[1].acc == OP_INC)
                         for (int d = 0; d < args[1].dim; d++) {
-                            TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                            TYPE(1)* tmp2 =&((TYPE(1)*)arg1_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg1h[d] +=arg1_l[d+thr*64];
                         }
                     else
                         if(args[1].acc == OP_MIN)
                             for (int d = 0; d < args[1].dim; d++){
-                                TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                TYPE(1)* tmp2 =&((TYPE(1)*)arg1_l)[d+thr*64];
-                                arg1h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg1h[d]= MIN(arg1h[d],arg1_l[d+thr*64]);
                             }
                         else
                             if(args[1].acc == OP_MAX)
                                 for (int d = 0; d < args[1].dim; d++){
-                                    TYPE(1)* tmp1 =&((TYPE(1)*)arg1h)[d];
-                                    TYPE(1)* tmp2 =&((TYPE(1)*)arg1_l)[d+thr*64];
-                                    arg1h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg1h[d]= MAX(arg1h[d],arg1_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -6894,23 +6181,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[2].acc == OP_INC)
                         for (int d = 0; d < args[2].dim; d++) {
-                            TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                            TYPE(2)* tmp2 =&((TYPE(2)*)arg2_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg2h[d] +=arg2_l[d+thr*64];
                         }
                     else
                         if(args[2].acc == OP_MIN)
                             for (int d = 0; d < args[2].dim; d++){
-                                TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                TYPE(2)* tmp2 =&((TYPE(2)*)arg2_l)[d+thr*64];
-                                arg2h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg2h[d]= MIN(arg2h[d],arg2_l[d+thr*64]);
                             }
                         else
                             if(args[2].acc == OP_MAX)
                                 for (int d = 0; d < args[2].dim; d++){
-                                    TYPE(2)* tmp1 =&((TYPE(2)*)arg2h)[d];
-                                    TYPE(2)* tmp2 =&((TYPE(2)*)arg2_l)[d+thr*64];
-                                    arg2h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg2h[d]= MAX(arg2h[d],arg2_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -6921,23 +6202,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[3].acc == OP_INC)
                         for (int d = 0; d < args[3].dim; d++) {
-                            TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                            TYPE(3)* tmp2 =&((TYPE(3)*)arg3_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg3h[d] +=arg3_l[d+thr*64];
                         }
                     else
                         if(args[3].acc == OP_MIN)
                             for (int d = 0; d < args[3].dim; d++){
-                                TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                                TYPE(3)* tmp2 =&((TYPE(3)*)arg3_l)[d+thr*64];
-                                arg3h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg3h[d]= MIN(arg3h[d],arg3_l[d+thr*64]);
                             }
                         else
                             if(args[3].acc == OP_MAX)
                                 for (int d = 0; d < args[3].dim; d++){
-                                    TYPE(3)* tmp1 =&((TYPE(3)*)arg3h)[d];
-                                    TYPE(3)* tmp2 =&((TYPE(3)*)arg3_l)[d+thr*64];
-                                    arg3h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg3h[d]= MAX(arg3h[d],arg3_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -6948,23 +6223,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[4].acc == OP_INC)
                         for (int d = 0; d < args[4].dim; d++) {
-                            TYPE(4)* tmp1 =&((TYPE(4)*)arg4h)[d];
-                            TYPE(4)* tmp2 =&((TYPE(4)*)arg4_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg4h[d] +=arg4_l[d+thr*64];
                         }
                     else
                         if(args[4].acc == OP_MIN)
                             for (int d = 0; d < args[4].dim; d++){
-                                TYPE(4)* tmp1 =&((TYPE(4)*)arg4h)[d];
-                                TYPE(4)* tmp2 =&((TYPE(4)*)arg4_l)[d+thr*64];
-                                arg4h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg4h[d]= MIN(arg4h[d],arg4_l[d+thr*64]);
                             }
                         else
                             if(args[4].acc == OP_MAX)
                                 for (int d = 0; d < args[4].dim; d++){
-                                    TYPE(4)* tmp1 =&((TYPE(4)*)arg4h)[d];
-                                    TYPE(4)* tmp2 =&((TYPE(4)*)arg4_l)[d+thr*64];
-                                    arg4h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg4h[d]= MAX(arg4h[d],arg4_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -6975,23 +6244,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[5].acc == OP_INC)
                         for (int d = 0; d < args[5].dim; d++) {
-                            TYPE(5)* tmp1 =&((TYPE(5)*)arg5h)[d];
-                            TYPE(5)* tmp2 =&((TYPE(5)*)arg5_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg5h[d] +=arg5_l[d+thr*64];
                         }
                     else
                         if(args[5].acc == OP_MIN)
                             for (int d = 0; d < args[5].dim; d++){
-                                TYPE(5)* tmp1 =&((TYPE(5)*)arg5h)[d];
-                                TYPE(5)* tmp2 =&((TYPE(5)*)arg5_l)[d+thr*64];
-                                arg5h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg5h[d]= MIN(arg5h[d],arg5_l[d+thr*64]);
                             }
                         else
                             if(args[5].acc == OP_MAX)
                                 for (int d = 0; d < args[5].dim; d++){
-                                    TYPE(5)* tmp1 =&((TYPE(5)*)arg5h)[d];
-                                    TYPE(5)* tmp2 =&((TYPE(5)*)arg5_l)[d+thr*64];
-                                    arg5h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg5h[d]= MAX(arg5h[d],arg5_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -7002,23 +6265,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[6].acc == OP_INC)
                         for (int d = 0; d < args[6].dim; d++) {
-                            TYPE(6)* tmp1 =&((TYPE(6)*)arg6h)[d];
-                            TYPE(6)* tmp2 =&((TYPE(6)*)arg6_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg6h[d] +=arg6_l[d+thr*64];
                         }
                     else
                         if(args[6].acc == OP_MIN)
                             for (int d = 0; d < args[6].dim; d++){
-                                TYPE(6)* tmp1 =&((TYPE(6)*)arg6h)[d];
-                                TYPE(6)* tmp2 =&((TYPE(6)*)arg6_l)[d+thr*64];
-                                arg6h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg6h[d]= MIN(arg6h[d],arg6_l[d+thr*64]);
                             }
                         else
                             if(args[6].acc == OP_MAX)
                                 for (int d = 0; d < args[6].dim; d++){
-                                    TYPE(6)* tmp1 =&((TYPE(6)*)arg6h)[d];
-                                    TYPE(6)* tmp2 =&((TYPE(6)*)arg6_l)[d+thr*64];
-                                    arg6h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg6h[d]= MAX(arg6h[d],arg6_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -7029,23 +6286,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[7].acc == OP_INC)
                         for (int d = 0; d < args[7].dim; d++) {
-                            TYPE(7)* tmp1 =&((TYPE(7)*)arg7h)[d];
-                            TYPE(7)* tmp2 =&((TYPE(7)*)arg7_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg7h[d] +=arg7_l[d+thr*64];
                         }
                     else
                         if(args[7].acc == OP_MIN)
                             for (int d = 0; d < args[7].dim; d++){
-                                TYPE(7)* tmp1 =&((TYPE(7)*)arg7h)[d];
-                                TYPE(7)* tmp2 =&((TYPE(7)*)arg7_l)[d+thr*64];
-                                arg7h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg7h[d]= MIN(arg7h[d],arg7_l[d+thr*64]);
                             }
                         else
                             if(args[7].acc == OP_MAX)
                                 for (int d = 0; d < args[7].dim; d++){
-                                    TYPE(7)* tmp1 =&((TYPE(7)*)arg7h)[d];
-                                    TYPE(7)* tmp2 =&((TYPE(7)*)arg7_l)[d+thr*64];
-                                    arg7h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg7h[d]= MAX(arg7h[d],arg7_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -7056,23 +6307,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[8].acc == OP_INC)
                         for (int d = 0; d < args[8].dim; d++) {
-                            TYPE(8)* tmp1 =&((TYPE(8)*)arg8h)[d];
-                            TYPE(8)* tmp2 =&((TYPE(8)*)arg8_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg8h[d] +=arg8_l[d+thr*64];
                         }
                     else
                         if(args[8].acc == OP_MIN)
                             for (int d = 0; d < args[8].dim; d++){
-                                TYPE(8)* tmp1 =&((TYPE(8)*)arg8h)[d];
-                                TYPE(8)* tmp2 =&((TYPE(8)*)arg8_l)[d+thr*64];
-                                arg8h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg8h[d]= MIN(arg8h[d],arg8_l[d+thr*64]);
                             }
                         else
                             if(args[8].acc == OP_MAX)
                                 for (int d = 0; d < args[8].dim; d++){
-                                    TYPE(8)* tmp1 =&((TYPE(8)*)arg8h)[d];
-                                    TYPE(8)* tmp2 =&((TYPE(8)*)arg8_l)[d+thr*64];
-                                    arg8h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg8h[d]= MAX(arg8h[d],arg8_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");
@@ -7083,23 +6328,17 @@ void op_par_loop(void (*kernel)(T0*, T1*, T2*, T3*,
                 for (int thr = 0; thr < nthreads; thr++)
                     if(args[9].acc == OP_INC)
                         for (int d = 0; d < args[9].dim; d++) {
-                            TYPE(9)* tmp1 =&((TYPE(9)*)arg9h)[d];
-                            TYPE(9)* tmp2 =&((TYPE(9)*)arg9_l)[d+thr*64];
-                            *tmp1 += *tmp2;
+                            arg9h[d] +=arg9_l[d+thr*64];
                         }
                     else
                         if(args[9].acc == OP_MIN)
                             for (int d = 0; d < args[9].dim; d++){
-                                TYPE(9)* tmp1 =&((TYPE(9)*)arg9h)[d];
-                                TYPE(9)* tmp2 =&((TYPE(9)*)arg9_l)[d+thr*64];
-                                arg9h[d]= (char) MIN(*tmp1,*tmp2);
+                                arg9h[d]= MIN(arg9h[d],arg9_l[d+thr*64]);
                             }
                         else
                             if(args[9].acc == OP_MAX)
                                 for (int d = 0; d < args[9].dim; d++){
-                                    TYPE(9)* tmp1 =&((TYPE(9)*)arg9h)[d];
-                                    TYPE(9)* tmp2 =&((TYPE(9)*)arg9_l)[d+thr*64];
-                                    arg9h[d]= (char) MAX(*tmp1,*tmp2);
+                                    arg9h[d]= MAX(arg9h[d],arg9_l[d+thr*64]);
                                 }
                             else
                                 perror("internal error: invalid reduction option");

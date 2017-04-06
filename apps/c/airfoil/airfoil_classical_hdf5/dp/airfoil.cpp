@@ -54,8 +54,11 @@ double gam, gm1, cfl, eps, mach, alpha, qinf[4];
 // OP header file
 //
 
+#ifdef OPENMP_CLASSICAL
+#include "op_openmp_classical.h"
+#else
 #include "op_seq.h"
-
+#endif
 //
 // kernel routines for parallel loops
 //
