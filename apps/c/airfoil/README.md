@@ -24,6 +24,8 @@ on how to generate the mesh)
 
 airfoil_hdf5 -- airfoil implemented with OP2 HDF5 routines (mesh file in HDF5, see ASCI to HDF5 file converter)
 
+airfoil_classical -- airfoil classical version implemented with OP2 HDF5 routines (mesh file in HDF5, see ASCI to HDF5 file converter)
+
 airfoil_vector -- airfoil user kernels modified to achieve vectorization
 
 airfoil_tempdats -- airfoil use op_decl_temp, i.e. temporary dats in application
