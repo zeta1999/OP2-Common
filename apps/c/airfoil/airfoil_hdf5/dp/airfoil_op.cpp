@@ -101,6 +101,7 @@ void op_par_loop_update(char const *, op_set, op_arg, op_arg, op_arg, op_arg,
 // main program
 
 int main(int argc, char **argv) {
+
   // OP initialisation
   op_init(argc, argv, 2);
 
@@ -175,8 +176,8 @@ int main(int argc, char **argv) {
   op_write_const_hdf5("qinf", 4, "double", (char *)qinf, "new_grid_out.h5");
 
   // trigger partitioning and halo creation routines
-  op_partition("PTSCOTCH", "KWAY", edges, pecell, p_x);
-  // op_partition("PARMETIS", "KWAY", edges, pecell, p_x);
+  // op_partition("PTSCOTCH", "KWAY", edges, pecell, p_x);
+  op_partition("PARMETIS", "KWAY", edges, pecell, p_x);
 
   int g_ncell = op_get_size(cells);
 
@@ -184,7 +185,6 @@ int main(int argc, char **argv) {
   op_timers(&cpu_t1, &wall_t1);
 
   // main time-marching loop
-
   niter = 1000;
 
   for (int iter = 1; iter <= niter; iter++) {
