@@ -24,7 +24,7 @@ on how to generate the mesh)
 
 airfoil_hdf5 -- airfoil implemented with OP2 HDF5 routines (mesh file in HDF5, see ASCI to HDF5 file converter)
 
-airfoil_classical -- airfoil classical version implemented with OP2 HDF5 routines (mesh file in HDF5, see ASCI to HDF5 file converter)
+airfoil_classical -- airfoil implemented without code generation (i.e. using a classical library). Can only utilize OpenMP and MPI parallelizations. Uses OP2 HDF5 routines.
 
 airfoil_vector -- airfoil user kernels modified to achieve vectorization
 

@@ -13,8 +13,8 @@
 #
 # set paths for header files and libraries
 #
-OP2_INC		= -I$(OP2_INSTALL_PATH)/../include
-OP2_LIB		= -L$(OP2_INSTALL_PATH)/lib
+OP2_INC		= -I$(OP2_INSTALL_PATH)/c/include
+OP2_LIB		= -L$(OP2_INSTALL_PATH)/c/lib
 
 CUDA_INC	= -I$(CUDA_INSTALL_PATH)/include
 CUDA_LIB	= -L$(CUDA_INSTALL_PATH)/lib64
@@ -32,7 +32,7 @@ ifeq ($(OP2_COMPILER),intel)
   CCFLAGS	= -O3 -xAVX -DMPICH_IGNORE_CXX_SEEK -restrict -fno-alias -inline-forceinline -qopt-report=5 -parallel -DVECTORIZE #-parallel #-DCOMM_PERF #-DDEBUG #-vec-report
 #  CCFLAGS	= -O3 -xAVX -DMPICH_IGNORE_CXX_SEEK -fno-alias -inline-forceinline -qopt-report -parallel -prec-div -DVECTORIZE #-parallel #-DCOMM_PERF #-DDEBUG #-vec-report
   CPPFLAGS 	= $(CCFLAGS)
-  OMPFLAGS	= -openmp -openmp-report2
+  OMPFLAGS	= -qopenmp
   MPICPP	= $(MPI_INSTALL_PATH)/bin/mpiicpc
   NVCCFLAGS	= -ccbin=$(MPICPP)
   MPIFLAGS	= $(CPPFLAGS)
@@ -117,12 +117,12 @@ HDF5_LIB = -L$(HDF5_INSTALL_PATH)/lib -lhdf5 -lz
 #
 # master to make all versions
 #
-ALL_TARGETS = clean airfoil_seq airfoil_openmp_classical airfoil_mpi airfoil_mpi_openmp_classical convert_mesh
+ALL_TARGETS = clean airfoil_seq airfoil_openmp_classical airfoil_mpi airfoil_mpi_openmp_classical
 ifeq ($(OP2_COMPILER),pgi)
 	ALL_TARGETS += airfoil_openacc airfoil_mpi_openacc
 endif
 ifeq ($(OP2_COMPILER),intel)
-	ALL_TARGETS += airfoil_mpi_vec
+	ALL_TARGETS += #airfoil_mpi_vec
 endif
 
 all: $(ALL_TARGETS)
@@ -151,15 +151,8 @@ airfoil_mpi_openmp_classical: airfoil.cpp save_soln.h adt_calc.h res_calc.h bres
 
 
 #
-# convert ASCI new_gird.dat to HDF5 new_grid.h5
-#
-
-convert_mesh: convert_mesh.cpp
-	$(MPICPP) $(MPIFLAGS) convert_mesh.cpp $(OP2_INC) $(PARMETIS_INC) $(PTSCOTCH_INC) $(HDF5_INC) \
-
-#
 # cleanup
 #
 
 clean:
-		rm -f airfoil_seq airfoil_openmp_classical airfoil_mpi airfoil_mpi_openmp_classical convert_mesh *.o *.optrpt
+		rm -f airfoil_seq airfoil_openmp_classical airfoil_mpi airfoil_mpi_openmp_classical *.o *.optrpt
