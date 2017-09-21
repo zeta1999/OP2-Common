@@ -278,7 +278,7 @@ op_map op_decl_map_hdf5(op_set from, op_set to, int dim, char const *file,
 
   int map_dim = dset_props.dim;
   if (map_dim != dim) {
-    printf("map.dim %d in file %s and dim %d do not match\n", map_dim, file,
+    printf("%s map.dim %d in file %s and dim %d do not match\n", name, map_dim, file,
            dim);
     return NULL;
   }
@@ -508,20 +508,31 @@ void op_dump_to_hdf5(char const *file_name) {
     dimsf[1] = map->dim;
     dataspace = H5Screate_simple(2, dimsf, NULL);
 
+#ifdef OP2_HDF5_DEFLATE
+    hid_t plist_id  = H5Pcreate (H5P_DATASET_CREATE);
+    hsize_t cdims[2];
+    cdims[0] = g_size/10 == 0 ? g_size : g_size/10;
+    cdims[1] = map->dim;
+    herr_t status = H5Pset_chunk (plist_id, 2, cdims);
+    status = H5Pset_deflate (plist_id, 9);
+#else
+    hid_t plist_id = H5P_DEFAULT;
+#endif
+
     // Create the dataset with default properties and write data
     if (sizeof(map->map[0]) == sizeof(int)) {
       dset_id = H5Dcreate(file_id, map->name, H5T_NATIVE_INT, dataspace,
-                          H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+                          H5P_DEFAULT, plist_id, H5P_DEFAULT);
       H5Dwrite(dset_id, H5T_NATIVE_INT, H5S_ALL, dataspace, H5P_DEFAULT,
                map->map);
     } else if (sizeof(map->map[0]) == sizeof(long)) {
       dset_id = H5Dcreate(file_id, map->name, H5T_NATIVE_LONG, dataspace,
-                          H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+                          H5P_DEFAULT, plist_id, H5P_DEFAULT);
       H5Dwrite(dset_id, H5T_NATIVE_LONG, H5S_ALL, dataspace, H5P_DEFAULT,
                map->map);
     } else if (sizeof(map->map[0]) == sizeof(long long)) {
       dset_id = H5Dcreate(file_id, map->name, H5T_NATIVE_LLONG, dataspace,
-                          H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+                          H5P_DEFAULT, plist_id, H5P_DEFAULT);
       H5Dwrite(dset_id, H5T_NATIVE_LLONG, H5S_ALL, dataspace, H5P_DEFAULT,
                map->map);
     } else {
@@ -531,6 +542,9 @@ void op_dump_to_hdf5(char const *file_name) {
 
     H5Sclose(dataspace);
     H5Dclose(dset_id);
+#ifdef OP2_HDF5_DEFLATE
+    H5Pclose(plist_id);
+#endif
 
     /*attach attributes to map*/
 
@@ -596,13 +610,25 @@ void op_dump_to_hdf5(char const *file_name) {
     dimsf[1] = dat->dim;
     dataspace = H5Screate_simple(2, dimsf, NULL);
 
+#ifdef OP2_HDF5_DEFLATE
+    hid_t plist_id  = H5Pcreate (H5P_DATASET_CREATE);
+    hsize_t cdims[2];
+    cdims[0] = g_size/10 == 0 ? g_size : g_size/10;
+    cdims[1] = dat->dim;
+    herr_t status = H5Pset_chunk (plist_id, 2, cdims);
+    status = H5Pset_deflate (plist_id, 9);
+#else
+    hid_t plist_id = H5P_DEFAULT;
+#endif
+
+
     // Create the dataset with default properties and write data
     if (strcmp(dat->type, "double") == 0 ||
         strcmp(dat->type, "double:soa") == 0 ||
         strcmp(dat->type, "double precision") == 0 ||
         strcmp(dat->type, "real(8)") == 0) {
       dset_id = H5Dcreate(file_id, dat->name, H5T_NATIVE_DOUBLE, dataspace,
-                          H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+                          H5P_DEFAULT, plist_id, H5P_DEFAULT);
       H5Dwrite(dset_id, H5T_NATIVE_DOUBLE, H5S_ALL, dataspace, H5P_DEFAULT,
                dat->data);
     } else if (strcmp(dat->type, "float") == 0 ||
@@ -610,7 +636,7 @@ void op_dump_to_hdf5(char const *file_name) {
                strcmp(dat->type, "real(4)") == 0 ||
                strcmp(dat->type, "real") == 0) {
       dset_id = H5Dcreate(file_id, dat->name, H5T_NATIVE_FLOAT, dataspace,
-                          H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+                          H5P_DEFAULT, plist_id, H5P_DEFAULT);
       H5Dwrite(dset_id, H5T_NATIVE_FLOAT, H5S_ALL, dataspace, H5P_DEFAULT,
                dat->data);
     } else if (strcmp(dat->type, "int") == 0 ||
@@ -619,19 +645,19 @@ void op_dump_to_hdf5(char const *file_name) {
                strcmp(dat->type, "integer") == 0 ||
                strcmp(dat->type, "integer(4)") == 0) {
       dset_id = H5Dcreate(file_id, dat->name, H5T_NATIVE_INT, dataspace,
-                          H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+                          H5P_DEFAULT, plist_id, H5P_DEFAULT);
       H5Dwrite(dset_id, H5T_NATIVE_INT, H5S_ALL, dataspace, H5P_DEFAULT,
                dat->data);
     } else if ((strcmp(dat->type, "long") == 0) ||
                (strcmp(dat->type, "long:soa") == 0)) {
       dset_id = H5Dcreate(file_id, dat->name, H5T_NATIVE_LONG, dataspace,
-                          H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+                          H5P_DEFAULT, plist_id, H5P_DEFAULT);
       H5Dwrite(dset_id, H5T_NATIVE_LONG, H5S_ALL, dataspace, H5P_DEFAULT,
                dat->data);
     } else if ((strcmp(dat->type, "long long") == 0) ||
                (strcmp(dat->type, "long long:soa") == 0)) {
       dset_id = H5Dcreate(file_id, dat->name, H5T_NATIVE_LLONG, dataspace,
-                          H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+                          H5P_DEFAULT, plist_id, H5P_DEFAULT);
       H5Dwrite(dset_id, H5T_NATIVE_LLONG, H5S_ALL, dataspace, H5P_DEFAULT,
                dat->data);
     } else {
@@ -641,6 +667,9 @@ void op_dump_to_hdf5(char const *file_name) {
 
     H5Sclose(dataspace);
     H5Dclose(dset_id);
+#ifdef OP2_HDF5_DEFLATE
+    H5Pclose(plist_id);
+#endif
 
     /*attach attributes to dat*/
 
