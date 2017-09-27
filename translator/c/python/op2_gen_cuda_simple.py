@@ -439,7 +439,6 @@ def op2_gen_cuda_simple(master, date, consts, kernels,sets):
             ENDFOR()
         elif maps[g_m]==OP_MAP and accs[g_m]==OP_INC:
           code('TYP ARG_l[DIM];')
-
       for m in range (1,ninds+1):
         g_m = m -1
         v = [int(inds[i]==m) for i in range(len(inds))]
