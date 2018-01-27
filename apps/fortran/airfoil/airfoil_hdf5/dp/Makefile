@@ -260,8 +260,8 @@ clean:
 	rm -f *~
 	rm -f airfoil_hdf5_seq
 	rm -f airfoil_hdf5_mpi
-	rm -f airfoil_hdf5_openacc
+	rm -f airfoil_hdf5_openacc airfoil_hdf5_mpi_openacc
 	rm -f airfoil_hdf5_openmp airfoil_hdf5_mpi_openmp airfoil_hdf5_openmp_* airfoil_hdf5_mpi_openmp_*
 	rm -f airfoil_hdf5_mpi_genseq
-	rm -f airfoil_hdf5_mpi_vec
+	rm -f airfoil_hdf5_mpi_vec airfoil_hdf5_vec
 	rm -f airfoil_hdf5_cuda airfoil_hdf5_mpi_cuda
