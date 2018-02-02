@@ -1,6 +1,6 @@
 ##########################################################################
 #
-# OpenMP code generator
+# MPI Sequential code generator
 #
 # This routine is called by op2 which parses the input files
 #
@@ -10,9 +10,7 @@
 ##########################################################################
 
 import re
-import glob
 import datetime
-import op2_gen_common
 import os
 
 def comm(line):
@@ -47,7 +45,6 @@ def code(text):
   else:
     prefix = ' '*depth
   file_text += prefix+rep(text,g_m).rstrip()+'\n'
-
 
 def FOR(i,start,finish):
   global file_text, FORTRAN, CPP, g_m
@@ -85,7 +82,8 @@ def ENDIF():
   elif CPP:
     code('}')
 
-def op2_gen_openacc(master, date, consts, kernels):
+
+def op2_gen_seq(master, date, consts, kernels):
 
   global dims, idxs, typs, indtyps, inddims
   global FORTRAN, CPP, g_m, file_text, depth
@@ -124,6 +122,7 @@ def op2_gen_openacc(master, date, consts, kernels):
     indaccs = kernels[nk]['indaccs']
     indtyps = kernels[nk]['indtyps']
     invinds = kernels[nk]['invinds']
+
     mapnames = kernels[nk]['mapnames']
     invmapinds = kernels[nk]['invmapinds']
     mapinds = kernels[nk]['mapinds']
@@ -131,7 +130,6 @@ def op2_gen_openacc(master, date, consts, kernels):
     nmaps = 0
     if ninds > 0:
       nmaps = max(mapinds)+1
-    nargs_novec = nargs
 
     vec =  [m for m in range(0,nargs) if int(idxs[m])<0 and maps[m] == OP_MAP]
     if len(vec) > 0:
@@ -214,6 +212,7 @@ def op2_gen_openacc(master, date, consts, kernels):
       vectorised = [0]*nargs
       unique_args = range(1,nargs+1)
 
+
     cumulative_indirect_index = [-1]*nargs;
     j = 0;
     for i in range (0,nargs):
@@ -223,17 +222,17 @@ def op2_gen_openacc(master, date, consts, kernels):
 #
 # set two logicals
 #
-    j = -1
+    j = 0
     for i in range(0,nargs):
       if maps[i] == OP_MAP and accs[i] == OP_INC:
         j = i
-    ind_inc = j >= 0
+    ind_inc = j > 0
 
-    j = -1
+    j = 0
     for i in range(0,nargs):
-      if maps[i] == OP_GBL and accs[i] <> OP_READ and accs[i] <> OP_WRITE:
+      if maps[i] == OP_GBL and accs[i] <> OP_READ:
         j = i
-    reduct = j >= 0
+    reduct = j > 0
 
 ##########################################################################
 #  start with the user kernel function
@@ -247,76 +246,10 @@ def op2_gen_openacc(master, date, consts, kernels):
 
     comm('user function')
 
-    #strides for SoA
-    if any_soa:
-      if nmaps > 0:
-        k = []
-        for g_m in range(0,nargs):
-          if maps[g_m] == OP_MAP and (not mapnames[g_m] in k):
-            k = k + [mapnames[g_m]]
-            code('int opDat'+str(invinds[inds[g_m]-1])+'_'+name+'_stride_OP2CONSTANT;')
-            code('int opDat'+str(invinds[inds[g_m]-1])+'_'+name+'_stride_OP2HOST=-1;')
-      dir_soa = -1
-      for g_m in range(0,nargs):
-        if maps[g_m] == OP_ID and ((not dims[g_m].isdigit()) or int(dims[g_m]) > 1):
-          code('int direct_'+name+'_stride_OP2CONSTANT;')
-          code('int direct_'+name+'_stride_OP2HOST=-1;')
-          dir_soa = g_m
-          break
-
-    comm('user function')
-    file_name = decl_filepath
-
-    f = open(file_name, 'r')
-    kernel_text = f.read()
-    f.close()
-
-    kernel_text = op2_gen_common.comment_remover(kernel_text)
-    kernel_text = op2_gen_common.remove_trailing_w_space(kernel_text)
-
-    p = re.compile('void\\s+\\b'+name+'\\b')
-    i = p.search(kernel_text).start()
-
-    if(i < 0):
-      print "\n********"
-      print "Error: cannot locate user kernel function name: "+name+" - Aborting code generation"
-      exit(2)
-    i2 = i
-
-    #i = kernel_text[0:i].rfind('\n') #reverse find
-    j = kernel_text[i:].find('{')
-    k = op2_gen_common.para_parse(kernel_text, i+j, '{', '}')
-    signature_text = kernel_text[i:i+j]
-    l = signature_text[0:].find('(')
-    head_text = signature_text[0:l].strip() #save function name
-    m = op2_gen_common.para_parse(signature_text, 0, '(', ')')
-    signature_text = signature_text[l+1:m]
-    body_text = kernel_text[i+j+1:k]
-
-    # check for number of arguments
-    if len(signature_text.split(',')) != nargs_novec:
-        print 'Error parsing user kernel(%s): must have %d arguments' \
-              % name, nargs
-        return
-
-    for i in range(0,nargs_novec):
-        var = signature_text.split(',')[i].strip()
-        if kernels[nk]['soaflags'][i]:
-          var = var.replace('*','')
-          #locate var in body and replace by adding [idx]
-          length = len(re.compile('\\s+\\b').split(var))
-          var2 = re.compile('\\s+\\b').split(var)[length-1].strip()
-
-          if int(kernels[nk]['idxs'][i]) < 0 and kernels[nk]['maps'][i] == OP_MAP:
-            body_text = re.sub(r'\b'+var2+'(\[[^\]]\])\[([\\s\+\*A-Za-z0-9]*)\]'+'', var2+r'\1[(\2)*'+ \
-                    op2_gen_common.get_stride_string(unique_args[i]-1,maps,mapnames,name)+']', body_text)
-          else:
-            body_text = re.sub('\*\\b'+var2+'\\b\\s*(?!\[)', var2+'[0]', body_text)
-            body_text = re.sub(r'\b'+var2+'\[([\\s\+\*A-Za-z0-9]*)\]'+'', var2+r'[(\1)*'+ \
-                    op2_gen_common.get_stride_string(unique_args[i]-1,maps,mapnames,name)+']', body_text)
-
-    signature_text = '//#pragma acc routine\ninline ' + head_text + '( '+signature_text + ') {'
-    file_text += signature_text + body_text + '}\n'
+    if FORTRAN:
+      code('include '+name+'.inc')
+    elif CPP:
+      code('#include "../'+decl_filepath+'"')
 
 ##########################################################################
 # then C++ stub function
@@ -334,10 +267,6 @@ def op2_gen_openacc(master, date, consts, kernels):
         code('')
       else:
         code('op_arg ARG,')
-
-    for g_m in range (0,nargs):
-      if maps[g_m]==OP_GBL: #and accs[g_m] <> OP_READ:
-        code('TYP*ARGh = (TYP *)ARG.data;')
 
     code('int nargs = '+str(nargs)+';')
     code('op_arg args['+str(nargs)+'];')
@@ -371,34 +300,15 @@ def op2_gen_openacc(master, date, consts, kernels):
     code('double cpu_t1, cpu_t2, wall_t1, wall_t2;')
     code('op_timing_realloc('+str(nk)+');')
     code('op_timers_core(&cpu_t1, &wall_t1);')
-    code('OP_kernels[' +str(nk)+ '].name      = name;')
-    code('OP_kernels[' +str(nk)+ '].count    += 1;')
     code('')
 
 #
 #   indirect bits
 #
     if ninds>0:
-      code('int  ninds   = '+str(ninds)+';')
-      line = 'int  inds['+str(nargs)+'] = {'
-      for m in range(0,nargs):
-        line += str(inds[m]-1)+','
-      code(line[:-1]+'};')
-      code('')
-
       IF('OP_diags>2')
       code('printf(" kernel routine with indirection: '+name+'\\n");')
       ENDIF()
-
-      code('')
-      comm(' get plan')
-      code('#ifdef OP_PART_SIZE_'+ str(nk))
-      code('  int part_size = OP_PART_SIZE_'+str(nk)+';')
-      code('#else')
-      code('  int part_size = OP_part_size;')
-      code('#endif')
-      code('')
-      code('int set_size = op_mpi_halo_exchanges_cuda(set, nargs, args);')
 
 #
 # direct bit
@@ -408,112 +318,28 @@ def op2_gen_openacc(master, date, consts, kernels):
       IF('OP_diags>2')
       code('printf(" kernel routine w/o indirection:  '+ name + '");')
       ENDIF()
-      code('')
-      code('op_mpi_halo_exchanges_cuda(set, nargs, args);')
 
     code('')
-    for g_m in range(0,nargs):
-      if maps[g_m]==OP_GBL: #and accs[g_m]<>OP_READ:
-        if not dims[g_m].isdigit() or int(dims[g_m]) > 1:
-          print 'ERROR: OpenACC does not support multi-dimensional op_arg_gbl variables'
-          exit(-1)
-        code('TYP ARG_l = ARGh[0];')
+    code('int set_size = op_mpi_halo_exchanges(set, nargs, args);')
 
-    if ninds > 0:
-      code('')
-      code('int ncolors = 0;')
     code('')
     IF('set->size >0')
     code('')
-    #managing constants
-    if any_soa:
-      if nmaps > 0:
-        k = []
-        for g_m in range(0,nargs):
-          if maps[g_m] == OP_MAP and (not mapnames[g_m] in k):
-            k = k + [mapnames[g_m]]
-            IF('(OP_kernels[' +str(nk)+ '].count==1) || (opDat'+str(invinds[inds[g_m]-1])+'_'+name+'_stride_OP2HOST != getSetSizeFromOpArg(&arg'+str(g_m)+'))')
-            code('opDat'+str(invinds[inds[g_m]-1])+'_'+name+'_stride_OP2HOST = getSetSizeFromOpArg(&arg'+str(g_m)+');')
-            code('opDat'+str(invinds[inds[g_m]-1])+'_'+name+'_stride_OP2CONSTANT = opDat'+str(invinds[inds[g_m]-1])+'_'+name+'_stride_OP2HOST;')
-            ENDIF()
-      if dir_soa<>-1:
-          IF('(OP_kernels[' +str(nk)+ '].count==1) || (direct_'+name+'_stride_OP2HOST != getSetSizeFromOpArg(&arg'+str(dir_soa)+'))')
-          code('direct_'+name+'_stride_OP2HOST = getSetSizeFromOpArg(&arg'+str(dir_soa)+');')
-          code('direct_'+name+'_stride_OP2CONSTANT = direct_'+name+'_stride_OP2HOST;')
-          ENDIF()
-    code('')
-    comm('Set up typed device pointers for OpenACC')
-    if nmaps > 0:
-      k = []
-      for g_m in range(0,nargs):
-        if maps[g_m] == OP_MAP and (not invmapinds[inds[g_m]-1] in k):
-          k = k + [invmapinds[inds[g_m]-1]]
-          code('int *map'+str(mapinds[g_m])+' = arg'+str(invmapinds[inds[g_m]-1])+'.map_data_d;')
-
-    code('')
-    for g_m in range(0,nargs):
-      if maps[g_m] == OP_ID:
-        code(typs[g_m]+'* data'+str(g_m)+' = ('+typs[g_m]+'*)arg'+str(g_m)+'.data_d;')
-
-    for m in range(1,ninds+1):
-      g_m = invinds[m-1]
-      code('TYP *data'+str(g_m)+' = (TYP *)ARG.data_d;')
 
 #
 # kernel call for indirect version
 #
     if ninds>0:
-      code('')
-      code('op_plan *Plan = op_plan_get_stage(name,set,part_size,nargs,args,ninds,inds,OP_COLOR2);')
-      code('ncolors = Plan->ncolors;')
-      code('int *col_reord = Plan->col_reord;')
-      code('int set_size1 = set->size + set->exec_size;')
-      code('')
-      comm(' execute plan')
-      FOR('col','0','Plan->ncolors')
-      IF('col==1')
-      code('op_mpi_wait_all_cuda(nargs, args);')
+      FOR('n','0','set_size')
+      IF('n==set->core_size')
+      code('op_mpi_wait_all(nargs, args);')
       ENDIF()
-      code('int start = Plan->col_offsets[0][col];')
-      code('int end = Plan->col_offsets[0][col+1];')
-      code('')
-#      code('#pragma omp parallel for')
-      line = '#pragma acc parallel loop independent deviceptr(col_reord,'
-      if nmaps > 0:
-        k = []
-        for g_m in range(0,nargs):
-          if maps[g_m] == OP_MAP and (not invmapinds[inds[g_m]-1] in k):
-            k = k + [invmapinds[inds[g_m]-1]]
-            line = line + 'map'+str(mapinds[g_m])+','
-
-      for g_m in range(0,nargs):
-        if maps[g_m] == OP_ID:
-          line = line+'data'+str(g_m)+','
-      for m in range(1,ninds+1):
-        g_m = invinds[m-1]
-        line = line + 'data'+str(g_m)+','
-      line = line[:-1]+')'
-
-      if reduct:
-        for g_m in range(0,nargs):
-          if maps[g_m]==OP_GBL and accs[g_m]<>OP_READ and accs[g_m] <> OP_WRITE:
-            if accs[g_m] == OP_INC:
-              line = line + ' reduction(+:arg'+str(g_m)+'_l)'
-            if accs[g_m] == OP_MIN:
-              line = line + ' reduction(min:arg'+str(g_m)+'_l)'
-            if accs[g_m] == OP_MAX:
-              line = line + ' reduction(max:arg'+str(g_m)+'_l)'
-      code(line)
-      FOR('e','start','end')
-      code('int n = col_reord[e];')
       if nmaps > 0:
         k = []
         for g_m in range(0,nargs):
           if maps[g_m] == OP_MAP and (not mapinds[g_m] in k):
             k = k + [mapinds[g_m]]
-            code('int map'+str(mapinds[g_m])+'idx = map'+str(invmapinds[inds[g_m]-1])+\
-              '[n + set_size1 * '+str(idxs[g_m])+'];')
-
+            code('int map'+str(mapinds[g_m])+'idx = arg'+str(invmapinds[inds[g_m]-1])+'.map_data[n * arg'+str(invmapinds[inds[g_m]-1])+'.map->dim + '+str(idxs[g_m])+'];')
       code('')
       for g_m in range (0,nargs):
         u = [i for i in range(0,len(unique_args)) if unique_args[i]-1 == g_m]
@@ -529,32 +355,24 @@ def op2_gen_openacc(master, date, consts, kernels):
 
           indent = ' '*(depth+2)
           for k in range(0,sum(v)):
-            if soaflags[g_m]:
-              line = line + indent + ' &data'+str(first)+'[map'+str(mapinds[g_m+k])+'idx],\n'
-            else:
-              line = line + indent + ' &data'+str(first)+'[DIM * map'+str(mapinds[g_m+k])+'idx],\n'
+            line = line + indent + ' &((TYP*)arg'+str(first)+'.data)[DIM * map'+str(mapinds[g_m+k])+'idx],\n'
           line = line[:-2]+'};'
           code(line)
       code('')
+
       line = name+'('
       indent = '\n'+' '*(depth+2)
       for g_m in range(0,nargs):
         if maps[g_m] == OP_ID:
-          if soaflags[g_m]:
-            line = line + indent + '&data'+str(g_m)+'[n]'
-          else:
-            line = line + indent + '&data'+str(g_m)+'['+str(dims[g_m])+' * n]'
+          line = line + indent + '&(('+typs[g_m]+'*)arg'+str(g_m)+'.data)['+str(dims[g_m])+' * n]'
         if maps[g_m] == OP_MAP:
           if vectorised[g_m]:
             if g_m+1 in unique_args:
-              line = line + indent + 'arg'+str(g_m)+'_vec'
+                line = line + indent + 'arg'+str(g_m)+'_vec'
           else:
-            if soaflags[g_m]:
-              line = line + indent + '&data'+str(invinds[inds[g_m]-1])+'[map'+str(mapinds[g_m])+'idx]'
-            else:
-              line = line + indent + '&data'+str(invinds[inds[g_m]-1])+'['+str(dims[g_m])+' * map'+str(mapinds[g_m])+'idx]'
+            line = line + indent + '&(('+typs[g_m]+'*)arg'+str(invinds[inds[g_m]-1])+'.data)['+str(dims[g_m])+' * map'+str(mapinds[g_m])+'idx]'
         if maps[g_m] == OP_GBL:
-          line = line + indent +'&arg'+str(g_m)+'_l'
+          line = line + indent +'('+typs[g_m]+'*)arg'+str(g_m)+'.data'
         if g_m < nargs-1:
           if g_m+1 in unique_args and not g_m+1 == unique_args[-1]:
             line = line +','
@@ -562,57 +380,19 @@ def op2_gen_openacc(master, date, consts, kernels):
            line = line +');'
       code(line)
       ENDFOR()
-      code('')
-
-      if reduct:
-        comm(' combine reduction data')
-        IF('col == Plan->ncolors_owned-1')
-        for g_m in range(0,nargs):
-          if maps[g_m] == OP_GBL and accs[g_m] <> OP_READ:
-            if accs[g_m]==OP_INC or accs[g_m]==OP_WRITE:
-              code('ARGh[0] = ARG_l;')
-            elif accs[g_m]==OP_MIN:
-              code('ARGh[0]  = MIN(ARGh[0],ARG_l);')
-              ENDFOR()
-            elif  accs[g_m]==OP_MAX:
-              code('ARGh[0]  = MAX(ARGh[0],ARG_l);')
-            else:
-              error('internal error: invalid reduction option')
-            ENDFOR()
-        ENDIF()
-      ENDFOR()
 
 #
 # kernel call for direct version
 #
     else:
-      line = '#pragma acc parallel loop independent deviceptr('
-      for g_m in range(0,nargs):
-        if maps[g_m] == OP_ID:
-          line = line+'data'+str(g_m)+','
-      line = line[:-1]+')'
-
-      if reduct:
-        for g_m in range(0,nargs):
-          if maps[g_m]==OP_GBL and accs[g_m]<>OP_READ and accs[g_m]<>OP_WRITE:
-            if accs[g_m] == OP_INC:
-              line = line + ' reduction(+:arg'+str(g_m)+'_l)'
-            if accs[g_m] == OP_MIN:
-              line = line + ' reduction(min:arg'+str(g_m)+'_l)'
-            if accs[g_m] == OP_MAX:
-              line = line + ' reduction(max:arg'+str(g_m)+'_l)'
-      code(line)
-      FOR('n','0','set->size')
+      FOR('n','0','set_size')
       line = name+'('
       indent = '\n'+' '*(depth+2)
       for g_m in range(0,nargs):
         if maps[g_m] == OP_ID:
-          if soaflags[g_m]:
-            line = line + indent + '&data'+str(g_m)+'[n]'
-          else:
-            line = line + indent + '&data'+str(g_m)+'['+str(dims[g_m])+'*n]'
+          line = line + indent + '&(('+typs[g_m]+'*)arg'+str(g_m)+'.data)['+str(dims[g_m])+'*n]'
         if maps[g_m] == OP_GBL:
-          line = line + indent +'&arg'+str(g_m)+'_l'
+          line = line + indent +'('+typs[g_m]+'*)arg'+str(g_m)+'.data'
         if g_m < nargs-1:
           line = line +','
         else:
@@ -620,17 +400,13 @@ def op2_gen_openacc(master, date, consts, kernels):
       code(line)
       ENDFOR()
 
-    if ninds>0:
-      code('OP_kernels['+str(nk)+'].transfer  += Plan->transfer;')
-      code('OP_kernels['+str(nk)+'].transfer2 += Plan->transfer2;')
-
     ENDIF()
     code('')
 
     #zero set size issues
     if ninds>0:
-      IF('set_size == 0 || set_size == set->core_size || ncolors == 1')
-      code('op_mpi_wait_all_cuda(nargs, args);')
+      IF('set_size == 0 || set_size == set->core_size')
+      code('op_mpi_wait_all(nargs, args);')
       ENDIF()
 
 #
@@ -639,27 +415,18 @@ def op2_gen_openacc(master, date, consts, kernels):
     comm(' combine reduction data')
     for g_m in range(0,nargs):
       if maps[g_m]==OP_GBL and accs[g_m]<>OP_READ:
-        if ninds==0: #direct version only
-          if accs[g_m]==OP_INC or accs[g_m]==OP_WRITE:
-            code('ARGh[0] = ARG_l;')
-          elif accs[g_m]==OP_MIN:
-            code('ARGh[0]  = MIN(ARGh[0],ARG_l);')
-          elif accs[g_m]==OP_MAX:
-            code('ARGh[0]  = MAX(ARGh[0],ARG_l);')
-          else:
-            print 'internal error: invalid reduction option'
+#        code('op_mpi_reduce(&ARG,('+typs[g_m]+'*)ARG.data);')
         if typs[g_m] == 'double': #need for both direct and indirect
-          code('op_mpi_reduce_double(&ARG,ARGh);')
+          code('op_mpi_reduce_double(&ARG,('+typs[g_m]+'*)ARG.data);')
         elif typs[g_m] == 'float':
-          code('op_mpi_reduce_float(&ARG,ARGh);')
+          code('op_mpi_reduce_float(&ARG,('+typs[g_m]+'*)ARG.data);')
         elif typs[g_m] == 'int':
-          code('op_mpi_reduce_int(&ARG,ARGh);')
+          code('op_mpi_reduce_int(&ARG,('+typs[g_m]+'*)ARG.data);')
         else:
           print 'Type '+typs[g_m]+' not supported in OpenACC code generator, please add it'
           exit(-1)
 
-
-    code('op_mpi_set_dirtybit_cuda(nargs, args);')
+    code('op_mpi_set_dirtybit(nargs, args);')
     code('')
 
 #
@@ -668,6 +435,8 @@ def op2_gen_openacc(master, date, consts, kernels):
 
     comm(' update kernel record')
     code('op_timers_core(&cpu_t2, &wall_t2);')
+    code('OP_kernels[' +str(nk)+ '].name      = name;')
+    code('OP_kernels[' +str(nk)+ '].count    += 1;')
     code('OP_kernels[' +str(nk)+ '].time     += wall_t2 - wall_t1;')
 
     if ninds == 0:
@@ -675,10 +444,35 @@ def op2_gen_openacc(master, date, consts, kernels):
 
       for g_m in range (0,nargs):
         if maps[g_m]<>OP_GBL:
-          if accs[g_m]==OP_READ or accs[g_m]==OP_WRITE:
+          if accs[g_m]==OP_READ:
             code(line+' ARG.size;')
           else:
             code(line+' ARG.size * 2.0f;')
+    else:
+      names = []
+      for g_m in range(0,ninds):
+        mult=''
+        if indaccs[g_m] <> OP_WRITE and indaccs[g_m] <> OP_READ:
+          mult = ' * 2.0f'
+        if not var[invinds[g_m]] in names:
+          code('OP_kernels['+str(nk)+'].transfer += (float)set->size * arg'+str(invinds[g_m])+'.size'+mult+';')
+          names = names + [var[invinds[g_m]]]
+      for g_m in range(0,nargs):
+        mult=''
+        if accs[g_m] <> OP_WRITE and accs[g_m] <> OP_READ:
+          mult = ' * 2.0f'
+        if not var[g_m] in names:
+          names = names + [var[g_m]]
+          if maps[g_m] == OP_ID:
+            code('OP_kernels['+str(nk)+'].transfer += (float)set->size * arg'+str(g_m)+'.size'+mult+';')
+          elif maps[g_m] == OP_GBL:
+            code('OP_kernels['+str(nk)+'].transfer += (float)set->size * arg'+str(g_m)+'.size'+mult+';')
+      if nmaps > 0:
+        k = []
+        for g_m in range(0,nargs):
+          if maps[g_m] == OP_MAP and (not mapnames[g_m] in k):
+            k = k + [mapnames[g_m]]
+            code('OP_kernels['+str(nk)+'].transfer += (float)set->size * arg'+str(invinds[inds[g_m]-1])+'.map->dim * 4.0f;')
 
     depth -= 2
     code('}')
@@ -687,9 +481,9 @@ def op2_gen_openacc(master, date, consts, kernels):
 ##########################################################################
 #  output individual kernel file
 ##########################################################################
-    if not os.path.exists('openacc'):
-        os.makedirs('openacc')
-    fid = open('openacc/'+name+'_acckernel.c','w')
+    if not os.path.exists('seq'):
+        os.makedirs('seq')
+    fid = open('seq/'+name+'_seqkernel.cpp','w')
     date = datetime.datetime.now()
     fid.write('//\n// auto-generated by op2.py\n//\n\n')
     fid.write(file_text)
@@ -703,10 +497,10 @@ def op2_gen_openacc(master, date, consts, kernels):
 ##########################################################################
 
   file_text =''
-  comm(' header                 ')
   if os.path.exists('./user_types.h'):
     code('#include "../user_types.h"')
-  code('#include "op_lib_c.h"       ')
+  comm(' header                 ')
+  code('#include "op_lib_cpp.h"       ')
   code('')
   comm(' global constants       ')
 
@@ -721,19 +515,12 @@ def op2_gen_openacc(master, date, consts, kernels):
 
       code('extern '+consts[nc]['type'][1:-1]+' '+consts[nc]['name']+'['+num+'];')
 
-  code('void op_decl_const_char(int dim, char const *type,')
-  code('int size, char *dat, char const *name){}')
-
   comm(' user kernel files')
 
   for nk in range(0,len(kernels)):
-    code('#include "'+kernels[nk]['name']+'_acckernel.c"')
+    code('#include "'+kernels[nk]['name']+'_seqkernel.cpp"')
   master = master.split('.')[0]
-  fid = open('openacc/'+master.split('.')[0]+'_acckernels.c','w')
+  fid = open('seq/'+master.split('.')[0]+'_seqkernels.cpp','w')
   fid.write('//\n// auto-generated by op2.py\n//\n\n')
   fid.write(file_text)
   fid.close()
-
-
-
-

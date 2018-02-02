@@ -1,6 +1,6 @@
 ##########################################################################
 #
-# MPI Sequential code generator
+# OpenMP code generator
 #
 # This routine is called by op2 which parses the input files
 #
@@ -46,6 +46,7 @@ def code(text):
     prefix = ' '*depth
   file_text += prefix+rep(text,g_m).rstrip()+'\n'
 
+
 def FOR(i,start,finish):
   global file_text, FORTRAN, CPP, g_m
   global depth
@@ -83,7 +84,7 @@ def ENDIF():
     code('}')
 
 
-def op2_gen_seq(master, date, consts, kernels):
+def op2_gen_openmp_simple(master, date, consts, kernels):
 
   global dims, idxs, typs, indtyps, inddims
   global FORTRAN, CPP, g_m, file_text, depth
@@ -122,7 +123,6 @@ def op2_gen_seq(master, date, consts, kernels):
     indaccs = kernels[nk]['indaccs']
     indtyps = kernels[nk]['indtyps']
     invinds = kernels[nk]['invinds']
-
     mapnames = kernels[nk]['mapnames']
     invmapinds = kernels[nk]['invmapinds']
     mapinds = kernels[nk]['mapinds']
@@ -130,7 +130,7 @@ def op2_gen_seq(master, date, consts, kernels):
     nmaps = 0
     if ninds > 0:
       nmaps = max(mapinds)+1
-    
+
     vec =  [m for m in range(0,nargs) if int(idxs[m])<0 and maps[m] == OP_MAP]
     if len(vec) > 0:
       unique_args = [1];
@@ -211,8 +211,6 @@ def op2_gen_seq(master, date, consts, kernels):
     else:
       vectorised = [0]*nargs
       unique_args = range(1,nargs+1)
-
-
     cumulative_indirect_index = [-1]*nargs;
     j = 0;
     for i in range (0,nargs):
@@ -222,17 +220,17 @@ def op2_gen_seq(master, date, consts, kernels):
 #
 # set two logicals
 #
-    j = 0
+    j = -1
     for i in range(0,nargs):
       if maps[i] == OP_MAP and accs[i] == OP_INC:
         j = i
-    ind_inc = j > 0
+    ind_inc = j >= 0
 
-    j = 0
+    j = -1
     for i in range(0,nargs):
-      if maps[i] == OP_GBL and accs[i] <> OP_READ:
+      if maps[i] == OP_GBL and accs[i] <> OP_READ and accs[i] <> OP_WRITE:
         j = i
-    reduct = j > 0
+    reduct = j >= 0
 
 ##########################################################################
 #  start with the user kernel function
@@ -267,6 +265,10 @@ def op2_gen_seq(master, date, consts, kernels):
         code('')
       else:
         code('op_arg ARG,')
+
+    for g_m in range (0,nargs):
+      if maps[g_m]==OP_GBL and accs[g_m] <> OP_READ:
+        code('TYP*ARGh = (TYP *)ARG.data;')
 
     code('int nargs = '+str(nargs)+';')
     code('op_arg args['+str(nargs)+'];')
@@ -306,9 +308,26 @@ def op2_gen_seq(master, date, consts, kernels):
 #   indirect bits
 #
     if ninds>0:
+      code('int  ninds   = '+str(ninds)+';')
+      line = 'int  inds['+str(nargs)+'] = {'
+      for m in range(0,nargs):
+        line += str(inds[m]-1)+','
+      code(line[:-1]+'};')
+      code('')
+
       IF('OP_diags>2')
       code('printf(" kernel routine with indirection: '+name+'\\n");')
       ENDIF()
+
+      code('')
+      comm(' get plan')
+      code('#ifdef OP_PART_SIZE_'+ str(nk))
+      code('  int part_size = OP_PART_SIZE_'+str(nk)+';')
+      code('#else')
+      code('  int part_size = OP_part_size;')
+      code('#endif')
+      code('')
+      code('int set_size = op_mpi_halo_exchanges(set, nargs, args);')
 
 #
 # direct bit
@@ -318,9 +337,37 @@ def op2_gen_seq(master, date, consts, kernels):
       IF('OP_diags>2')
       code('printf(" kernel routine w/o indirection:  '+ name + '");')
       ENDIF()
+      code('')
+      code('op_mpi_halo_exchanges(set, nargs, args);')
 
-    code('')
-    code('int set_size = op_mpi_halo_exchanges(set, nargs, args);')
+#
+# set number of threads in x86 execution and create arrays for reduction
+#
+
+    if reduct or ninds==0:
+      comm(' set number of threads')
+      code('#ifdef _OPENMP')
+      code('  int nthreads = omp_get_max_threads();')
+      code('#else')
+      code('  int nthreads = 1;')
+      code('#endif')
+
+    if reduct:
+      code('')
+      comm(' allocate and initialise arrays for global reduction')
+      for g_m in range(0,nargs):
+        if maps[g_m]==OP_GBL and accs[g_m]<>OP_READ and accs[g_m] <> OP_WRITE:
+          code('TYP ARG_l[nthreads*64];')
+          FOR('thr','0','nthreads')
+          if accs[g_m]==OP_INC:
+            FOR('d','0','DIM')
+            code('ARG_l[d+thr*64]=ZERO_TYP;')
+            ENDFOR()
+          else:
+            FOR('d','0','DIM')
+            code('ARG_l[d+thr*64]=ARGh[d];')
+            ENDFOR()
+          ENDFOR()
 
     code('')
     IF('set->size >0')
@@ -330,16 +377,29 @@ def op2_gen_seq(master, date, consts, kernels):
 # kernel call for indirect version
 #
     if ninds>0:
-      FOR('n','0','set_size')
-      IF('n==set->core_size')
+      code('op_plan *Plan = op_plan_get_stage_upload(name,set,part_size,nargs,args,ninds,inds,OP_STAGE_ALL,0);')
+      code('')
+      comm(' execute plan')
+      code('int block_offset = 0;')
+      FOR('col','0','Plan->ncolors')
+      IF('col==Plan->ncolors_core')
       code('op_mpi_wait_all(nargs, args);')
       ENDIF()
+      code('int nblocks = Plan->ncolblk[col];')
+      code('')
+      code('#pragma omp parallel for')
+      FOR('blockIdx','0','nblocks')
+      code('int blockId  = Plan->blkmap[blockIdx + block_offset];')
+      code('int nelem    = Plan->nelems[blockId];')
+      code('int offset_b = Plan->offset[blockId];')
+      FOR('n','offset_b','offset_b+nelem')
       if nmaps > 0:
         k = []
         for g_m in range(0,nargs):
           if maps[g_m] == OP_MAP and (not mapinds[g_m] in k):
             k = k + [mapinds[g_m]]
-            code('int map'+str(mapinds[g_m])+'idx = arg'+str(invmapinds[inds[g_m]-1])+'.map_data[n * arg'+str(invmapinds[inds[g_m]-1])+'.map->dim + '+str(idxs[g_m])+'];')
+            code('int map'+str(mapinds[g_m])+'idx = arg'+str(invmapinds[inds[g_m]-1])+\
+              '.map_data[n * arg'+str(invmapinds[inds[g_m]-1])+'.map->dim + '+str(idxs[g_m])+'];')
       code('')
       for g_m in range (0,nargs):
         u = [i for i in range(0,len(unique_args)) if unique_args[i]-1 == g_m]
@@ -352,53 +412,95 @@ def op2_gen_seq(master, date, consts, kernels):
           v = [int(vectorised[i] == vectorised[g_m]) for i in range(0,len(vectorised))]
           first = [i for i in range(0,len(v)) if v[i] == 1]
           first = first[0]
-        
+
           indent = ' '*(depth+2)
           for k in range(0,sum(v)):
             line = line + indent + ' &((TYP*)arg'+str(first)+'.data)[DIM * map'+str(mapinds[g_m+k])+'idx],\n'
           line = line[:-2]+'};'
           code(line)
       code('')
-
       line = name+'('
       indent = '\n'+' '*(depth+2)
       for g_m in range(0,nargs):
         if maps[g_m] == OP_ID:
           line = line + indent + '&(('+typs[g_m]+'*)arg'+str(g_m)+'.data)['+str(dims[g_m])+' * n]'
-        if maps[g_m] == OP_MAP: 
+        if maps[g_m] == OP_MAP:
           if vectorised[g_m]:
             if g_m+1 in unique_args:
                 line = line + indent + 'arg'+str(g_m)+'_vec'
           else:
             line = line + indent + '&(('+typs[g_m]+'*)arg'+str(invinds[inds[g_m]-1])+'.data)['+str(dims[g_m])+' * map'+str(mapinds[g_m])+'idx]'
         if maps[g_m] == OP_GBL:
-          line = line + indent +'('+typs[g_m]+'*)arg'+str(g_m)+'.data'
-        if g_m < nargs-1: 
+          if accs[g_m] <> OP_READ and accs[g_m] <> OP_WRITE:
+            line = line + indent +'&arg'+str(g_m)+'_l[64*omp_get_thread_num()]'
+          else:
+            line = line + indent +'('+typs[g_m]+'*)arg'+str(g_m)+'.data'
+        if g_m < nargs-1:
           if g_m+1 in unique_args and not g_m+1 == unique_args[-1]:
             line = line +','
         else:
            line = line +');'
       code(line)
       ENDFOR()
+      ENDFOR()
+      code('')
+
+      if reduct:
+        comm(' combine reduction data')
+        IF('col == Plan->ncolors_owned-1')
+        for m in range(0,nargs):
+          if maps[m] == OP_GBL and accs[m] <> OP_READ:
+            FOR('thr','0','nthreads')
+            if accs[m]==OP_INC:
+              FOR('d','0','DIM')
+              code('ARGh[d] += ARG_l[d+thr*64];')
+              ENDFOR()
+            elif accs[m]==OP_MIN:
+              FOR('d','0','DIM')
+              code('ARGh[d]  = MIN(ARGh[d],ARG_l[d+thr*64]);')
+              ENDFOR()
+            elif  accs(m)==OP_MAX:
+              FOR('d','0','DIM')
+              code('ARGh[d]  = MAX(ARGh[d],ARG_l[d+thr*64]);')
+              ENDFOR()
+            else:
+              error('internal error: invalid reduction option')
+            ENDFOR()
+        ENDIF()
+      code('block_offset += nblocks;');
+      ENDIF()
 
 #
 # kernel call for direct version
 #
     else:
-      FOR('n','0','set_size')
+      comm(' execute plan')
+      code('#pragma omp parallel for')
+      FOR('thr','0','nthreads')
+      code('int start  = (set->size* thr)/nthreads;')
+      code('int finish = (set->size*(thr+1))/nthreads;')
+      FOR('n','start','finish')
       line = name+'('
       indent = '\n'+' '*(depth+2)
       for g_m in range(0,nargs):
         if maps[g_m] == OP_ID:
           line = line + indent + '&(('+typs[g_m]+'*)arg'+str(g_m)+'.data)['+str(dims[g_m])+'*n]'
         if maps[g_m] == OP_GBL:
-          line = line + indent +'('+typs[g_m]+'*)arg'+str(g_m)+'.data'
+          if accs[g_m] <> OP_READ and accs[g_m] <> OP_WRITE:
+            line = line + indent +'&arg'+str(g_m)+'_l[64*omp_get_thread_num()]'
+          else:
+            line = line + indent +'('+typs[g_m]+'*)arg'+str(g_m)+'.data'
         if g_m < nargs-1:
           line = line +','
         else:
            line = line +');'
       code(line)
       ENDFOR()
+      ENDFOR()
+
+    if ninds>0:
+      code('OP_kernels['+str(nk)+'].transfer  += Plan->transfer;')
+      code('OP_kernels['+str(nk)+'].transfer2 += Plan->transfer2;')
 
     ENDIF()
     code('')
@@ -410,21 +512,29 @@ def op2_gen_seq(master, date, consts, kernels):
       ENDIF()
 
 #
-# combine reduction data from multiple OpenMP threads
+# combine reduction data from multiple OpenMP threads, direct version
 #
     comm(' combine reduction data')
     for g_m in range(0,nargs):
-      if maps[g_m]==OP_GBL and accs[g_m]<>OP_READ:
-#        code('op_mpi_reduce(&ARG,('+typs[g_m]+'*)ARG.data);')
-        if typs[g_m] == 'double': #need for both direct and indirect
-          code('op_mpi_reduce_double(&ARG,('+typs[g_m]+'*)ARG.data);')
-        elif typs[g_m] == 'float':
-          code('op_mpi_reduce_float(&ARG,('+typs[g_m]+'*)ARG.data);')
-        elif typs[g_m] == 'int':
-          code('op_mpi_reduce_int(&ARG,('+typs[g_m]+'*)ARG.data);')
+      if maps[g_m]==OP_GBL and accs[g_m]<>OP_READ and accs[g_m] <> OP_WRITE and ninds==0:
+        FOR('thr','0','nthreads')
+        if accs[g_m]==OP_INC:
+          FOR('d','0','DIM')
+          code('ARGh[d] += ARG_l[d+thr*64];')
+          ENDFOR()
+        elif accs[g_m]==OP_MIN:
+          FOR('d','0','DIM')
+          code('ARGh[d]  = MIN(ARGh[d],ARG_l[d+thr*64]);')
+          ENDFOR()
+        elif accs[g_m]==OP_MAX:
+          FOR('d','0','DIM')
+          code('ARGh[d]  = MAX(ARGh[d],ARG_l[d+thr*64]);')
+          ENDFOR()
         else:
-          print 'Type '+typs[g_m]+' not supported in OpenACC code generator, please add it'
-          exit(-1)
+          print 'internal error: invalid reduction option'
+        ENDFOR()
+      if maps[g_m]==OP_GBL and accs[g_m]<>OP_READ:
+        code('op_mpi_reduce(&ARG,ARGh);')
 
     code('op_mpi_set_dirtybit(nargs, args);')
     code('')
@@ -444,35 +554,10 @@ def op2_gen_seq(master, date, consts, kernels):
 
       for g_m in range (0,nargs):
         if maps[g_m]<>OP_GBL:
-          if accs[g_m]==OP_READ:
+          if accs[g_m]==OP_READ or accs[g_m]==OP_WRITE:
             code(line+' ARG.size;')
           else:
             code(line+' ARG.size * 2.0f;')
-    else:
-      names = []
-      for g_m in range(0,ninds):
-        mult=''
-        if indaccs[g_m] <> OP_WRITE and indaccs[g_m] <> OP_READ:
-          mult = ' * 2.0f'
-        if not var[invinds[g_m]] in names:
-          code('OP_kernels['+str(nk)+'].transfer += (float)set->size * arg'+str(invinds[g_m])+'.size'+mult+';')
-          names = names + [var[invinds[g_m]]]
-      for g_m in range(0,nargs):
-        mult=''
-        if accs[g_m] <> OP_WRITE and accs[g_m] <> OP_READ:
-          mult = ' * 2.0f'
-        if not var[g_m] in names:
-          names = names + [var[g_m]]
-          if maps[g_m] == OP_ID:
-            code('OP_kernels['+str(nk)+'].transfer += (float)set->size * arg'+str(g_m)+'.size'+mult+';')
-          elif maps[g_m] == OP_GBL:
-            code('OP_kernels['+str(nk)+'].transfer += (float)set->size * arg'+str(g_m)+'.size'+mult+';')
-      if nmaps > 0:
-        k = []
-        for g_m in range(0,nargs):
-          if maps[g_m] == OP_MAP and (not mapnames[g_m] in k):
-            k = k + [mapnames[g_m]]
-            code('OP_kernels['+str(nk)+'].transfer += (float)set->size * arg'+str(invinds[inds[g_m]-1])+'.map->dim * 4.0f;')
 
     depth -= 2
     code('}')
@@ -481,9 +566,9 @@ def op2_gen_seq(master, date, consts, kernels):
 ##########################################################################
 #  output individual kernel file
 ##########################################################################
-    if not os.path.exists('seq'):
-        os.makedirs('seq')
-    fid = open('seq/'+name+'_seqkernel.cpp','w')
+    if not os.path.exists('openmp'):
+        os.makedirs('openmp')
+    fid = open('openmp/'+name+'_kernel.cpp','w')
     date = datetime.datetime.now()
     fid.write('//\n// auto-generated by op2.py\n//\n\n')
     fid.write(file_text)
@@ -497,9 +582,9 @@ def op2_gen_seq(master, date, consts, kernels):
 ##########################################################################
 
   file_text =''
+  comm(' header                 ')
   if os.path.exists('./user_types.h'):
     code('#include "../user_types.h"')
-  comm(' header                 ')
   code('#include "op_lib_cpp.h"       ')
   code('')
   comm(' global constants       ')
@@ -518,9 +603,9 @@ def op2_gen_seq(master, date, consts, kernels):
   comm(' user kernel files')
 
   for nk in range(0,len(kernels)):
-    code('#include "'+kernels[nk]['name']+'_seqkernel.cpp"')
+    code('#include "'+kernels[nk]['name']+'_kernel.cpp"')
   master = master.split('.')[0]
-  fid = open('seq/'+master.split('.')[0]+'_seqkernels.cpp','w')
+  fid = open('openmp/'+master.split('.')[0]+'_kernels.cpp','w')
   fid.write('//\n// auto-generated by op2.py\n//\n\n')
   fid.write(file_text)
   fid.close()
