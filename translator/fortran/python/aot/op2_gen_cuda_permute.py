@@ -899,7 +899,7 @@ def op2_gen_cuda_permute(master, date, consts, kernels, hydra, bookleaf):
       if maps[g_m] == OP_GBL:
         if accs[g_m] == OP_INC:
           if g_m in needDimList:
-            DO('i1','0',dims[g_m]) 
+            DO('i1','0',dims[g_m])
             code('scratchDevice'+str(g_m+1)+'(thrIdx+1+i1*(blockDim%x*gridDim%x)) = 0')
             ENDDO()
           else:
@@ -909,7 +909,7 @@ def op2_gen_cuda_permute(master, date, consts, kernels, hydra, bookleaf):
             code('opGblDat'+str(g_m+1)+'Device'+name+' = reductionArrayDevice'+str(g_m+1)+'(blockIdx%x - 1 + 1)')
           else:
             if g_m in needDimList:
-              DO('i1','0',dims[g_m]) 
+              DO('i1','0',dims[g_m])
               code('scratchDevice'+str(g_m+1)+'(thrIdx+1+i1*(blockDim%x*gridDim%x)) = reductionArrayDevice'+str(g_m+1)+'((blockIdx%x - 1)*('+dims[g_m]+') + 1+i1)')
               ENDDO()
             else:
@@ -1701,7 +1701,7 @@ def op2_gen_cuda_permute(master, date, consts, kernels, hydra, bookleaf):
           if inds_staged[g_m] > 0:
             code('CALL c_f_pointer(mappingArray('+str(g_m+1)+'),mappingArray'+str(g_m+1)+',(/set%setPtr%size/))')
         code('')
-      
+
       code('')
 
     for g_m in range(0,nargs):
@@ -1718,7 +1718,7 @@ def op2_gen_cuda_permute(master, date, consts, kernels, hydra, bookleaf):
 
     for idx in needDimList:
       dims[idx] = 'opArg'+str(idx+1)+'%dim'
-    
+
     #setup for reduction
     for g_m in range(0,nargs):
       if maps[g_m] == OP_GBL and (accs[g_m] == OP_INC or accs[g_m] == OP_MAX or accs[g_m] == OP_MIN):
@@ -1755,7 +1755,7 @@ def op2_gen_cuda_permute(master, date, consts, kernels, hydra, bookleaf):
         if maps[g_m] == OP_GBL and (accs[g_m] == OP_INC or accs[g_m] == OP_MAX or accs[g_m] == OP_MIN) and (g_m in needDimList):
           code('scratchDevice'+str(g_m+1)+'Size = opArg'+str(g_m+1)+'%dim*blocksPerGrid*threadsPerBlock')
           code('call c_f_pointer(opArgArray('+str(g_m+1)+')%data_d,scratchDevice'+str(g_m+1)+',(/scratchDevice'+str(g_m+1)+'Size/))')
-      
+
 
     #indirect loop host stub call
     if ninds > 0:
