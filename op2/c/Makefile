@@ -85,7 +85,7 @@ ifeq ($(OP2_COMPILER),clang)
 ifdef DEBUG
   CCFLAGS  := -g -O0 -I$(OMPTARGET_LIBS)/../tools/openmp/runtime/src/
 else
-  CCFLAGS  := -x c++ -O3 -I$(OMPTARGET_LIBS)/../tools/openmp/runtime/src/
+  CCFLAGS  := -x c++ -std=c++11 -O3 -I$(OMPTARGET_LIBS)/../tools/openmp/runtime/src/
 endif
   CXX	   := clang++
   CXXFLAGS := $(CCFLAGS)
