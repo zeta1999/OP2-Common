@@ -33,8 +33,6 @@ export OP2_FORT_CODEGEN_DIR=$PWD
 cd $OP2_INSTALL_PATH/c
 
 
-<<COMMENT
-
 
 echo " "
 echo " "
@@ -452,7 +450,6 @@ validate "$MPI_INSTALL_PATH/bin/mpirun -np 2 ./airfoil_hdf5_mpi_openacc OP_PART_
 ###################################################################################
 ###################################################################################
 
-COMMENT
 
 echo " "
 echo " "
