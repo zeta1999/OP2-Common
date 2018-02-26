@@ -381,6 +381,7 @@ def op2_gen_mpivec(master, date, consts, kernels, hydra, bookleaf):
       file_text += kernel_text
       code('')
 
+      code('#define SIMD_VEC 8')
       if not funcall_in_kernel:
         if 'VISCWALL' in name or 'IFLUX_EDGE' in name or 'BCSSETK' in name or 'BCSRESK' in name or 'JACOB_WALL_CORRECTIONS' in name:
           code('#define VDECTORIZE') #disable these
@@ -388,12 +389,12 @@ def op2_gen_mpivec(master, date, consts, kernels, hydra, bookleaf):
           code('#define VECTORIZE')
       else:
         print 'Function call in '+name+' prevents vectorisation - disabled for this kernel'
-      code('#define SIMD_VEC 8')
 #
 # Modified vectorisable version if its an indirect kernel
 # - direct kernels can be vectorised without modification
 #
       if indirect_kernel:
+        code('#ifdef VECTORIZE')
         comm('user function -- modified for vectorisation')
 
         p = re.compile('SUBROUTINE\\s+\\b'+name+'\\b',re.IGNORECASE)
