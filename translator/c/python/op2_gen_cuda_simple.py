@@ -943,7 +943,18 @@ def op2_gen_cuda_simple(master, date, consts, kernels,sets, macro_defs):
       if ninds>0:
         code('int maxblocks = 0;')
         FOR('col','0','Plan->ncolors')
-        code('maxblocks = MAX(maxblocks,Plan->ncolblk[col]);')
+        if op_color2:
+          code('#ifdef OP_BLOCK_SIZE_'+str(nk))
+          code('int nthread = OP_BLOCK_SIZE_'+str(nk)+';')
+          code('#else')
+          code('int nthread = OP_block_size;')
+          code('#endif')
+          code('int start = Plan->col_offsets[0][col];')
+          code('int end = Plan->col_offsets[0][col+1];')
+          code('int nblocks = (end - start - 1)/nthread + 1;')
+          code('maxblocks = MAX(maxblocks, nblocks);')
+        else:
+          code('maxblocks = MAX(maxblocks, Plan->ncolblk[col]);')
         ENDFOR()
       else:
         code('int maxblocks = nblocks;')
