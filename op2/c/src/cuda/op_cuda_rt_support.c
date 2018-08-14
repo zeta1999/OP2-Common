@@ -103,6 +103,7 @@ void op_mvHostToDevice(void **map, int size) {
 void op_cpHostToDevice(void **data_d, void **data_h, int size) {
   if (!OP_hybrid_gpu)
     return;
+  if (*data_d != NULL) cutilSafeCall(cudaFree(*data_d));
   cutilSafeCall(cudaMalloc(data_d, size));
   cutilSafeCall(cudaMemcpy(*data_d, *data_h, size, cudaMemcpyHostToDevice));
   cutilSafeCall(cudaDeviceSynchronize());
@@ -117,9 +118,16 @@ op_plan *op_plan_get(char const *name, op_set set, int part_size, int nargs,
 op_plan *op_plan_get_stage(char const *name, op_set set, int part_size,
                            int nargs, op_arg *args, int ninds, int *inds,
                            int staging) {
+  return op_plan_get_stage_upload(name, set, part_size, nargs, args, ninds, inds,
+                           staging, 1);
+}
+
+op_plan *op_plan_get_stage_upload(char const *name, op_set set, int part_size,
+                           int nargs, op_arg *args, int ninds, int *inds,
+                           int staging, int upload) {
   op_plan *plan =
       op_plan_core(name, set, part_size, nargs, args, ninds, inds, staging);
-  if (!OP_hybrid_gpu)
+  if (!OP_hybrid_gpu || !upload)
     return plan;
 
   int set_size = set->size;
@@ -236,6 +244,12 @@ void reallocReductArrays(int reduct_bytes) {
 void mvConstArraysToDevice(int consts_bytes) {
   cutilSafeCall(cudaMemcpy(OP_consts_d, OP_consts_h, consts_bytes,
                            cudaMemcpyHostToDevice));
+  cutilSafeCall(cudaDeviceSynchronize());
+}
+
+void mvConstArraysToHost(int consts_bytes) {
+  cutilSafeCall(cudaMemcpy(OP_consts_h, OP_consts_d, consts_bytes,
+                           cudaMemcpyDeviceToHost));
   cutilSafeCall(cudaDeviceSynchronize());
 }
 

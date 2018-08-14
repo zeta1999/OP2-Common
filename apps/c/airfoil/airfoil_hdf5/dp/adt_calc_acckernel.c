@@ -4,7 +4,7 @@
 
 //user function
 //user function
-#pragma acc routine
+//#pragma acc routine
 inline void adt_calc( const double *x1, const double *x2, const double *x3,
                      const double *x4, const double *q, double *adt) {
   double dx, dy, ri, u, v, c;
@@ -109,13 +109,8 @@ void op_par_loop_adt_calc(char const *name, op_set set,
         int map2idx = map0[n + set_size1 * 2];
         int map3idx = map0[n + set_size1 * 3];
 
-        adt_calc(
-          &data0[2 * map0idx],
-          &data0[2 * map1idx],
-          &data0[2 * map2idx],
-          &data0[2 * map3idx],
-          &data4[4 * n],
-          &data5[1 * n]);
+        adt_calc(&data0[2 * map0idx], &data0[2 * map1idx], &data0[2 * map2idx],
+                 &data0[2 * map3idx], &data4[4 * n], &data5[1 * n]);
       }
 
     }

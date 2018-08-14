@@ -32,18 +32,18 @@ ifeq ($(OP2_COMPILER),intel)
   CCFLAGS	= -O3 -xAVX -DMPICH_IGNORE_CXX_SEEK -restrict -fno-alias -inline-forceinline -qopt-report=5 -parallel -DVECTORIZE #-parallel #-DCOMM_PERF #-DDEBUG #-vec-report
 #  CCFLAGS	= -O3 -xAVX -DMPICH_IGNORE_CXX_SEEK -fno-alias -inline-forceinline -qopt-report -parallel -prec-div -DVECTORIZE #-parallel #-DCOMM_PERF #-DDEBUG #-vec-report
   CPPFLAGS 	= $(CCFLAGS)
-  OMPFLAGS	= -openmp 
+  OMPFLAGS	= -qopenmp 
   MPICPP	= $(MPI_INSTALL_PATH)/bin/mpicxx
   NVCCFLAGS	= #-ccbin=$(MPICPP)
   MPIFLAGS	= $(CPPFLAGS)
 else
 ifeq ($(OP2_COMPILER),xl)
   CPP		= xlc++
-  CCFLAGS	= -O3 -qarch=pwr8 -qtune=pwr8 -qhot
+  CCFLAGS	= -O3 -qarch=pwr8 -qtune=pwr8 -qhot -qxflag=nrcptpo -qinline=level=10 -Wx,-nvvm-compile-options=-ftz=1 -Wx,-nvvm-compile-options=-prec-div=0 -Wx,-nvvm-compile-options=-prec-sqrt=0
 #  CCFLAGS	= -O3 -xAVX -DMPICH_IGNORE_CXX_SEEK -fno-alias -inline-forceinline -qopt-report -parallel -prec-div -DVECTORIZE #-parallel #-DCOMM_PERF #-DDEBUG #-vec-report
   CPPFLAGS 	= $(CCFLAGS)
   OMPFLAGS	= -qsmp=omp -qthreaded
-  OMPOFFLOAD	= -qoffload
+  OMPOFFLOAD	= -qoffload -Xptxas -v -g1
   MPICPP	= $(MPI_INSTALL_PATH)/bin/mpicxx
   MPIFLAGS	= $(CPPFLAGS)
 else
@@ -56,7 +56,7 @@ ifeq ($(OP2_COMPILER),pgi)
   MPICPP   	= $(MPI_INSTALL_PATH)/bin/mpicxx
   MPIFLAGS 	= $(CPPFLAGS)
   NVCCFLAGS	= #-ccbin=$(MPICPP)
-  ACCFLAGS      = -acc -Minfo=acc -ta=tesla:cc35 -DOPENACC
+  ACCFLAGS      = -acc -Minfo=acc -ta=tesla:cc35,fastmath,lineinfo -DOPENACC -fast -Minfo=accel -Mcuda=ptxinfo
 else
 ifeq ($(OP2_COMPILER),cray)
   CPP           = CC
@@ -68,10 +68,10 @@ ifeq ($(OP2_COMPILER),cray)
 else
 ifeq ($(OP2_COMPILER),clang)
   CPP       	= clang++ 
-  CCFLAGS  	= -O3
+  CCFLAGS  	= -O3 -ffast-math
   CPPFLAGS 	= $(CCFLAGS)
-  OMPFLAGS 	= -I/home/ireguly/forge/clang_4/llvm/build/projects/openmp/runtime/src/ -fopenmp=libomp
-  OMPOFFLOAD 	= -fopenmp-targets=nvptx64-nvidia-cuda -fopenmp-nonaliased-maps -ffp-contract=fast -Xclang -target-feature -Xclang +ptx35
+  OMPFLAGS 	= -I$(OMPTARGET_LIBS)/../tools/openmp/runtime/src/ -fopenmp=libomp -Rpass-analysis
+  OMPOFFLOAD 	= -fopenmp-targets=nvptx64-nvidia-cuda -fopenmp-nonaliased-maps -ffp-contract=fast -Xcuda-ptxas -v #-Xclang -target-feature -Xclang +ptx35
   MPICC   	= $(MPI_INSTALL_PATH)/bin/mpicc
   MPICPP   	= $(MPI_INSTALL_PATH)/bin/mpicxx
   MPIFLAGS 	= $(CPPFLAGS)
@@ -106,7 +106,19 @@ endif
 endif
 endif
 
-NVCCFLAGS       := $(NVCCFLAGS) $(CODE_GEN_CUDA) -m64 -Xptxas -dlcm=cg -Xptxas=-v -use_fast_math -O3 #-g -G -O0
+ifdef MAX_REG_COUNT
+  REG_COUNT = --maxrregcount $(MAX_REG_COUNT)
+  PGI_REG_COUNT = -ta=nvidia,maxregcount:$(MAX_REG_COUNT)
+  ifeq ($(OP2_COMPILER),xl)
+    OMP4_REG_COUNT= -Xptxas -maxrregcount=$(MAX_REG_COUNT)
+  else
+  ifeq ($(OP2_COMPILER),clang)
+    OMP4_REG_COUNT= -Xcuda-ptxas --maxrregcount=$(MAX_REG_COUNT)
+  endif
+  endif
+endif
+
+NVCCFLAGS       := $(NVCCFLAGS) $(CODE_GEN_CUDA) -m64 -Xptxas=-v --use_fast_math -O3 $(REG_COUNT) -lineinfo  #-g -G -O0
 
 VAR		= #-DOP_PART_SIZE_1=160 -DOP_PART_SIZE_2=320 -DOP_PART_SIZE_3=64 #-DOP_BLOCK_SIZE_0=64 -DOP_BLOCK_SIZE_1=64 -DOP_BLOCK_SIZE_2=64 -DOP_BLOCK_SIZE_3=64 -DOP_BLOCK_SIZE_4=64
 
@@ -176,7 +188,7 @@ airfoil_openacc: airfoil_op.cpp airfoil_acckernels.c \
                 bres_calc_acckernel.c  \
                 update_acckernel.c   \
                 Makefile
-		$(MPICC) $(VAR) $(CPPFLAGS) $(ACCFLAGS) $(OMPFLAGS) $(OP2_INC) \
+		$(MPICC) $(VAR) $(CPPFLAGS) $(ACCFLAGS) $(OMPFLAGS) $(OP2_INC) $(PGI_REG_COUNT) \
                 airfoil_acckernels.c -c -o airfoil_acckernels.o
 		$(MPICPP) $(VAR) $(CPPFLAGS) $(ACCFLAGS) $(OMPFLAGS) $(OP2_INC) $(OP2_LIB) $(HDF5_INC) \
                 airfoil_op.cpp -lm airfoil_acckernels.o -lm $(CUDA_LIB) -lcudart -lop2_cuda -lop2_hdf5 $(HDF5_LIB) -o airfoil_openacc
@@ -200,6 +212,25 @@ airfoil_kernels_cu.o:	airfoil_kernels.cu      \
                 Makefile
 		nvcc  $(VAR) $(INC) $(NVCCFLAGS) $(OP2_INC) $(HDF5_INC) -I /home/gihan/openmpi-intel/include \
 		-c -o airfoil_kernels_cu.o airfoil_kernels.cu
+
+#
+#  CUDA with clang
+#
+
+airfoil_cuda_clang:     airfoil_op.cpp airfoil_kernels_cu_clang.o Makefile
+	$(MPICPP) $(VAR) $(CPPFLAGS) airfoil_op.cpp airfoil_kernels_cu_clang.o \
+        $(CUDA_INC) $(OP2_INC) $(HDF5_INC) \
+	$(OP2_LIB) $(CUDA_LIB) -lcudart -lop2_cuda -lop2_hdf5 $(HDF5_LIB) -o airfoil_cuda_clang
+
+airfoil_kernels_cu_clang.o:     airfoil_kernels.cu      \
+                save_soln_kernel.cu save_soln.h \
+                adt_calc_kernel.cu  adt_calc.h  \
+                res_calc_kernel.cu  res_calc.h  \
+                bres_calc_kernel.cu bres_calc.h \
+                update_kernel.cu    update.h    \
+                Makefile
+	clang++  $(VAR) $(INC) -m64 -O3 $(OP2_INC) $(HDF5_INC) -gline-tables-only -I /home/gihan/openmpi-intel/include \
+	-c -o airfoil_kernels_cu_clang.o airfoil_kernels.cu --cuda-gpu-arch=sm_35 -ffast-math $(OMP4_REG_COUNT) -Xcuda-ptxas -v
 
 #
 # mpi with sequential-nodes version
@@ -269,9 +300,9 @@ airfoil_openmp4: airfoil_op.cpp airfoil_omp4kernels.cpp airfoil_omp4kernel_funcs
 			bres_calc_omp4kernel_func.cpp  bres_calc.h bres_calc_omp4kernel.cpp \
 			update_omp4kernel_func.cpp     update.h    update_omp4kernel.cpp \
 			Makefile
-	$(CPP) $(VAR) $(CPPFLAGS) $(OMPFLAGS) $(OMPOFFLOAD) $(OP2_INC) $(OP2_LIB) $(HDF5_INC) $(HDF5_LIB) \
+	$(CPP) $(VAR) $(CPPFLAGS) $(OMPFLAGS) $(OMPOFFLOAD) $(OP2_INC) $(OP2_LIB) $(HDF5_INC) $(HDF5_LIB) $(OMP4_REG_COUNT)\
 		-c airfoil_omp4kernel_funcs.cpp  -o airfoil_omp4kernel_funcs.o
-	$(CPP) $(VAR) $(CPPFLAGS) $(OMPFLAGS) $(OP2_INC) $(OP2_LIB) $(HDF5_INC) $(HDF5_LIB) \
+	$(CPP) $(VAR) $(CPPFLAGS) $(OMPFLAGS) $(OP2_INC) $(OP2_LIB) $(HDF5_INC) $(HDF5_LIB) $(OMP4_REG_COUNT)\
 		-c airfoil_omp4kernels.cpp -o airfoil_omp4kernels.o
 	$(MPICPP) $(VAR) $(CPPFLAGS) $(OMPFLAGS) $(OMPOFFLOAD) $(OP2_INC) $(OP2_LIB) $(HDF5_INC)  \
 		airfoil_op.cpp airfoil_omp4kernels.o airfoil_omp4kernel_funcs.o -o airfoil_openmp4 \
@@ -334,7 +365,7 @@ airfoil_kernels_mpi_cu.o: airfoil_kernels.cu \
 #
 
 airfoil_mpi_cuda_hyb: airfoil_op.cpp airfoil_hybkernels.o Makefile
-		  $(MPICPP) $(MPIFLAGS) -DOP_HYBRID_GPU airfoil_op.cpp -lm airfoil_hybkernels.o airfoil_hybkernels2.o \
+		  $(MPICPP) $(MPIFLAGS) $(OMPFLAGS) -DOP_HYBRID_GPU airfoil_op.cpp -lm airfoil_hybkernels.o airfoil_hybkernels2.o \
 		  $(OP2_INC) $(PARMETIS_INC) $(PTSCOTCH_INC) $(HDF5_INC) \
 		  $(OP2_LIB) -lop2_mpi_cuda $(PARMETIS_LIB) $(PTSCOTCH_LIB) \
 		  $(HDF5_LIB) $(CUDA_LIB) -lcudart -o airfoil_mpi_cuda_hyb
@@ -346,8 +377,10 @@ airfoil_hybkernels.o: airfoil_hybkernels.cu \
                 Makefile
 		nvcc -DOP_HYBRID_GPU -DGPUPASS $(INC) $(NVCCFLAGS) $(OP2_INC) -I $(MPI_INSTALL_PATH)/include \
                 -c -o airfoil_hybkernels.o airfoil_hybkernels.cu
-		nvcc -DOP_HYBRID_GPU -Xcompiler="-fopenmp" $(INC) $(NVCCFLAGS) $(OP2_INC) -I $(MPI_INSTALL_PATH)/include \
-                -c -o airfoil_hybkernels2.o airfoil_hybkernels.cu
+		cat airfoil_hybkernels.cu > airfoil_hybkernels2.cpp
+		$(MPICPP) -DOP_HYBRID_GPU $(OMPFLAGS) $(INC) $(OP2_INC) -I $(MPI_INSTALL_PATH)/include \
+                -c -o airfoil_hybkernels2.o airfoil_hybkernels2.cpp
+		rm airfoil_hybkernels2.cpp
 #
 # convert ASCI new_gird.dat to HDF5 new_grid.h5
 #

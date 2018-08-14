@@ -101,6 +101,7 @@ SUBROUTINE op_wrap_adt_calc( &
     & opDat6Local(1,i1+1) &
     & )
   END DO
+  !$omp end target teams distribute parallel do
 
 END SUBROUTINE
 SUBROUTINE adt_calc_host( userSubroutine, set, &

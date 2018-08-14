@@ -66,10 +66,10 @@ typedef struct cudaDeviceProp cudaDeviceProp_t;
 // export lists on the device
 //
 
-int **export_exec_list_d;
-int **export_nonexec_list_d;
-int **export_nonexec_list_partial_d;
-int **import_nonexec_list_partial_d;
+int **export_exec_list_d = NULL;
+int **export_nonexec_list_d = NULL;
+int **export_nonexec_list_partial_d = NULL;
+int **import_nonexec_list_partial_d = NULL;
 
 void cutilDeviceInit(int argc, char **argv) {
   (void)argc;
@@ -667,7 +667,10 @@ void op_partition(const char *lib_name, const char *lib_routine,
   partition(lib_name, lib_routine, prime_set, prime_map, coords);
   if (!OP_hybrid_gpu)
     return;
+  op_move_to_device();
+}
 
+void op_move_to_device() {
   for (int s = 0; s < OP_set_index; s++) {
     op_set set = OP_set_list[s];
     op_dat_entry *item;

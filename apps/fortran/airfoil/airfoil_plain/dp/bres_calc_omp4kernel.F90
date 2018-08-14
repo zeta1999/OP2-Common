@@ -37,7 +37,7 @@ SUBROUTINE bres_calc_gpu(x1,x2,q1,adt1,res1,bound)
 
   IF (bound .EQ. 1) THEN
     res1(2) = res1(2) + p1 * dy
-    res1(3) = res1(3) -(p1 * dx)
+    res1(3) = res1(3) - p1 * dx
   ELSE
     vol1 = ri * (q1(2) * dy - q1(3) * dx)
     ri = 1.0 / qinf(1)
@@ -84,7 +84,7 @@ SUBROUTINE op_wrap_bres_calc( &
   real(8) opDat4Local(1,opDat4Size)
   INTEGER(kind=4) opDat5Size
   real(8) opDat5Local(4,opDat5Size)
-  integer opDat6Local(1,set_size_full)
+  integer(4) opDat6Local(1,set_size_full)
   INTEGER(kind=4) opDat1MapDim
   INTEGER(kind=4) opDat1Map(opDat1MapDim*set_size)
   INTEGER(kind=4) opDat3MapDim
@@ -168,7 +168,7 @@ SUBROUTINE bres_calc_host( userSubroutine, set, &
   real(8), POINTER, DIMENSION(:) :: opDat5Local
   INTEGER(kind=4) :: opDat5Cardinality
 
-  integer, POINTER, DIMENSION(:) :: opDat6Local
+  integer(4), POINTER, DIMENSION(:) :: opDat6Local
   INTEGER(kind=4) :: opDat6Cardinality
 
   INTEGER(kind=4) :: threadID

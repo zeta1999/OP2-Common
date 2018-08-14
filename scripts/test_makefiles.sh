@@ -6,7 +6,7 @@
 
 #exit script if any error is encountered during the build or
 #application executions.
-#set -e
+set -e
 
 function validate {
   $1 > perf_out
@@ -30,7 +30,7 @@ cd ../../fortran/python/
 export OP2_FORT_CODEGEN_DIR=$PWD
 cd $OP2_INSTALL_PATH/c
 
-<<COMMENT0
+#<<COMMENT0
 
 echo " "
 echo " "
@@ -75,13 +75,14 @@ echo " "
 echo " "
 echo "=======================> Building Aero Plain DP with Intel Compilers"
 cd $OP2_APPS_DIR/c/aero/aero_plain/dp/
-#$OP2_C_CODEGEN_DIR/op2.py aero.cpp
+$OP2_C_CODEGEN_DIR/op2.py aero.cpp
+$OP2_C_CODEGEN_DIR/op2.py aero_mpi.cpp
 make clean;make
 echo " "
 echo " "
 echo "=======================> Building Aero HDF5 DP with Intel Compilers"
 cd $OP2_APPS_DIR/c/aero/aero_hdf5/dp/
-#$OP2_C_CODEGEN_DIR/op2.py aero.cpp
+$OP2_C_CODEGEN_DIR/op2.py aero.cpp
 make clean;make
 
 #COMMENT1
@@ -128,7 +129,7 @@ echo " "
 echo " "
 echo "=======================> Running Airfoil Plain DP built with Intel Compilers"
 cd $OP2_APPS_DIR/c/airfoil/airfoil_plain/dp
-#validate "./airfoil_seq"
+validate "./airfoil_seq"
 validate "./airfoil_cuda OP_PART_SIZE=128 OP_BLOCK_SIZE=192"
 export OMP_NUM_THREADS=20
 validate "./airfoil_openmp OP_PART_SIZE=256"
@@ -137,6 +138,7 @@ validate "$MPI_INSTALL_PATH/bin/mpirun -np 20 ./airfoil_mpi"
 validate "$MPI_INSTALL_PATH/bin/mpirun -np 20 ./airfoil_mpi_vec"
 validate "./airfoil_mpi_cuda OP_PART_SIZE=128 OP_BLOCK_SIZE=192"
 validate "$MPI_INSTALL_PATH/bin/mpirun -np 2 ./airfoil_mpi_cuda OP_PART_SIZE=128 OP_BLOCK_SIZE=192"
+validate "$MPI_INSTALL_PATH/bin/mpirun -np 2 ./airfoil_mpi_cuda -renumber OP_PART_SIZE=128 OP_BLOCK_SIZE=192"
 export OMP_NUM_THREADS=20
 validate "./airfoil_mpi_openmp OP_PART_SIZE=256"
 export OMP_NUM_THREADS=2
@@ -151,9 +153,11 @@ cd $OP2_APPS_DIR/c/airfoil/airfoil_hdf5/dp
 validate "./airfoil_cuda OP_PART_SIZE=128 OP_BLOCK_SIZE=192"
 export OMP_NUM_THREADS=20
 validate "./airfoil_openmp OP_PART_SIZE=256"
+validate "./airfoil_openmp OP_PART_SIZE=256 -renumber"
 export OMP_NUM_THREADS=1
 validate "$MPI_INSTALL_PATH/bin/mpirun -np 20 ./airfoil_mpi"
 validate "$MPI_INSTALL_PATH/bin/mpirun -np 20 ./airfoil_mpi_genseq"
+validate "$MPI_INSTALL_PATH/bin/mpirun -np 20 ./airfoil_mpi_genseq -renumber"
 validate "$MPI_INSTALL_PATH/bin/mpirun -np 20 ./airfoil_mpi_vec"
 validate "./airfoil_mpi_cuda OP_PART_SIZE=128 OP_BLOCK_SIZE=192"
 validate "$MPI_INSTALL_PATH/bin/mpirun -np 2 ./airfoil_mpi_cuda OP_PART_SIZE=128 OP_BLOCK_SIZE=192"
@@ -184,7 +188,7 @@ export OMP_NUM_THREADS=2
 validate "$MPI_INSTALL_PATH/bin/mpirun -np 10 ./airfoil_mpi_openmp OP_PART_SIZE=256"
 
 
-<<COMMENT1
+
 echo " "
 echo " "
 echo "=======================> Running Aero Plain DP built with Intel Compilers"
@@ -220,7 +224,7 @@ export OMP_NUM_THREADS=20
 export OMP_NUM_THREADS=2
 $MPI_INSTALL_PATH/bin/mpirun -np 12 ./aero_mpi_openmp OP_PART_SIZE=256
 
-COMMENT1
+
 
 echo " "
 echo " "
@@ -341,11 +345,11 @@ export OMP_NUM_THREADS=2
 validate "$MPI_INSTALL_PATH/bin/mpirun -np 10 ./airfoil_hdf5_mpi OP_MAPS_BASE_INDEX=0"
 #_openmp_$PART_SIZE_ENV
 
-COMMENT0
 
 ###################################################################################
 ###################################################################################
 
+#COMMENT0
 
 echo " "
 echo " "
@@ -421,3 +425,75 @@ validate "./airfoil_hdf5_mpi_openacc OP_PART_SIZE=128 OP_BLOCK_SIZE=192 OP_MAPS_
 validate "$MPI_INSTALL_PATH/bin/mpirun -np 2 ./airfoil_hdf5_mpi_openacc OP_PART_SIZE=128 OP_BLOCK_SIZE=192 OP_MAPS_BASE_INDEX=0"
 
 
+###################################################################################
+###################################################################################
+
+
+echo " "
+echo " "
+echo "**********************************************************************"
+echo "********************* Building C/C++ back-end libs with Clang Compilers"
+echo "**********************************************************************"
+cd $OP2_INSTALL_PATH/c
+. $CURRENT_DIR/source_clang
+pwd
+
+make clean; make
+
+echo " "
+echo " "
+echo "=======================> Building Aero Plain DP with Clang Compilers"
+cd $OP2_APPS_DIR/c/aero/aero_plain/dp/
+$OP2_C_CODEGEN_DIR/op2.py aero.cpp
+$OP2_C_CODEGEN_DIR/op2.py aero_mpi.cpp
+make clean;make; make aero_openmp4;
+echo " "
+echo " "
+echo "=======================> Building Aero HDF5 DP with Clang Compilers"
+cd $OP2_APPS_DIR/c/aero/aero_hdf5/dp/
+$OP2_C_CODEGEN_DIR/op2.py aero.cpp
+make clean;make;make aero_openmp4;
+
+
+
+echo " "
+echo " "
+echo "=======================> Running Aero Plain DP built with Clang Compilers"
+cd $OP2_APPS_DIR/c/aero/aero_plain/dp
+./aero_seq
+./aero_cuda OP_PART_SIZE=128 OP_BLOCK_SIZE=192
+export OMP_NUM_THREADS=20
+./aero_openmp OP_PART_SIZE=256
+export OMP_NUM_THREADS=1
+$MPI_INSTALL_PATH/bin/mpirun -np 20 ./aero_mpi
+./aero_mpi_cuda OP_PART_SIZE=128 OP_BLOCK_SIZE=192
+$MPI_INSTALL_PATH/bin/mpirun -np 2 ./numawrap20 ./aero_mpi_cuda OP_PART_SIZE=128 OP_BLOCK_SIZE=192
+export OMP_NUM_THREADS=20
+./aero_mpi_openmp OP_PART_SIZE=256
+export OMP_NUM_THREADS=2
+$MPI_INSTALL_PATH/bin/mpirun -np 10 ./aero_mpi_openmp OP_PART_SIZE=256
+export OMP_NUM_THREADS=20
+#./aero_mpi_openmp4 OP_PART_SIZE=256
+
+#COMMENT0
+
+echo " "
+echo " "
+echo "=======================> Running Aero HDF5 DP built with Intel Compilers"
+cd $OP2_APPS_DIR/c/aero/aero_hdf5/dp
+./aero_seq
+./aero_cuda OP_PART_SIZE=128 OP_BLOCK_SIZE=192
+export OMP_NUM_THREADS=20
+./aero_openmp OP_PART_SIZE=256
+export OMP_NUM_THREADS=1
+$MPI_INSTALL_PATH/bin/mpirun -np 20 ./aero_mpi
+./aero_mpi_cuda OP_PART_SIZE=128 OP_BLOCK_SIZE=192
+$MPI_INSTALL_PATH/bin/mpirun -np 2 ./numawrap20 ./aero_mpi_cuda OP_PART_SIZE=128 OP_BLOCK_SIZE=192
+export OMP_NUM_THREADS=20
+./aero_mpi_openmp OP_PART_SIZE=256
+export OMP_NUM_THREADS=2
+$MPI_INSTALL_PATH/bin/mpirun -np 12 ./aero_mpi_openmp OP_PART_SIZE=256
+export OMP_NUM_THREADS=20
+#./aero_mpi_openmp4 OP_PART_SIZE=256
+
+echo "All tests Passed !"

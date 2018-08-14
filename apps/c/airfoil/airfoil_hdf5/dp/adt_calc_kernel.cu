@@ -46,7 +46,6 @@ __global__ void op_cuda_adt_calc(
   int   nblocks,
   int   set_size) {
 
-
   __shared__ int    nelem, offset_b;
 
   extern __shared__ char shared[];
@@ -75,6 +74,7 @@ __global__ void op_cuda_adt_calc(
     map1idx = opDat0Map[n + offset_b + set_size * 1];
     map2idx = opDat0Map[n + offset_b + set_size * 2];
     map3idx = opDat0Map[n + offset_b + set_size * 3];
+
 
     //user-supplied kernel call
     adt_calc_gpu(ind_arg0+map0idx*2,

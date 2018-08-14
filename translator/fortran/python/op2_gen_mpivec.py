@@ -380,10 +380,12 @@ def op2_gen_mpivec(master, date, consts, kernels, hydra, bookleaf):
         f.close()
       file_text += kernel_text
       code('')
-      code('#define SIMD_VEC 4')
+
+      code('#define SIMD_VEC 8')
+      #code('#define SIMD_VEC 4')
 
       if not funcall_in_kernel:
-        if 'VISCWALL' in name or 'IFLUX_EDGE' in name:
+        if 'VISCWALL' in name or 'IFLUX_EDGE' in name or 'BCSSETK' in name or 'BCSRESK' in name or 'JACOB_WALL_CORRECTIONS' in name:
           code('#define VDECTORIZE') #disable these
         else:
           code('#define VECTORIZE')
