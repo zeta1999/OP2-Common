@@ -486,13 +486,16 @@ def op2_gen_mpi_vec(master, date, consts, kernels):
 
       #initialze globals
       for g_m in range(0,nargs):
-        if maps[g_m] == OP_GBL:
+        if maps[g_m] == OP_GBL and accs[g_m] <> OP_READ:
+          code('TYP dat'+str(g_m)+'[SIMD_VEC];')
+          code('for (int i = 0; i < SIMD_VEC; i++)')
           if accs[g_m] == OP_INC:
-            code('TYP dat'+str(g_m)+'[SIMD_VEC] = {0.0};')
+            code('dat'+str(g_m)+'[i] = 0.0;')
           elif accs[g_m] == OP_MAX:
-            code('TYP dat'+str(g_m)+'[SIMD_VEC] = {INFINITY};')
+            code('dat'+str(g_m)+'[i] = -INFINITY;')
           elif accs[g_m] == OP_MIN:
-            code('TYP dat'+str(g_m)+'[SIMD_VEC] = {-INFINITY};')
+            code('dat'+str(g_m)+'[i] = INFINITY;')
+
 
       code('#pragma novector')
       FOR2('n','0','(exec_size/SIMD_VEC)*SIMD_VEC','SIMD_VEC')
