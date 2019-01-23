@@ -61,6 +61,7 @@ int OP_set_index = 0, OP_set_max = 0, OP_map_index = 0, OP_map_max = 0,
 
 op_set *OP_set_list;
 op_map *OP_map_list;
+op_reversed_map *OP_reversed_map_list;
 Double_linked_list OP_dat_list; /*Head of the double linked list*/
 op_kernel *OP_kernels;
 
@@ -319,11 +320,14 @@ op_map op_decl_map_core(op_set from, op_set to, int dim, int *imap,
     OP_map_max += 10;
     OP_map_list =
         (op_map *)op_realloc(OP_map_list, OP_map_max * sizeof(op_map));
+    OP_reversed_map_list =
+        (op_reversed_map *)op_realloc(OP_reversed_map_list, OP_map_max * sizeof(op_reversed_map));
 
-    if (OP_map_list == NULL) {
+    if (OP_map_list == NULL || OP_reversed_map_list==NULL ) {
       printf(" op_decl_map error -- error reallocating memory\n");
       exit(-1);
     }
+    
   }
 
   if (OP_maps_base_index == 1) {
