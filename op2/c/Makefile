@@ -27,9 +27,9 @@ CUDA_INC = -I$(CUDA_INSTALL_PATH)/include
 
 ifeq ($(OP2_COMPILER),gnu)
   CC       := gcc
-  CCFLAGS  := -std=c99 -fPIC -DUNIX -Wall #-g
+  CCFLAGS  := -std=c99 -fPIC -DUNIX -Wall -g
   CXX      := g++
-  CXXFLAGS := -fPIC -DUNIX -Wall #-g -Wextra
+  CXXFLAGS := -fPIC -DUNIX -Wall -g -Wextra
   MPICXX   := $(MPI_INSTALL_PATH)/bin/mpic++
   MPIFLAGS := $(CXXFLAGS)
 else
@@ -121,7 +121,7 @@ endif
 endif
 endif
 
-NVCCFLAGS	:= $(NVCCFLAGS) -O3 $(CODE_GEN_CUDA) -m64 -Xptxas=-v -use_fast_math #-g -G -O0
+NVCCFLAGS	:= $(NVCCFLAGS) -O3 $(CODE_GEN_CUDA) -m64 -Xptxas=-v -use_fast_math -g -G -O0
 
 PARMETIS_INCLUDE_PATH ?= $(PARMETIS_INSTALL_PATH)
 PARMETIS_LIB_PATH ?= $(PARMETIS_INSTALL_PATH)
