@@ -121,7 +121,7 @@ endif
 endif
 endif
 
-NVCCFLAGS	:= $(NVCCFLAGS) -O3 $(CODE_GEN_CUDA) -m64 -Xptxas=-v -use_fast_math -g -G -O0
+NVCCFLAGS	:= $(NVCCFLAGS) -O3 $(CODE_GEN_CUDA) -m64 -Xptxas=-v -use_fast_math #-g -G -O0
 
 PARMETIS_INCLUDE_PATH ?= $(PARMETIS_INSTALL_PATH)
 PARMETIS_LIB_PATH ?= $(PARMETIS_INSTALL_PATH)
