@@ -82,7 +82,8 @@ void op_exchange_halo(op_arg *arg, int exec_flag) {
 
   // need to exchange both direct and indirect data sets if they are dirty
   if ((arg->acc == OP_READ ||
-       arg->acc == OP_RW /* good for debug || arg->acc == OP_INC*/) &&
+ //      arg->acc == OP_RW /* good for debug || arg->acc == OP_INC*/) &&
+       arg->acc == OP_RW || arg->acc == OP_INC) &&
       (dat->dirtybit == 1)) {
     //    printf("Exchanging Halo of data array %10s\n",dat->name);
     halo_list imp_exec_list = OP_import_exec_list[dat->set->index];
@@ -103,10 +104,6 @@ void op_exchange_halo(op_arg *arg, int exec_flag) {
       MPI_Abort(OP_MPI_WORLD, 2);
     }
     
-    
-    int init = dat->set->size * dat->size;
-    char* tmp_comparends = (char*)malloc(imp_exec_list->size*dat->size);
-    memcpy(tmp_comparends,&dat->data[init],imp_exec_list->size*dat->size);
     
     int set_elem_index;
     for (int i = 0; i < exp_exec_list->ranks_size; i++) {
@@ -129,6 +126,7 @@ void op_exchange_halo(op_arg *arg, int exec_flag) {
                      ->s_req[((op_mpi_buffer)(dat->mpi_buffer))->s_num_req++]);
     }
 
+    int init = dat->set->size * dat->size;
     for (int i = 0; i < imp_exec_list->ranks_size; i++) {
       //printf("import exec on to %d from %d data %10s, number of elements of size %d | recieving:\n",
       //           my_rank, 
@@ -145,16 +143,7 @@ void op_exchange_halo(op_arg *arg, int exec_flag) {
                 &((op_mpi_buffer)(dat->mpi_buffer))->r_req[((op_mpi_buffer)(dat->mpi_buffer))->r_num_req++]);
       
     }
-  //  MPI_Status status1[30];
-  //  MPI_Status status2[30];
-  //
-  //  MPI_Waitall(((op_mpi_buffer)(dat->mpi_buffer))->s_num_req,((op_mpi_buffer)(dat->mpi_buffer))->s_req,status1);
-  //  MPI_Waitall(((op_mpi_buffer)(dat->mpi_buffer))->r_num_req,((op_mpi_buffer)(dat->mpi_buffer))->r_req,status2);
     
-    int n = memcmp( tmp_comparends, &dat->data[init],imp_exec_list->size*dat->size);
-    if (n != 0) {
-        printf("Error - different data in the exchanged halos. First different byte: %d, dat_name: %s\n",n,dat->name);
-    }
 
     //-----second exchange nonexec elements related to this data array------
     // sanity checks
