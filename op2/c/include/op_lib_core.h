@@ -188,6 +188,8 @@ typedef struct {
   float transfer;   /* bytes of data transfer (used) */
   float transfer2;  /* bytes of data transfer (total) */
   float mpi_time;   /* time spent in MPI calls */
+  void *tmp_incs;   /* pointer to temporary increments with reproducible MPI */
+  int tmp_incs_size;/* size of tmp_incs */
 } op_kernel;
 
 // struct definition for a double linked list entry to hold an op_dat
