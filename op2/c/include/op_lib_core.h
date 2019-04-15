@@ -320,6 +320,8 @@ void op_mpi_reduce_bool(op_arg *args, bool *data);
 
 void op_mpi_barrier();
 
+void create_reversed_mapping();
+
 /*******************************************************************************
 * Toplevel partitioning selection function - also triggers halo creation
 *******************************************************************************/
