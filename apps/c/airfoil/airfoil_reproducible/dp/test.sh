@@ -31,7 +31,7 @@ export OP2_C_CODEGEN_DIR=$PWD
 cd ../../fortran/python/
 export OP2_FORT_CODEGEN_DIR=$PWD
 cd $OP2_INSTALL_PATH/c
-. ../../scripts/source_intel
+#. ../../scripts/source_intel
 
 
 
@@ -40,7 +40,7 @@ echo " "
 echo "**********************************************************************"
 echo "***********************> Building C back-end libs with Intel Compilers"
 echo "**********************************************************************"
-make mpi_seq -B
+make clean; make
 
 echo " "
 echo " "
@@ -55,11 +55,14 @@ nproc_from=10
 nproc_to=20
 nproc_step=1
 
+echo
+echo "Creating reference for testing airfoil's reproducibility feature"
 validate "$MPI_INSTALL_PATH/bin/mpirun -np 1 ./airfoil_mpi_genseq"
 cp repr_comp_p_q.h5 repr_comp_p_q_ref.h5
 
 for nproc in $(eval echo "{$nproc_from..$nproc_to..$nproc_step}")
 do
+    echo
     echo "Testing airfoil's reproducibility feature on $nproc MPI processors"
     validate "$MPI_INSTALL_PATH/bin/mpirun -np $nproc ./airfoil_mpi_genseq" 
 
