@@ -51,17 +51,17 @@ void op_par_loop_res_calc(char const *name, op_set set,
         int prime_map_dim = prime_map->dim;
         int set_from_size = prime_map->from->size + prime_map->from->exec_size ;
         int set_to_size = prime_map->to->size + prime_map->to->exec_size + prime_map->to->nonexec_size;
-        
+
     //    int required_tmp_incs_size = set_from_size * prime_map_dim * arg6.dat->size;
-    //    
+    //
     //    if (OP_kernels[2].tmp_incs_size < required_tmp_incs_size){
     //        op_realloc(OP_kernels[2].tmp_incs, required_tmp_incs_size);
     //        OP_kernels[2].tmp_incs_size = required_tmp_incs_size;
     //    }
-        
+
         double *tmp_incs = (double *)op_malloc(set_from_size * prime_map_dim * arg6.dat->size );   //TODO reuse this...
     //    double *tmp_incs = (double *)OP_kernels[2].tmp_incs;
-        
+
         for (int i=0; i<set_from_size * prime_map_dim * arg6.dim; i++){
           tmp_incs[i]=0.0;
         }
@@ -98,9 +98,8 @@ void op_par_loop_res_calc(char const *name, op_set set,
 
         op_free(tmp_incs);
     }
-    else printf("Error allocating rev_map *****************************\n");
   }
-  else printf("Set size Zero *****************************\n");
+
 
   if (set_size == 0 || set_size == set->core_size) {
     op_mpi_wait_all(nargs, args);
