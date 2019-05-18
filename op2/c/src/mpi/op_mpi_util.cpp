@@ -29,11 +29,11 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 #include <mpi.h>
 
 #include <op_lib_mpi.h>
 #include <op_util.h>
+
 
 MPI_Comm OP_MPI_IO_WORLD;
 
@@ -200,6 +200,7 @@ void write_file(op_dat dat, const char *file_name) {
     }
 
     // Write binary or text as requested by the caller
+    printf("global set size %d\n", g_size);
     F(fp, g_size, elem_size, g_array, file_name);
 
     fclose(fp);
@@ -232,7 +233,7 @@ void fetch_data_hdf5(op_dat dat, char *usr_ptr, int low, int high) {
  * Write a op_dat to a named ASCI file
  *******************************************************************************/
 
-extern const char fmt_double[] = "%f ";
+extern const char fmt_double[] = "% .15E";
 extern const char fmt_float[] = "%f ";
 extern const char fmt_int[] = "%d ";
 

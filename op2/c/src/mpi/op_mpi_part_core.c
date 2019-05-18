@@ -2031,8 +2031,8 @@ void op_partition_kway(op_map primary_map) {
     // sanity check to see if all elements were partitioned
     if (partition_pm[i] < 0 || partition_pm[i] >= comm_size) {
       printf("Partitioning problem: on rank %d, set %s element %d not assigned "
-             "a partition\n",
-             my_rank, primary_map->to->name, i);
+             "a partition, current value %d\n",
+             my_rank, primary_map->to->name, i, (int)partition_pm[i]);
       MPI_Abort(OP_PART_WORLD, 2);
     }
     partition[i] = partition_pm[i];

@@ -104,18 +104,21 @@ bookleaf=0
 
 def comment_remover(text):
 
-  def replacer(match):
-      s = match.group(0)
-      if s.startswith('/'):
-          return ""
-      else:
-          return s
-  pattern = re.compile(
-      r'//.*?$|/\*.*?\*/|\'(?:\\.|[^\\\'])*\'|"(?:\\.|[^\\"])*"',
-      re.DOTALL | re.MULTILINE
-  )
-  return re.sub(pattern, replacer, text)
+   def replacer(match):
+     s = match.group(0)
+     if s.startswith('/'):
+       return ""
+     else:
+       return s
+   pattern = re.compile(
+     r'//.*?$|/\*.*?\*/|\'(?:\\.|[^\\\'])*\'|"(?:\\.|[^\\"])*"',
+     re.DOTALL | re.MULTILINE
+   )
+   return re.sub(pattern, replacer, text)
 
+def removeComments(string):
+    string = re.sub(r'(?m)^c.*\n?','',string) # remove all occurrence single-line comments (cCOMMENT\n ) from string
+    return string
 
 ##########################################################################
 # parsing for op_init/op_exit/op_partition/op_hdf5 calls
@@ -731,17 +734,63 @@ for a in range(init_ctr,len(sys.argv)):
 
       if hydra==1:
         temp['master_file'] = src_file.split('.')[0].replace('mod_','')
-        search = 'use '+temp['master_file'].upper()+'_KERNELS_'+name+'\n'
-        i = text.rfind(search)
-        if i > -1:
-          temp['mod_file'] = search.strip()
-        else:
-          search = 'use '+temp['master_file'].upper()+'_KERNELS_'+name[:-1]
-          i = text.rfind(search)
-          if i > -1:
-            temp['mod_file'] = search.strip()
+        ############ Create module files with the elemental kernel subroutines for new Hydra ####
+        text2 = removeComments(text)
+        strofmod = text2.find('module')
+        module_name = text2[strofmod+7:text2.find('\n',strofmod)]
+
+        if strofmod > -1:
+          endofmod = text2.find('end module '+module_name, strofmod)
+          if endofmod == -1:
+            print 'ERROR: no end of module !'
+            exit()
+
+        while strofmod < len(text2) and endofmod < len(text2):
+          #print module_name, '   ', name
+          text3 = text2[strofmod:endofmod+11]
+
+          strofsub = text3.find('subroutine '+name)
+          if strofsub > -1:
+            endofsub = text3.find('end subroutine', strofsub)
+            if endofsub > -1:
+              # FOUND the required kernel -- create temporary elemental kernel file
+              #print text3[strofsub:endofsub+14]
+              file = open(temp['master_file'].upper()+'_KERNELS_'+name+'.F95','w')
+              file.write('       '+text3[strofsub:endofsub+14])
+              file.close()
+              break
+            else:
+              print 'ERROR: no end of subroutine !'
+              exit()
           else:
-            print'  ERROR: no module file found!  '
+            strofmod = text2.find('module',endofmod+11)
+            module_name = text2[strofmod+7:text2.find('\n',strofmod)]
+            if strofmod > -1:
+              endofmod = text2.find('end module ', strofmod)
+              if endofmod == -1:
+                print 'ERROR: no end of module !'
+                exit()
+            else:
+              print 'ERROR: No more modules left in the file, elemental kernel: ',name, ' not found'
+              strofmod = len(text2)+1
+              endofmod = len(text2)+1
+
+        temp['mod_file'] = temp['master_file'].upper()+'_KERNELS_'+name
+
+
+
+        #search = 'use '+temp['master_file'].upper()+'_KERNELS_'+name+'\n'
+        #i = text.rfind(search)
+        #if i > -1:
+        #  temp['mod_file'] = search.strip()
+        #else:
+        #  search = 'use '+temp['master_file'].upper()+'_KERNELS_'+name[:-1]
+        #  i = text.rfind(search)
+        #  if i > -1:
+        #    temp['mod_file'] = search.strip()
+        #  else:
+        #    print'  ERROR: no module file found!  '
+
       if bookleaf==1:
         file_part = src_file.split('/')
         file_part = file_part[len(file_part)-1]
@@ -769,7 +818,7 @@ for a in range(init_ctr,len(sys.argv)):
   if bookleaf:
     loc_header = [text.lower().find('use op2_bookleaf')]
   else:
-    loc_header = [text.find('use OP2_Fortran_Reference')]
+    loc_header = [text.find('use OP2_FORTRAN_REFERENCE')]
 
   #get locations of all op_decl_consts
   n_consts = len(const_args)
@@ -878,8 +927,10 @@ for a in range(init_ctr,len(sys.argv)):
       #replace = 'use OP2_FORTRAN_DECLARATIONS\n#ifdef OP2_ENABLE_CUDA\n       use HYDRA_CUDA_MODULE\n#endif\n'
       replace = 'use OP2_FORTRAN_DECLARATIONS\n'
       text = text.replace('use OP2_FORTRAN_DECLARATIONS\n',replace)
+      text = text.replace('use OP2_FORTRAN_REFERENCE','')
+
     if bookleaf:
-      text = text.replace('USE OP2_Fortran_Reference\n','')
+      text = text.replace('USE OP2_FORTRAN_REFERENCE\n','')
       text = text.replace('USE common_kernels','! USE common_kernels')
       file_part = src_file.split('/')
       file_part = file_part[len(file_part)-1]
@@ -888,6 +939,18 @@ for a in range(init_ctr,len(sys.argv)):
     for nk in range (0,len(kernels)):
       replace = kernels[nk]['mod_file']+'_MODULE'+'\n'
       text = text.replace(kernels[nk]['mod_file']+'\n', replace)
+
+    # for Hydra pick out the *_host calls and add the appropriate module to the
+    # subroutine that contains that *_host call
+    if hydra:
+      replace = '\n'
+      for nk in range (0,len(kernels)):
+        i = text.find('call '+kernels[nk]['name']+'_host')
+        j = text.rfind('use OP2_FORTRAN_DECLARATIONS\n',0,i)
+        replace = '       use '+kernels[nk]['mod_file'][4:]+'_MODULE\n'
+        text = text[:j+len('use OP2_FORTRAN_DECLARATIONS\n')] + \
+        replace + text[j+len('use OP2_FORTRAN_DECLARATIONS\n'):]
+
 
     fid = open(src_file.replace('.','_op.'), 'w')
     #if file_format == 90:
@@ -923,30 +986,30 @@ if npart==0 and nhdf5>0:
 ########## finally, generate target-specific kernel files ################
 
 #MPI+SEQ
-#op2_gen_mpiseq(str(sys.argv[init_ctr]), date, consts, kernels, hydra)  # generate host stubs for MPI+SEQ
+##op2_gen_mpiseq(str(sys.argv[init_ctr]), date, consts, kernels, hydra)  # generate host stubs for MPI+SEQ
 op2_gen_mpiseq3(str(sys.argv[init_ctr]), date, consts, kernels, hydra, bookleaf)  # generate host stubs for MPI+SEQ -- optimised by removing the overhead due to fortran c to f pointer setups
-op2_gen_mpivec(str(sys.argv[init_ctr]), date, consts, kernels, hydra, bookleaf)  # generate host stubs for MPI+SEQ with intel vectorization optimisations
+#op2_gen_mpivec(str(sys.argv[init_ctr]), date, consts, kernels, hydra, bookleaf)  # generate host stubs for MPI+SEQ with intel vectorization optimisations
 
 #OpenMP
-op2_gen_openmp3(str(sys.argv[init_ctr]), date, consts, kernels, hydra, bookleaf)  # optimised by removing the overhead due to fortran c to f pointer setups
-#op2_gen_openmp2(str(sys.argv[init_ctr]), date, consts, kernels, hydra) # version without staging
-#op2_gen_openmp(str(sys.argv[init_ctr]), date, consts, kernels, hydra)  # original version - one that most op2 papers refer to
+#op2_gen_openmp3(str(sys.argv[init_ctr]), date, consts, kernels, hydra, bookleaf)  # optimised by removing the overhead due to fortran c to f pointer setups
+##op2_gen_openmp2(str(sys.argv[init_ctr]), date, consts, kernels, hydra) # version without staging
+##op2_gen_openmp(str(sys.argv[init_ctr]), date, consts, kernels, hydra)  # original version - one that most op2 papers refer to
 
 #CUDA
-#op2_gen_cuda(str(sys.argv[1]), date, consts, kernels, hydra, bookleaf)
-#op2_gen_cuda_gbl(str(sys.argv[init_ctr]), date, consts, kernels, hydra,bookleaf) # global coloring
-op2_gen_cuda_permute(str(sys.argv[init_ctr]), date, consts, kernels, hydra,bookleaf) # permute does a different coloring (permute execution within blocks by color)
-#op2_gen_cudaINC(str(sys.argv[1]), date, consts, kernels, hydra)      # stages increment data only in shared memory
-#op2_gen_cuda_old(str(sys.argv[1]), date, consts, kernels, hydra)     # Code generator targettign Fermi GPUs
+##op2_gen_cuda(str(sys.argv[1]), date, consts, kernels, hydra, bookleaf)
+##op2_gen_cuda_gbl(str(sys.argv[init_ctr]), date, consts, kernels, hydra,bookleaf) # global coloring
+#op2_gen_cuda_permute(str(sys.argv[init_ctr]), date, consts, kernels, hydra,bookleaf) # permute does a different coloring (permute execution within blocks by color)
+##op2_gen_cudaINC(str(sys.argv[1]), date, consts, kernels, hydra)      # stages increment data only in shared memory
+##op2_gen_cuda_old(str(sys.argv[1]), date, consts, kernels, hydra)     # Code generator targettign Fermi GPUs
 
 #OpenACC
-op2_gen_openacc(str(sys.argv[init_ctr]), date, consts, kernels, hydra, bookleaf)  # optimised by removing the overhead due to fortran c to f pointer setups
+#op2_gen_openacc(str(sys.argv[init_ctr]), date, consts, kernels, hydra, bookleaf)  # optimised by removing the overhead due to fortran c to f pointer setups
 
 #OpenMP4 offload
-op2_gen_openmp4(str(sys.argv[init_ctr]), date, consts, kernels, hydra, bookleaf)  # optimised by removing the overhead due to fortran c to f pointer setups
+#op2_gen_openmp4(str(sys.argv[init_ctr]), date, consts, kernels, hydra, bookleaf)  # optimised by removing the overhead due to fortran c to f pointer setups
 
 #if hydra:
-#  op2_gen_cuda_hydra() #includes several Hydra specific features
+##  op2_gen_cuda_hydra() #includes several Hydra specific features
 
 ##########################################################################
 #                      ** END MAIN APPLICATION **

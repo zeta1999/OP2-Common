@@ -283,7 +283,7 @@ void dumpOpMap (op_map_core * map, const char * fileName)
   if ( map != NULL ) {
     for ( i = 0; i < map->from->size + map->from->exec_size; i++ ) {
       for ( j = 0; j < map->dim; j++ ) {
-        fprintf (outfile, "%d --> %d", i, ((int *) map->map)[i * map->dim + j] );
+        fprintf (outfile, "%d --> %d  ", i, ((int *) map->map)[i * map->dim + j] );
       }
       fprintf (outfile, "\n");
     }
