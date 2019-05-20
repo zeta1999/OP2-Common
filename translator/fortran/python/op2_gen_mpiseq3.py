@@ -624,7 +624,7 @@ def op2_gen_mpiseq3(master, date, consts, kernels, hydra, bookleaf):
       if not os.path.exists('mpi'):
         os.makedirs('mpi')
       #name = 'kernels/'+kernels[nk]['master_file']+'/'+name
-      fid = open('mpi/'+name+'_seqkernel.F95','w')
+      fid = open('mpi/'+name+'_seqkernel.F90','w')
 
       # remove temporary elemental kernel files
       os.remove(modfile+'.F95')

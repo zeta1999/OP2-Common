@@ -97,6 +97,22 @@ comment = '! '
 hydra = 0
 bookleaf=0
 
+def findfiles(path):
+  files = []
+  # r=root, d=directories, f = files
+  for r, d, f in os.walk(path):
+    for file in f:
+      if '.F' in file:
+        files.append(os.path.join(r, file))
+      if '.F90' in file:
+        files.append(os.path.join(r, file))
+      if '.F95' in file:
+        files.append(os.path.join(r, file))
+      if '.inc' in file:
+        files.append(os.path.join(r, file))
+  return files
+
+
 # from http://stackoverflow.com/a/241506/396967
 ##########################################################################
 # Remove comments from text
@@ -735,61 +751,87 @@ for a in range(init_ctr,len(sys.argv)):
       if hydra==1:
         temp['master_file'] = src_file.split('.')[0].replace('mod_','')
         ############ Create module files with the elemental kernel subroutines for new Hydra ####
+
+
         text2 = removeComments(text)
-        strofmod = text2.find('module')
-        module_name = text2[strofmod+7:text2.find('\n',strofmod)]
+        #module_names = [] #list to hold the module names to search for the elemental kernel in
+        i = text2.find('op_par_loop_'+str(nargs)+'('+name)
+        j = text2.rfind('subroutine',0,i)
 
-        if strofmod > -1:
-          endofmod = text2.find('end module '+module_name, strofmod)
-          if endofmod == -1:
-            print 'ERROR: no end of module !'
-            exit()
+        module_names = re.findall(r'use\s+([\w.-]+)\n', text2[j:i])
+        std_mods = ['OP2_FORTRAN_RT_SUPPORT' , 'OP2_FORTRAN_DECLARATIONS' ,
+        'OP2_FORTRAN_REFERENCE' , 'OP2_GRID' , 'HYDRA_CONSTS' , 'ISO_C_BINDING']
+        module_names = [x.upper() for x in module_names]
+        module_names =  list(filter(lambda x: x not in std_mods, module_names))
 
-        while strofmod < len(text2) and endofmod < len(text2):
-          #print module_name, '   ', name
-          text3 = text2[strofmod:endofmod+11]
+        KERNEL_FILES = []
+        KERNEL_FILES.append(text2)
 
-          strofsub = text3.find('subroutine '+name)
-          if strofsub > -1:
-            endofsub = text3.find('end subroutine', strofsub)
-            if endofsub > -1:
-              # FOUND the required kernel -- create temporary elemental kernel file
-              #print text3[strofsub:endofsub+14]
-              file = open(temp['master_file'].upper()+'_KERNELS_'+name+'.F95','w')
-              file.write('       '+text3[strofsub:endofsub+14])
-              file.close()
-              break
-            else:
-              print 'ERROR: no end of subroutine !'
-              exit()
-          else:
-            strofmod = text2.find('module',endofmod+11)
-            module_name = text2[strofmod+7:text2.find('\n',strofmod)]
+        print module_names
+        found_sub = False
+        found_mod = False
+        kernel_text = ''
+        ##search for module bodies in current file and files in the KERNEL_PATHS
+        for k in KERNEL_FILES:
+          for m in module_names:
+            pattern = re.compile('module\s+'+m)
+            s = pattern.search(k)
+            strofmod = s.start()
             if strofmod > -1:
-              endofmod = text2.find('end module ', strofmod)
+              pattern = re.compile('end module')
+              s = pattern.search(k,strofmod)
+              endofmod = s.end()
               if endofmod == -1:
                 print 'ERROR: no end of module !'
                 exit()
-            else:
-              print 'ERROR: No more modules left in the file, elemental kernel: ',name, ' not found'
-              strofmod = len(text2)+1
-              endofmod = len(text2)+1
+              else:
+                if found_mod :
+                  print 'ERROR: multiple module with same name found in \
+                  current file and/or specified paths '
+                  exit(2)
+                found_mod = True
+                pattern = re.compile('subroutine\s+'+name)
+                s = pattern.search(k,strofmod,endofmod)
+                strofsub = s.start()
+                if strofsub > -1:
+                  print 'FOUND subrountine '+name
+                  pattern = re.compile('end\s+subroutine')
+                  s = pattern.search(k,strofsub,endofmod)
+                  endofsub = s.end()
+                  #print k[strofsub:endofsub]
+                  if found_sub != True:
+                    kernel_text = k[strofsub:endofsub]
+                    found_sub = True
+                    break
+                  else:
+                    print 'ERROR: multiple definitions of subroutine \
+                    within modules'
+                    exit(2)
+                else:
+                  print 'ERROR: no end of subroutine !'
+
+        if not found_sub:
+          print 'ERROR: Cound not find elemental kernel subroutine in \
+          current file or KERNEL_PATHS'
+          exit(2)
+        else:
+          # FOUND the required kernel -- create temporary elemental kernel file
+          file = open(temp['master_file'].upper()+'_KERNELS_'+name+'.F95','w')
+          file.write('       '+kernel_text)
+          file.close()
+
+        ## Identify the bodies of the modules in the module_names list
+        # by searching search current file or files in a given path on machine
+        # if multiple bodies for the same module found, throw error
+        # if module not found in path, throw error
+
+        ## search for the elemental kernel in each of these module bodies
+        # if multiple subroutines with the same name found, throw error
+
+        ## generate an .F90 file with this subroutine so that the
+        ## generator code can pick up the elemental kernal at code gen time
 
         temp['mod_file'] = temp['master_file'].upper()+'_KERNELS_'+name
-
-
-
-        #search = 'use '+temp['master_file'].upper()+'_KERNELS_'+name+'\n'
-        #i = text.rfind(search)
-        #if i > -1:
-        #  temp['mod_file'] = search.strip()
-        #else:
-        #  search = 'use '+temp['master_file'].upper()+'_KERNELS_'+name[:-1]
-        #  i = text.rfind(search)
-        #  if i > -1:
-        #    temp['mod_file'] = search.strip()
-        #  else:
-        #    print'  ERROR: no module file found!  '
 
       if bookleaf==1:
         file_part = src_file.split('/')
@@ -802,7 +844,8 @@ for a in range(init_ctr,len(sys.argv)):
 
       kernels.append(temp)
 
-########################## output source file  ############################
+
+########################## output modified source file  ############################
 
   fid = open(src_file.replace('.','_op.'), 'w')
 #  if file_format == 90:
@@ -833,8 +876,6 @@ for a in range(init_ctr,len(sys.argv)):
     loc_loops[n] = loop_args[n]['loc']
 
   locs = sorted(loc_header+loc_consts+loc_loops)
-
-
 
 #
 # process header, loops and constants
@@ -913,6 +954,8 @@ for a in range(init_ctr,len(sys.argv)):
 
   fid.write(text[loc_old:])
   fid.close()
+
+  ## Now add the appropriate modules to the subroutines in the generated _op.F file
   if hydra == 1 or bookleaf==1:
     fid = open(src_file.replace('.','_op.'), 'r')
     #if file_format == 90:
@@ -924,18 +967,21 @@ for a in range(init_ctr,len(sys.argv)):
     text = fid.read()
     fid.close()
     if hydra:
-      #replace = 'use OP2_FORTRAN_DECLARATIONS\n#ifdef OP2_ENABLE_CUDA\n       use HYDRA_CUDA_MODULE\n#endif\n'
-      replace = 'use OP2_FORTRAN_DECLARATIONS\n'
-      text = text.replace('use OP2_FORTRAN_DECLARATIONS\n',replace)
-      text = text.replace('use OP2_FORTRAN_REFERENCE','')
+      pattern = re.compile(re.escape('use OP2_FORTRAN_DECLARATIONS'), flags=re.I)
+      text = pattern.sub('use OP2_FORTRAN_DECLARATIONS', text)
+      pattern = re.compile(re.escape('use OP2_FORTRAN_REFERENCE'), flags=re.I)
+      text = pattern.sub('', text)
 
     if bookleaf:
-      text = text.replace('USE OP2_FORTRAN_REFERENCE\n','')
-      text = text.replace('USE common_kernels','! USE common_kernels')
+      pattern = re.compile(re.escape('use OP2_FORTRAN_REFERENCE'), flags=re.I)
+      text = pattern.sub('', text)
+      pattern = re.compile(re.escape('USE common_kernels'), flags=re.I)
+      text = pattern.sub('!USE common_kernels', text)
       file_part = src_file.split('/')
       file_part = file_part[len(file_part)-1]
       master_file = file_part.split('.')[0]
       text = text.replace('USE '+master_file+'_kernels','! USE USE '+master_file+'_kernels')
+
     for nk in range (0,len(kernels)):
       replace = kernels[nk]['mod_file']+'_MODULE'+'\n'
       text = text.replace(kernels[nk]['mod_file']+'\n', replace)
