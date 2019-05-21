@@ -1043,14 +1043,14 @@ if npart==0 and nhdf5>0:
 ########## finally, generate target-specific kernel files ################
 
 #MPI+SEQ
-##op2_gen_mpiseq(str(sys.argv[init_ctr]), date, consts, kernels, hydra)  # generate host stubs for MPI+SEQ
+#op2_gen_mpiseq(str(sys.argv[init_ctr]), date, consts, kernels, hydra)  # generate host stubs for MPI+SEQ
 op2_gen_mpiseq3(str(sys.argv[init_ctr]), date, consts, kernels, hydra, bookleaf)  # generate host stubs for MPI+SEQ -- optimised by removing the overhead due to fortran c to f pointer setups
 #op2_gen_mpivec(str(sys.argv[init_ctr]), date, consts, kernels, hydra, bookleaf)  # generate host stubs for MPI+SEQ with intel vectorization optimisations
 
 #OpenMP
-#op2_gen_openmp3(str(sys.argv[init_ctr]), date, consts, kernels, hydra, bookleaf)  # optimised by removing the overhead due to fortran c to f pointer setups
-##op2_gen_openmp2(str(sys.argv[init_ctr]), date, consts, kernels, hydra) # version without staging
-##op2_gen_openmp(str(sys.argv[init_ctr]), date, consts, kernels, hydra)  # original version - one that most op2 papers refer to
+op2_gen_openmp3(str(sys.argv[init_ctr]), date, consts, kernels, hydra, bookleaf)  # optimised by removing the overhead due to fortran c to f pointer setups
+#op2_gen_openmp2(str(sys.argv[init_ctr]), date, consts, kernels, hydra) # version without staging
+#op2_gen_openmp(str(sys.argv[init_ctr]), date, consts, kernels, hydra)  # original version - one that most op2 papers refer to
 
 #CUDA
 ##op2_gen_cuda(str(sys.argv[1]), date, consts, kernels, hydra, bookleaf)

@@ -626,7 +626,6 @@ def op2_gen_mpiseq3(master, date, consts, kernels, hydra, bookleaf):
         os.makedirs('mpi')
       #name = 'kernels/'+kernels[nk]['master_file']+'/'+name
       fid = open('mpi/'+name+'_seqkernel.F90','w')
-
     elif bookleaf:
       fid = open(prefixes[prefix_i]+name+'_seqkernel.f90','w')
     else:
