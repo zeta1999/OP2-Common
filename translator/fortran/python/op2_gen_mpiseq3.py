@@ -251,7 +251,7 @@ def op2_gen_mpiseq3(master, date, consts, kernels, hydra, bookleaf):
 
     if hydra == 1:
       file_text += '!DEC$ ATTRIBUTES FORCEINLINE :: ' + name + '\n'
-      modfile = kernels[nk]['mod_file']#[4:]
+      modfile = kernels[nk]['mod_file']
       modfile = modfile.replace('INIT_INIT','INIT')
       name2 = name.replace('INIT_INIT','INIT')
       #filename = modfile.split('_')[1].lower() + '/' + modfile.split('_')[0].lower() + '/' + name2 + '.F95'

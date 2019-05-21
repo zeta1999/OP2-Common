@@ -364,8 +364,8 @@ def op2_gen_cuda_permute(master, date, consts, kernels, hydra, bookleaf):
     code('USE ISO_C_BINDING')
     code('USE CUDAFOR')
     code('USE CUDACONFIGURATIONPARAMS')
-    if hydra:
-      code('USE HYDRA_STRIDE_MODULE')
+    #if hydra:
+    #  code('USE HYDRA_STRIDE_MODULE')
     code('')
     code('')
     code('#ifdef _OPENMP'); depth = depth + 2

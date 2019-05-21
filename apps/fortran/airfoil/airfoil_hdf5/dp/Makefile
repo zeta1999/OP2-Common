@@ -180,11 +180,11 @@ airfoil_hdf5_openmp4: airfoil_hdf5_op.F90 save_soln_omp4kernel.F90 adt_calc_omp4
 	bres_calc_omp4kernel.o update_omp4kernel.o airfoil_hdf5_op.o -o airfoil_hdf5_openmp4 \
 		$(FLINK) -lop2_for_openmp4 -lop2_hdf5 $(HDF5_LIB) -lz $(MPI_LIB)
 
-airfoil_hdf5_cuda: airfoil_hdf5_op.F90 save_soln_gpukernel.CUF adt_calc_gpukernel.CUF input.F90 airfoil_seqfun.F90 \
-        res_calc_gpukernel.CUF bres_calc_gpukernel.CUF update_gpukernel.CUF constants.F90 input.F90 cudaConfigurationParams.F95
+airfoil_hdf5_cuda: airfoil_hdf5_op.F90 cuda/save_soln_gpukernel.CUF cuda/adt_calc_gpukernel.CUF input.F90 airfoil_seqfun.F90 \
+        cuda/res_calc_gpukernel.CUF cuda/bres_calc_gpukernel.CUF cuda/update_gpukernel.CUF constants.F90 input.F90 cudaConfigurationParams.F95
 	$(FC) $(OPT_CUDA) -Minline,reshape $(FMODS)/cuda $(FMODS) cudaConfigurationParams.F95 constants.F90 input.F90 airfoil_seqfun.F90 \
-		save_soln_gpukernel.CUF bres_calc_gpukernel.CUF \
-		adt_calc_gpukernel.CUF -c \
+		cuda/save_soln_gpukernel.CUF cuda/bres_calc_gpukernel.CUF \
+		cuda/adt_calc_gpukernel.CUF -c \
 		$(FLINK) -lop2_for_cuda -lop2_hdf5 $(HDF5_LIB) $(MPI_LIB)
 	$(FC) $(OPT_CUDA) $(FMODS)/cuda $(FMODS) cudaConfigurationParams.o constants.o input.o airfoil_seqfun.o \
 		save_soln_gpukernel.o update_gpukernel.o bres_calc_gpukernel.o \
@@ -226,11 +226,11 @@ airfoil_hdf5_mpi_openmp: airfoil_hdf5_op.F90 input.F90 openmp/save_soln_ompkerne
 	bres_calc_ompkernel.o update_ompkernel.o airfoil_hdf5_op.o -o airfoil_hdf5_mpi_openmp \
 	$(FLINK) -lop2_for_mpi $(PARMETIS_LIB) $(PTSCOTCH_LIB) $(HDF5_LIB) -lz $(MPI_LIB) $(CPPLINK)
 
-airfoil_hdf5_mpi_cuda: airfoil_hdf5_op.F90 save_soln_kernel.CUF adt_calc_kernel.CUF input.F90 airfoil_seqfun.F90 \
-	res_calc_kernel.CUF bres_calc_kernel.CUF update_kernel.CUF constants.F90 input.F90 cudaConfigurationParams.F95
+airfoil_hdf5_mpi_cuda: airfoil_hdf5_op.F90 cuda/save_soln_gpukernel.CUF cuda/adt_calc_gpukernel.CUF input.F90 airfoil_seqfun.F90 \
+	cuda/res_calc_gpukernel.CUF cuda/bres_calc_gpukernel.CUF cuda/update_gpukernel.CUF constants.F90 input.F90 cudaConfigurationParams.F95
 	$(MPIF90) $(OPT_CUDA) $(FMPI_MODS)/cuda $(FMPI_MODS) $(PARMETIS_INC) $(PTSCOTCH_INC) \
-		cudaConfigurationParams.F95 constants.F90 input.F90 airfoil_seqfun.F90 save_soln_kernel.CUF \
-		update_kernel.CUF bres_calc_kernel.CUF res_calc_kernel.CUF adt_calc_kernel.CUF \
+		cudaConfigurationParams.F95 constants.F90 input.F90 airfoil_seqfun.F90 cuda/save_soln_gpukernel.CUF \
+		cuda/update_gpukernel.CUF cuda/bres_calc_gpukernel.CUF cuda/res_calc_gpukernel.CUF cuda/adt_calc_gpukernel.CUF \
 		airfoil_hdf5_op.F90 -o airfoil_hdf5_mpi_cuda $(FLINK) -lop2_for_mpi_cuda \
 		$(PARMETIS_LIB) $(PTSCOTCH_LIB) $(HDF5_LIB) -lz $(MPI_LIB) $(CPPLINK)
 
