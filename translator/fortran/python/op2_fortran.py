@@ -431,7 +431,12 @@ def op_par_loop_parse(text):
 #####################loop over all input source files#####################
 init_ctr = 1
 auto_soa=os.getenv('OP_AUTO_SOA','0')
+kernelfilelist = []
 if len(sys.argv) > 1:
+
+  r = re.compile(r'.*.F|.*.F90|.*.F95|.*.inc')
+  kernelfilelist = list(filter(r.match, sys.argv))
+
   if sys.argv[1] == 'hydra':
     hydra = 1
     init_ctr=2
@@ -755,63 +760,80 @@ for a in range(init_ctr,len(sys.argv)):
 
         text2 = removeComments(text)
         #module_names = [] #list to hold the module names to search for the elemental kernel in
-        i = text2.find('op_par_loop_'+str(nargs)+'('+name)
-        j = text2.rfind('subroutine',0,i)
+        pattern = re.compile('op_par_loop_'+str(nargs)+'\s*\(\s*'+name,flags=re.I)
+        s = pattern.search(text2)
+
+        i = s.start()
+        j = text2.lower().rfind('subroutine'.lower(), 0, i)
+        if j < 0 :
+          j = text2.lower().rfind('program'.lower(), 0, i)
 
         module_names = re.findall(r'use\s+([\w.-]+)\n', text2[j:i])
         std_mods = ['OP2_FORTRAN_RT_SUPPORT' , 'OP2_FORTRAN_DECLARATIONS' ,
-        'OP2_FORTRAN_REFERENCE' , 'OP2_GRID' , 'HYDRA_CONSTS' , 'ISO_C_BINDING']
+        'OP2_FORTRAN_HDF5_DECLARATIONS', 'OP2_FORTRAN_REFERENCE' ,
+        'OP2_GRID' , 'HYDRA_CONSTS' ,
+        'OP2_CONSTANTS', 'ISO_C_BINDING', 'IO']
         module_names = [x.upper() for x in module_names]
         module_names =  list(filter(lambda x: x not in std_mods, module_names))
 
-        KERNEL_FILES = []
-        KERNEL_FILES.append(text2)
-
+        KERNEL_FILES = kernelfilelist
+        print KERNEL_FILES
         print module_names
+
         found_sub = False
         found_mod = False
         kernel_text = ''
         ##search for module bodies in current file and files in the KERNEL_PATHS
         for k in KERNEL_FILES:
+          kernfile = open(k,'r')
+          filetext = kernfile.read()
+          filetext = removeComments(filetext)
+          kernfile.close()
+
           for m in module_names:
-            pattern = re.compile('module\s+'+m)
-            s = pattern.search(k)
-            strofmod = s.start()
-            if strofmod > -1:
-              pattern = re.compile('end module')
-              s = pattern.search(k,strofmod)
-              endofmod = s.end()
-              if endofmod == -1:
+            pattern = re.compile('module\s+'+m,flags=re.I)
+            s = pattern.search(filetext)
+            if s:
+              strofmod = s.start()
+              pattern = re.compile('end\s+module',flags=re.I)
+              s = pattern.search(filetext,strofmod)
+              if not s:
                 print 'ERROR: no end of module !'
                 exit()
               else:
+                endofmod = s.end()
                 if found_mod :
                   print 'ERROR: multiple module with same name found in \
                   current file and/or specified paths '
                   exit(2)
                 found_mod = True
-                pattern = re.compile('subroutine\s+'+name)
-                s = pattern.search(k,strofmod,endofmod)
-                strofsub = s.start()
-                if strofsub > -1:
+                pattern = re.compile('subroutine\s+'+name,flags=re.I)
+                s = pattern.search(filetext,strofmod,endofmod)
+                if s:
+                  strofsub = s.start()
                   print 'FOUND subrountine '+name
-                  pattern = re.compile('end\s+subroutine')
-                  s = pattern.search(k,strofsub,endofmod)
-                  endofsub = s.end()
-                  #print k[strofsub:endofsub]
-                  if found_sub != True:
-                    kernel_text = k[strofsub:endofsub]
-                    found_sub = True
-                    break
+                  pattern = re.compile('end\s+subroutine',flags=re.I)
+                  s = pattern.search(filetext,strofsub,endofmod)
+                  if s:
+                    endofsub = s.end()
+                    #print filetext[strofsub:endofsub]
+                    if found_sub != True:
+                      kernel_text = filetext[strofsub:endofsub]
+                      found_sub = True
+                      break
+                    else:
+                      print 'ERROR: multiple definitions of subroutine \
+                      within modules'
+                      exit(2)
                   else:
-                    print 'ERROR: multiple definitions of subroutine \
-                    within modules'
-                    exit(2)
+                    print 'ERROR: no end of subroutine !'
+                    exit()
                 else:
-                  print 'ERROR: no end of subroutine !'
+                  print 'No subroutine ,'+ name + ' found in :', k
+                  continue
 
         if not found_sub:
-          print 'ERROR: Cound not find elemental kernel subroutine in \
+          print 'ERROR: Cound not find elemental kernel subroutine '+ name + ' in \
           current file or KERNEL_PATHS'
           exit(2)
         else:
@@ -847,21 +869,12 @@ for a in range(init_ctr,len(sys.argv)):
 
 ########################## output modified source file  ############################
 
-  fid = open(src_file.replace('.','_op.'), 'w')
-#  if file_format == 90:
-#    fid = open(src_file.split('.')[0]+'_op.F90', 'w')
-#  elif file_format == 77:
-#    fid = open(src_file.split('.')[0]+'_op.F', 'w')
-  date = datetime.datetime.now()
-  #fid.write('!\n! auto-generated by op2_fortran.py on '+date.strftime("%Y-%m-%d %H:%M")+'\n!\n\n')
-  fid.write('!\n! auto-generated by op2_fortran.py\n!\n\n')
-
   loc_old = 0
   #read original file and locate header location
   if bookleaf:
-    loc_header = [text.lower().find('use op2_bookleaf')]
+    loc_header = [text.lower().find('use op2_bookleaf'.lower())]
   else:
-    loc_header = [text.find('use OP2_FORTRAN_REFERENCE')]
+    loc_header = [text.lower().find('use OP2_FORTRAN_REFERENCE'.lower())]
 
   #get locations of all op_decl_consts
   n_consts = len(const_args)
@@ -880,133 +893,131 @@ for a in range(init_ctr,len(sys.argv)):
 #
 # process header, loops and constants
 #
-  for loc in range(0,len(locs)):
-    fid.write(text[loc_old:locs[loc]-1])
-    loc_old = locs[loc]-1
-    indent = ''
-    ind = 0;
-    while 1:
-      if text[locs[loc]-ind] == '\n':
-        break
-      indent = indent + ' '
-      ind = ind + 1
-
-    if locs[loc] in loc_header:
-      line = ''
-      if hydra==0:
-        for nk in range (0,len(kernels)):
-          if text.find(kernels[nk]['name']) > -1:
-            line = line +'\n'+'  use ' + kernels[nk]['name'].upper()+'_MODULE'
-        line = line + '\n'+indent
-
-      fid.write(line[2:len(line)]);
-      if bookleaf:
-        loc_old = locs[loc] # keep the original include
-      else:
-        loc_old = locs[loc]+25
-      continue
-
-    if locs[loc] in loc_consts:# stripping the op_decl_consts -- as there is no implementation required
-      line = ''
-      fid.write(line);
-      endofcall = text.find('\n', locs[loc])
-      loc_old = endofcall+1
-      continue
-
-    if locs[loc] in loc_loops:
-       indent = indent + ' '*len('op_par_loop')
-       if file_format == 77:
-         indent='     '
-       endofcall = arg_parse(text,locs[loc]+11)
-       #endofcall = text.find('\n\n', locs[loc])
-       curr_loop = loc_loops.index(locs[loc])
-       name = loop_args[curr_loop]['name1']
-       if file_format == 90:
-         line = str(' '+name+'_host(&\n'+indent+'& "'+name+'",'+
-                loop_args[curr_loop]['set']+', '+cont_end+'\n')
-       elif file_format == 77:
-         line = str(' '+name+'_host(\n'+indent+'& "'+name+'",'+
-                 loop_args[curr_loop]['set']+', '+cont_end+'\n')
-
-       for arguments in range(0,loop_args[curr_loop]['nargs']):
-         elem = loop_args[curr_loop]['args'][arguments]
-         if elem['type'] == 'op_arg_dat':
-            line = line + indent + cont + elem['type'] + '(' + elem['dat'] + ','+ elem['idx'] \
-            + ','+ elem['map'] + ','+ elem['dim']+ ','+ typechange(elem['typ']) +','+ elem['acc']
-         elif elem['type'] == 'op_opt_arg_dat':
-             line = line + indent + cont + elem['type'] + '(' +elem['opt']+','+ elem['dat'] + ','+ elem['idx'] \
-             + ','+ elem['map'] + ','+ elem['dim']+ ','+ typechange(elem['typ']) +','+ elem['acc']
-         elif elem['type'] == 'op_arg_gbl':
-            line = line + indent + cont + elem['type'] + '(' + elem['data'] + ','+ elem['dim'] \
-            +','+ typechange(elem['typ'])+','+ elem['acc']
-
-         if arguments <> loop_args[curr_loop]['nargs'] - 1:
-           line = line + '), '+cont_end+'\n'
-         else:
-           line = line + '))\n'
-
-       fid.write(line)
-
-       loc_old = endofcall+1
-       continue
-
-
-
-  fid.write(text[loc_old:])
-  fid.close()
-
-  ## Now add the appropriate modules to the subroutines in the generated _op.F file
-  if hydra == 1 or bookleaf==1:
-    fid = open(src_file.replace('.','_op.'), 'r')
-    #if file_format == 90:
-    #  fid = open(src_file.split('.')[0]+'_op.F90', 'r')
-    #elif file_format == 77:
-    #  fid = open(src_file.split('.')[0]+'_op.F', 'r')
-
-
-    text = fid.read()
-    fid.close()
-    if hydra:
-      pattern = re.compile(re.escape('use OP2_FORTRAN_DECLARATIONS'), flags=re.I)
-      text = pattern.sub('use OP2_FORTRAN_DECLARATIONS', text)
-      pattern = re.compile(re.escape('use OP2_FORTRAN_REFERENCE'), flags=re.I)
-      text = pattern.sub('', text)
-
-    if bookleaf:
-      pattern = re.compile(re.escape('use OP2_FORTRAN_REFERENCE'), flags=re.I)
-      text = pattern.sub('', text)
-      pattern = re.compile(re.escape('USE common_kernels'), flags=re.I)
-      text = pattern.sub('!USE common_kernels', text)
-      file_part = src_file.split('/')
-      file_part = file_part[len(file_part)-1]
-      master_file = file_part.split('.')[0]
-      text = text.replace('USE '+master_file+'_kernels','! USE USE '+master_file+'_kernels')
-
-    for nk in range (0,len(kernels)):
-      replace = kernels[nk]['mod_file']+'_MODULE'+'\n'
-      text = text.replace(kernels[nk]['mod_file']+'\n', replace)
-
-    # for Hydra pick out the *_host calls and add the appropriate module to the
-    # subroutine that contains that *_host call
-    if hydra:
-      replace = '\n'
-      for nk in range (0,len(kernels)):
-        i = text.find('call '+kernels[nk]['name']+'_host')
-        j = text.rfind('use OP2_FORTRAN_DECLARATIONS\n',0,i)
-        replace = '       use '+kernels[nk]['mod_file'][4:]+'_MODULE\n'
-        text = text[:j+len('use OP2_FORTRAN_DECLARATIONS\n')] + \
-        replace + text[j+len('use OP2_FORTRAN_DECLARATIONS\n'):]
-
-
+  if n_loops > 0:
     fid = open(src_file.replace('.','_op.'), 'w')
-    #if file_format == 90:
-    #  fid = open(src_file.split('.')[0]+'_op.F90', 'w')
-    #elif file_format == 77:
-    #  fid = open(src_file.split('.')[0]+'_op.F', 'w')
-    fid.write(text)
+    date = datetime.datetime.now()
+    fid.write('!\n! auto-generated by op2_fortran.py\n!\n\n')
+
+    for loc in range(0,len(locs)):
+      fid.write(text[loc_old:locs[loc]-1])
+      loc_old = locs[loc]-1
+      indent = ''
+      ind = 0;
+      while 1:
+        if text[locs[loc]-ind] == '\n':
+          break
+        indent = indent + ' '
+        ind = ind + 1
+
+      if locs[loc] in loc_header:
+        line = ''
+        if hydra==0:
+          for nk in range (0,len(kernels)):
+            if text.find(kernels[nk]['name']) > -1:
+              line = line +'\n'+'  use ' + kernels[nk]['name'].upper()+'_MODULE'
+          line = line + '\n'+indent
+
+        fid.write(line[2:len(line)]);
+        loc_old = locs[loc] # keep the original include
+
+        continue
+
+      if locs[loc] in loc_consts:# stripping the op_decl_consts -- as there is no implementation required
+        line = ''
+        fid.write(line);
+        endofcall = text.find('\n', locs[loc])
+        loc_old = endofcall+1
+        continue
+
+      if locs[loc] in loc_loops:
+         indent = indent + ' '*len('op_par_loop')
+         if file_format == 77:
+           indent='     '
+         endofcall = arg_parse(text,locs[loc]+11)
+         #endofcall = text.find('\n\n', locs[loc])
+         curr_loop = loc_loops.index(locs[loc])
+         name = loop_args[curr_loop]['name1']
+         if file_format == 90:
+           line = str(' '+name+'_host(&\n'+indent+'& "'+name+'",'+
+                  loop_args[curr_loop]['set']+', '+cont_end+'\n')
+         elif file_format == 77:
+           line = str(' '+name+'_host(\n'+indent+'& "'+name+'",'+
+                   loop_args[curr_loop]['set']+', '+cont_end+'\n')
+
+         for arguments in range(0,loop_args[curr_loop]['nargs']):
+           elem = loop_args[curr_loop]['args'][arguments]
+           if elem['type'] == 'op_arg_dat':
+              line = line + indent + cont + elem['type'] + '(' + elem['dat'] + ','+ elem['idx'] \
+              + ','+ elem['map'] + ','+ elem['dim']+ ','+ typechange(elem['typ']) +','+ elem['acc']
+           elif elem['type'] == 'op_opt_arg_dat':
+               line = line + indent + cont + elem['type'] + '(' +elem['opt']+','+ elem['dat'] + ','+ elem['idx'] \
+               + ','+ elem['map'] + ','+ elem['dim']+ ','+ typechange(elem['typ']) +','+ elem['acc']
+           elif elem['type'] == 'op_arg_gbl':
+              line = line + indent + cont + elem['type'] + '(' + elem['data'] + ','+ elem['dim'] \
+              +','+ typechange(elem['typ'])+','+ elem['acc']
+
+           if arguments <> loop_args[curr_loop]['nargs'] - 1:
+             line = line + '), '+cont_end+'\n'
+           else:
+             line = line + '))\n'
+
+         fid.write(line)
+         loc_old = endofcall+1
+         continue
+
+    fid.write(text[loc_old:])
     fid.close()
+
+    ## Now add the appropriate modules to the subroutines in the generated _op.F file
+    if hydra == 1 or bookleaf==1:
+      fid = open(src_file.replace('.','_op.'), 'r')
+      text = fid.read()
+      fid.close()
+      if hydra:
+        pattern = re.compile('use\s+OP2_FORTRAN_DECLARATIONS', flags=re.I)
+        text = pattern.sub('use OP2_FORTRAN_DECLARATIONS', text)
+        pattern = re.compile('use\s+OP2_FORTRAN_HDF5_DECLARATIONS', flags=re.I)
+        text = pattern.sub('use OP2_FORTRAN_HDF5_DECLARATIONS', text)
+
+      if bookleaf:
+        pattern = re.compile('use OP2_FORTRAN_REFERENCE', flags=re.I)
+        text = pattern.sub('', text)
+        pattern = re.compile('use common_kernels', flags=re.I)
+        text = pattern.sub('!use common_kernels', text)
+        file_part = src_file.split('/')
+        file_part = file_part[len(file_part)-1]
+        master_file = file_part.split('.')[0]
+        text = text.replace('use '+master_file+'_kernels','! USE USE '+master_file+'_kernels')
+
+      for nk in range (0,len(kernels)):
+        replace = kernels[nk]['mod_file']+'_MODULE'+'\n'
+        text = text.replace(kernels[nk]['mod_file']+'\n', replace)
+
+      # for Hydra pick out the *_host calls and add the appropriate module to the
+      # subroutine that contains that *_host call
+      if hydra:
+        replace = '\n'
+        for nk in range (0,len(kernels)):
+          #i = text.find('call '+kernels[nk]['name']+'_host')
+          pattern = re.compile(re.escape('call '+kernels[nk]['name']+'_host'), flags=re.I)
+          s = pattern.search(text)
+          i = s.start()
+          j = text.lower().rfind('use OP2_FORTRAN_REFERENCE'.lower(), 0, i)
+          d = j - text.lower().rfind('\n'.lower(), 0, j)  #number of indent spaces
+          #print i, j, d
+          replace = ' '*d+'use '+kernels[nk]['mod_file']+'_MODULE\n'
+          text = text[:j+len('use OP2_FORTRAN_REFERENCE\n')] + \
+          replace + text[j+len('use OP2_FORTRAN_REFERENCE\n'):]
+
+        pattern = re.compile(re.escape('use OP2_FORTRAN_REFERENCE'), flags=re.I)
+        text = pattern.sub('', text)
+
+      fid = open(src_file.replace('.','_op.'), 'w')
+      fid.write(text)
+      fid.close()
 
   f.close()
+
 #end of loop over input source files
 
 ########################## errors and warnings ############################
@@ -1056,6 +1067,13 @@ op2_gen_mpiseq3(str(sys.argv[init_ctr]), date, consts, kernels, hydra, bookleaf)
 
 #if hydra:
 ##  op2_gen_cuda_hydra() #includes several Hydra specific features
+
+
+# remove temporary elemental kernel files
+for nk in range (0,len(kernels)):
+  file = kernels[nk]['mod_file']+'.F95'
+  if os.path.exists(file):
+    os.remove(file)
 
 ##########################################################################
 #                      ** END MAIN APPLICATION **

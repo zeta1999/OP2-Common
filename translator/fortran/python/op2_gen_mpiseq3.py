@@ -228,7 +228,7 @@ def op2_gen_mpiseq3(master, date, consts, kernels, hydra, bookleaf):
 #  Generate Header
 ##########################################################################
     if hydra:
-      code('MODULE '+kernels[nk]['mod_file'][4:]+'_MODULE')
+      code('MODULE '+kernels[nk]['mod_file']+'_MODULE')
     else:
       code('MODULE '+name.upper()+'_MODULE')
     code('USE OP2_FORTRAN_DECLARATIONS')
@@ -268,6 +268,7 @@ def op2_gen_mpiseq3(master, date, consts, kernels, hydra, bookleaf):
       text = text.replace('module','!module')
       text = text.replace('contains','!contains')
       text = text.replace('end !module','!end module')
+      text = text.strip()
 
       #
       # substitute npdes with DNPDE
@@ -625,9 +626,6 @@ def op2_gen_mpiseq3(master, date, consts, kernels, hydra, bookleaf):
         os.makedirs('mpi')
       #name = 'kernels/'+kernels[nk]['master_file']+'/'+name
       fid = open('mpi/'+name+'_seqkernel.F90','w')
-
-      # remove temporary elemental kernel files
-      os.remove(modfile+'.F95')
 
     elif bookleaf:
       fid = open(prefixes[prefix_i]+name+'_seqkernel.f90','w')

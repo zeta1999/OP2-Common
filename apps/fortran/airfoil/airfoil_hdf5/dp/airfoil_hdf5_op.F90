@@ -4,16 +4,16 @@
 
 program AIRFOIL
   use OP2_FORTRAN_HDF5_DECLARATIONS
-  use SAVE_SOLN_MODULE
-  use ADT_CALC_MODULE
-  use RES_CALC_MODULE
-  use BRES_CALC_MODULE
-  use UPDATE_MODULE
-   
+ 
+  use AIRFOIL_HDF5_KERNELS_update_MODULE
+  use AIRFOIL_HDF5_KERNELS_bres_calc_MODULE
+  use AIRFOIL_HDF5_KERNELS_res_calc_MODULE
+  use AIRFOIL_HDF5_KERNELS_adt_calc_MODULE
+  use AIRFOIL_HDF5_KERNELS_save_soln_MODULE
   use OP2_CONSTANTS
   use AIRFOIL_SEQ
   use IO
-  use, intrinsic :: ISO_C_BINDING
+  use ISO_C_BINDING
 
   implicit none
 
@@ -110,7 +110,14 @@ program AIRFOIL
   end if
 
   call op_print ("Declaring OP2 constants")
-       
+  call op_decl_const(gam, 1, 'gam')
+  call op_decl_const(gm1, 1, 'gm1')
+  call op_decl_const(cfl, 1, 'cfl')
+  call op_decl_const(eps, 1, 'eps')
+  call op_decl_const(mach, 1, 'mach')
+  call op_decl_const(alpha, 1, 'alpha')
+  call op_decl_const(qinf, 4, 'qinf')
+
   call op_print ('Initialising constants')
   call initialise_constants ( )
   call op_dump_to_hdf5("new_grid_out.h5");
