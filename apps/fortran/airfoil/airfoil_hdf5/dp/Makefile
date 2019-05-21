@@ -180,15 +180,15 @@ airfoil_hdf5_openmp4: airfoil_hdf5_op.F90 save_soln_omp4kernel.F90 adt_calc_omp4
 	bres_calc_omp4kernel.o update_omp4kernel.o airfoil_hdf5_op.o -o airfoil_hdf5_openmp4 \
 		$(FLINK) -lop2_for_openmp4 -lop2_hdf5 $(HDF5_LIB) -lz $(MPI_LIB)
 
-airfoil_hdf5_cuda: airfoil_hdf5_op.F90 save_soln_kernel.CUF adt_calc_kernel.CUF input.F90 airfoil_seqfun.F90 \
-        res_calc_kernel.CUF bres_calc_kernel.CUF update_kernel.CUF constants.F90 input.F90 cudaConfigurationParams.F95
+airfoil_hdf5_cuda: airfoil_hdf5_op.F90 save_soln_gpukernel.CUF adt_calc_gpukernel.CUF input.F90 airfoil_seqfun.F90 \
+        res_calc_gpukernel.CUF bres_calc_gpukernel.CUF update_gpukernel.CUF constants.F90 input.F90 cudaConfigurationParams.F95
 	$(FC) $(OPT_CUDA) -Minline,reshape $(FMODS)/cuda $(FMODS) cudaConfigurationParams.F95 constants.F90 input.F90 airfoil_seqfun.F90 \
-		save_soln_kernel.CUF bres_calc_kernel.CUF \
-		adt_calc_kernel.CUF -c \
+		save_soln_gpukernel.CUF bres_calc_gpukernel.CUF \
+		adt_calc_gpukernel.CUF -c \
 		$(FLINK) -lop2_for_cuda -lop2_hdf5 $(HDF5_LIB) $(MPI_LIB)
 	$(FC) $(OPT_CUDA) $(FMODS)/cuda $(FMODS) cudaConfigurationParams.o constants.o input.o airfoil_seqfun.o \
-		save_soln_kernel.o update_kernel.CUF bres_calc_kernel.o \
-		res_calc_kernel.CUF adt_calc_kernel.o airfoil_hdf5_op.F90 -o airfoil_hdf5_cuda \
+		save_soln_gpukernel.o update_gpukernel.o bres_calc_gpukernel.o \
+		res_calc_gpukernel.o adt_calc_gpukernel.o airfoil_hdf5_op.F90 -o airfoil_hdf5_cuda \
 		$(FLINK) -lop2_for_cuda -lop2_hdf5 $(HDF5_LIB) $(MPI_LIB)
 
 airfoil_hdf5_mpi: constants.F90 airfoil_seqfun.F90 airfoil_hdf5.F90 input.F90
