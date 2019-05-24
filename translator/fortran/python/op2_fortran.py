@@ -361,6 +361,7 @@ def append_init_soa(text):
   text = re.sub('\\bop_init(\\w*)\\b\\s*\((.*)\)','op_init\\1_soa(\\2,1)', text)
   text = re.sub('\\bop_mpi_init(\\w*)\\b\\s*\((.*)\)','op_mpi_init\\1_soa(\\2,1)', text)
   return text
+
 ##########################################################################
 # parsing for op_par_loop calls
 ##########################################################################
@@ -370,7 +371,19 @@ def op_par_loop_parse(text):
 
     search = "op_par_loop"
     i = text.find(search)
-    while i > -1:
+
+    text2 = removeComments(text)
+    i1 = text2.find(search)
+
+    while i > -1 and i1 > -1:
+
+      # first obtain the name of the subroutine (or program) in which this loop is placed
+      j = text2.lower().rfind('subroutine'.lower(), 0, i1)
+      pattern = re.compile('\s*\(\s*')
+      s = pattern.search(text2[j:])
+      routine =  text2[j+10:j+s.start()]
+
+      # now parse the arguments
       arg_string = text[text.find('(',i)+1:arg_parse(text,i+11)]
 
       #parse arguments in par loop
@@ -412,10 +425,12 @@ def op_par_loop_parse(text):
               'name1':arg_string.split(',')[0].strip(),
               'set':arg_string.split(',')[1].strip(),
               'args':temp_args,
-              'nargs':num_args}
+              'nargs':num_args,
+              'routine':routine.strip()}
 
       loop_args.append(temp)
       i=text.find(search, i+10)
+      i1 = text2.find(search, i1+10)
 
     print '\n\n'
     return (loop_args)
@@ -445,8 +460,10 @@ if len(sys.argv) > 1:
     init_ctr=2
 
 for a in range(init_ctr,len(sys.argv)):
-  print 'processing file '+ str(a) + ' of ' + str(len(sys.argv)-init_ctr) + ' '+ \
+  print 'processing file '+ str(a-init_ctr+1) + ' of ' + str(len(sys.argv)-init_ctr) + ' '+ \
   str(sys.argv[a])
+
+  thisfile_kernels = []
 
   src_file = str(sys.argv[a])
   f = open(src_file,'r')
@@ -532,6 +549,7 @@ for a in range(init_ctr,len(sys.argv)):
 
   for i in range (0, len(loop_args)):
     name = loop_args[i]['name1']
+    routine = loop_args[i]['routine']
     set_name = loop_args[i]['set']
     nargs = loop_args[i]['nargs']
     print '\nprocessing kernel '+name+' with '+str(nargs)+' arguments',
@@ -673,34 +691,35 @@ for a in range(init_ctr,len(sys.argv)):
     rep1 = False
     rep2 = False
 
-    for nk in range (0,nkernels):
-      rep1 = kernels[nk]['name'] == name and \
-      kernels[nk]['nargs'] == nargs and \
-      kernels[nk]['ninds'] == ninds
-      if rep1:
-         rep2 = True
-         for arg in range(0,nargs):
-            rep2 =  rep2 and kernels[nk]['dims'][arg] == dims[arg] and \
-            kernels[nk]['maps'][arg] == maps[arg] and \
-            kernels[nk]['typs'][arg] == typs[arg] and \
-            kernels[nk]['accs'][arg] == accs[arg] and \
-            kernels[nk]['idxs'][arg] == idxs[arg] and \
-            kernels[nk]['soaflags'][arg] == soaflags[arg] and \
-            kernels[nk]['optflags'][arg] == optflags[arg] and \
-            kernels[nk]['inds'][arg] == inds[arg]
+    #for nk in range (0,nkernels):
+    #  rep1 = kernels[nk]['name'] == name and \
+    #  kernels[nk]['nargs'] == nargs and \
+    #  kernels[nk]['ninds'] == ninds
 
-         for arg in range(0,ninds):
-            rep2 =  rep2 and kernels[nk]['inddims'][arg] == inddims[arg] and \
-            kernels[nk]['indaccs'][arg] == indaccs[arg] and \
-            kernels[nk]['indtyps'][arg] == indtyps[arg] and \
-            kernels[nk]['invinds'][arg] == invinds[arg]
+    #  if rep1:
+    #     rep2 = True
+    #     for arg in range(0,nargs):
+    #        rep2 =  rep2 and kernels[nk]['dims'][arg] == dims[arg] and \
+    #        kernels[nk]['maps'][arg] == maps[arg] and \
+    #        kernels[nk]['typs'][arg] == typs[arg] and \
+    #        kernels[nk]['accs'][arg] == accs[arg] and \
+    #        kernels[nk]['idxs'][arg] == idxs[arg] and \
+    #        kernels[nk]['soaflags'][arg] == soaflags[arg] and \
+    #        kernels[nk]['optflags'][arg] == optflags[arg] and \
+    #        kernels[nk]['inds'][arg] == inds[arg]
 
-         if rep2:
-           print 'repeated kernel with compatible arguments: '+ kernels[nk]['name']
-           repeat = True
-         else:
-           print 'repeated kernel with incompatible arguments: ERROR'
-           break
+    #     for arg in range(0,ninds):
+    #        rep2 =  rep2 and kernels[nk]['inddims'][arg] == inddims[arg] and \
+    #        kernels[nk]['indaccs'][arg] == indaccs[arg] and \
+    #        kernels[nk]['indtyps'][arg] == indtyps[arg] and \
+    #        kernels[nk]['invinds'][arg] == invinds[arg]
+
+    #     if rep2:
+    #       print 'repeated kernel with compatible arguments: '+ kernels[nk]['name']
+    #       repeat = True
+    #     else:
+    #       print 'repeated kernel with incompatible arguments: ERROR'
+    #       break
 
 #
 # output various diagnostics
@@ -732,6 +751,7 @@ for a in range(init_ctr,len(sys.argv)):
     if not repeat:
       nkernels = nkernels+1;
       temp = {'name': name,
+              'routine': routine,
               'set' : set_name,
               'nargs': nargs,
               'dims': dims,
@@ -757,13 +777,16 @@ for a in range(init_ctr,len(sys.argv)):
         temp['master_file'] = src_file.split('.')[0].replace('mod_','')
         ############ Create module files with the elemental kernel subroutines for new Hydra ####
 
-
         text2 = removeComments(text)
-        #module_names = [] #list to hold the module names to search for the elemental kernel in
-        pattern = re.compile('op_par_loop_'+str(nargs)+'\s*\(\s*'+name,flags=re.I)
+
+        # first find the subroutine location in this this loop is located
+        pattern = re.compile('subroutine\s+'+routine+'\s*\(\s*',flags=re.I)
         s = pattern.search(text2)
 
-        i = s.start()
+        pattern = re.compile('op_par_loop_'+str(nargs)+'\s*\(\s*'+name,flags=re.I)
+        t = pattern.search(text2, s.start())
+
+        i = t.start()
         j = text2.lower().rfind('subroutine'.lower(), 0, i)
         if j < 0 :
           j = text2.lower().rfind('program'.lower(), 0, i)
@@ -777,13 +800,14 @@ for a in range(init_ctr,len(sys.argv)):
         module_names =  list(filter(lambda x: x not in std_mods, module_names))
 
         KERNEL_FILES = kernelfilelist
-        print KERNEL_FILES
-        print module_names
+        #print KERNEL_FILES
 
         found_sub = False
         found_mod = False
         kernel_text = ''
-        ##search for module bodies in current file and files in the KERNEL_PATHS
+        module_name = ''
+
+        ## Identify the bodies of the elemtal kernels in modules in the KERNEL_FILES text
         for k in KERNEL_FILES:
           kernfile = open(k,'r')
           filetext = kernfile.read()
@@ -807,6 +831,7 @@ for a in range(init_ctr,len(sys.argv)):
                   current file and/or specified paths '
                   exit(2)
                 found_mod = True
+                module_name = m
                 pattern = re.compile('subroutine\s+'+name,flags=re.I)
                 s = pattern.search(filetext,strofmod,endofmod)
                 if s:
@@ -836,24 +861,18 @@ for a in range(init_ctr,len(sys.argv)):
           print 'ERROR: Cound not find elemental kernel subroutine '+ name + ' in \
           current file or KERNEL_PATHS'
           exit(2)
-        else:
-          # FOUND the required kernel -- create temporary elemental kernel file
-          file = open(temp['master_file'].upper()+'_KERNELS_'+name+'.F95','w')
+        else: # FOUND the required kernel
+          # change F77 code to F90 continuation lines
+          pattern = re.compile('\n\s*&',re.I)
+          kernel_text = re.sub(pattern, r'&\n&', kernel_text)
+
+          # finally create temporary elemental kernel file
+          file = open(temp['master_file'].upper()+'_'+module_name+'_KERNEL_'+name+'.F95','w')
           file.write('       '+kernel_text)
           file.close()
 
-        ## Identify the bodies of the modules in the module_names list
-        # by searching search current file or files in a given path on machine
-        # if multiple bodies for the same module found, throw error
-        # if module not found in path, throw error
-
-        ## search for the elemental kernel in each of these module bodies
-        # if multiple subroutines with the same name found, throw error
-
-        ## generate an .F90 file with this subroutine so that the
-        ## generator code can pick up the elemental kernal at code gen time
-
-        temp['mod_file'] = temp['master_file'].upper()+'_KERNELS_'+name
+        temp['mod_file'] = temp['master_file'].upper()+'_'+module_name+'_KERNEL_'+name
+        #print name, "found in :", temp['master_file'].upper(), "module name :", module_name
 
       if bookleaf==1:
         file_part = src_file.split('/')
@@ -865,6 +884,7 @@ for a in range(init_ctr,len(sys.argv)):
           temp['mod_file'] = 'common_kernels.f90'
 
       kernels.append(temp)
+      thisfile_kernels.append(temp)
 
 
 ########################## output modified source file  ############################
@@ -979,6 +999,39 @@ for a in range(init_ctr,len(sys.argv)):
         pattern = re.compile('use\s+OP2_FORTRAN_HDF5_DECLARATIONS', flags=re.I)
         text = pattern.sub('use OP2_FORTRAN_HDF5_DECLARATIONS', text)
 
+        # for Hydra pick out the *_host calls and add the appropriate module to the
+        # subroutine that contains that *_host call
+
+        done = []
+        start = 0
+        for nk in range (0,len(thisfile_kernels)):
+          key = thisfile_kernels[nk]['routine']+'-'+thisfile_kernels[nk]['name']
+          if key in done:
+            #print "done with key ", key
+            continue
+          replace = '\n'
+
+          #first find the location of the subroutine in which this loop is located
+          pattern = re.compile('subroutine\s+'+thisfile_kernels[nk]['routine']+'\s*\(', flags=re.I)
+          s = pattern.search(text)
+
+          # now find the location of the _host loop itself
+          pattern = re.compile('call\s+'+thisfile_kernels[nk]['name']+'_host', flags=re.I)
+          s = pattern.search(text, s.start())
+          i = s.start()
+          j = text.lower().rfind('use OP2_FORTRAN_REFERENCE'.lower(), 0, i)
+          d = j - text.lower().rfind('\n'.lower(), 0, j)  #number of indent spaces
+
+          replace = ' '*d+'use '+thisfile_kernels[nk]['mod_file']+'_MODULE\n'
+          text = text[:j+len('use OP2_FORTRAN_REFERENCE\n')] + \
+          replace + text[j+len('use OP2_FORTRAN_REFERENCE\n'):]
+          done.append(key)
+
+
+        pattern = re.compile(re.escape('use OP2_FORTRAN_REFERENCE'), flags=re.I)
+        text = pattern.sub('', text)
+
+
       if bookleaf:
         pattern = re.compile('use OP2_FORTRAN_REFERENCE', flags=re.I)
         text = pattern.sub('', text)
@@ -989,28 +1042,6 @@ for a in range(init_ctr,len(sys.argv)):
         master_file = file_part.split('.')[0]
         text = text.replace('use '+master_file+'_kernels','! USE USE '+master_file+'_kernels')
 
-      for nk in range (0,len(kernels)):
-        replace = kernels[nk]['mod_file']+'_MODULE'+'\n'
-        text = text.replace(kernels[nk]['mod_file']+'\n', replace)
-
-      # for Hydra pick out the *_host calls and add the appropriate module to the
-      # subroutine that contains that *_host call
-      if hydra:
-        replace = '\n'
-        for nk in range (0,len(kernels)):
-          #i = text.find('call '+kernels[nk]['name']+'_host')
-          pattern = re.compile(re.escape('call '+kernels[nk]['name']+'_host'), flags=re.I)
-          s = pattern.search(text)
-          i = s.start()
-          j = text.lower().rfind('use OP2_FORTRAN_REFERENCE'.lower(), 0, i)
-          d = j - text.lower().rfind('\n'.lower(), 0, j)  #number of indent spaces
-          #print i, j, d
-          replace = ' '*d+'use '+kernels[nk]['mod_file']+'_MODULE\n'
-          text = text[:j+len('use OP2_FORTRAN_REFERENCE\n')] + \
-          replace + text[j+len('use OP2_FORTRAN_REFERENCE\n'):]
-
-        pattern = re.compile(re.escape('use OP2_FORTRAN_REFERENCE'), flags=re.I)
-        text = pattern.sub('', text)
 
       fid = open(src_file.replace('.','_op.'), 'w')
       fid.write(text)
