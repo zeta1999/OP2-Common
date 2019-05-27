@@ -2338,6 +2338,8 @@ void op_mpi_reduce_double(op_arg *arg, double *data) {
       memcpy(arg->data, result, sizeof(double) * arg->dim);
     } else if (arg->acc == OP_WRITE) // any
     {
+      /*** The semantics of OP_WIRTE over MPI is not very clear ***/
+
       int size;
       MPI_Comm_size(OP_MPI_WORLD, &size);
       result = (double *)calloc(arg->dim * size, sizeof(double));
@@ -2353,7 +2355,7 @@ void op_mpi_reduce_double(op_arg *arg, double *data) {
       if (arg->dim == 1)
         op_free(result);
     }
-    if (arg->dim > 1)
+    if (arg->dim > 1 && arg->acc != OP_WRITE)
       op_free(result);
   }
   op_timers_core(&c2, &t2);
