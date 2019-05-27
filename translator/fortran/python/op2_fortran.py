@@ -32,6 +32,7 @@
 import sys
 import re
 import datetime
+import os
 
 #import openmp code generation function
 import op2_gen_openmp
@@ -876,9 +877,22 @@ for a in range(init_ctr,len(sys.argv)):
         kernel_text = re.sub(pattern, r'&\n&', kernel_text)
 
         # finally create temporary elemental kernel file
-        file = open(temp['master_file'].upper()+'_'+module_name+'_KERNEL_'+name+'.F95','w')
-        file.write('       '+kernel_text)
+        temp_file = temp['master_file'].upper()+'_'+module_name+'_KERNEL_'+name+'.F95'
+        file = open(temp_file,'w')
+        file.write(kernel_text.strip())
         file.close()
+
+        # call fprettify to format elemental kernel file
+        import subprocess
+        retcode = subprocess.call("which fprettify > /dev/null", shell=True)
+        if retcode == 0:
+          retcode = subprocess.call("fprettify -i 2 "+temp_file, shell=True)
+        else:
+          print 'Cannot find fprettify in PATH'
+          print 'Install (pip install --upgrade fprettify) and add fprettify to \
+          PATH to format generated code to \
+          conform to code formatting guidelines'
+
 
       temp['mod_file'] = temp['master_file'].upper()+'_'+module_name+'_KERNEL_'+name
       #print name, "found in :", temp['master_file'].upper(), "module name :", module_name

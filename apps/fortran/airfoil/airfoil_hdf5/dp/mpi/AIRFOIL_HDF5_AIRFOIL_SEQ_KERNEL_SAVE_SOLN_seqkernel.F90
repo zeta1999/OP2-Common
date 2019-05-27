@@ -11,7 +11,7 @@ USE ISO_C_BINDING
 CONTAINS
 
 !DEC$ ATTRIBUTES FORCEINLINE :: save_soln
-SUBROUTINE save_soln(q,qold)
+SUBROUTINE save_soln(q, qold)
   use OP2_CONSTANTS
   IMPLICIT NONE
 
@@ -23,6 +23,7 @@ SUBROUTINE save_soln(q,qold)
     qold(i) = q(i)
   END DO
 END SUBROUTINE
+
 SUBROUTINE op_wrap_save_soln( &
   & opDat1Local, &
   & opDat2Local, &

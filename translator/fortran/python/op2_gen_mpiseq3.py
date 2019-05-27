@@ -246,7 +246,7 @@ def op2_gen_mpiseq3(master, date, consts, kernels):
     fid = open(filename, 'r')
     text = fid.read()
     fid.close()
-    text = text.strip()
+    #text = text.strip()
 
     #
     # substitute npdes with DNPDE -- this is Hydra specific, so should not be here
