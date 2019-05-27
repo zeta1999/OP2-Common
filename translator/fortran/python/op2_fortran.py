@@ -95,6 +95,18 @@ file_format = 0
 cont = '& '
 comment = '! '
 
+def format_file(file):
+  import subprocess
+  retcode = subprocess.call("which fprettify > /dev/null", shell=True)
+  if retcode == 0:
+    retcode = subprocess.call("fprettify -i 2 "+file, shell=True)
+  else:
+    print 'Cannot find fprettify in PATH'
+    print 'Install (pip install --upgrade fprettify) and add fprettify to \
+    PATH to format generated code to \
+        conform to code formatting guidelines'
+
+
 def findfiles(path):
   files = []
   # r=root, d=directories, f = files
@@ -883,15 +895,7 @@ for a in range(init_ctr,len(sys.argv)):
         file.close()
 
         # call fprettify to format elemental kernel file
-        import subprocess
-        retcode = subprocess.call("which fprettify > /dev/null", shell=True)
-        if retcode == 0:
-          retcode = subprocess.call("fprettify -i 2 "+temp_file, shell=True)
-        else:
-          print 'Cannot find fprettify in PATH'
-          print 'Install (pip install --upgrade fprettify) and add fprettify to \
-          PATH to format generated code to \
-          conform to code formatting guidelines'
+        format_file(temp_file)
 
 
       temp['mod_file'] = temp['master_file'].upper()+'_'+module_name+'_KERNEL_'+name
@@ -1048,6 +1052,7 @@ for a in range(init_ctr,len(sys.argv)):
     fid = open(src_file.replace('.','_op.'), 'w')
     fid.write(text)
     fid.close()
+    format_file(src_file.replace('.','_op.'))
 
   f.close()
 
