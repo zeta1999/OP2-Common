@@ -120,14 +120,26 @@ airfoil_seq: airfoil_seqfun.F90 airfoil.F90 constants.F90 input.F90
 	$(FC) $(OPT) $(FMODS) -c constants.F90 airfoil_seqfun.F90 input.F90 airfoil.F90
 	$(MPIF90) $(OPT) $(FLINK) constants.o airfoil.o input.o airfoil_seqfun.o -o airfoil_seq -lop2_for_seq $(HDF5_LIB)
 
-airfoil_genseq: airfoil_op.F90 input.F90 save_soln_seqkernel.F90 adt_calc_seqkernel.F90 \
-        res_calc_seqkernel.F90 bres_calc_seqkernel.F90 update_seqkernel.F90 constants.F90 airfoil_seqfun.F90
+airfoil_genseq: airfoil_op.F90 input.F90 mpi/AIRFOIL_AIRFOIL_SEQ_KERNEL_ADT_CALC_seqkernel.F90 \
+			 mpi/AIRFOIL_AIRFOIL_SEQ_KERNEL_BRES_CALC_seqkernel.F90 \
+			 mpi/AIRFOIL_AIRFOIL_SEQ_KERNEL_RES_CALC_seqkernel.F90 \
+			 mpi/AIRFOIL_AIRFOIL_SEQ_KERNEL_SAVE_SOLN_seqkernel.F90 \
+			 mpi/AIRFOIL_AIRFOIL_SEQ_KERNEL_UPDATE_seqkernel.F90\
+			 constants.F90 airfoil_seqfun.F90
 	$(FC) $(OPT) $(FMODS) -c constants.F90 input.F90 airfoil_seqfun.F90 \
-        save_soln_seqkernel.F90 update_seqkernel.F90 bres_calc_seqkernel.F90 \
-        res_calc_seqkernel.F90 adt_calc_seqkernel.F90 airfoil_op.F90
+        mpi/AIRFOIL_AIRFOIL_SEQ_KERNEL_ADT_CALC_seqkernel.F90 \
+	mpi/AIRFOIL_AIRFOIL_SEQ_KERNEL_BRES_CALC_seqkernel.F90 \
+        mpi/AIRFOIL_AIRFOIL_SEQ_KERNEL_RES_CALC_seqkernel.F90 \
+        mpi/AIRFOIL_AIRFOIL_SEQ_KERNEL_SAVE_SOLN_seqkernel.F90 \
+        mpi/AIRFOIL_AIRFOIL_SEQ_KERNEL_UPDATE_seqkernel.F90 \
+        airfoil_op.F90
 	$(MPIF90) $(OPT) $(OPENMP) $(FLINK) input.o constants.o airfoil_seqfun.o \
-        save_soln_seqkernel.o adt_calc_seqkernel.o res_calc_seqkernel.o \
-        bres_calc_seqkernel.o update_seqkernel.o airfoil_op.o -o airfoil_genseq -lop2_for_seq $(HDF5_LIB)
+        AIRFOIL_AIRFOIL_SEQ_KERNEL_ADT_CALC_seqkernel.o \
+	AIRFOIL_AIRFOIL_SEQ_KERNEL_BRES_CALC_seqkernel.o \
+        AIRFOIL_AIRFOIL_SEQ_KERNEL_RES_CALC_seqkernel.o \
+        AIRFOIL_AIRFOIL_SEQ_KERNEL_SAVE_SOLN_seqkernel.o \
+        AIRFOIL_AIRFOIL_SEQ_KERNEL_UPDATE_seqkernel.o \
+        airfoil_op.o -o airfoil_genseq -lop2_for_seq $(HDF5_LIB)
 
 airfoil_vec: airfoil_op.F90 input.F90 save_soln_veckernel.F90 adt_calc_veckernel.F90 \
         res_calc_veckernel.F90 bres_calc_veckernel.F90 update_veckernel.F90 constants.F90 airfoil_seqfun.F90
@@ -163,6 +175,7 @@ airfoil_openmp4: airfoil_op.F90 save_soln_omp4kernel.F90 adt_calc_omp4kernel.F90
 
 clean:
 	rm -f *.o
+	rm -f *.optrpt
 	rm -f *.mod
 	rm -f $(EXEC)
 	rm -f *~

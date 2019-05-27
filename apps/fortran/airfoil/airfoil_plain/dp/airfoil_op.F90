@@ -4,17 +4,16 @@
 
 program AIRFOIL
   use OP2_FORTRAN_DECLARATIONS
-!  use OP2_FORTRAN_HDF5_DECLARATIONS
-  use SAVE_SOLN_MODULE
-  use ADT_CALC_MODULE
-  use RES_CALC_MODULE
-  use BRES_CALC_MODULE
-  use UPDATE_MODULE
-   
+ use AIRFOIL_AIRFOIL_SEQ_KERNEL_update_MODULE
+  use AIRFOIL_AIRFOIL_SEQ_KERNEL_bres_calc_MODULE
+  use AIRFOIL_AIRFOIL_SEQ_KERNEL_res_calc_MODULE
+  use AIRFOIL_AIRFOIL_SEQ_KERNEL_adt_calc_MODULE
+  use AIRFOIL_AIRFOIL_SEQ_KERNEL_save_soln_MODULE
+
   use OP2_CONSTANTS
   use AIRFOIL_SEQ
   use IO
-  use, intrinsic :: ISO_C_BINDING
+  use ISO_C_BINDING
 
   implicit none
 
@@ -130,7 +129,7 @@ program AIRFOIL
 
      call save_soln_host(&
                       & "save_soln",cells,  &
-                      & op_arg_dat(p_q,-1,OP_ID,4,"real(8)",OP_READ),  &
+                      & op_arg_dat(p_q,-1,OP_ID,4,"real(8)",OP_READ), &
                       & op_arg_dat(p_qold,-1,OP_ID,4,"real(8)",OP_WRITE))
 
 
@@ -141,34 +140,34 @@ program AIRFOIL
       ! calculate area/timstep
       call adt_calc_host(&
                        & "adt_calc",cells,  &
-                       & op_arg_dat(p_x,1,pcell,2,"real(8)",OP_READ),  &
-                       & op_arg_dat(p_x,2,pcell,2,"real(8)",OP_READ),  &
-                       & op_arg_dat(p_x,3,pcell,2,"real(8)",OP_READ),  &
-                       & op_arg_dat(p_x,4,pcell,2,"real(8)",OP_READ),  &
-                       & op_arg_dat(p_q,-1,OP_ID,4,"real(8)",OP_READ),  &
+                       & op_arg_dat(p_x,1,pcell,2,"real(8)",OP_READ), &
+                       & op_arg_dat(p_x,2,pcell,2,"real(8)",OP_READ), &
+                       & op_arg_dat(p_x,3,pcell,2,"real(8)",OP_READ), &
+                       & op_arg_dat(p_x,4,pcell,2,"real(8)",OP_READ), &
+                       & op_arg_dat(p_q,-1,OP_ID,4,"real(8)",OP_READ), &
                        & op_arg_dat(p_adt,-1,OP_ID,1,"real(8)",OP_WRITE))
 
 
       ! calculate flux residual
       call res_calc_host(&
                        & "res_calc",edges,  &
-                       & op_arg_dat(p_x,1,pedge,2,"real(8)",OP_READ),  &
-                       & op_arg_dat(p_x,2,pedge,2,"real(8)",OP_READ),  &
-                       & op_arg_dat(p_q,1,pecell,4,"real(8)",OP_READ),  &
-                       & op_arg_dat(p_q,2,pecell,4,"real(8)",OP_READ),  &
-                       & op_arg_dat(p_adt,1,pecell,1,"real(8)",OP_READ),  &
-                       & op_arg_dat(p_adt,2,pecell,1,"real(8)",OP_READ),  &
-                       & op_arg_dat(p_res,1,pecell,4,"real(8)",OP_INC),  &
+                       & op_arg_dat(p_x,1,pedge,2,"real(8)",OP_READ), &
+                       & op_arg_dat(p_x,2,pedge,2,"real(8)",OP_READ), &
+                       & op_arg_dat(p_q,1,pecell,4,"real(8)",OP_READ), &
+                       & op_arg_dat(p_q,2,pecell,4,"real(8)",OP_READ), &
+                       & op_arg_dat(p_adt,1,pecell,1,"real(8)",OP_READ), &
+                       & op_arg_dat(p_adt,2,pecell,1,"real(8)",OP_READ), &
+                       & op_arg_dat(p_res,1,pecell,4,"real(8)",OP_INC), &
                        & op_arg_dat(p_res,2,pecell,4,"real(8)",OP_INC))
 
 
       call bres_calc_host(&
                        & "bres_calc",bedges,  &
-                       & op_arg_dat(p_x,1,pbedge,2,"real(8)",OP_READ),  &
-                       & op_arg_dat(p_x,2,pbedge,2,"real(8)",OP_READ),  &
-                       & op_arg_dat(p_q,1,pbecell,4,"real(8)",OP_READ),  &
-                       & op_arg_dat(p_adt,1,pbecell,1,"real(8)",OP_READ),  &
-                       & op_arg_dat(p_res,1,pbecell,4,"real(8)",OP_INC),  &
+                       & op_arg_dat(p_x,1,pbedge,2,"real(8)",OP_READ), &
+                       & op_arg_dat(p_x,2,pbedge,2,"real(8)",OP_READ), &
+                       & op_arg_dat(p_q,1,pbecell,4,"real(8)",OP_READ), &
+                       & op_arg_dat(p_adt,1,pbecell,1,"real(8)",OP_READ), &
+                       & op_arg_dat(p_res,1,pbecell,4,"real(8)",OP_INC), &
                        & op_arg_dat(p_bound,-1,OP_ID,1,"integer(4)",OP_READ))
 
 
@@ -178,10 +177,10 @@ program AIRFOIL
 
       call update_host(&
                        & "update",cells,  &
-                       & op_arg_dat(p_qold,-1,OP_ID,4,"real(8)",OP_READ),  &
-                       & op_arg_dat(p_q,-1,OP_ID,4,"real(8)",OP_WRITE),  &
-                       & op_arg_dat(p_res,-1,OP_ID,4,"real(8)",OP_RW),  &
-                       & op_arg_dat(p_adt,-1,OP_ID,1,"real(8)",OP_READ),  &
+                       & op_arg_dat(p_qold,-1,OP_ID,4,"real(8)",OP_READ), &
+                       & op_arg_dat(p_q,-1,OP_ID,4,"real(8)",OP_WRITE), &
+                       & op_arg_dat(p_res,-1,OP_ID,4,"real(8)",OP_RW), &
+                       & op_arg_dat(p_adt,-1,OP_ID,1,"real(8)",OP_READ), &
                        & op_arg_gbl(rms,2,"real(8)",OP_INC))
 
 
