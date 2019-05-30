@@ -178,6 +178,19 @@ def op_decl_const_parse(text):
         args = m.group(3).split(',')
 
         # check for syntax errors
+        if len(args) == 1:
+            print 'Hydra-type const decls '
+
+            consts.append({
+            'loc': m.start(),
+            'dim': '0',
+            'type': 'XX',
+            'name': args[0].strip(),
+            'name2': args[0].strip()
+            })
+
+            continue;
+
         if len(args) != 3:
             print 'Error in op_decl_const : must have three arguments'
             return
