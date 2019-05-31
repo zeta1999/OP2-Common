@@ -794,9 +794,11 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size, int nargs,
   int repeat = 1;
   int ncolor = 0;
   int ncolors = 0;
+  bool work_done = false;
 
   while (repeat) {
     repeat = 0;
+    work_done = false;
 
     for (int m = 0; m < nargs; m++) {
       if (inds[m] >= 0 && args[m].opt) {
@@ -855,6 +857,7 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size, int nargs,
           repeat = 1;
         } else {
           blk_col[b] = ncolor + color;
+          work_done = true;
           mask = 1 << color;
           ncolors = MAX(ncolors, ncolor + color + 1);
 
@@ -869,6 +872,11 @@ op_plan *op_plan_core(char const *name, op_set set, int part_size, int nargs,
     }
 
     ncolor += 32; // increment base level
+
+    if (repeat && !work_done) {
+      printf(" *** OP_plan_core: infinite loop detected \n");
+      exit(-1);
+    }
   }
 
   /* store block mapping and number of blocks per color */
