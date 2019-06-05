@@ -2339,22 +2339,19 @@ void op_mpi_reduce_double(op_arg *arg, double *data) {
     } else if (arg->acc == OP_WRITE) // any
     {
       /*** The semantics of OP_WIRTE over MPI is not very clear ***/
-
-      //Currently Do nothing - leave the local values per proc
-
-      /*
-      int size;
+      /*int size;
       MPI_Comm_size(OP_MPI_WORLD, &size);
       result = (double *)calloc(arg->dim * size, sizeof(double));
       MPI_Allgather((double *)arg->data, arg->dim, MPI_DOUBLE, result, arg->dim,
                     MPI_DOUBLE, OP_MPI_WORLD);
       for (int i = 0; i < size; i++) {
         for (int j = 0; j < arg->dim; j++) {
-          if (result[i * arg->dim + j] != 0.0)  // there could be multiple non-zero values here !
+          // there could be multiple non-zero values here !
+          if (abs(result[i * arg->dim + j]) != 0.0)
             result[j] = result[i * arg->dim + j];
         }
       }
-      //memcpy(arg->data, result, sizeof(double) * arg->dim);
+      memcpy(arg->data, result, sizeof(double) * arg->dim);
       if (arg->dim == 1)
         op_free(result);
       */
