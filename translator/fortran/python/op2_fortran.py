@@ -850,7 +850,7 @@ for a in range(init_ctr,len(sys.argv)):
         kernfile.close()
 
         for m in module_names:
-          pattern = re.compile('module\s+'+m,flags=re.I)
+          pattern = re.compile('module\s+'+m+'\s+',flags=re.I)
           s = pattern.search(filetext)
           if s:
             strofmod = s.start()
@@ -862,11 +862,12 @@ for a in range(init_ctr,len(sys.argv)):
             else:
               endofmod = s.end()
               if found_mod :
-                print 'ERROR: multiple module with same name found in \
+                print 'ERROR: multiple module ', m, ' with same name found in \
                 current file and/or specified paths '
                 exit(2)
               found_mod = True
               module_name = m
+
               pattern = re.compile('subroutine\s+'+name,flags=re.I)
               s = pattern.search(filetext,strofmod,endofmod)
               if s:
