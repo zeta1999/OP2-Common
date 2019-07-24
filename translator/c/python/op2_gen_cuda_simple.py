@@ -1227,9 +1227,12 @@ def op2_gen_cuda_simple(master, date, consts, kernels,sets, macro_defs):
   code('')
   comm('user kernel files')
 
+  includes = []
   for nk in range(0,len(kernels)):
-    file_text = file_text +\
-    '#include "'+kernels[nk]['name']+'_kernel.cu"\n'
+    s='#include "'+kernels[nk]['name']+'_kernel.cu"\n'
+    if not s in includes:
+      file_text = file_text + s
+      includes.append(s)
 
   master = master.split('.')[0]
   fid = open('cuda/'+master.split('.')[0]+'_kernels.cu','w')
