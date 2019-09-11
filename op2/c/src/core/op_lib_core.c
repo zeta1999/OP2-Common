@@ -40,6 +40,9 @@
 #include <string.h>
 #include <sys/time.h>
 
+
+
+
 /*
  * OP2 global state variables
  */
@@ -54,6 +57,9 @@ int OP_maps_base_index = 0;
 
 int OP_set_index = 0, OP_set_max = 0, OP_map_index = 0, OP_map_max = 0,
     OP_dat_index = 0, OP_kern_max = 0, OP_kern_curr = 0;
+    
+int OP_reduct_bytes = 0;
+char *OP_reduct_h;
 
 /*
  * Lists of sets, maps and dats declared in OP2 programs
@@ -488,13 +494,13 @@ void op_exit_core() {
   }
 
   // free storage for timing info
-  for (int n = 0; n < OP_kern_max; n++) {
-      if (OP_kernels[n].count > 0) {        
+  for (int n = 0; n < OP_dat_index; n++) {
         op_free(op_repr_incs[n].tmp_incs);
         op_repr_incs[n].tmp_incs_size=0;
-      }
   }
   free(OP_kernels);
+  free(op_repr_incs);
+  op_repr_incs = NULL;
   OP_kernels = NULL;
   
   // reset initial values
@@ -618,6 +624,7 @@ op_arg op_arg_dat_core(op_dat dat, int idx, op_map map, int dim,
   /*initialize to 0 states no-mpi messages inflight for this arg*/
   arg.sent = 0;
 
+  arg.local_sum=binned_dballoc(3);
   return arg;
 }
 
@@ -665,7 +672,7 @@ op_arg op_opt_arg_dat_core(int opt, op_dat dat, int idx, op_map map, int dim,
 
   /*initialize to 0 states no-mpi messages inflight for this arg*/
   arg.sent = 0;
-
+  arg.local_sum=binned_dballoc(3);
   return arg;
 }
 
@@ -705,7 +712,7 @@ op_arg op_arg_gbl_core(char *data, int dim, const char *typ, int size,
   /* TODO: properly??*/
   if (data == NULL)
     arg.opt = 0;
-
+  arg.local_sum=binned_dballoc(3);
   return arg;
 }
 
@@ -853,8 +860,8 @@ void op_timing_realloc(int kernel) {
     OP_kern_max_new = kernel + 10;
     OP_kernels = (op_kernel *)op_realloc(OP_kernels,
                                          OP_kern_max_new * sizeof(op_kernel));
-    op_repr_incs = (op_repr_inc *)op_realloc(op_repr_incs,
-                                         OP_kern_max_new * sizeof(op_repr_inc));
+//    op_repr_incs = (op_repr_inc *)op_realloc(op_repr_incs,
+//                                         OP_kern_max_new * sizeof(op_repr_inc));
     if (OP_kernels == NULL) {
       printf(" op_timing_realloc error \n");
       exit(-1);
@@ -868,8 +875,8 @@ void op_timing_realloc(int kernel) {
       OP_kernels[n].transfer2 = 0.0f;
       OP_kernels[n].mpi_time = 0.0f;
       OP_kernels[n].name = "unused";
-      op_repr_incs[n].tmp_incs = NULL;
-      op_repr_incs[n].tmp_incs_size = 0;
+//      op_repr_incs[n].tmp_incs = NULL;
+//      op_repr_incs[n].tmp_incs_size = 0;
     }
     OP_kern_max = OP_kern_max_new;
   }
@@ -1038,3 +1045,17 @@ void op_free(void *ptr) {
   free(ptr);
 #endif
 }
+
+void reprLocalSum(op_arg *arg, int set_size, double *red) {
+    
+  //double_binned *local_sum = binned_dballoc(3);
+    
+  for (int d=0; d<arg->dim; d++){
+    binned_dbsetzero(3, arg->local_sum);
+    binnedBLAS_dbdsum(3, set_size, red+d, arg->dim, arg->local_sum);
+    
+  //  ((double*)arg->data)[d]=binned_ddbconv(3, local_sum);
+  }
+    
+}
+  
