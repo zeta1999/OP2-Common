@@ -30,14 +30,14 @@ ifeq ($(OP2_COMPILER),gnu)
 else
 ifeq ($(OP2_COMPILER),intel)
   CPP		= icpc
-  CPPFLAGS	= -O3 -xHost #-DMPICH_IGNORE_CXX_SEEK#-DCOMM_PERF #-DDEBUG #-vec-report
+  CPPFLAGS	= -O0 -xHost #-DMPICH_IGNORE_CXX_SEEK#-DCOMM_PERF #-DDEBUG #-vec-report
   OMPFLAGS	= -qopenmp #-openmp-report2
   MPICPP	= $(MPI_INSTALL_PATH)/bin/mpicxx
   MPIFLAGS	= $(CPPFLAGS)
 else
 ifeq ($(OP2_COMPILER),clang)
   CPP       	= clang++
-  CCFLAGS  	= -O3 #-ffast-math
+  CCFLAGS  	= -O0 #-ffast-math
   CPPFLAGS 	= $(CCFLAGS)
   OMPFLAGS 	= -I$(OMPTARGET_LIBS)/../tools/openmp/runtime/src/ -fopenmp=libomp -Rpass-analysis
   OMPOFFLOAD 	= -fopenmp-targets=nvptx64-nvidia-cuda -fopenmp-nonaliased-maps -ffp-contract=fast -Xcuda-ptxas -v #-Xclang -target-feature -Xclang +ptx35
@@ -89,11 +89,14 @@ PTSCOTCH_LIB 	= -L$(PTSCOTCH_INSTALL_PATH)/lib/ -lptscotch \
 HDF5_INC = -I$(HDF5_INSTALL_PATH)/include
 HDF5_LIB = -L$(HDF5_INSTALL_PATH)/lib -lhdf5 -lz
 
+
+REPRO_MPI_INC = -I$(REPRO_MPI_INSTALL_PATH)/include
+REPRO_MPI_LIB   = -L$(REPRO_MPI_LIB_PATH) -lbinned -lbinnedblas -lreproblas -lbinnedmpi -lm
 #
 # master to make all versions
 #
 
-all: clean aero_seq aero_openmp aero_cuda aero_mpi aero_mpi_openmp aero_mpi_cuda
+all: clean aero_seq aero_openmp aero_cuda aero_mpi aero_mpi_openmp aero_mpi_cuda aero_mpi_genseq
 
 #
 # simple sequential version
@@ -135,14 +138,20 @@ aero_mpi: aero.cpp Makefile
 	$(MPICPP) $(MPIFLAGS) aero.cpp $(OP2_INC) $(PARMETIS_INC) $(PTSCOTCH_INC) $(HDF5_INC) \
 	$(OP2_LIB) -lop2_mpi $(PARMETIS_LIB) $(PTSCOTCH_LIB) $(HDF5_LIB) -o aero_mpi
 
+aero_mpi_genseq: aero_op.cpp seq/aero_seqkernels.cpp Makefile
+	$(MPICPP) $(VAR) $(CPPFLAGS) $(OP2_INC) $(OP2_INC) $(HDF5_INC) \
+	$(PARMETIS_INC) $(PTSCOTCH_INC) -Iseq  -I. $(REPRO_MPI_INC) \
+	aero_op.cpp -lm seq/aero_seqkernels.cpp -Wl,--start-group $(OP2_LIB) -lop2_mpi \
+	$(PARMETIS_LIB) $(PTSCOTCH_LIB)  $(HDF5_LIB) $(REPRO_MPI_LIB) -Wl,--end-group -g -o aero_mpi_genseq
+
 
 #
 # mpi with openmp-nodes version
 #
 aero_mpi_openmp:	aero_op.cpp openmp/aero_kernels.cpp \
                 Makefile
-		$(MPICPP) $(VAR) $(MPIFLAGS) $(OMPFLAGS) $(OP2_INC) $(PARMETIS_INC) $(PTSCOTCH_INC) $(HDF5_INC) -Iopenmp -I. \
-		$(OP2_LIB) aero_op.cpp openmp/aero_kernels.cpp -lm -lop2_mpi $(HDF5_LIB) $(PARMETIS_LIB) $(PTSCOTCH_LIB) \
+		$(MPICPP) $(VAR) $(MPIFLAGS) $(OMPFLAGS) $(OP2_INC) $(PARMETIS_INC) $(PTSCOTCH_INC) $(HDF5_INC) -Iopenmp -I. $(REPRO_MPI_INC) \
+		$(OP2_LIB) aero_op.cpp openmp/aero_kernels.cpp -lm -lop2_mpi $(HDF5_LIB) $(PARMETIS_LIB) $(PTSCOTCH_LIB) $(REPRO_MPI_LIB) \
 		-o aero_mpi_openmp
 
 #
@@ -184,4 +193,4 @@ write_hdf5: write_hdf5.cpp
 #
 
 clean:
-		rm -f aero_seq aero_openmp aero_cuda aero_mpi write_hdf5 aero_mpi_openmp aero_mpi_cuda aero_openmp4 *.o
+		rm -f aero_seq aero_openmp aero_cuda aero_mpi write_hdf5 aero_mpi_openmp aero_mpi_cuda aero_openmp4 aero_mpi_genseq *.o
