@@ -356,3 +356,6 @@ void op_debug_arg(int n, op_arg arg) {
     };
   }
 }
+
+void op_move_repro_coloring_device(){
+}
